@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Test double for glab: serves JSON fixtures from $FAKE_DIR, logs every call to
+# $FAKE_LOG, prints a fake token on stderr (must never reach output), and fails
+# any request that is not an explicit GET.
+printf '%s\n' "$*" >>"$FAKE_LOG"
+echo "glpat-FAKEFAKEFAKEFAKEFAKE Authorization: Bearer FAKE" >&2
+[[ $1 == auth ]] && { [[ ${FAKE_AUTH:-ok} == ok ]]; exit; }
+[[ " $* " == *" --method GET "* ]] || { echo "NON-GET $*" >>"$FAKE_LOG"; exit 9; }
+endpoint=${*: -1}
+case $endpoint in
+  projects\?*) f=projects ;;
+  */boards\?*) f=boards ;;
+  */issues\?state=opened*) f=open ;;
+  */issues\?state=closed*) f=closed ;;
+  */issues/*) f=issue ;;
+  *) exit 1 ;;
+esac
+[[ -f $FAKE_DIR/$f.json ]] || exit 1
+cat "$FAKE_DIR/$f.json"
