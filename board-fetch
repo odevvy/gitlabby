@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# Fetch a GitLab project's issues as board columns for the Omarchy bar widget.
+# Read-only: only `glab api` GET requests. Auth is glab's own credential store;
+# this script never reads, prints, or stores a token. stderr is discarded.
+#
+# Usage: board-fetch [--project group/name] [--hostname gitlab.com]
+#        board-fetch --map OPEN.json CLOSED.json   # offline: map fixtures only
+set -uo pipefail
+
+project="firelink21/phrase41"
+hostname="gitlab.com"
+map_open="" map_closed=""
+
+emit() { # state message
+  jq -cn --arg s "$1" --arg m "$2" '{state:$s,message:$m,updatedAt:(now|todateiso8601),columns:[]}'
+}
+
+while (($#)); do
+  case "$1" in
+    --project) project=${2:-}; shift 2 || shift ;;
+    --hostname) hostname=${2:-}; shift 2 || shift ;;
+    --map) map_open=${2:-}; map_closed=${3:-}; shift 3 || shift $# ;;
+    *) shift ;;
+  esac
+done
+
+command -v jq >/dev/null 2>&1 || { printf '%s\n' '{"state":"error","message":"jq is required.","updatedAt":"","columns":[]}'; exit 0; }
+
+# Open issue -> furthest-along workflow label; closed -> "closed";
+# open with no workflow label -> "unlabeled" (the widget hides it when empty).
+read -r -d '' MAP <<'JQ'
+def row: {iid, title, labels: (.labels // []), url: .web_url};
+def column:
+  ["review", "in progress", "approved", "todo", "research"] as $order
+  | (.labels // []) as $l
+  | ([$order[] | select(. as $o | $l | index($o))] | first) // "unlabeled";
+($open | map(select(.state == "opened"))) as $o
+| {state: "ready", message: "", updatedAt: (now | todateiso8601),
+   columns: (
+     [("research", "todo", "approved", "in progress", "review") as $n
+       | {name: $n, issues: [$o[] | select(column == $n) | row]}]
+     + [{name: "closed", issues: [$closed[] | row]}]
+     + [{name: "unlabeled", issues: [$o[] | select(column == "unlabeled") | row]}])}
+JQ
+
+build() { # open-file closed-file
+  jq -cn --slurpfile open "$1" --slurpfile closed "$2" \
+    '($open | add // []) as $open | ($closed | add // []) as $closed | '"$MAP"
+}
+
+if [[ -n $map_open ]]; then
+  build "$map_open" "$map_closed" 2>/dev/null || emit error "Could not map fixture files."
+  exit 0
+fi
+
+[[ $project =~ ^[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)+$ ]] || { emit error "Invalid project path: $project"; exit 0; }
+[[ $hostname =~ ^[A-Za-z0-9][A-Za-z0-9.-]*(:[0-9]+)?$ ]] || { emit error "Invalid GitLab hostname."; exit 0; }
+command -v glab >/dev/null 2>&1 || { emit error "GitLab CLI (glab) is not installed or not on PATH."; exit 0; }
+glab auth status --hostname "$hostname" >/dev/null 2>&1 || { emit logged-out "Not signed in. Run: glab auth login --hostname $hostname"; exit 0; }
+
+tmp=$(mktemp -d) || { emit error "Could not create a temporary directory."; exit 0; }
+trap 'rm -rf "$tmp"' EXIT
+base="projects/$(jq -rn --arg p "$project" '$p | @uri')/issues"
+
+glab api --hostname "$hostname" --method GET --paginate \
+  "$base?state=opened&per_page=100" >"$tmp/open" 2>/dev/null ||
+  { emit error "Could not load open issues for $project."; exit 0; }
+glab api --hostname "$hostname" --method GET \
+  "$base?state=closed&order_by=updated_at&sort=desc&per_page=20" >"$tmp/closed" 2>/dev/null ||
+  { emit error "Could not load closed issues for $project."; exit 0; }
+
+build "$tmp/open" "$tmp/closed" 2>/dev/null || emit error "GitLab returned an unreadable response."

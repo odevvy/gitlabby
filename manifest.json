@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "odevvy.gitlab-board",
+  "name": "GitLab Board",
+  "version": "0.1.0",
+  "author": "o_devvy",
+  "license": "MIT",
+  "description": "A GitLab issue board for one project in a bar popup: research, todo, approved, in progress, review, closed.",
+  "kinds": ["bar-widget"],
+  "entryPoints": {
+    "barWidget": "Board.qml"
+  },
+  "barWidget": {
+    "displayName": "GitLab Board",
+    "description": "Shows a GitLab project's issues as board columns. Click an issue to open it in the browser.",
+    "category": "Development",
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "project": "firelink21/phrase41",
+      "refreshIntervalSec": 60
+    },
+    "schema": [
+      { "key": "project", "type": "string", "label": "GitLab project", "description": "Full project path, e.g. group/project", "defaultValue": "firelink21/phrase41" },
+      { "key": "refreshIntervalSec", "type": "integer", "label": "Refresh interval (seconds)", "min": 30, "max": 3600, "step": 30, "defaultValue": 60 }
+    ]
+  }
+}
