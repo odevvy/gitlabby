@@ -114,12 +114,13 @@ Panel {
     owner: root
     bar: root.bar
     open: root.opened
-    focusTarget: panel.loadedContent
+    focusTarget: keyCatcher
     contentWidth: panel.fittedContentWidth(Math.max(Style.space(320), root.visibleColumns.length * (root.columnWidth + Style.space(10))))
-    contentHeight: panel.fittedContentHeight(panel.loadedContentHeight, Style.space(600))
+    contentHeight: panel.fittedContentHeight(keyCatcher.implicitHeight, Style.space(600))
 
-    content: PanelKeyCatcher {
+    PanelKeyCatcher {
       id: keyCatcher
+      anchors.fill: parent
       implicitHeight: header.implicitHeight + Style.space(10) + board.implicitHeight
       onCloseRequested: root.close()
       onTextKey: function(text, modifiers) { if (text === "r" || text === "R") root.refresh() }
