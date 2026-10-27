@@ -20,10 +20,15 @@ it has issues.
 | --- | --- |
 | Left click icon | Open or close the board |
 | Right or middle click icon | Refresh |
-| `r` in the popup | Refresh |
+| Refresh button in the popup header, or `r` | Refresh |
+| Click a column header | Collapse it to a narrow strip (click again to expand) |
+| Click a chip in the popup header | Show or hide that column |
 | `Escape` | Close |
 
-It refreshes every 60 seconds and each time the popup opens.
+It refreshes every 60 seconds and each time the popup opens. Collapsed and
+hidden columns are saved on the widget's entry in `~/.config/omarchy/shell.json`
+(`collapsedColumns`, `hiddenColumns`). The popup never grows wider than the
+screen; a wide board scrolls sideways.
 
 ## Requirements
 
