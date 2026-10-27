@@ -1,72 +1,122 @@
 #!/usr/bin/env bash
-# Fetch a GitLab project's issues as board columns for the Omarchy bar widget.
-# Read-only: only `glab api` GET requests. Auth is glab's own credential store;
-# this script never reads, prints, or stores a token. stderr is discarded.
+# Data helper for the Omarchy GitLab Board widget. Prints one JSON object.
+# Read-only: only `glab api --method GET`. Auth stays in glab's own store; this
+# script never reads, prints, or stores a token, and glab's stderr is discarded.
 #
-# Usage: board-fetch [--project group/name] [--hostname gitlab.com]
-#        board-fetch --map OPEN.json CLOSED.json   # offline: map fixtures only
+#   board-fetch [board] [--project P] [--board ID]  columns of a board (default)
+#   board-fetch projects                            projects you are a member of
+#   board-fetch boards --project P                  boards of a project
+#   board-fetch issue --project P --iid N           one issue with its description
+#
+# P is a project path (group/name) or numeric id. --hostname defaults to gitlab.com.
 set -uo pipefail
 
-project="firelink21/phrase41"
-hostname="gitlab.com"
-map_open="" map_closed=""
-
-emit() { # state message
-  jq -cn --arg s "$1" --arg m "$2" '{state:$s,message:$m,updatedAt:(now|todateiso8601),columns:[]}'
-}
-
+cmd=board project="firelink21/phrase41" board_id="" iid="" hostname="gitlab.com"
+case "${1:-}" in board|projects|boards|issue) cmd=$1; shift ;; esac
 while (($#)); do
   case "$1" in
-    --project) project=${2:-}; shift 2 || shift ;;
-    --hostname) hostname=${2:-}; shift 2 || shift ;;
-    --map) map_open=${2:-}; map_closed=${3:-}; shift 3 || shift $# ;;
-    *) shift ;;
+    --project) project=${2:-} ;;
+    --board) board_id=${2:-} ;;
+    --iid) iid=${2:-} ;;
+    --hostname) hostname=${2:-} ;;
   esac
+  shift $(($# >= 2 ? 2 : 1))
 done
 
-command -v jq >/dev/null 2>&1 || { printf '%s\n' '{"state":"error","message":"jq is required.","updatedAt":"","columns":[]}'; exit 0; }
-
-# Open issue -> furthest-along workflow label; closed -> "closed";
-# open with no workflow label -> "unlabeled" (the widget hides it when empty).
-read -r -d '' MAP <<'JQ'
-def row: {iid, title, labels: (.labels // []), url: .web_url};
-def column:
-  ["review", "in progress", "approved", "todo", "research"] as $order
-  | (.labels // []) as $l
-  | ([$order[] | select(. as $o | $l | index($o))] | first) // "unlabeled";
-($open | map(select(.state == "opened"))) as $o
-| {state: "ready", message: "", updatedAt: (now | todateiso8601),
-   columns: (
-     [("research", "todo", "approved", "in progress", "review") as $n
-       | {name: $n, issues: [$o[] | select(column == $n) | row]}]
-     + [{name: "closed", issues: [$closed[] | row]}]
-     + [{name: "unlabeled", issues: [$o[] | select(column == "unlabeled") | row]}])}
-JQ
-
-build() { # open-file closed-file
-  jq -cn --slurpfile open "$1" --slurpfile closed "$2" \
-    '($open | add // []) as $open | ($closed | add // []) as $closed | '"$MAP"
-}
-
-if [[ -n $map_open ]]; then
-  build "$map_open" "$map_closed" 2>/dev/null || emit error "Could not map fixture files."
+emit() { # state message
+  jq -cn --arg s "$1" --arg m "$2" '{state:$s,message:$m,updatedAt:(now|todateiso8601)}'
   exit 0
+}
+command -v jq >/dev/null 2>&1 || { printf '%s\n' '{"state":"error","message":"jq is required."}'; exit 0; }
+
+[[ $project =~ ^[0-9]+$ || ($project =~ ^[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)+$ && $project != *..*) ]] ||
+  emit error "Invalid project: $project"
+[[ $board_id =~ ^[0-9]*$ ]] || emit error "Invalid board id."
+[[ $cmd != issue || $iid =~ ^[0-9]+$ ]] || emit error "Invalid issue number."
+[[ $hostname =~ ^[A-Za-z0-9][A-Za-z0-9.-]*(:[0-9]+)?$ ]] || emit error "Invalid GitLab hostname."
+command -v glab >/dev/null 2>&1 || emit error "GitLab CLI (glab) is not installed or not on PATH."
+glab auth status --hostname "$hostname" >/dev/null 2>&1 || emit logged-out "Not signed in. Run: glab auth login --hostname $hostname"
+
+tmp=$(mktemp -d) || emit error "Could not create a temporary directory."
+trap 'rm -rf "$tmp"' EXIT
+api() { glab api --hostname "$hostname" --method GET "$@" 2>/dev/null; }
+base="projects/$(jq -rn --arg p "$project" '$p | @uri')"
+
+case $cmd in
+  projects)
+    api "projects?membership=true&simple=true&order_by=last_activity_at&per_page=100" >"$tmp/p" || emit error "Could not load projects."
+    jq -c '{state: "ready", message: "", projects: [.[] | {id, path: .path_with_namespace}]}' "$tmp/p" 2>/dev/null ||
+      emit error "GitLab returned an unreadable response."
+    exit 0 ;;
+  boards)
+    api --paginate "$base/boards?per_page=100" >"$tmp/b" || emit error "Could not load boards for $project."
+    jq -cs '{state: "ready", message: "", boards: [add // [] | .[] | {id, name}]}' "$tmp/b" 2>/dev/null ||
+      emit error "GitLab returned an unreadable response."
+    exit 0 ;;
+  issue)
+    api "$base/issues/$iid" >"$tmp/i" || emit error "Could not load issue #$iid."
+    jq -c '{state: "ready", message: "", issue: {iid, title, state, labels: (.labels // []), url: .web_url,
+      description: (.description // ""), author: (.author.username // ""), milestone: (.milestone.title // ""),
+      assignees: [(.assignees // [])[].username], createdAt: .created_at, updatedAt: .updated_at}}' "$tmp/i" 2>/dev/null ||
+      emit error "GitLab returned an unreadable response."
+    exit 0 ;;
+esac
+
+# --- board -----------------------------------------------------------------
+# One call returns every board with its lists (GET /projects/:id/boards).
+api --paginate "$base/boards?per_page=100" >"$tmp/boards" || emit error "Could not load boards for $project."
+jq -cs --arg want "$board_id" 'add // [] | (map(select((.id | tostring) == $want)) + .)[0] // null' \
+  "$tmp/boards" >"$tmp/board" 2>/dev/null || emit error "GitLab returned an unreadable response."
+
+# Board scope (Premium) becomes issue filters, so the columns match GitLab.
+scope=$(jq -r 'if . == null then "" else [
+    (if (.labels // []) | length > 0 then "labels=" + ([.labels[].name] | join(",") | @uri) else empty end),
+    (if .milestone.title then "milestone=" + (.milestone.title | @uri) else empty end),
+    (if .assignee.id then "assignee_id=\(.assignee.id)" else empty end),
+    (if (.weight | type) == "number" and .weight >= 0 then "weight=\(.weight)" else empty end)
+  ] | map("&" + .) | join("") end' "$tmp/board")
+hide_closed=$(jq -r '.hide_closed_list // false' "$tmp/board")
+
+api --paginate "$base/issues?state=opened&scope=all&order_by=relative_position&sort=asc&per_page=100$scope" >"$tmp/open" ||
+  emit error "Could not load open issues for $project."
+if [[ $hide_closed == true ]]; then
+  echo '[]' >"$tmp/closed"
+else
+  api "$base/issues?state=closed&scope=all&order_by=updated_at&sort=desc&per_page=20$scope" >"$tmp/closed" ||
+    emit error "Could not load closed issues for $project."
 fi
 
-[[ $project =~ ^[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)+$ ]] || { emit error "Invalid project path: $project"; exit 0; }
-[[ $hostname =~ ^[A-Za-z0-9][A-Za-z0-9.-]*(:[0-9]+)?$ ]] || { emit error "Invalid GitLab hostname."; exit 0; }
-command -v glab >/dev/null 2>&1 || { emit error "GitLab CLI (glab) is not installed or not on PATH."; exit 0; }
-glab auth status --hostname "$hostname" >/dev/null 2>&1 || { emit logged-out "Not signed in. Run: glab auth login --hostname $hostname"; exit 0; }
-
-tmp=$(mktemp -d) || { emit error "Could not create a temporary directory."; exit 0; }
-trap 'rm -rf "$tmp"' EXIT
-base="projects/$(jq -rn --arg p "$project" '$p | @uri')/issues"
-
-glab api --hostname "$hostname" --method GET --paginate \
-  "$base?state=opened&per_page=100" >"$tmp/open" 2>/dev/null ||
-  { emit error "Could not load open issues for $project."; exit 0; }
-glab api --hostname "$hostname" --method GET \
-  "$base?state=closed&order_by=updated_at&sort=desc&per_page=20" >"$tmp/closed" 2>/dev/null ||
-  { emit error "Could not load closed issues for $project."; exit 0; }
-
-build "$tmp/open" "$tmp/closed" 2>/dev/null || emit error "GitLab returned an unreadable response."
+# GitLab's rules (docs.gitlab.com/user/project/issue_board/#issue-board-terminology):
+# Open = open issues in no other list; a label list = open issues with that label
+# (an issue with two list labels shows in both); Closed = closed issues.
+# Without a board, fall back to workflow labels (furthest along wins).
+read -r -d '' MAP <<'JQ'
+def row: {iid, title, labels: (.labels // []), url: .web_url};
+def has_any($names): [.labels[] | select(IN($names[]))] | length > 0;
+$b[0] as $board | ($o | add // [] | map(select(.state == "opened"))) as $open | ($c | add // []) as $closed
+| {state: "ready", updatedAt: (now | todateiso8601), project: $project,
+   boards: ($all | add // [] | map({id, name})),
+   board: (if $board then {id: $board.id, name: $board.name} else null end), fallback: ($board == null)}
++ if $board == null then
+    ["review", "in progress", "approved", "todo", "research"] as $rank
+    | {message: "No boards in this project: showing workflow label columns.",
+       columns: ([$rank | reverse[] as $n | {name: $n, kind: "label", issues: [$open[]
+                   | . as $i | select(([$rank[] | select(. as $l | $i.labels | index($l))] | first) == $n) | row]}]
+         + [{name: "Closed", kind: "closed", issues: [$closed[] | row]}]
+         + [{name: "Unlabeled", kind: "open", issues: [$open[] | select(has_any($rank) | not) | row]}])}
+  else
+    ($board.lists // [] | sort_by(.position)) as $lists
+    | [$lists[] | .label.name // empty] as $listLabels
+    | {message: (if $want != "" and ($board.id | tostring) != $want then "Saved board not found: showing \($board.name)." else "" end),
+       columns: (
+         (if $board.hide_backlog_list then [] else
+           [{name: "Open", kind: "open", issues: [$open[] | select(has_any($listLabels) | not) | row]}] end)
+         + [$lists[] | if .label then
+               .label.name as $l | {name: $l, kind: "label", issues: [$open[] | select(.labels | index($l)) | row]}
+             else {name: (.assignee.username // .milestone.title // .iteration.title // .status.name // "List"),
+                   kind: "other", note: "This list type is not supported yet.", issues: []} end]
+         + (if $board.hide_closed_list then [] else [{name: "Closed", kind: "closed", issues: [$closed[] | row]}] end))}
+  end
+JQ
+jq -cn --slurpfile b "$tmp/board" --slurpfile all "$tmp/boards" --slurpfile o "$tmp/open" --slurpfile c "$tmp/closed" \
+  --arg want "$board_id" --arg project "$project" "$MAP" 2>/dev/null || emit error "GitLab returned an unreadable response."

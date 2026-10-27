@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "id": "odevvy.gitlab-board",
   "name": "GitLab Board",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "author": "o_devvy",
   "license": "MIT",
-  "description": "A GitLab issue board for one project in a bar popup: research, todo, approved, in progress, review, closed.",
+  "description": "A GitLab issue board in a bar popup: your project's real boards, issue details, and a board picker.",
   "kinds": [
     "bar-widget"
   ],
@@ -14,22 +14,27 @@
   },
   "barWidget": {
     "displayName": "GitLab Board",
-    "description": "Shows a GitLab project's issues as board columns. Click an issue to open it in the browser.",
+    "description": "Shows a GitLab board's lists as columns. Click an issue for its details; switch project and board from the popup.",
     "category": "Development",
     "allowMultiple": false,
     "defaultSection": "right",
     "defaults": {
-      "project": "firelink21/phrase41",
+      "defaultProject": "firelink21/phrase41",
+      "defaultBoardId": "",
+      "defaultBoardName": "",
       "refreshIntervalSec": 60,
-      "collapsedColumns": [],
-      "hiddenColumns": []
+      "defaultCollapsed": [
+        "closed",
+        "research"
+      ],
+      "boardStates": {}
     },
     "schema": [
       {
-        "key": "project",
+        "key": "defaultProject",
         "type": "string",
-        "label": "GitLab project",
-        "description": "Full project path, e.g. group/project",
+        "label": "Default GitLab project",
+        "description": "Project opened on shell start, e.g. group/project. Star a board in the picker to change the default board.",
         "defaultValue": "firelink21/phrase41"
       },
       {
@@ -40,82 +45,6 @@
         "max": 3600,
         "step": 30,
         "defaultValue": 60
-      },
-      {
-        "key": "collapsedColumns",
-        "type": "multiselect",
-        "label": "Collapsed columns",
-        "description": "Columns shown as a narrow strip. Click a column header in the popup to toggle.",
-        "noSelectionText": "None",
-        "options": [
-          {
-            "value": "research",
-            "label": "research"
-          },
-          {
-            "value": "todo",
-            "label": "todo"
-          },
-          {
-            "value": "approved",
-            "label": "approved"
-          },
-          {
-            "value": "in progress",
-            "label": "in progress"
-          },
-          {
-            "value": "review",
-            "label": "review"
-          },
-          {
-            "value": "closed",
-            "label": "closed"
-          },
-          {
-            "value": "unlabeled",
-            "label": "unlabeled"
-          }
-        ],
-        "defaultValue": []
-      },
-      {
-        "key": "hiddenColumns",
-        "type": "multiselect",
-        "label": "Hidden columns",
-        "description": "Columns left out of the board. Use the chips in the popup header to toggle.",
-        "noSelectionText": "None",
-        "options": [
-          {
-            "value": "research",
-            "label": "research"
-          },
-          {
-            "value": "todo",
-            "label": "todo"
-          },
-          {
-            "value": "approved",
-            "label": "approved"
-          },
-          {
-            "value": "in progress",
-            "label": "in progress"
-          },
-          {
-            "value": "review",
-            "label": "review"
-          },
-          {
-            "value": "closed",
-            "label": "closed"
-          },
-          {
-            "value": "unlabeled",
-            "label": "unlabeled"
-          }
-        ],
-        "defaultValue": []
       }
     ]
   }
