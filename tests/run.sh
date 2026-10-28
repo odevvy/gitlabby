@@ -135,7 +135,7 @@ body_is() { # name expected-json args...
 }
 at opened '["todo","app-ui"]'
 body_is "M label->label" '{"add_labels":"approved","remove_labels":"todo"}' --from 11 --to 12
-check "M label->label message" '.message == "Moved #3 to approved." and .issue == {"iid":3,"state":"opened","labels":["approved","app-ui"]}' "$(mv_ --from 11 --to 12)"
+check "M label->label message" '.message == "Moved #3 to approved."' "$(mv_ --from 11 --to 12)"
 body_is "M label->closed" '{"state_event":"close"}' --from 11 --to closed
 at opened '["app-ui"]'
 body_is "M open->label" '{"add_labels":"todo"}' --from open --to 11

@@ -64,6 +64,17 @@ trap 'rm -rf "$tmp"' EXIT
 get() { glab api --hostname "$hostname" --method GET "$@" 2>/dev/null; }
 base="projects/$(jq -rn --arg p "$project" '$p | @uri')"
 
+# jq helpers shared by the programs below.
+read -r -d '' DEFS <<'JQ'
+# Label names, whether GitLab sent names or label objects (with_labels_details).
+def names: [(.labels // [])[] | if type == "object" then .name else . end | strings];
+# Avatars only over https, so nothing loads in the clear.
+def https: if type == "string" and test("^https://") then . else "" end;
+# GitLab's error message for a failed write: one line, anything token-shaped redacted.
+def reason: (.message // .error // empty) | (if type == "string" then . else tojson end)
+  | gsub("\\p{Cc}"; "") | gsub("(gl[a-z]{2,6}-|[Bb]earer +)[A-Za-z0-9_.=-]+"; "[redacted]") | .[0:120];
+JQ
+
 case $cmd in
   projects)
     get "projects?membership=true&simple=true&order_by=last_activity_at&per_page=100" >"$tmp/p" || emit error "Could not load projects."
@@ -85,10 +96,9 @@ case $cmd in
   notes)
     # Newest 100 notes (GitLab's page maximum); comments only, oldest first.
     get "$base/issues/$iid/notes?sort=desc&order_by=created_at&per_page=100" >"$tmp/n" || emit error "Could not load comments."
-    jq -c --argjson iid "$iid" 'select(type == "array") | {state: "ready", message: "", iid: $iid, more: (length >= 100),
+    jq -c --argjson iid "$iid" "$DEFS"' select(type == "array") | {state: "ready", message: "", iid: $iid, more: (length >= 100),
       notes: [reverse[] | select(.system != true) | {id, body: (.body // ""), createdAt: .created_at,
-        author: {username: (.author.username // ""), name: (.author.name // .author.username // ""),
-          avatar: (.author.avatar_url | if type == "string" and test("^https://") then . else "" end)}}]}' "$tmp/n" 2>/dev/null |
+        author: {username: (.author.username // ""), name: (.author.name // .author.username // ""), avatar: (.author.avatar_url | https)}}]}' "$tmp/n" 2>/dev/null |
       grep . || emit error "GitLab returned an unreadable response."
     exit 0 ;;
   comment)
@@ -97,8 +107,7 @@ case $cmd in
       glab api --hostname "$hostname" --method POST --header "Content-Type: application/json" --input - "$base/issues/$iid/notes" 2>/dev/null
     }
     if ! printf '%s' "$note" | write_note >"$tmp/r"; then
-      reason=$(jq -r '(.message // .error // empty) | (if type == "string" then . else tojson end)
-        | gsub("\\p{Cc}"; "") | gsub("(gl[a-z]{2,6}-|[Bb]earer +)[A-Za-z0-9_.=-]+"; "[redacted]") | .[0:120]' "$tmp/r" 2>/dev/null)
+      reason=$(jq -r "$DEFS reason" "$tmp/r" 2>/dev/null)
       emit error "Comment failed${reason:+: $reason}"
     fi
     jq -c 'select(type == "object" and (.id | type) == "number")
@@ -129,7 +138,7 @@ def list($spec):
 # Is the issue in list $l now? Same rules as the board: Closed = closed; a label
 # list = open with that label; Open = open with none of the board's list labels.
 def holds($l; $listLabels):
-  [(.labels // [])[] | if type == "object" then .name else . end | strings] as $names
+  names as $names
   | if $l.kind == "closed" then .state == "closed"
     elif .state != "opened" then false
     elif $l.kind == "label" then $names | index($l.name) != null
@@ -146,7 +155,7 @@ list($from) as $f | list($to) as $t
      to: $t.name}
   end end
 JQ
-    jq -c --arg from "$from" --arg to "$to" --argjson iid "$iid" --slurpfile i "$tmp/i" "$PLAN" "$tmp/b" >"$tmp/plan" 2>/dev/null ||
+    jq -c --arg from "$from" --arg to "$to" --argjson iid "$iid" --slurpfile i "$tmp/i" "$DEFS $PLAN" "$tmp/b" >"$tmp/plan" 2>/dev/null ||
       emit error "GitLab returned an unreadable response."
     err=$(jq -r '.err // empty' "$tmp/plan")
     [[ -z $err ]] || emit error "$err"
@@ -158,14 +167,11 @@ JQ
       glab api --hostname "$hostname" --method PUT --header "Content-Type: application/json" --input - "$base/issues/$iid" 2>/dev/null
     }
     if ! jq -c '.body' "$tmp/plan" | write_issue >"$tmp/r"; then
-      # GitLab's own message, one line, anything token-shaped redacted.
-      reason=$(jq -r '(.message // .error // empty) | (if type == "string" then . else tojson end)
-        | gsub("\\p{Cc}"; "") | gsub("(gl[a-z]{2,6}-|[Bb]earer +)[A-Za-z0-9_.=-]+"; "[redacted]") | .[0:120]' "$tmp/r" 2>/dev/null)
+      reason=$(jq -r "$DEFS reason" "$tmp/r" 2>/dev/null)
       emit error "Move failed${reason:+: $reason}"
     fi
     jq -c --argjson iid "$iid" --slurpfile plan "$tmp/plan" 'select(type == "object" and .iid == $iid)
-      | {state: "ready", message: "Moved #\(.iid) to \($plan[0].to).", updatedAt: (now | todateiso8601),
-         issue: {iid, state, labels: [(.labels // [])[] | if type == "object" then .name else . end | strings]}}' "$tmp/r" 2>/dev/null |
+      | {state: "ready", message: "Moved #\(.iid) to \($plan[0].to).", updatedAt: (now | todateiso8601)}' "$tmp/r" 2>/dev/null |
       grep . || emit error "GitLab returned an unexpected response to the move."
     exit 0 ;;
 esac
@@ -202,10 +208,8 @@ fi
 # one labelColors map and rows keep plain label names.
 read -r -d '' MAP <<'JQ'
 def hex: if type == "string" and test("^#[0-9A-Fa-f]{6}$") then . else null end;
-def names: [(.labels // [])[] | if type == "object" then .name else . end | strings];
 def row: {iid, title, labels: names, url: .web_url, createdAt: .created_at, notes: (.user_notes_count // 0),
-  assignees: [(.assignees // [])[] | {username, name: (.name // .username),
-    avatar: (.avatar_url | if type == "string" and test("^https://") then . else "" end)}]};
+  assignees: [(.assignees // [])[] | {username, name: (.name // .username), avatar: (.avatar_url | https)}]};
 def has_any($names): [.labels[] | select(IN($names[]))] | length > 0;
 $b[0] as $board | ($o | add // []) as $rawOpen | ($c | add // []) as $rawClosed
 | ([($rawOpen + $rawClosed)[] | (.labels // [])[] | objects] + [($board.lists // [])[] | .label | objects]
@@ -237,4 +241,4 @@ $b[0] as $board | ($o | add // []) as $rawOpen | ($c | add // []) as $rawClosed
   end
 JQ
 jq -cn --slurpfile b "$tmp/board" --slurpfile all "$tmp/boards" --slurpfile o "$tmp/open" --slurpfile c "$tmp/closed" \
-  --arg want "$board_id" --arg project "$project" "$MAP" 2>/dev/null || emit error "GitLab returned an unreadable response."
+  --arg want "$board_id" --arg project "$project" "$DEFS $MAP" 2>/dev/null || emit error "GitLab returned an unreadable response."
