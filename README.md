@@ -82,7 +82,8 @@ approved or review wakes the bots.
 The issue view lists the issue's comments under the description, oldest first,
 each with the author's avatar, name, age and text (shown as plain text, not
 Markdown). System notes such as "added ~approved label" are left out. The
-comments load each time you open the issue.
+comments load each time you open the issue; a small spinning icon next to
+**Comments** shows while they load.
 
 Under the thread is a box for a new comment. Click **Post** or press
 `Ctrl+Enter` to send it; `Shift+Enter` or `Enter` adds a line, and `Escape`
@@ -147,10 +148,19 @@ behind the popup shows through without blur.
 
 - The title, `group/project · Board ▾`, opens the picker. Pick a project (type
   to filter your 100 most recently active projects), then one of its boards.
-- Click an issue to see its details: state, labels, assignees, author,
-  milestone, and created and updated times (in your local time). Below that is
-  the description, rendered as Markdown, then the comments and a box to add one
-  (see "Comments"). The view also has an "Open in browser" link.
+- Click an issue to see its details. Its number and title show at once, with a
+  thin bar sliding under the title until the issue and its comments have
+  loaded. Under the state and labels is one line with the author and how long
+  ago it was created and updated, plus a second line with the assignees and
+  milestone when it has any. Below that is the description, then the comments
+  and a box to add one (see "Comments"). The view also has an "Open in
+  browser" link.
+- The description is GitLab Markdown drawn by the plugin: headings,
+  paragraphs, bold, italic, strikethrough, links, inline code and code blocks,
+  lists (including task lists), quotes, tables and rules. Raw HTML shows as
+  text, and images show as links, so nothing is loaded from the web. Anything
+  fancier (diagrams, math, references like `#62`) shows as plain text; open
+  the issue in the browser for those.
 - The gear opens the settings: which columns start collapsed, and the refresh
   interval.
 - Click a column header to collapse it to a narrow strip. Click a chip under
