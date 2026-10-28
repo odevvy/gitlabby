@@ -113,9 +113,121 @@ check "G logged out" '.state == "logged-out"' "$(FAKE_AUTH=no "$fetch")"
 rm -f "$FAKE_DIR/open.json"; fx boards <<<'[]'
 check "G api failure" '.state == "error"' "$("$fetch")"
 
-# --- safety: only GET, no token in any output -------------------------------
-check "only GET" '.' "$(grep -q 'NON-GET' "$FAKE_LOG" && echo false || echo true)"
-all=$("$fetch"; "$fetch" projects; "$fetch" issue --iid 45; FAKE_AUTH=no "$fetch")
+# --- M: move (the one write) -------------------------------------------------
+# Board 7: Open, label lists todo (11) / approved (12), an assignee list (13),
+# a list whose label has a comma (14), Closed.
+reset
+fx board <<'J'
+{"id":7,"name":"Dev","hide_backlog_list":false,"hide_closed_list":false,
+ "lists":[{"id":11,"position":0,"label":{"name":"todo"}},{"id":12,"position":1,"label":{"name":"approved"}},
+          {"id":13,"position":2,"label":null,"assignee":{"username":"alice"}},{"id":14,"position":3,"label":{"name":"a,b"}}]}
+J
+fx put <<<'{"iid":3,"state":"opened","labels":["approved","app-ui"]}'
+mv_() { "$fetch" move --project group/app --board 7 --iid 3 "$@"; }
+put() { sed -n 's/^PUT projects\/group%2Fapp\/issues\/3 //p' "$FAKE_LOG" | tail -n1; }
+puts() { grep -c '^PUT ' "$FAKE_LOG"; }
+body_is() { # name expected-json args...
+  local name=$1 want=$2; shift 2; : >"$FAKE_LOG"
+  local out; out=$(mv_ "$@")
+  check "$name ready" '.state == "ready"' "$out"
+  check "$name body" "(. | tojson) == ($want | tojson)" "$(put | jq -cS . 2>/dev/null || echo null)"
+}
+body_is "M label->label" '{"add_labels":"approved","remove_labels":"todo"}' --from 11 --to 12
+check "M label->label message" '.message == "Moved #3 to approved." and .issue == {"iid":3,"state":"opened","labels":["approved","app-ui"]}' "$(mv_ --from 11 --to 12)"
+body_is "M open->label" '{"add_labels":"todo"}' --from open --to 11
+body_is "M label->closed" '{"state_event":"close"}' --from 11 --to closed
+body_is "M open->closed" '{"state_event":"close"}' --from open --to closed
+body_is "M closed->label" '{"add_labels":"todo","state_event":"reopen"}' --from closed --to 11
+body_is "M closed->open" '{"state_event":"reopen"}' --from closed --to open
+body_is "M label->open" '{"remove_labels":"approved"}' --from 12 --to open
+: >"$FAKE_LOG"; mv_ --from 11 --to 12 >/dev/null
+check "M one PUT to the issue, after one GET of the board" '.' "$(grep -c '^api ' "$FAKE_LOG" | grep -qx 2 &&
+  grep -q '^api --hostname gitlab.com --method GET projects/group%2Fapp/boards/7$' "$FAKE_LOG" &&
+  grep -q '^api --hostname gitlab.com --method PUT --header Content-Type: application/json --input - projects/group%2Fapp/issues/3$' "$FAKE_LOG" &&
+  [[ $(puts) == 1 ]] && ! grep -q BAD-WRITE "$FAKE_LOG" && echo true || echo false)"
+
+# Rejections: each must fail before any write.
+rejects() { # name args... (expects state error and no PUT)
+  local name=$1; shift; : >"$FAKE_LOG"
+  local out; out=$("$fetch" move "$@")
+  check "$name" '.state == "error"' "$out"
+  check "$name: no write" '.' "$(grep -q NON-GET "$FAKE_LOG" && echo false || echo true)"
+}
+rejects "MV same list" --project group/app --board 7 --iid 3 --from 11 --to 11
+rejects "MV same default list" --project group/app --board 7 --iid 3 --from closed --to closed
+rejects "MV into assignee list" --project group/app --board 7 --iid 3 --from 11 --to 13
+rejects "MV from assignee list" --project group/app --board 7 --iid 3 --from 13 --to 11
+rejects "MV list not on board" --project group/app --board 7 --iid 3 --from 11 --to 99
+rejects "MV label with comma" --project group/app --board 7 --iid 3 --from 11 --to 14
+rejects "MV iid with ;" --project group/app --board 7 --iid '3;x' --from 11 --to 12
+rejects "MV iid empty" --project group/app --board 7 --iid '' --from 11 --to 12
+rejects "MV iid negative" --project group/app --board 7 --iid -3 --from 11 --to 12
+rejects "MV iid zero" --project group/app --board 7 --iid 0 --from 11 --to 12
+rejects "MV iid with newline" --project group/app --board 7 --iid $'3\n4' --from 11 --to 12
+rejects "MV no board" --project group/app --iid 3 --from 11 --to 12
+rejects "MV board not numeric" --project group/app --board '7&x=1' --iid 3 --from 11 --to 12
+rejects "MV bad project" --project 'group/app/../x' --board 7 --iid 3 --from 11 --to 12
+rejects "MV project with ?" --project 'group/app?x=1' --board 7 --iid 3 --from 11 --to 12
+rejects "MV label name as list" --project group/app --board 7 --iid 3 --from 11 --to approved
+rejects "MV label: prefix" --project group/app --board 7 --iid 3 --from 11 --to 'label:approved'
+rejects "MV list injection" --project group/app --board 7 --iid 3 --from 11 --to '12,13'
+# shellcheck disable=SC2016 # a literal $(id), on purpose
+rejects "MV command substitution" --project group/app --board 7 --iid 3 --from 11 --to '$(id)'
+rejects "MV @file" --project group/app --board 7 --iid 3 --from 11 --to '@/etc/passwd'
+rejects "MV missing to" --project group/app --board 7 --iid 3 --from 11
+check "MV injection never ran glab api" '.' "$(: >"$FAKE_LOG"; "$fetch" move --project group/app --board 7 --iid '3;x' --from 11 --to 12 >/dev/null
+  grep -q '^api' "$FAKE_LOG" && echo false || echo true)"
+check "MV assignee list message" '.message == "Only label lists can be moved between."' "$("$fetch" move --project group/app --board 7 --iid 3 --from 11 --to 13)"
+check "MV list injection never ran glab api" '.' "$(: >"$FAKE_LOG"; "$fetch" move --project group/app --board 7 --iid 3 --from 11 --to '12,13' >/dev/null
+  grep -q '^api' "$FAKE_LOG" && echo false || echo true)"
+fx board <<<'{"id":7,"name":"Dev","hide_backlog_list":true,"hide_closed_list":true,"lists":[{"id":11,"label":{"name":"todo"}}]}'
+rejects "MV hidden Closed list" --project group/app --board 7 --iid 3 --from 11 --to closed
+rejects "MV hidden Open list" --project group/app --board 7 --iid 3 --from open --to 11
+rm -f "$FAKE_DIR/board.json"
+rejects "MV board fetch fails" --project group/app --board 7 --iid 3 --from 11 --to 12
+
+# GitLab refuses or answers oddly.
+fx board <<<'{"id":7,"name":"Dev","lists":[{"id":11,"label":{"name":"todo"}},{"id":12,"label":{"name":"approved"}}]}'
+fx put-error <<<'{"message":"403 Forbidden glpat-LEAKLEAKLEAK Bearer abc.def"}'
+out=$(FAKE_PUT=fail mv_ --from 11 --to 12)
+check "MF refused" '.state == "error" and (.message | startswith("Move failed: 403 Forbidden"))' "$out"
+check "MF refused: token redacted" '.' "$(grep -qiE 'glpat-|LEAK|abc\.def' <<<"$out" && echo false || echo true)"
+fx put-error <<<'{"message":{"labels":["is invalid"]}}'
+check "MF structured error" '.state == "error" and .message == "Move failed: {\"labels\":[\"is invalid\"]}"' "$(FAKE_PUT=fail mv_ --from 11 --to 12)"
+fx put-error <<<'{"message":"two\nlines\u0007 and a bell"}'
+check "MF control characters dropped" '.message == "Move failed: twolines and a bell"' "$(FAKE_PUT=fail mv_ --from 11 --to 12)"
+rm -f "$FAKE_DIR/put-error.json"
+check "MF no body" '.state == "error" and .message == "Move failed"' "$(FAKE_PUT=fail mv_ --from 11 --to 12)"
+fx put <<<'{"iid":4,"state":"opened","labels":[]}'
+check "MF wrong issue in answer" '.state == "error"' "$(mv_ --from 11 --to 12)"
+fx put <<<'not json'
+check "MF unreadable answer" '.state == "error"' "$(mv_ --from 11 --to 12)"
+check "MF logged out: no write" '.state == "logged-out"' "$(: >"$FAKE_LOG"; FAKE_AUTH=no mv_ --from 11 --to 12)"
+
+# --- R: reads are GET only ---------------------------------------------------
+# Runtime: every read command, including a refresh with a board, issues only
+# GETs. Structure: board-fetch has exactly one non-GET request, in write_issue(),
+# defined and called only inside the move branch.
+reset
+fx boards <<<'[{"id":7,"name":"Dev","lists":[{"id":11,"position":0,"label":{"name":"todo"}}]}]'
+fx open <<<'[{"iid":1,"title":"a","state":"opened","labels":["todo"],"web_url":"u"}]'
+fx closed <<<'[]'
+fx projects <<<'[{"id":1,"path_with_namespace":"a/b"}]'
+fx issue <<<'{"iid":1,"title":"a","state":"opened","labels":[],"web_url":"u"}'
+reads=$("$fetch"; "$fetch" board --project group/app --board 7; "$fetch" projects; "$fetch" boards --project a/b; "$fetch" issue --project a/b --iid 1)
+check "R refresh has listId" '.columns[1] | .name == "todo" and .listId == 11' "$("$fetch" --project group/app)"
+check "R reads ran" '.' "$(grep -c '^api ' "$FAKE_LOG" | grep -qxE '[0-9]{2,}' && echo true || echo false)"
+check "R reads are GET only" '.' "$(grep -q 'NON-GET' "$FAKE_LOG" && echo false || echo true)"
+check "R every api call says --method GET" '.' "$(grep '^api ' "$FAKE_LOG" | grep -qv -- '--method GET ' && echo false || echo true)"
+src=$(grep -v '^ *#' "$fetch")
+check "R one non-GET in the script" '.' "$(grep -oE -- '--method [A-Z]+' <<<"$src" | sort | tr '\n' ' ' | grep -qx -- '--method GET --method PUT ' && echo true || echo false)"
+check "R glab api only in get() and write_issue()" '.' "$(grep -c 'glab api' <<<"$src" | grep -qx 2 && echo true || echo false)"
+check "R write_issue only inside move" '.' "$(awk '/^  move\)/{m=1} /^    exit 0 ;;/{if(m)m=2} /write_issue/{if(m!=1)bad=1} END{print bad?"false":"true"}' <<<"$src")"
+
+# --- safety: no token in any output --------------------------------------------
+fx board <<<'{"id":7,"name":"Dev","lists":[{"id":11,"label":{"name":"todo"}},{"id":12,"label":{"name":"approved"}}]}'
+fx put <<<'{"iid":3,"state":"opened","labels":["approved"]}'
+all=$(printf '%s\n' "$reads"; "$fetch"; "$fetch" projects; "$fetch" issue --iid 45; FAKE_AUTH=no "$fetch"; mv_ --from 11 --to 12; FAKE_PUT=fail mv_ --from 11 --to 12; mv_ --iid x)
 check "no token leak" '.' "$(grep -qiE 'glpat|bearer' <<<"$all" && echo false || echo true)"
 
 echo "passed $pass, failed $fail"
