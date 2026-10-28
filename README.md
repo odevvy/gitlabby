@@ -178,8 +178,10 @@ behind the popup shows through without blur.
 The board refreshes every 60 seconds (configurable) and each time the popup
 opens. While it loads, the refresh icon in the header spins; it finishes its
 turn and stops when the new data is in. The board stays usable during a
-refresh. A wide board scrolls sideways. A tall one scrolls down, and every
-column, collapsed strips too, stretches to the tallest so they end together.
+refresh. A refresh that comes due while you're holding or dragging a card
+waits until you let go, so the card can't change under the pointer. A wide
+board scrolls sideways. A tall one scrolls down, and every column, collapsed
+strips too, stretches to the tallest so they end together.
 
 ## Saved state
 

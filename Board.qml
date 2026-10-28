@@ -190,8 +190,10 @@ Panel {
     return decodeURIComponent(Qt.resolvedUrl("board-fetch").toString().replace(/^file:\/\//, ""))
   }
 
+  // Held back while a move is on its way or a card is pressed or dragged
+  // (new data would replace the card under the pointer); runs after.
   function refresh() {
-    if (fetchProcess.running || moving) { refreshQueued = true; return }
+    if (fetchProcess.running || moving || boardView.holding) { refreshQueued = true; return }
     loading = true
     fetchSeq = moveSeq
     fetchProcess.command = [helperPath(), "board", "--project", project, "--board", boardId]
@@ -205,7 +207,7 @@ Panel {
   function apply(raw) {
     var data = parse(raw)
     if (data.project && data.project !== project) return  // answer for a project we already left
-    if (moving || fetchSeq !== moveSeq) { refreshQueued = true; return }  // older than the latest move
+    if (moving || fetchSeq !== moveSeq || boardView.holding) { refreshQueued = true; return }  // older than the latest move, or mid-drag
     boardState = String(data.state || "error")
     message = String(data.message || "")
     updatedAt = String(data.updatedAt || "")
@@ -382,7 +384,7 @@ Panel {
   implicitWidth: button.implicitWidth
   implicitHeight: button.implicitHeight
 
-  onOpenedChanged: if (opened) { view = "board"; refresh() }
+  onOpenedChanged: if (opened) { view = "board"; refresh() } else boardView.endDrag()
 
   Timer {
     interval: root.refreshIntervalSec * 1000
@@ -515,7 +517,12 @@ Panel {
 
       Item {
         anchors { top: header.bottom; topMargin: root.gap; left: parent.left; right: parent.right; bottom: parent.bottom }
-        BoardView { id: boardView; host: root; anchors.fill: parent; visible: root.view === "board" && root.boardState === "ready" }
+        BoardView {
+          id: boardView; host: root; anchors.fill: parent; visible: root.view === "board" && root.boardState === "ready"
+          // A refresh that came due during the press runs on release, after a
+          // drop has started its move (refresh() then waits for the move).
+          onHoldingChanged: if (!holding) Qt.callLater(function() { if (root.refreshQueued) { root.refreshQueued = false; root.refresh() } })
+        }
         IssueView { id: issueView; host: root; anchors.fill: parent; visible: root.view === "issue" }
         Picker { id: picker; host: root; anchors.fill: parent; visible: root.view === "picker" }
         SettingsView { id: settingsView; host: root; anchors.fill: parent; visible: root.view === "settings" }
