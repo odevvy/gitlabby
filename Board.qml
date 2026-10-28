@@ -62,9 +62,6 @@ Panel {
 
   // Views and their data.
   property string view: "board"
-  property var issue: null
-  property bool issueLoading: false
-  property string issueError: ""
   property string pickerStep: "projects"
   property string pickerProject: ""
   property var projects: []
@@ -234,7 +231,7 @@ Panel {
     if (auxProcess.running) { pendingAux = { kind: kind, args: args }; return }
     auxKind = kind
     auxError = ""
-    auxLoading = kind !== "issue"
+    auxLoading = true
     auxProcess.command = [helperPath(), kind].concat(args)
     auxProcess.running = true
   }
@@ -242,17 +239,11 @@ Panel {
   function applyAux(raw) {
     var data = parse(raw)
     var error = data.state === "ready" ? "" : String(data.message || "Request failed.")
-    var kind = data.issue ? "issue" : data.projects ? "projects" : data.boards ? "boards" : auxKind
+    var kind = data.projects ? "projects" : data.boards ? "boards" : auxKind
     auxLoading = false
-    if (kind === "issue") {
-      issueLoading = false
-      issueError = error
-      if (!error && issue && data.issue && data.issue.iid === issue.iid) issue = data.issue
-    } else if (kind === "projects") {
-      auxError = error
-      projects = data.projects || []
-    } else if (kind === "boards") {
-      auxError = error
+    auxError = error
+    if (kind === "projects") projects = data.projects || []
+    else {
       var boards = data.boards || []
       pickerBoards = boards.length > 0 || error ? boards : [{ id: "", name: "Workflow labels (no boards)" }]
     }
@@ -268,11 +259,8 @@ Panel {
   function back() { showView("board") }
 
   function openIssue(row) {
-    issue = row
-    issueError = ""
-    issueLoading = true
+    issueView.issue = row  // the card at once; the view loads the rest
     showView("issue")
-    runAux("issue", ["--project", project, "--iid", String(row.iid)])
   }
 
   function openPicker() {

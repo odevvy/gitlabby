@@ -6,15 +6,21 @@ import "Logic.js" as Logic
 
 // One issue: title, state, labels, a one-line byline, the description as
 // Markdown, then its comments and a box to add one. Back (or Esc) returns to
-// the board. Comments load through `board-fetch notes` (GET); Post runs
-// `board-fetch comment` with the text on stdin.
+// the board. The issue and its comments load through `board-fetch issue` and
+// `board-fetch notes` (GET); Post runs `board-fetch comment` with the text on stdin.
 Item {
   id: view
   required property var host
-  readonly property var issue: host.issue || ({})
-  // The issue on screen ("" when hidden); its comments reload whenever it opens.
+  // The host sets the card's row; the full issue replaces it once loaded.
+  property var issue: ({})
+  // The issue on screen ("" when hidden); it and its comments reload whenever it opens.
   readonly property string key: visible && issue.iid ? host.project + "#" + issue.iid : ""
   property string shownKey: ""
+  property string issueFor: ""
+  property string issueReadyFor: ""
+  property string issueError: ""
+  property bool issueQueued: false
+  readonly property bool issueReady: key !== "" && issueReadyFor === key
   property var notes: []
   property bool more: false
   property bool notesLoading: false
@@ -28,7 +34,7 @@ Item {
   readonly property bool typing: box.activeFocus
   // The comment box opens only once the issue and its comments have arrived.
   property string notesReadyFor: ""
-  readonly property bool loaded: key !== "" && !host.issueLoading && notesReadyFor === key
+  readonly property bool loaded: issueReady && notesReadyFor === key
 
   // Styles for the description, which Logic.markdown turns into Text.RichText HTML.
   readonly property string css: "<style>"
@@ -45,8 +51,25 @@ Item {
       shownKey = key
       notes = []; more = false; notesError = ""; postError = ""; box.text = ""
     }
-    notesReadyFor = ""  // (re)opened: lock the box until this visit's notes arrive
+    // (Re)opened: lock the box until this visit's issue and notes arrive.
+    issueReadyFor = ""; issueError = ""; notesReadyFor = ""
+    loadIssue()
     loadNotes()
+  }
+
+  function loadIssue() {
+    if (key === "") return
+    if (issueProcess.running) { issueQueued = true; return }
+    issueFor = key
+    issueProcess.command = [host.helperPath(), "issue", "--project", host.project, "--iid", String(issue.iid)]
+    issueProcess.running = true
+  }
+  function issueDone(raw) {
+    if (issueFor !== key) return  // answer for an issue we already left
+    var data = host.parse(raw)
+    issueError = data.state === "ready" ? "" : String(data.message || "Request failed.")
+    if (data.state === "ready" && data.issue) issue = data.issue
+    issueReadyFor = key
   }
 
   function loadNotes() {
@@ -85,6 +108,11 @@ Item {
     loadNotes()
   }
 
+  Process {
+    id: issueProcess
+    onExited: if (view.issueQueued) { view.issueQueued = false; Qt.callLater(view.loadIssue) }
+    stdout: StdioCollector { waitForEnd: true; onStreamFinished: view.issueDone(text) }
+  }
   Process {
     id: notesProcess
     onExited: if (view.reloadQueued) { view.reloadQueued = false; Qt.callLater(view.loadNotes) }
@@ -170,8 +198,8 @@ Item {
 
       BoardText {
         width: parent.width; wrapMode: Text.Wrap
-        visible: view.host.issueLoading || view.host.issueError !== "" || !view.issue.description
-        text: view.host.issueLoading ? "Loading…" : (view.host.issueError || "No description.")
+        visible: !view.issueReady || view.issueError !== "" || !view.issue.description
+        text: !view.issueReady ? "Loading…" : (view.issueError || "No description.")
         color: view.host.dim; font.italic: true
       }
 
@@ -179,7 +207,7 @@ Item {
       Text {
         id: description
         width: parent.width; wrapMode: Text.Wrap
-        visible: !view.host.issueLoading && !!view.issue.description
+        visible: view.issueReady && !!view.issue.description
         textFormat: Text.RichText
         text: visible ? view.css + Logic.markdown(view.issue.description, function(t) { return metrics.advanceWidth(t) }, function(px) { return Style.space(px) }) : ""
         color: view.host.foreground
