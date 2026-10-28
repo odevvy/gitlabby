@@ -57,13 +57,40 @@ Other labels on the issue are never touched. This follows GitLab's table in
 - You can't drop onto assignee, milestone or other unsupported lists, and
   nothing can be moved on the workflow-label fallback (a project without
   boards). Dropping a card on its own column does nothing.
-- Only dropping a card writes. Refreshes, opening issues and the picker only
-  read.
+- Only dropping a card and posting a comment write. Refreshes, opening issues
+  and the picker only read.
 
 **Moves can set off automations.** Anything that watches labels or issue state
 (bots, webhooks, CI rules, GitLab triage policies) reacts to a move exactly as
 it would to a change on the website. On phrase41, moving an issue into
 approved or review wakes the bots.
+
+## Comments
+
+The issue view lists the issue's comments under the description, oldest first,
+each with the author's avatar, name, age and text (shown as plain text, not
+Markdown). System notes such as "added ~approved label" are left out. The
+comments load each time you open the issue.
+
+Under the thread is a box for a new comment. Click **Post** or press
+`Ctrl+Enter` to send it; `Shift+Enter` or `Enter` adds a line, and `Escape`
+leaves the box (a second `Escape` goes back to the board).
+
+- **Posting writes to GitLab as you.** The comment appears under your name,
+  sends the usual notifications, and wakes anything that watches comments
+  (webhooks, bots). It needs a `glab` token with the `api` scope; a
+  read-only token gets a `403`.
+- While a comment is on its way the box and button are disabled. When GitLab
+  accepts it, the box clears and the thread reloads. When it fails, your text
+  stays in the box and the reason shows in red under it.
+- Empty or whitespace-only comments are never sent.
+- Going back and reopening the same issue keeps an unsent draft; opening
+  another issue clears it.
+- The thread shows the newest 100 notes (one GitLab page, system notes
+  included in that count). If there are more, it says so; open the issue in
+  the browser for the rest.
+- Edit, delete, replies to a thread, and Markdown preview are not supported;
+  use GitLab for those.
 
 ### Trying it on a sandbox project first
 
@@ -110,8 +137,8 @@ behind the popup shows through without blur.
   to filter your 100 most recently active projects), then one of its boards.
 - Click an issue to see its details: state, labels, assignees, author,
   milestone, and created and updated times (in your local time). Below that is
-  the description, rendered as Markdown. The view also has an "Open in browser"
-  link.
+  the description, rendered as Markdown, then the comments and a box to add one
+  (see "Comments"). The view also has an "Open in browser" link.
 - The gear opens the settings: which columns start collapsed, and the refresh
   interval.
 - Click a column header to collapse it to a narrow strip. Click a chip under
@@ -123,7 +150,8 @@ behind the popup shows through without blur.
 | Left-click the icon | Open or close the popup |
 | Right- or middle-click the icon | Refresh |
 | Refresh button, or `r` on the board | Refresh |
-| `Escape` | Go back to the board; on the board, close |
+| `Ctrl+Enter` in the comment box | Post the comment |
+| `Escape` | Leave the comment box; otherwise go back to the board; on the board, close |
 
 The board refreshes every 60 seconds (configurable) and each time the popup
 opens. A wide board scrolls sideways.
@@ -157,9 +185,10 @@ afterwards, it stays expanded.
 - A Nerd Font (Omarchy ships one)
 
 `glab` handles all authentication. Every read is a `glab api --method GET`
-request. The one write is a single `PUT` to the issue when you drop a card on
-another column; it needs a token with the `api` scope (what `glab auth login`
-asks for by default). The plugin never reads, stores, or prints a token, and
+request. There are two writes: a single `PUT` to the issue when you drop a card
+on another column, and a single `POST` to the issue's notes when you post a
+comment. Both need a token with the `api` scope (what `glab auth login` asks
+for by default). The plugin never reads, stores, or prints a token, and
 it discards glab's stderr.
 
 ## Install
@@ -186,8 +215,10 @@ omarchy bar set odevvy.gitlab-board refreshIntervalSec 120
 ./board-fetch projects                            # projects you are a member of
 ./board-fetch boards --project P                  # boards of a project
 ./board-fetch issue --project P --iid N           # one issue with its description
+./board-fetch notes --project P --iid N           # its comments, oldest first
 ./board-fetch move --project P --board ID --iid N --from L --to L
-                                                  # move an issue (the only write)
+                                                  # move an issue (a write)
+./board-fetch comment --project P --iid N <file   # post stdin as a comment (a write)
 # all of them accept --hostname HOST (default gitlab.com)
 ```
 
@@ -200,6 +231,16 @@ Closed list, labels with commas, a non-numeric issue), and only then sends one
 `state_event`. The body goes to glab on stdin as JSON, so glab never expands
 `@file` or `:placeholder` in it. All reads go through one GET-only function;
 `tests/run.sh` checks that no read command ever sends anything else.
+
+`notes` asks for the newest 100 notes (`sort=desc`, `per_page=100`, GitLab's
+page maximum), drops system notes, and returns the rest oldest first with
+`more: true` when the page was full. That's enough for v0.1.5; longer threads
+would need pagination.
+
+`comment` reads the comment from stdin, refuses it if it's empty or only
+whitespace (before any glab call), and sends one
+`POST /projects/:id/issues/:iid/notes` with `{"body": ...}` as JSON on glab's
+stdin. The text never goes on a command line or into a log.
 
 Requests per board refresh: one for the boards (which include their lists),
 the open issues (paginated), and one for the last 20 closed issues. The closed
@@ -216,6 +257,18 @@ omarchy plugin validate .
 ```
 
 Saving a file under `~/.config/omarchy/plugins/` reloads the plugin.
+
+## Roll back
+
+To go back to v0.1.4 (no comments), check out the previous version and update:
+
+```bash
+git checkout main   # or the v0.1.4 commit
+omarchy plugin update odevvy.gitlab-board
+omarchy-restart-shell
+```
+
+Comments you already posted stay on GitLab; delete them there if needed.
 
 ## Remove
 
