@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Controls
 import Quickshell
 import Quickshell.Io
 import qs.Commons
@@ -44,8 +43,7 @@ Panel {
   property var boardStates: setting("boardStates", ({})) || ({})
 
   // Board data from the last fetch.
-  property bool loading: false
-  property bool refreshQueued: false
+  readonly property bool loading: fetchProcess.running
   property string boardState: "loading"
   property string message: ""
   property string updatedAt: ""
@@ -75,17 +73,24 @@ Panel {
   property string auxKind: ""
   property var pendingAux: null
 
-  // Drag-to-move: one move at a time. The card moves at once (optimistic);
-  // the snapshot brings it back if GitLab refuses. moveSeq/fetchSeq drop any
-  // board answer that was requested before the latest move.
-  property bool moving: false
-  property int movingIid: -1
-  property var moveSnapshot: null
-  property string moveKey: ""
+  // Drag-to-move: one move at a time, { iid, snapshot, key } while on its way.
+  // The card moves at once (optimistic); the snapshot brings it back if GitLab
+  // refuses. moveSeq/fetchSeq drop any board answer requested before the latest move.
+  property var move: null
   property string moveError: ""
   property int moveSeq: 0
   property int fetchSeq: 0
   readonly property bool canMove: boardState === "ready" && !fallback && resolvedBoardId !== ""
+
+  // New board data would replace the card being moved or held under the
+  // pointer, so while held, board answers are dropped and refetched after.
+  readonly property bool held: move !== null || boardView.holding
+  // A refresh asked for while busy waits here and runs once nothing is busy.
+  readonly property bool busy: loading || held
+  property bool refreshQueued: false
+  // callLater: a drop starts its move (also callLater) before this runs.
+  onBusyChanged: if (!busy && refreshQueued) Qt.callLater(runQueued)
+  function runQueued() { if (refreshQueued) { refreshQueued = false; refresh() } }
 
   function lowerList(value) {
     var list = Array.isArray(value) ? value : String(value || "").split(",")
@@ -190,11 +195,8 @@ Panel {
     return decodeURIComponent(Qt.resolvedUrl("board-fetch").toString().replace(/^file:\/\//, ""))
   }
 
-  // Held back while a move is on its way or a card is pressed or dragged
-  // (new data would replace the card under the pointer); runs after.
   function refresh() {
-    if (fetchProcess.running || moving || boardView.holding) { refreshQueued = true; return }
-    loading = true
+    if (busy) { refreshQueued = true; return }
     fetchSeq = moveSeq
     fetchProcess.command = [helperPath(), "board", "--project", project, "--board", boardId]
     fetchProcess.running = true
@@ -207,7 +209,7 @@ Panel {
   function apply(raw) {
     var data = parse(raw)
     if (data.project && data.project !== project) return  // answer for a project we already left
-    if (moving || fetchSeq !== moveSeq || boardView.holding) { refreshQueued = true; return }  // older than the latest move, or mid-drag
+    if (held || fetchSeq !== moveSeq) { refreshQueued = true; return }  // mid-drag or mid-move, or older than the latest move
     boardState = String(data.state || "error")
     message = String(data.message || "")
     updatedAt = String(data.updatedAt || "")
@@ -244,12 +246,9 @@ Panel {
   }
 
   function moveIssue(row, from, to) {
-    if (moving || !row || !canDrop(from) || !canDrop(to) || columnKey(from) === columnKey(to)) return false
-    moveSnapshot = columns
-    moveKey = stateKey
-    movingIid = row.iid
+    if (move || !row || !canDrop(from) || !canDrop(to) || columnKey(from) === columnKey(to)) return false
+    move = { iid: row.iid, snapshot: columns, key: stateKey }
     moveError = ""
-    moving = true
     moveSeq++
     columns = movedColumns(row, from, to)
     moveProcess.command = [helperPath(), "move", "--project", project, "--board", resolvedBoardId,
@@ -260,21 +259,19 @@ Panel {
   }
 
   function moveDone(raw) {
-    if (!moving) return  // late answer after the watchdog gave up
+    if (!move) return  // late answer after the watchdog gave up
     moveWatchdog.stop()
     var data = parse(raw)
-    moving = false
-    movingIid = -1
     if (data.state !== "ready") {
-      if (moveSnapshot && moveKey === stateKey) columns = moveSnapshot
+      if (move.key === stateKey) columns = move.snapshot
       moveError = String(data.message || "Move failed.")
       moveErrorTimer.restart()
     }
-    moveSnapshot = null
     // Success, or a card that was out of date ("stale": board-fetch wrote
     // nothing): load the board as GitLab now has it. Other failures: only if a
-    // refresh was due.
-    if (data.state === "ready" || data.state === "stale" || refreshQueued) { refreshQueued = false; refresh() }
+    // refresh was due. It runs once the move is cleared (onBusyChanged).
+    if (data.state === "ready" || data.state === "stale") refreshQueued = true
+    move = null
   }
 
   function runAux(kind, args) {
@@ -371,7 +368,7 @@ Panel {
 
   function statusText() {
     if (moveError !== "") return moveError
-    if (moving) return "Moving #" + movingIid + "…"
+    if (move) return "Moving #" + move.iid + "…"
     if (boardState === "ready") {
       var time = updatedAt !== "" ? "Updated " + new Date(updatedAt).toLocaleTimeString(Qt.locale(), "HH:mm") : ""
       return message !== "" ? message + "  " + time : time
@@ -394,7 +391,6 @@ Panel {
 
   Process {
     id: fetchProcess
-    onExited: { root.loading = false; if (root.refreshQueued) { root.refreshQueued = false; Qt.callLater(root.refresh) } }
     stdout: StdioCollector { waitForEnd: true; onStreamFinished: root.apply(text) }
   }
 
@@ -491,7 +487,7 @@ Panel {
           horizontalAlignment: Text.AlignRight
           elide: Text.ElideLeft
           text: root.statusText()
-          color: root.moveError !== "" ? root.urgent : root.boardState === "ready" && root.message === "" && !root.moving ? root.dim : root.accent
+          color: root.moveError !== "" ? root.urgent : root.boardState === "ready" && root.message === "" && !root.move ? root.dim : root.accent
           font.pixelSize: Style.font.bodySmall
         }
         BoardText {
@@ -517,12 +513,7 @@ Panel {
 
       Item {
         anchors { top: header.bottom; topMargin: root.gap; left: parent.left; right: parent.right; bottom: parent.bottom }
-        BoardView {
-          id: boardView; host: root; anchors.fill: parent; visible: root.view === "board" && root.boardState === "ready"
-          // A refresh that came due during the press runs on release, after a
-          // drop has started its move (refresh() then waits for the move).
-          onHoldingChanged: if (!holding) Qt.callLater(function() { if (root.refreshQueued) { root.refreshQueued = false; root.refresh() } })
-        }
+        BoardView { id: boardView; host: root; anchors.fill: parent; visible: root.view === "board" && root.boardState === "ready" }
         IssueView { id: issueView; host: root; anchors.fill: parent; visible: root.view === "issue" }
         Picker { id: picker; host: root; anchors.fill: parent; visible: root.view === "picker" }
         SettingsView { id: settingsView; host: root; anchors.fill: parent; visible: root.view === "settings" }

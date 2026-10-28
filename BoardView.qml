@@ -161,7 +161,7 @@ Item {
                 readonly property var chips: (modelData.labels || []).filter(function(l) { return l !== column.modelData.name })
                 readonly property var assignees: modelData.assignees || []
                 readonly property bool hovered: cardMouse.containsMouse
-                readonly property bool movable: view.host.canDrop(column.modelData) && !view.host.moving
+                readonly property bool movable: view.host.canDrop(column.modelData) && !view.host.move
                 readonly property bool lifted: ghost.Drag.active && view.dragRow !== null && view.dragRow.iid === modelData.iid
                   && view.host.columnKey(view.dragFrom) === view.host.columnKey(column.modelData)
                 readonly property color fg: view.host.foreground
@@ -170,7 +170,7 @@ Item {
                 implicitHeight: cardText.implicitHeight + (chipFlow.visible ? chipFlow.implicitHeight + Style.space(6) : 0)
                   + footer.implicitHeight + Style.space(22)
                 radius: Style.space(6)
-                opacity: lifted || view.host.movingIid === modelData.iid ? 0.4 : column.modelData.kind === "closed" ? 0.65 : 1
+                opacity: lifted || (view.host.move !== null && view.host.move.iid === modelData.iid) ? 0.4 : column.modelData.kind === "closed" ? 0.65 : 1
                 color: Qt.rgba(fg.r, fg.g, fg.b, hovered ? 0.1 : 0.05)
                 border { width: 1; color: hovered ? column.tint : Qt.rgba(fg.r, fg.g, fg.b, 0.1) }
                 // Hover: lift by a couple of pixels and brighten.
