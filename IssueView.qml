@@ -5,8 +5,8 @@ import qs.Commons
 import "Logic.js" as Logic
 
 // One issue: title, state, labels, a one-line byline, the description as
-// Markdown, then its comments and a box to add one. Back (or Esc) returns to
-// the board. The issue and its comments load through `board-fetch issue` and
+// Markdown, then its comments and a box to add one. ✕ (or Esc) returns to the
+// board. The issue and its comments load through `board-fetch issue` and
 // `board-fetch notes` (GET); Post runs `board-fetch comment` with the text on stdin.
 Item {
   id: view
@@ -139,16 +139,17 @@ Item {
       width: parent.width - Style.space(8)
       spacing: Style.space(8)
 
-      Item {
-        width: parent.width
-        implicitHeight: back.implicitHeight
-        Pill { id: back; label: "‹ Back"; clickable: true; textColor: view.host.foreground; onClicked: view.host.back() }
+      Row {
+        // Out over the scroll bar gutter, so the ✕ sits under the gear.
+        anchors { right: parent.right; rightMargin: -Style.space(8) }
+        spacing: Style.space(8)
         Pill {
-          anchors.right: parent.right
+          anchors.verticalCenter: parent.verticalCenter
           visible: !!view.issue.url
           label: "Open in browser ↗"; clickable: true
           onClicked: view.host.openUrl(view.issue.url)
         }
+        GlyphButton { host: view.host; glyph: "\uf00d"; onClicked: view.host.back() }
       }
 
       BoardText {
