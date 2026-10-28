@@ -9,8 +9,19 @@ import qs.Commons
 Item {
   id: view
   required property var host
-  property var dragRow: null   // card being pressed or dragged, and its column
+  property var dragRow: null   // card being dragged, and its column
   property var dragFrom: null
+  // A card holds the mouse, from press to release. Meanwhile the host holds
+  // refreshes back: new data would replace the card mid-drag.
+  property bool holding: false
+
+  // Ends a press or drag without dropping; safe to call any number of times.
+  function endDrag() {
+    ghost.Drag.active = false
+    dragRow = null
+    dragFrom = null
+    holding = false
+  }
 
   // Every column is as tall as the tallest one's content (or the viewport, if
   // taller), so panes, strips and drop areas all run the full scroll length.
@@ -154,6 +165,7 @@ Item {
                 readonly property bool lifted: ghost.Drag.active && view.dragRow !== null && view.dragRow.iid === modelData.iid
                   && view.host.columnKey(view.dragFrom) === view.host.columnKey(column.modelData)
                 readonly property color fg: view.host.foreground
+                property bool pressing: false  // this card holds the mouse
                 width: cards.width
                 implicitHeight: cardText.implicitHeight + (chipFlow.visible ? chipFlow.implicitHeight + Style.space(6) : 0)
                   + footer.implicitHeight + Style.space(22)
@@ -165,6 +177,9 @@ Item {
                 transform: Translate { y: card.hovered ? -Style.space(2) : 0; Behavior on y { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } } }
                 Behavior on color { ColorAnimation { duration: 120 } }
                 Behavior on border.color { ColorAnimation { duration: 120 } }
+                // Safety net: if the board is rebuilt under a pressed card, it
+                // never gets the release, so clear the drag here.
+                Component.onDestruction: if (pressing) view.endDrag()
 
                 // Glass sheen along the top edge.
                 Rectangle {
@@ -227,7 +242,7 @@ Item {
                   // The Flickable must not take the press over; a drag starts
                   // once the pointer has moved past the threshold.
                   preventStealing: true
-                  onPressed: function(mouse) { pressedAt = Qt.point(mouse.x, mouse.y); dragged = false }
+                  onPressed: function(mouse) { pressedAt = Qt.point(mouse.x, mouse.y); dragged = false; card.pressing = true; view.holding = true }
                   onPositionChanged: function(mouse) {
                     if (!pressed) return
                     if (!dragged) {
@@ -243,8 +258,8 @@ Item {
                     ghost.y = p.y - pressedAt.y
                     ghost.Drag.active = true
                   }
-                  onReleased: if (dragged && ghost.Drag.active) { ghost.Drag.drop(); ghost.Drag.active = false }
-                  onCanceled: ghost.Drag.active = false
+                  onReleased: { if (dragged && ghost.Drag.active) ghost.Drag.drop(); card.pressing = false; view.endDrag() }
+                  onCanceled: { card.pressing = false; view.endDrag() }
                   onClicked: if (!dragged) view.host.openIssue(card.modelData)
                 }
               }
