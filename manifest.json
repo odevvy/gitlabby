@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "odevvy.gitlab-board",
   "name": "GitLab Board",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "author": "o_devvy",
   "license": "MIT",
   "description": "A GitLab issue board in a bar popup: your project's real boards in their label colors, assignees, issue details with comments, a board picker, and drag-to-move.",
