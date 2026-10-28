@@ -89,6 +89,7 @@ Item {
     if (data.state === "ready") { notes = data.notes || []; more = !!data.more; notesAt = new Date().toISOString() }
   }
 
+  function focusBox() { box.forceActiveFocus() }  // no-op while the box is disabled
   function post() {
     if (posting || !loaded || box.text.trim() === "") return
     posting = true

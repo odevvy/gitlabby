@@ -1,12 +1,14 @@
 import QtQuick
 import QtQuick.Controls
 import qs.Commons
+import qs.Ui
 import "Logic.js" as Logic
 
 // The board: chips to show or hide columns, then the columns. A column header
 // collapses its column to a strip; clicking a card opens the issue view.
 // Dragging a card past a small threshold drags a copy of it (the ghost); dropping
 // it on another column, expanded or collapsed, asks the host to move the issue.
+// The host's keyboard cursor lights its card like a hover and scrolls it into view.
 Item {
   id: view
   required property var host
@@ -30,6 +32,11 @@ Item {
     var m = 0
     for (var i = 0; i < board.children.length; i++) m = Math.max(m, board.children[i].contentHeight || 0)
     return m
+  }
+  function reveal(item) {
+    var p = item.mapToItem(board, 0, 0)
+    flick.contentX = Math.max(0, Math.min(Math.max(flick.contentX, p.x + item.width - flick.width), p.x, flick.contentWidth - flick.width))
+    flick.contentY = Math.max(0, Math.min(Math.max(flick.contentY, p.y + item.height - flick.height), p.y, flick.contentHeight - flick.height))
   }
   implicitHeight: chips.implicitHeight + host.gap + Math.max(tallest, Style.space(60))
 
@@ -67,6 +74,7 @@ Item {
         delegate: Item {
           id: column
           required property var modelData
+          required property int index
           readonly property bool isCollapsed: view.host.isCollapsed(modelData.name)
           readonly property var issues: modelData.issues || []
           readonly property color tint: view.host.columnAccent(modelData)
@@ -161,7 +169,9 @@ Item {
                 required property var modelData
                 readonly property var chips: (modelData.labels || []).filter(function(l) { return l !== column.modelData.name })
                 readonly property var assignees: modelData.assignees || []
-                readonly property bool hovered: cardMouse.containsMouse
+                readonly property bool keyed: view.host.cursor !== null && view.host.cursor.col === column.index && view.host.cursor.iid === modelData.iid
+                onKeyedChanged: if (keyed) Qt.callLater(view.reveal, card)
+                readonly property bool hovered: cardMouse.containsMouse || keyed
                 readonly property bool movable: view.host.canDrop(column.modelData) && !view.host.move
                 readonly property bool lifted: ghost.Drag.active && view.dragRow !== null && view.dragRow.iid === modelData.iid
                   && Logic.columnKey(view.dragFrom) === Logic.columnKey(column.modelData)
@@ -182,6 +192,7 @@ Item {
                 // never gets the release, so clear the drag here.
                 Component.onDestruction: if (pressing) view.endDrag()
 
+                CursorSurface { anchors.fill: parent; radius: card.radius; visible: card.keyed; hasCursor: true; foreground: card.fg; accent: view.host.accent }
                 // Glass sheen along the top edge.
                 Rectangle {
                   x: card.radius; y: 1; width: parent.width - card.radius * 2; height: 1
