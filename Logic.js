@@ -128,10 +128,52 @@ function markdown(md, advance, space) {
   return out.join("")
 }
 
+// The board's keyboard cursor, { col, row, iid }, over lanes: one array of
+// issue iids per shown column, null for a collapsed one. Moves skip collapsed
+// and empty columns and stop at the edges.
+function cursorMove(lanes, at, dx, dy) {
+  var c = cursorFix(lanes, at)
+  if (!c || dx === 0) return c && cursorAt(lanes, c.col, c.row + dy)
+  for (var i = c.col + dx; i >= 0 && i < lanes.length; i += dx)
+    if (lanes[i] && lanes[i].length) return cursorAt(lanes, i, c.row)
+  return c
+}
+// After the board changes: the same issue if it is still shown (its old
+// column first), else the nearest card to the old place; null if none.
+function cursorFix(lanes, at) {
+  var order = lanes.map(function(lane, i) { return i })
+    .sort(function(a, b) { return Math.abs(a - at.col) - Math.abs(b - at.col) || a - b })
+  var usable = order.filter(function(i) { return lanes[i] && lanes[i].length })
+  for (var k = 0; k < usable.length; k++) {
+    var row = lanes[usable[k]].indexOf(at.iid)
+    if (row !== -1) return cursorAt(lanes, usable[k], row)
+  }
+  return usable.length ? cursorAt(lanes, usable[0], at.row) : null
+}
+function cursorAt(lanes, col, row) {
+  var r = Math.max(0, Math.min(row, lanes[col].length - 1))
+  return { col: col, row: r, iid: lanes[col][r] }
+}
+
+// The popup's keys, shown by ? and listed in the README's Keyboard section.
+var keys = [
+  ["h j k l or arrows", "Move between cards; up and down in the picker"],
+  ["Enter or Space", "Open the selected issue; pick the selected row"],
+  ["o", "Open the issue in the browser"],
+  ["c", "Write a comment (issue view)"],
+  ["Ctrl+Enter", "Post the comment"],
+  ["r", "Refresh the board"],
+  ["p", "Choose a project and board"],
+  ["s", "Settings"],
+  ["?", "This list of keys"],
+  ["Tab or Shift+Tab", "Next or previous bar panel"],
+  ["Escape", "Leave the comment box; otherwise back to the board; on the board, close"]
+]
+
 if (typeof module !== "undefined") {
   module.exports = {
     lowerList: lowerList, has: has, toggled: toggled, escaped: escaped, labelStyle: labelStyle, age: age,
     columnKey: columnKey, listSpec: listSpec, movedColumns: movedColumns, byline: byline, people: people,
-    linkUrl: linkUrl, inline: inline, markdown: markdown
+    linkUrl: linkUrl, inline: inline, markdown: markdown, cursorMove: cursorMove, cursorFix: cursorFix, keys: keys
   }
 }

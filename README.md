@@ -174,9 +174,7 @@ behind the popup shows through without blur.
 | --- | --- |
 | Left-click the icon | Open or close the popup |
 | Right- or middle-click the icon | Refresh |
-| Refresh button, or `r` on the board | Refresh |
-| `Ctrl+Enter` in the comment box | Post the comment |
-| `Escape` | Leave the comment box; otherwise go back to the board; on the board, close |
+| Refresh button | Refresh |
 
 The board refreshes every 60 seconds (configurable) and each time the popup
 opens. While it loads, the refresh icon in the header spins; it finishes its
@@ -185,6 +183,34 @@ refresh. A refresh that comes due while you're holding or dragging a card
 waits until you let go, so the card can't change under the pointer. A wide
 board scrolls sideways. A tall one scrolls down, and every column, collapsed
 strips too, stretches to the tallest so they end together.
+
+## Keyboard
+
+To open the popup with a key, add this to `~/.config/hypr/bindings.lua`,
+then run `hyprctl reload`:
+
+```lua
+o.bind("SUPER + CTRL + G", "GitLab board", "omarchy-shell shell toggle odevvy.gitlab-board")
+```
+
+Omarchy's own `SUPER + CTRL + 1`…`9` also open the right section's bar panels by
+position. In the popup the keyboard cursor shows after the first move.
+
+| Key | Action |
+| --- | --- |
+| `h j k l` or arrows | Move between cards; up and down in the picker |
+| `Enter` or `Space` | Open the selected issue; pick the selected row |
+| `o` | Open the issue in the browser |
+| `c` | Write a comment (issue view) |
+| `Ctrl+Enter` | Post the comment |
+| `r` | Refresh the board |
+| `p` | Choose a project and board |
+| `s` | Settings |
+| `?` | This list of keys |
+| `Tab` or `Shift+Tab` | Next or previous bar panel |
+| `Escape` | Leave the comment box; otherwise back to the board; on the board, close |
+
+Letters go to the comment box or the picker's filter while you type in them.
 
 ## Saved state
 

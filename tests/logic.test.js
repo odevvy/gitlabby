@@ -130,3 +130,33 @@ test("markdown: headings, line breaks, lists, tables, quotes, rules", () => {
   assert.ok(x.includes("<th>a</th><th>b</th>") && x.includes("<td>1</td><td>2</td>"))
   assert.ok(x.includes("1. one") && x.includes("☑ done") && x.includes("class='quote'") && x.includes("<hr>"))
 })
+
+test("keyboard cursor: moves skip collapsed and empty columns, clamp at the edges", () => {
+  const lanes = [[1, 2, 3], null, [], [4], [5, 6]]
+  const at = (col, row) => ({ col, row, iid: lanes[col][row] })
+  assert.deepEqual(L.cursorMove(lanes, at(0, 0), 0, 1), at(0, 1))
+  assert.deepEqual(L.cursorMove(lanes, at(0, 2), 0, 1), at(0, 2))
+  assert.deepEqual(L.cursorMove(lanes, at(0, 0), 0, -1), at(0, 0))
+  assert.deepEqual(L.cursorMove(lanes, at(0, 2), 1, 0), at(3, 0))  // over the strip and the empty column; row clamps
+  assert.deepEqual(L.cursorMove(lanes, at(3, 0), 1, 0), at(4, 0))
+  assert.deepEqual(L.cursorMove(lanes, at(4, 1), 1, 0), at(4, 1))
+  assert.deepEqual(L.cursorMove(lanes, at(4, 1), -1, 0), at(3, 0))
+  assert.deepEqual(L.cursorMove(lanes, at(0, 1), -1, 0), at(0, 1))
+  assert.equal(L.cursorMove([null, []], { col: 0, row: 0 }, 1, 0), null)
+})
+
+test("keyboard cursor after a refresh: same issue if shown, else nearest card", () => {
+  assert.deepEqual(L.cursorFix([[1], [7, 2]], { col: 0, row: 0, iid: 2 }), { col: 1, row: 1, iid: 2 })
+  assert.deepEqual(L.cursorFix([[2], [2]], { col: 1, row: 0, iid: 2 }), { col: 1, row: 0, iid: 2 })  // in two lists: keeps its column
+  assert.deepEqual(L.cursorFix([[1, 3], [4]], { col: 0, row: 5, iid: 9 }), { col: 0, row: 1, iid: 3 })
+  assert.deepEqual(L.cursorFix([[1], null, [5]], { col: 1, row: 0, iid: 9 }), { col: 0, row: 0, iid: 1 })
+  assert.deepEqual(L.cursorFix([[1]], { col: 4, row: 0 }), { col: 0, row: 0, iid: 1 })  // columns hidden
+  assert.equal(L.cursorFix([], { col: 0, row: 0 }), null)
+})
+
+test("the README's Keyboard section lists exactly the keys the popup shows", () => {
+  const readme = require("node:fs").readFileSync(require("node:path").join(__dirname, "..", "README.md"), "utf8")
+  const section = readme.split("\n## Keyboard\n")[1].split("\n## ")[0]
+  const rows = section.split("\n").filter(l => /^\| (?!Key |---)/.test(l)).map(l => l.replace(/`/g, ""))
+  assert.deepEqual(rows, L.keys.map(([k, a]) => "| " + k + " | " + a + " |"))
+})

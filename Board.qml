@@ -10,8 +10,9 @@ import "Logic.js" as Logic
 // middle click refreshes. Data comes from ./board-fetch through glab: reads are
 // GET only; the writes are `board-fetch move`, run when a card is dropped on
 // another column, and `board-fetch comment`, run by Post in the issue view.
-// Views: the board, one issue, the board picker, and settings. Selection,
-// per-board collapsed/hidden columns and defaults are saved inline in shell.json.
+// Views: the board, one issue, the board picker, settings and the key list.
+// Selection, per-board collapsed/hidden columns and defaults are saved inline
+// in shell.json.
 Panel {
   id: root
   moduleName: "odevvy.gitlab-board"
@@ -59,6 +60,14 @@ Panel {
   readonly property var availableColumns: columns.filter(function(c) { return c.name !== "Unlabeled" || (c.issues || []).length > 0 })
   readonly property var shownColumns: availableColumns.filter(function(c) { return !isHidden(c.name) })
   readonly property int boardWidth: shownColumns.reduce(function(sum, c) { return sum + (isCollapsed(c.name) ? stripWidth : columnWidth) + gap }, 0)
+
+  // Keyboard cursor on the board, { col, row, iid } in shownColumns; null
+  // (nothing drawn) until the first move after the popup opens.
+  property var cursor: null
+  readonly property var lanes: shownColumns.map(function(c) { return isCollapsed(c.name) ? null : (c.issues || []).map(function(i) { return i.iid }) })
+  onLanesChanged: if (cursor) cursor = Logic.cursorFix(lanes, cursor)
+  function moveCursor(dx, dy) { cursor = cursor ? Logic.cursorMove(lanes, cursor, dx, dy) : Logic.cursorFix(lanes, { col: 0, row: 0 }) }
+  function cursorIssue() { return cursor ? shownColumns[cursor.col].issues[cursor.row] : null }
 
   // Views and their data.
   property string view: "board"
@@ -257,6 +266,7 @@ Panel {
     })
   }
   function back() { showView("board") }
+  function toggleView(name) { showView(view === name ? "board" : name) }
 
   function openIssue(row) {
     issueView.issue = row  // the card at once; the view loads the rest
@@ -272,6 +282,7 @@ Panel {
     pickerProject = path
     pickerBoards = []
     pickerStep = "boards"
+    showView("picker")  // the filter hides: keys back to the panel
     runAux("boards", ["--project", path])
   }
   function pickBoard(b) { switchTo(pickerProject, String(b.id || ""), b.id ? String(b.name) : "") }
@@ -319,7 +330,7 @@ Panel {
   implicitWidth: button.implicitWidth
   implicitHeight: button.implicitHeight
 
-  onOpenedChanged: if (opened) { view = "board"; refresh() } else boardView.endDrag()
+  onOpenedChanged: if (opened) { view = "board"; cursor = null; refresh() } else boardView.endDrag()
 
   Timer {
     interval: root.refreshIntervalSec * 1000
@@ -374,11 +385,32 @@ Panel {
     PanelKeyCatcher {
       id: keyCatcher
       anchors.fill: parent
-      blocked: issueView.typing  // the comment box gets every key (Omarchy PanelKeyCatcher.qml:27-31)
+      blocked: issueView.typing || picker.typing  // text fields get every key (Omarchy PanelKeyCatcher.qml:26-29)
       implicitHeight: header.implicitHeight + root.gap + (root.view === "board" ? boardView.implicitHeight
-        : root.view === "issue" ? issueView.implicitHeight : root.view === "picker" ? picker.implicitHeight : settingsView.implicitHeight)
+        : root.view === "issue" ? issueView.implicitHeight : root.view === "picker" ? picker.implicitHeight
+        : root.view === "keys" ? keysView.implicitHeight : settingsView.implicitHeight)
       onCloseRequested: root.view !== "board" ? root.back() : root.close()
-      onTextKey: function(text) { if (root.view === "board" && (text === "r" || text === "R")) root.refresh() }
+      onTabRequested: function(direction) { root.switchPanel(direction) }
+      onMoveRequested: function(dx, dy) {
+        if (root.view === "board") root.moveCursor(dx, dy)
+        else if (root.view === "picker" && dy !== 0) picker.moveCursor(dy)
+      }
+      onActivateRequested: {
+        if (root.view === "board" && root.cursorIssue()) root.openIssue(root.cursorIssue())
+        else if (root.view === "picker") picker.activate()
+      }
+      onTextKey: function(text) {
+        var key = text.toLowerCase()
+        if (key === "r" && root.view === "board") root.refresh()
+        else if (key === "o") {
+          var row = root.view === "issue" ? issueView.issue : root.view === "board" ? root.cursorIssue() : null
+          if (row) root.openUrl(row.url)
+        }
+        else if (key === "c" && root.view === "issue") issueView.focusBox()
+        else if (key === "p") root.openPicker()
+        else if (key === "s") root.toggleView("settings")
+        else if (key === "?") root.toggleView("keys")
+      }
 
       // Glass wash: a soft light from the top of the card (the card itself is
       // KeyboardPanel's, drawn in the theme's popups.background).
@@ -445,7 +477,7 @@ Panel {
           text: "\uf013"
           color: gearMouse.containsMouse || root.view === "settings" ? root.accent : root.dim
           font.pixelSize: Style.font.body
-          MouseArea { id: gearMouse; anchors.fill: parent; anchors.margins: -Style.space(4); hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.showView(root.view === "settings" ? "board" : "settings") }
+          MouseArea { id: gearMouse; anchors.fill: parent; anchors.margins: -Style.space(4); hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.toggleView("settings") }
         }
       }
 
@@ -455,6 +487,7 @@ Panel {
         IssueView { id: issueView; host: root; anchors.fill: parent; visible: root.view === "issue" }
         Picker { id: picker; host: root; anchors.fill: parent; visible: root.view === "picker" }
         SettingsView { id: settingsView; host: root; anchors.fill: parent; visible: root.view === "settings" }
+        KeysView { id: keysView; host: root; anchors.fill: parent; visible: root.view === "keys" }
       }
     }
   }

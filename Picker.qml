@@ -5,7 +5,8 @@ import qs.Ui
 
 // Board switcher. Step 1: pick a project (filterable). Step 2: pick one of its
 // boards, or its workflow labels when it has none. ‹ steps back to the
-// projects; ✕ or Esc returns to the board.
+// projects; ✕ or Esc returns to the board. Up and down (j/k too, outside the
+// filter) move a row cursor; Enter picks it, or the first row.
 Item {
   id: view
   required property var host
@@ -14,6 +15,15 @@ Item {
   readonly property var rows: onProjects
     ? host.projects.filter(function(p) { return p.path.toLowerCase().indexOf(filter.text.trim().toLowerCase()) !== -1 })
     : host.pickerBoards
+  readonly property bool typing: filter.activeFocus
+  property int cursor: -1  // -1: none drawn
+  onRowsChanged: cursor = -1
+  onCursorChanged: if (cursor >= 0) list.positionViewAtIndex(cursor, ListView.Contain)
+  function moveCursor(dy) { cursor = Math.max(0, Math.min(cursor + dy, rows.length - 1)) }
+  function activate() {
+    var row = rows[Math.max(cursor, 0)]
+    if (row) onProjects ? host.pickProject(row.path) : host.pickBoard(row)
+  }
 
   implicitHeight: head.implicitHeight + Style.space(8) + list.contentHeight
 
@@ -46,7 +56,10 @@ Item {
       width: parent.width
       foreground: view.host.foreground
       placeholderText: "Filter projects"
-      onAccepted: if (view.rows.length > 0) view.host.pickProject(view.rows[0].path)
+      onAccepted: view.activate()
+      Keys.onUpPressed: view.moveCursor(-1)
+      Keys.onDownPressed: view.moveCursor(1)
+      Keys.onEscapePressed: view.host.back()
     }
 
     BoardText {
@@ -67,6 +80,8 @@ Item {
     delegate: Rectangle {
       id: item
       required property var modelData
+      required property int index
+      readonly property bool hot: itemMouse.containsMouse || index === view.cursor
       readonly property string name: view.onProjects ? modelData.path : modelData.name
       readonly property bool current: view.onProjects
         ? modelData.path === view.host.project
@@ -74,8 +89,8 @@ Item {
       width: list.width - Style.space(8)
       implicitHeight: itemText.implicitHeight + Style.space(12)
       radius: Style.space(6)
-      color: itemMouse.containsMouse ? view.host.faint : "transparent"
-      border { width: 1; color: itemMouse.containsMouse || current ? view.host.accent : view.host.faint }
+      color: hot ? view.host.faint : "transparent"
+      border { width: 1; color: hot || current ? view.host.accent : view.host.faint }
       BoardText {
         id: itemText
         x: Style.space(8); anchors.verticalCenter: parent.verticalCenter; width: parent.width - Style.space(16) - (star.visible ? star.width + Style.space(8) : 0)
