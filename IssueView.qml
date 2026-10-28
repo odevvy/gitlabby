@@ -124,6 +124,22 @@ Item {
         font { pixelSize: Style.font.title; bold: true }
       }
 
+      // Loading: a short accent bar sliding under the title until the issue
+      // and its comments are in (the gate that unlocks the comment box). Its
+      // row stays when it hides, so nothing moves.
+      Item {
+        width: parent.width; height: Style.space(2)
+        clip: true
+        Rectangle { anchors.fill: parent; visible: loadingBar.visible; color: view.host.faint }
+        Rectangle {
+          id: loadingBar
+          visible: !view.loaded
+          width: parent.width / 4; height: parent.height; radius: height / 2
+          color: view.host.accent
+          NumberAnimation on x { running: loadingBar.visible; loops: Animation.Infinite; from: -loadingBar.width; to: loadingBar.parent.width; duration: 1100; easing.type: Easing.InOutQuad }
+        }
+      }
+
       Flow {
         width: parent.width; spacing: Style.space(4)
         Pill {
@@ -181,10 +197,22 @@ Item {
 
       Rectangle { width: parent.width; height: 1; color: view.host.faint }
 
-      BoardText {
-        text: "Comments" + (view.notes.length > 0 ? " · " + view.notes.length : "")
-        color: view.host.dim
-        font { pixelSize: Style.font.bodySmall; bold: true }
+      Row {
+        spacing: Style.space(6)
+        BoardText {
+          text: "Comments" + (view.notes.length > 0 ? " · " + view.notes.length : "")
+          color: view.host.dim
+          font { pixelSize: Style.font.bodySmall; bold: true }
+        }
+        // Same spin as the header's refresh icon (Board.qml), while comments load.
+        BoardText {
+          id: notesSpinner
+          visible: view.notesLoading
+          text: "\uf021"
+          color: view.host.accent
+          font.pixelSize: Style.font.bodySmall
+          RotationAnimation on rotation { running: view.notesLoading; alwaysRunToEnd: true; loops: Animation.Infinite; from: 0; to: 360; duration: 900 }
+        }
       }
       BoardText {
         width: parent.width; wrapMode: Text.Wrap
