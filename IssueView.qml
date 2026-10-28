@@ -3,7 +3,7 @@ import QtQuick.Controls
 import Quickshell.Io
 import qs.Commons
 
-// One issue: title, state, labels, people, dates, the description as
+// One issue: title, state, labels, a one-line byline, the description as
 // Markdown, then its comments and a box to add one. Back (or Esc) returns to
 // the board. Comments load through `board-fetch notes` (GET); Post runs
 // `board-fetch comment` with the text on stdin.
@@ -29,8 +29,79 @@ Item {
   property string notesReadyFor: ""
   readonly property bool loaded: key !== "" && !host.issueLoading && notesReadyFor === key
 
-  function when(iso) {
-    return iso ? new Date(iso).toLocaleString(Qt.locale(), "yyyy-MM-dd HH:mm") : "—"
+  // "o_devvy · created 3h ago · updated 5m ago"; card rows (shown while the
+  // issue loads) have no author or updatedAt yet, so those parts come later.
+  function byline(i) {
+    var now = new Date().toISOString()
+    var created = host.age(i.createdAt, now), updated = host.age(i.updatedAt, now)
+    return [i.author || "", created ? "created " + created + " ago" : "", updated ? "updated " + updated + " ago" : ""]
+      .filter(function(part) { return part !== "" }).join(" · ")
+  }
+  function people(i) {
+    var names = (i.assignees || []).map(function(a) { return a.username || a })  // card rows carry objects
+    return [names.length ? "assigned " + names.join(", ") : "", i.milestone ? "milestone " + i.milestone : ""]
+      .filter(function(part) { return part !== "" }).join(" · ")
+  }
+
+  // GitLab Markdown to the HTML subset Text.RichText draws, so headings,
+  // spacing, bullets and code can be styled (Text.MarkdownText can't be).
+  // All text is escaped first: raw HTML in the issue shows as text, and
+  // images become links, so nothing is loaded from the network.
+  readonly property string css: "<style>"
+    + "p, pre { line-height: 130%; margin-top: 0; margin-bottom: " + Style.space(6) + "px }"  // Qt's default is 12px above and below
+    + ".h1, .h2, .h3 { font-weight: bold; color: " + host.accent + "; margin-top: " + Style.space(14) + "px; margin-bottom: " + Style.space(2) + "px }"
+    + ".h1, .h2 { font-size: " + (Style.font.bodySmall + 2) + "px } .h3 { font-size: " + (Style.font.bodySmall + 1) + "px }"
+    + ".li { margin-bottom: " + Style.space(2) + "px } .quote { color: " + host.dim + " }"
+    + "code, pre { background-color: " + host.faint + " }"
+    + "table { border-collapse: collapse; border-color: " + host.faint + "; margin-bottom: " + Style.space(6) + "px }</style>"
+  function inline(text) {
+    var spans = []
+    return host.escaped(text)
+      .replace(/`([^`]+)`/g, function(m, c) { spans.push(c); return "\x01" + (spans.length - 1) + "\x01" })
+      .replace(/!?\[([^\]]*)\]\(([^)\s"]+)[^)]*\)/g, function(m, t, url) { return "<a href=\"" + url + "\">" + (t || url) + "</a>" })
+      .replace(/(^|[\s(])(https?:\/\/[^\s()"]+)/g, "$1<a href=\"$2\">$2</a>")
+      .replace(/\*\*(.+?)\*\*|__(.+?)__/g, "<b>$1$2</b>")
+      .replace(/(^|\W)([*_])(\S(?:.*?\S)?)\2(?=\W|$)/g, "$1<i>$3</i>")
+      .replace(/~~(.+?)~~/g, "<s>$1</s>")
+      .replace(/\x01(\d+)\x01/g, function(m, i) { return "<code>&nbsp;" + spans[i] + "&nbsp;</code>" })
+  }
+  function html(md) {
+    var out = [], block = [], open = "<p>", rows = [], code = null
+    function flush() {
+      if (block.length) out.push(open + block.map(inline).join("<br>") + "</p>")
+      if (rows.length) out.push("<table border='1' cellspacing='0' cellpadding='" + Style.space(3) + "'>" + rows.join("") + "</table>")
+      block = []; rows = []; open = "<p>"
+    }
+    String(md).replace(/\r/g, "").split("\n").forEach(function(line) {
+      var m
+      if (code !== null) {
+        if (/^\s*(```|~~~)/.test(line)) { out.push("<pre>" + code.join("\n") + "</pre>"); code = null }
+        else code.push(host.escaped(line))
+      } else if (/^\s*(```|~~~)/.test(line)) { flush(); code = [] }
+      else if ((m = /^(#{1,6})\s+(.*?)[\s#]*$/.exec(line))) { flush(); out.push("<p class='h" + Math.min(m[1].length, 3) + "'>" + inline(m[2]) + "</p>") }
+      else if (/^\s*([-*_])(\s*\1){2,}\s*$/.test(line)) { flush(); out.push("<hr>") }
+      else if ((m = /^(\s*)([-*+]|\d+[.)])\s+(\[[ xX]\]\s+)?(.*)$/.exec(line))) {
+        // Hanging indent: wrapped lines line up with the text, not the bullet.
+        flush()
+        var mark = (m[3] ? (/[xX]/.test(m[3]) ? "☑" : "☐") : /\d/.test(m[2]) ? m[2] : "•") + " "
+        var level = Math.floor(m[1].replace(/\t/g, "  ").length / 2), hang = metrics.advanceWidth(mark)
+        open = "<p class='li' style='margin-left: " + Math.round(level * metrics.advanceWidth("  ") + hang) + "px; text-indent: -" + Math.round(hang) + "px'>"
+        block = [mark + m[4]]
+      } else if ((m = /^\s*\|(.*)\|\s*$/.exec(line))) {
+        if (block.length) flush()
+        if (!/^[\s|:-]+$/.test(m[1])) {
+          var tag = rows.length ? "td" : "th"
+          rows.push("<tr>" + m[1].split("|").map(function(c) { return "<" + tag + ">" + inline(c.trim()) + "</" + tag + ">" }).join("") + "</tr>")
+        }
+      } else if ((m = /^\s*>\s?(.*)$/.exec(line))) {
+        if (open.indexOf("quote") === -1) { flush(); open = "<p class='quote' style='margin-left: " + Style.space(10) + "px'>" }
+        block.push(m[1])
+      } else if (line.trim() === "") flush()
+      else { if (rows.length) flush(); block.push(line.trim()) }  // GitLab keeps single line breaks
+    })
+    if (code !== null) out.push("<pre>" + code.join("\n") + "</pre>")
+    flush()
+    return css + out.join("")
   }
 
   onKeyChanged: {
@@ -154,24 +225,10 @@ Item {
         }
       }
 
-      Grid {
-        columns: 2; columnSpacing: Style.space(12); rowSpacing: Style.space(3)
-        Repeater {
-          model: [
-            "Assignees", (view.issue.assignees || []).map(function(a) { return a.username || a }).join(", ") || "—",  // card rows carry objects
-            "Author", view.issue.author || "—",
-            "Milestone", view.issue.milestone || "—",
-            "Created", view.when(view.issue.createdAt),
-            "Updated", view.when(view.issue.updatedAt)
-          ]
-          delegate: BoardText {
-            required property var modelData
-            required property int index
-            text: String(modelData)
-            color: index % 2 === 0 ? view.host.dim : view.host.foreground
-            font.pixelSize: Style.font.bodySmall
-          }
-        }
+      Column {
+        width: parent.width; spacing: Style.space(2)
+        BoardText { id: byline; width: parent.width; elide: Text.ElideRight; text: view.byline(view.issue); color: view.host.dim; font.pixelSize: Style.font.bodySmall }
+        BoardText { id: people; width: parent.width; wrapMode: Text.Wrap; visible: text !== ""; text: view.people(view.issue); color: view.host.dim; font.pixelSize: Style.font.bodySmall }
       }
 
       Rectangle { width: parent.width; height: 1; color: view.host.faint }
@@ -183,11 +240,13 @@ Item {
         color: view.host.dim; font.italic: true
       }
 
+      FontMetrics { id: metrics; font: description.font }
       Text {
+        id: description
         width: parent.width; wrapMode: Text.Wrap
         visible: !view.host.issueLoading && !!view.issue.description
-        textFormat: Text.MarkdownText
-        text: view.issue.description || ""
+        textFormat: Text.RichText
+        text: visible ? view.html(view.issue.description) : ""
         color: view.host.foreground
         linkColor: view.host.accent
         font { family: Style.font.family; pixelSize: Style.font.bodySmall }
