@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import qs.Commons
+import "Logic.js" as Logic
 
 // The board: chips to show or hide columns, then the columns. A column header
 // collapses its column to a strip; clicking a card opens the issue view.
@@ -163,7 +164,7 @@ Item {
                 readonly property bool hovered: cardMouse.containsMouse
                 readonly property bool movable: view.host.canDrop(column.modelData) && !view.host.move
                 readonly property bool lifted: ghost.Drag.active && view.dragRow !== null && view.dragRow.iid === modelData.iid
-                  && view.host.columnKey(view.dragFrom) === view.host.columnKey(column.modelData)
+                  && Logic.columnKey(view.dragFrom) === Logic.columnKey(column.modelData)
                 readonly property color fg: view.host.foreground
                 property bool pressing: false  // this card holds the mouse
                 width: cards.width
@@ -190,7 +191,7 @@ Item {
                   id: cardText
                   x: Style.space(8); y: Style.space(8); width: parent.width - Style.space(16)
                   textFormat: Text.StyledText
-                  text: "<font color='" + view.host.dim + "'>#" + card.modelData.iid + "</font>&nbsp; " + view.host.escaped(card.modelData.title)
+                  text: "<font color='" + view.host.dim + "'>#" + card.modelData.iid + "</font>&nbsp; " + Logic.escaped(card.modelData.title)
                   font.pixelSize: Style.font.bodySmall
                   wrapMode: Text.Wrap
                 }
@@ -229,7 +230,7 @@ Item {
                   BoardText {
                     id: meta
                     anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                    text: (card.modelData.notes > 0 ? "\uf075 " + card.modelData.notes + "   " : "") + view.host.age(card.modelData.createdAt)
+                    text: (card.modelData.notes > 0 ? "\uf075 " + card.modelData.notes + "   " : "") + Logic.age(card.modelData.createdAt, view.host.updatedAt)
                     color: view.host.dim
                     font.pixelSize: Math.max(8, Style.font.caption - 1)
                   }
@@ -273,7 +274,7 @@ Item {
             anchors.fill: parent
             keys: ["odevvy-gitlab-issue"]
             enabled: view.dragFrom !== null && view.host.canDrop(column.modelData)
-              && view.host.columnKey(view.dragFrom) !== view.host.columnKey(column.modelData)
+              && Logic.columnKey(view.dragFrom) !== Logic.columnKey(column.modelData)
             onDropped: {
               var row = view.dragRow, from = view.dragFrom, to = column.modelData
               Qt.callLater(function() { view.host.moveIssue(row, from, to) })  // after the press ends

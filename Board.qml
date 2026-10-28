@@ -4,6 +4,7 @@ import Quickshell.Io
 import qs.Commons
 import qs.Commons as Commons
 import qs.Ui
+import "Logic.js" as Logic
 
 // GitLab issue board in the Omarchy bar. Left click opens the popup, right or
 // middle click refreshes. Data comes from ./board-fetch through glab: reads are
@@ -39,7 +40,7 @@ Panel {
   property string boardName: defaultBoardName
   // Saved preferences.
   property int refreshIntervalSec: Math.max(30, parseInt(String(setting("refreshIntervalSec", 60)), 10) || 60)
-  property var defaultCollapsed: lowerList(setting("defaultCollapsed", ["closed", "research", "open"]))
+  property var defaultCollapsed: Logic.lowerList(setting("defaultCollapsed", ["closed", "research", "open"]))
   property var boardStates: setting("boardStates", ({})) || ({})
 
   // Board data from the last fetch.
@@ -92,44 +93,17 @@ Panel {
   onBusyChanged: if (!busy && refreshQueued) Qt.callLater(runQueued)
   function runQueued() { if (refreshQueued) { refreshQueued = false; refresh() } }
 
-  function lowerList(value) {
-    var list = Array.isArray(value) ? value : String(value || "").split(",")
-    return list.map(function(v) { return String(v).trim().toLowerCase() }).filter(function(v) { return v !== "" })
-  }
-  function has(list, name) { return (list || []).indexOf(String(name).toLowerCase()) !== -1 }
-  function toggled(list, name) {
-    var key = String(name).toLowerCase()
-    return has(list, key) ? list.filter(function(v) { return v !== key }) : list.concat([key])
-  }
-  // GitLab label colors (validated #rrggbb from board-fetch). Text color: the
-  // label's own text_color, else black or white by luminance.
-  function labelStyle(name) {
-    var c = labelColors[name]
-    if (!c || !c.color) return null
-    var bg = Qt.color(c.color)
-    var light = 0.299 * bg.r + 0.587 * bg.g + 0.114 * bg.b > 0.6
-    return { bg: bg, fg: c.textColor ? Qt.color(c.textColor) : (light ? "#1f1e24" : "#ffffff") }
-  }
   function columnAccent(column) {
     if (column.color) return Qt.color(column.color)
     return column.kind === "open" ? accent : column.kind === "closed" ? muted : dim
   }
-  // "5m", "3h", "4d", "2w", "6mo", "1y", relative to the last refresh (or to since).
-  function age(iso, since) {
-    var ms = new Date(since || updatedAt || Date.now()) - new Date(iso)
-    if (!iso || !(ms >= 0)) return ""
-    var m = ms / 60000, h = m / 60, d = h / 24
-    return m < 60 ? Math.floor(m) + "m" : h < 24 ? Math.floor(h) + "h" : d < 14 ? Math.floor(d) + "d"
-      : d < 60 ? Math.floor(d / 7) + "w" : d < 365 ? Math.floor(d / 30) + "mo" : Math.floor(d / 365) + "y"
-  }
-  function escaped(text) { return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") }
 
   // Per board: stored lists win; a board never touched uses defaultCollapsed.
   function collapsedList() { return boardEntry && boardEntry.collapsed ? boardEntry.collapsed : defaultCollapsed }
   function hiddenList() { return boardEntry && boardEntry.hidden ? boardEntry.hidden : [] }
-  function isCollapsed(name) { return has(collapsedList(), name) }
-  function isHidden(name) { return has(hiddenList(), name) }
-  function isDefaultCollapsed(name) { return has(defaultCollapsed, name) }
+  function isCollapsed(name) { return Logic.has(collapsedList(), name) }
+  function isHidden(name) { return Logic.has(hiddenList(), name) }
+  function isDefaultCollapsed(name) { return Logic.has(defaultCollapsed, name) }
 
   function storeBoard(collapsed, hidden) {
     var next = {}
@@ -138,11 +112,11 @@ Panel {
     boardStates = next
     persist()
   }
-  function toggleCollapsed(name) { storeBoard(toggled(collapsedList(), name), hiddenList()) }
-  function toggleHidden(name) { storeBoard(collapsedList(), toggled(hiddenList(), name)) }
+  function toggleCollapsed(name) { storeBoard(Logic.toggled(collapsedList(), name), hiddenList()) }
+  function toggleHidden(name) { storeBoard(collapsedList(), Logic.toggled(hiddenList(), name)) }
   function toggleDefaultCollapsed(name) {
     var on = !isDefaultCollapsed(name)
-    defaultCollapsed = toggled(defaultCollapsed, name)
+    defaultCollapsed = Logic.toggled(defaultCollapsed, name)
     // Apply to the board on screen too, so the change is visible at once.
     if (isCollapsed(name) !== on) toggleCollapsed(name)
     else persist()
@@ -156,15 +130,15 @@ Panel {
     if (!bar || !bar.shell || typeof bar.shell.updateEntryInline !== "function") return
     if (setting("defaultCollapsed", null) === null && setting("boardStates", null) === null) return  // nothing saved yet
     // Read the saved values directly: the property bindings may not have caught up.
-    var collapsed = lowerList(setting("defaultCollapsed", ["closed", "research"]))
+    var collapsed = Logic.lowerList(setting("defaultCollapsed", ["closed", "research"]))
     var saved = setting("boardStates", ({})) || ({})
     var next = {}
     for (var key in saved) {
       var entry = saved[key] || {}
-      next[key] = Array.isArray(entry.collapsed) && !has(entry.collapsed, "open")
+      next[key] = Array.isArray(entry.collapsed) && !Logic.has(entry.collapsed, "open")
         ? { collapsed: entry.collapsed.concat(["open"]), hidden: entry.hidden || [] } : entry
     }
-    defaultCollapsed = has(collapsed, "open") ? collapsed : collapsed.concat(["open"])
+    defaultCollapsed = Logic.has(collapsed, "open") ? collapsed : collapsed.concat(["open"])
     boardStates = next
     persist()
   }
@@ -227,32 +201,14 @@ Panel {
   function canDrop(column) {
     return canMove && !!column && (column.kind === "open" || column.kind === "closed" || (column.kind === "label" && !!column.listId))
   }
-  function columnKey(column) { return column.kind + ":" + (column.listId || column.name) }
-  function listSpec(column) { return column.kind === "label" ? String(column.listId) : column.kind }
-
-  // Board columns after moving row from one column to another, as GitLab
-  // would show them: label swapped (kept when closing), card on top of target.
-  function movedColumns(row, from, to) {
-    var fromKey = columnKey(from), toKey = columnKey(to)
-    var labels = (row.labels || []).filter(function(l) { return !(from.kind === "label" && to.kind !== "closed" && l === from.name) })
-    if (to.kind === "label" && labels.indexOf(to.name) === -1) labels = labels.concat([to.name])
-    var moved = Object.assign({}, row, { labels: labels })
-    return columns.map(function(c) {
-      var key = columnKey(c)
-      var issues = (c.issues || []).filter(function(i) { return i.iid !== row.iid || (key !== fromKey && key !== toKey && to.kind !== "closed") })
-        .map(function(i) { return i.iid === row.iid ? moved : i })
-      return Object.assign({}, c, { issues: key === toKey ? [moved].concat(issues) : issues })
-    })
-  }
-
   function moveIssue(row, from, to) {
-    if (move || !row || !canDrop(from) || !canDrop(to) || columnKey(from) === columnKey(to)) return false
+    if (move || !row || !canDrop(from) || !canDrop(to) || Logic.columnKey(from) === Logic.columnKey(to)) return false
     move = { iid: row.iid, snapshot: columns, key: stateKey }
     moveError = ""
     moveSeq++
-    columns = movedColumns(row, from, to)
+    columns = Logic.movedColumns(columns, row, from, to)
     moveProcess.command = [helperPath(), "move", "--project", project, "--board", resolvedBoardId,
-      "--iid", String(row.iid), "--from", listSpec(from), "--to", listSpec(to)]
+      "--iid", String(row.iid), "--from", Logic.listSpec(from), "--to", Logic.listSpec(to)]
     moveProcess.running = true
     moveWatchdog.restart()
     return true
