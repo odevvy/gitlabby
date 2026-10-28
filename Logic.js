@@ -1,0 +1,137 @@
+// Pure logic for the board and the issue view. No Qt here, so tests/logic.test.js
+// runs it under node; QML passes in font metrics and Style.space (same pattern
+// as Omarchy's panels/clock/Model.js).
+
+// Settings lists: lowercase names, from an array or a comma-separated string.
+function lowerList(value) {
+  var list = Array.isArray(value) ? value : String(value || "").split(",")
+  return list.map(function(v) { return String(v).trim().toLowerCase() }).filter(function(v) { return v !== "" })
+}
+function has(list, name) { return (list || []).indexOf(String(name).toLowerCase()) !== -1 }
+function toggled(list, name) {
+  var key = String(name).toLowerCase()
+  return has(list, key) ? list.filter(function(v) { return v !== key }) : list.concat([key])
+}
+
+function escaped(text) { return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") }
+
+// A label's colors ({ color, textColor }, validated #rrggbb from board-fetch).
+// Text: the label's own text color, else dark or white by luminance.
+function labelStyle(entry) {
+  if (!entry || !entry.color) return null
+  var n = parseInt(entry.color.slice(1), 16)
+  var light = (0.299 * (n >> 16 & 255) + 0.587 * (n >> 8 & 255) + 0.114 * (n & 255)) / 255 > 0.6
+  return { bg: entry.color, fg: entry.textColor || (light ? "#1f1e24" : "#ffffff") }
+}
+
+// "5m", "3h", "4d", "2w", "6mo", "1y" from iso to since (default: now).
+function age(iso, since) {
+  var ms = new Date(since || Date.now()) - new Date(iso)
+  if (!iso || !(ms >= 0)) return ""
+  var m = ms / 60000, h = m / 60, d = h / 24
+  return m < 60 ? Math.floor(m) + "m" : h < 24 ? Math.floor(h) + "h" : d < 14 ? Math.floor(d) + "d"
+    : d < 60 ? Math.floor(d / 7) + "w" : d < 365 ? Math.floor(d / 30) + "mo" : Math.floor(d / 365) + "y"
+}
+
+function columnKey(column) { return column.kind + ":" + (column.listId || column.name) }
+// The list argument board-fetch move takes: open, closed, or a label list id.
+function listSpec(column) { return column.kind === "label" ? String(column.listId) : column.kind }
+
+// Board columns after moving row from one column to another, as GitLab would
+// show them: label swapped (kept when closing), card on top of the target.
+function movedColumns(columns, row, from, to) {
+  var fromKey = columnKey(from), toKey = columnKey(to)
+  var labels = (row.labels || []).filter(function(l) { return !(from.kind === "label" && to.kind !== "closed" && l === from.name) })
+  if (to.kind === "label" && labels.indexOf(to.name) === -1) labels = labels.concat([to.name])
+  var moved = Object.assign({}, row, { labels: labels })
+  return columns.map(function(c) {
+    var key = columnKey(c)
+    var issues = (c.issues || []).filter(function(i) { return i.iid !== row.iid || (key !== fromKey && key !== toKey && to.kind !== "closed") })
+      .map(function(i) { return i.iid === row.iid ? moved : i })
+    return Object.assign({}, c, { issues: key === toKey ? [moved].concat(issues) : issues })
+  })
+}
+
+// "o_devvy · created 3h ago · updated 5m ago"; card rows (shown while the
+// issue loads) have no author or updatedAt yet, so those parts come later.
+function byline(issue, now) {
+  var created = age(issue.createdAt, now), updated = age(issue.updatedAt, now)
+  return [issue.author || "", created ? "created " + created + " ago" : "", updated ? "updated " + updated + " ago" : ""]
+    .filter(function(part) { return part !== "" }).join(" · ")
+}
+function people(issue) {
+  var names = (issue.assignees || []).map(function(a) { return a.username || a })  // card rows carry objects
+  return [names.length ? "assigned " + names.join(", ") : "", issue.milestone ? "milestone " + issue.milestone : ""]
+    .filter(function(part) { return part !== "" }).join(" · ")
+}
+
+// A Markdown link to open: absolute http(s) as is, GitLab-relative paths on
+// the issue's host; anything else "".
+function linkUrl(link, issueUrl) {
+  var value = String(link || "")
+  if (/^\//.test(value) && issueUrl) value = String(issueUrl).replace(/^(https?:\/\/[^\/]+).*$/, "$1") + value
+  return /^https?:\/\//.test(value) ? value : ""
+}
+
+// GitLab Markdown to the HTML subset Text.RichText draws, so headings,
+// spacing, bullets and code can be styled (Text.MarkdownText can't be).
+// All text is escaped first: raw HTML in the issue shows as text, and images
+// become links, so nothing is loaded from the network.
+function inline(text) {
+  var spans = []
+  return escaped(text)
+    .replace(/`([^`]+)`/g, function(m, c) { spans.push(c); return "\x01" + (spans.length - 1) + "\x01" })
+    .replace(/!?\[([^\]]*)\]\(([^)\s"]+)[^)]*\)/g, function(m, t, url) { return "<a href=\"" + url + "\">" + (t || url) + "</a>" })
+    .replace(/(^|[\s(])(https?:\/\/[^\s()"]+)/g, "$1<a href=\"$2\">$2</a>")
+    .replace(/\*\*(.+?)\*\*|__(.+?)__/g, "<b>$1$2</b>")
+    .replace(/(^|\W)([*_])(\S(?:.*?\S)?)\2(?=\W|$)/g, "$1<i>$3</i>")
+    .replace(/~~(.+?)~~/g, "<s>$1</s>")
+    .replace(/\x01(\d+)\x01/g, function(m, i) { return "<code>&nbsp;" + spans[i] + "&nbsp;</code>" })
+}
+// advance(text): its width in px in the description font; space(px): Style.space.
+function markdown(md, advance, space) {
+  var out = [], block = [], open = "<p>", rows = [], code = null
+  function flush() {
+    if (block.length) out.push(open + block.map(inline).join("<br>") + "</p>")
+    if (rows.length) out.push("<table border='1' cellspacing='0' cellpadding='" + space(3) + "'>" + rows.join("") + "</table>")
+    block = []; rows = []; open = "<p>"
+  }
+  String(md).replace(/\r/g, "").split("\n").forEach(function(line) {
+    var m
+    if (code !== null) {
+      if (/^\s*(```|~~~)/.test(line)) { out.push("<pre>" + code.join("\n") + "</pre>"); code = null }
+      else code.push(escaped(line))
+    } else if (/^\s*(```|~~~)/.test(line)) { flush(); code = [] }
+    else if ((m = /^(#{1,6})\s+(.*?)[\s#]*$/.exec(line))) { flush(); out.push("<p class='h" + Math.min(m[1].length, 3) + "'>" + inline(m[2]) + "</p>") }
+    else if (/^\s*([-*_])(\s*\1){2,}\s*$/.test(line)) { flush(); out.push("<hr>") }
+    else if ((m = /^(\s*)([-*+]|\d+[.)])\s+(\[[ xX]\]\s+)?(.*)$/.exec(line))) {
+      // Hanging indent: wrapped lines line up with the text, not the bullet.
+      flush()
+      var mark = (m[3] ? (/[xX]/.test(m[3]) ? "☑" : "☐") : /\d/.test(m[2]) ? m[2] : "•") + " "
+      var level = Math.floor(m[1].replace(/\t/g, "  ").length / 2), hang = advance(mark)
+      open = "<p class='li' style='margin-left: " + Math.round(level * advance("  ") + hang) + "px; text-indent: -" + Math.round(hang) + "px'>"
+      block = [mark + m[4]]
+    } else if ((m = /^\s*\|(.*)\|\s*$/.exec(line))) {
+      if (block.length) flush()
+      if (!/^[\s|:-]+$/.test(m[1])) {
+        var tag = rows.length ? "td" : "th"
+        rows.push("<tr>" + m[1].split("|").map(function(c) { return "<" + tag + ">" + inline(c.trim()) + "</" + tag + ">" }).join("") + "</tr>")
+      }
+    } else if ((m = /^\s*>\s?(.*)$/.exec(line))) {
+      if (open.indexOf("quote") === -1) { flush(); open = "<p class='quote' style='margin-left: " + space(10) + "px'>" }
+      block.push(m[1])
+    } else if (line.trim() === "") flush()
+    else { if (rows.length) flush(); block.push(line.trim()) }  // GitLab keeps single line breaks
+  })
+  if (code !== null) out.push("<pre>" + code.join("\n") + "</pre>")
+  flush()
+  return out.join("")
+}
+
+if (typeof module !== "undefined") {
+  module.exports = {
+    lowerList: lowerList, has: has, toggled: toggled, escaped: escaped, labelStyle: labelStyle, age: age,
+    columnKey: columnKey, listSpec: listSpec, movedColumns: movedColumns, byline: byline, people: people,
+    linkUrl: linkUrl, inline: inline, markdown: markdown
+  }
+}

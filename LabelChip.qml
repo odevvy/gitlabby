@@ -1,10 +1,11 @@
 import QtQuick
+import "Logic.js" as Logic
 
 // A label as a Pill in its GitLab color; plain theme pill if the color is unknown.
 Pill {
   required property var host
   required property string name
-  readonly property var style: host.labelStyle(name)
+  readonly property var style: Logic.labelStyle(host.labelColors[name])
   label: name
   color: style ? style.bg : "transparent"
   textColor: style ? style.fg : host.dim
