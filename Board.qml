@@ -269,8 +269,10 @@ Panel {
       moveErrorTimer.restart()
     }
     moveSnapshot = null
-    // Success: load the board as GitLab now has it. Failure: only if a refresh was due.
-    if (data.state === "ready" || refreshQueued) { refreshQueued = false; refresh() }
+    // Success, or a card that was out of date ("stale": board-fetch wrote
+    // nothing): load the board as GitLab now has it. Other failures: only if a
+    // refresh was due.
+    if (data.state === "ready" || data.state === "stale" || refreshQueued) { refreshQueued = false; refresh() }
   }
 
   function runAux(kind, args) {
