@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "id": "odevvy.gitlab-board",
   "name": "GitLab Board",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "author": "o_devvy",
   "license": "MIT",
-  "description": "A GitLab issue board in a bar popup: your project's real boards, issue details, and a board picker.",
+  "description": "A GitLab issue board in a bar popup: your project's real boards in their label colors, assignees, issue details, and a board picker.",
   "kinds": [
     "bar-widget"
   ],
@@ -25,7 +25,8 @@
       "refreshIntervalSec": 60,
       "defaultCollapsed": [
         "closed",
-        "research"
+        "research",
+        "open"
       ],
       "boardStates": {}
     },

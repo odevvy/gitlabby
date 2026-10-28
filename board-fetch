@@ -77,12 +77,12 @@ scope=$(jq -r 'if . == null then "" else [
   ] | map("&" + .) | join("") end' "$tmp/board")
 hide_closed=$(jq -r '.hide_closed_list // false' "$tmp/board")
 
-api --paginate "$base/issues?state=opened&scope=all&order_by=relative_position&sort=asc&per_page=100$scope" >"$tmp/open" ||
+api --paginate "$base/issues?state=opened&scope=all&order_by=relative_position&sort=asc&per_page=100&with_labels_details=true$scope" >"$tmp/open" ||
   emit error "Could not load open issues for $project."
 if [[ $hide_closed == true ]]; then
   echo '[]' >"$tmp/closed"
 else
-  api "$base/issues?state=closed&scope=all&order_by=updated_at&sort=desc&per_page=20$scope" >"$tmp/closed" ||
+  api "$base/issues?state=closed&scope=all&order_by=updated_at&sort=desc&per_page=20&with_labels_details=true$scope" >"$tmp/closed" ||
     emit error "Could not load closed issues for $project."
 fi
 
@@ -90,17 +90,27 @@ fi
 # Open = open issues in no other list; a label list = open issues with that label
 # (an issue with two list labels shows in both); Closed = closed issues.
 # Without a board, fall back to workflow labels (furthest along wins).
+# Issues come with_labels_details, so .labels are objects: their colors go into
+# one labelColors map and rows keep plain label names.
 read -r -d '' MAP <<'JQ'
-def row: {iid, title, labels: (.labels // []), url: .web_url};
+def hex: if type == "string" and test("^#[0-9A-Fa-f]{6}$") then . else null end;
+def names: [(.labels // [])[] | if type == "object" then .name else . end | strings];
+def row: {iid, title, labels: names, url: .web_url, createdAt: .created_at, notes: (.user_notes_count // 0),
+  assignees: [(.assignees // [])[] | {username, name: (.name // .username),
+    avatar: (.avatar_url | if type == "string" and test("^https://") then . else "" end)}]};
 def has_any($names): [.labels[] | select(IN($names[]))] | length > 0;
-$b[0] as $board | ($o | add // [] | map(select(.state == "opened"))) as $open | ($c | add // []) as $closed
-| {state: "ready", updatedAt: (now | todateiso8601), project: $project,
+$b[0] as $board | ($o | add // []) as $rawOpen | ($c | add // []) as $rawClosed
+| ([($rawOpen + $rawClosed)[] | (.labels // [])[] | objects] + [($board.lists // [])[] | .label | objects]
+   | map(select((.name | type) == "string" and (.color | hex)) | {(.name): {color: (.color | hex), textColor: (.text_color | hex)}})
+   | add // {}) as $colors
+| ($rawOpen | map(select(.state == "opened") | .labels = names)) as $open | ($rawClosed | map(.labels = names)) as $closed
+| {state: "ready", updatedAt: (now | todateiso8601), project: $project, labelColors: $colors,
    boards: ($all | add // [] | map({id, name})),
    board: (if $board then {id: $board.id, name: $board.name} else null end), fallback: ($board == null)}
 + if $board == null then
     ["review", "in progress", "approved", "todo", "research"] as $rank
     | {message: "No boards in this project: showing workflow label columns.",
-       columns: ([$rank | reverse[] as $n | {name: $n, kind: "label", issues: [$open[]
+       columns: ([$rank | reverse[] as $n | {name: $n, kind: "label", color: $colors[$n].color, issues: [$open[]
                    | . as $i | select(([$rank[] | select(. as $l | $i.labels | index($l))] | first) == $n) | row]}]
          + [{name: "Closed", kind: "closed", issues: [$closed[] | row]}]
          + [{name: "Unlabeled", kind: "open", issues: [$open[] | select(has_any($rank) | not) | row]}])}
@@ -112,7 +122,7 @@ $b[0] as $board | ($o | add // [] | map(select(.state == "opened"))) as $open | 
          (if $board.hide_backlog_list then [] else
            [{name: "Open", kind: "open", issues: [$open[] | select(has_any($listLabels) | not) | row]}] end)
          + [$lists[] | if .label then
-               .label.name as $l | {name: $l, kind: "label", issues: [$open[] | select(.labels | index($l)) | row]}
+               .label.name as $l | {name: $l, kind: "label", color: ((.label.color | hex) // $colors[$l].color), issues: [$open[] | select(.labels | index($l)) | row]}
              else {name: (.assignee.username // .milestone.title // .iteration.title // .status.name // "List"),
                    kind: "other", note: "This list type is not supported yet.", issues: []} end]
          + (if $board.hide_closed_list then [] else [{name: "Closed", kind: "closed", issues: [$closed[] | row]}] end))}
