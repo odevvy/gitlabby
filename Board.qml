@@ -371,7 +371,6 @@ Panel {
     if (moveError !== "") return moveError
     if (moving) return "Moving #" + movingIid + "…"
     if (boardState === "ready") {
-      if (loading) return "Refreshing…"
       var time = updatedAt !== "" ? "Updated " + new Date(updatedAt).toLocaleTimeString(Qt.locale(), "HH:mm") : ""
       return message !== "" ? message + "  " + time : time
     }
@@ -498,12 +497,10 @@ Panel {
           anchors { right: gear.left; rightMargin: Style.space(10); verticalCenter: parent.verticalCenter }
           text: "\uf021"
           color: refreshMouse.containsMouse ? root.accent : root.dim
-          opacity: root.loading ? 0.5 : 1
           font.pixelSize: Style.font.body
-          RotationAnimation on rotation {
-            running: root.loading; loops: Animation.Infinite; from: 0; to: 360; duration: 900
-            onStopped: refreshButton.rotation = 0
-          }
+          // Spins while the board loads (as Omarchy's Ui/Button.qml spins its
+          // icon) and finishes the turn it is on, so it always stops upright.
+          RotationAnimation on rotation { running: root.loading; alwaysRunToEnd: true; loops: Animation.Infinite; from: 0; to: 360; duration: 900 }
           MouseArea { id: refreshMouse; anchors.fill: parent; anchors.margins: -Style.space(4); hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.refresh() }
         }
         BoardText {

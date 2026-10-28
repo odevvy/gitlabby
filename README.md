@@ -166,7 +166,9 @@ behind the popup shows through without blur.
 | `Escape` | Leave the comment box; otherwise go back to the board; on the board, close |
 
 The board refreshes every 60 seconds (configurable) and each time the popup
-opens. A wide board scrolls sideways.
+opens. While it loads, the refresh icon in the header spins; it finishes its
+turn and stops when the new data is in. The board stays usable during a
+refresh. A wide board scrolls sideways.
 
 ## Saved state
 
