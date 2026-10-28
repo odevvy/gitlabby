@@ -79,6 +79,31 @@ out=$("$fetch" issue --project a/b --iid 45)
 check "F issue" '.issue | .iid == 45 and .author == "bob" and .milestone == "M1" and .assignees == ["ann","cy"] and .description == "**bold**" and .url == "https://x/45"' "$out"
 check "F issue endpoint" '.' "$(grep -q 'GET projects/a%2Fb/issues/45$' "$FAKE_LOG" && echo true || echo false)"
 
+# --- H: v1.3 card fields: label colors, assignees, notes, created_at ---------
+reset
+fx boards <<'J'
+[{"id":5,"name":"Flow","lists":[{"id":1,"position":0,"label":{"name":"todo","color":"#428BCA","text_color":"#FFFFFF"}},
+  {"id":2,"position":1,"label":{"name":"review","color":"red"}}]}]
+J
+fx open <<'J'
+[{"iid":1,"title":"styled","state":"opened","web_url":"u1","created_at":"2026-10-25T10:00:00Z","user_notes_count":4,
+  "labels":[{"id":1,"name":"todo","color":"#428BCA","text_color":"#FFFFFF"},{"id":2,"name":"bug","color":"#d9534f","text_color":"#1F1E24"},
+            {"id":3,"name":"odd","color":"javascript:x"}],
+  "assignees":[{"username":"ann","name":"Ann Lee","avatar_url":"https://gitlab.com/uploads/a.png"},
+               {"username":"cy","name":"Cy","avatar_url":"http://insecure/x.png"},{"username":"dee","avatar_url":null}]},
+ {"iid":2,"title":"review me","state":"opened","web_url":"u2","labels":[{"name":"review","color":"#00B140","text_color":"#FFFFFF"}],"assignees":[]}]
+J
+fx closed <<<'[{"iid":9,"title":"done","state":"closed","web_url":"u9","labels":[{"name":"bug","color":"#d9534f"}],"user_notes_count":1}]'
+out=$("$fetch" --project group/app)
+check "H labels stay names" '[.columns[] | .issues[] | .labels] == [["todo","bug","odd"],["review"],["bug"]]' "$out"
+check "H mapping" "$cols"' == {"Open":[],"todo":[1],"review":[2],"Closed":[9]}' "$out"
+check "H label colors" '.labelColors == {"todo":{"color":"#428BCA","textColor":"#FFFFFF"},"bug":{"color":"#d9534f","textColor":null},"review":{"color":"#00B140","textColor":"#FFFFFF"}}' "$out"
+check "H column colors" '[.columns[] | .color] == [null,"#428BCA","#00B140",null]' "$out"
+check "H card fields" '.columns[1].issues[0] | .createdAt == "2026-10-25T10:00:00Z" and .notes == 4' "$out"
+check "H assignees" '.columns[1].issues[0].assignees == [{"username":"ann","name":"Ann Lee","avatar":"https://gitlab.com/uploads/a.png"},{"username":"cy","name":"Cy","avatar":""},{"username":"dee","name":"dee","avatar":""}]' "$out"
+check "H defaults" '.columns[2].issues[0] | .notes == 0 and .assignees == [] and .createdAt == null' "$out"
+check "H label details requested" '.' "$(grep -c 'with_labels_details=true' "$FAKE_LOG" | grep -qx 2 && echo true || echo false)"
+
 # --- G: validation, auth, failures ------------------------------------------
 check "G bad project" '.state == "error"' "$("$fetch" --project 'a/../b')"
 check "G bad project 2" '.state == "error"' "$("$fetch" --project 'a b;rm')"

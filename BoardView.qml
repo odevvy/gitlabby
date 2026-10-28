@@ -46,26 +46,37 @@ Item {
           required property var modelData
           readonly property bool isCollapsed: view.host.isCollapsed(modelData.name)
           readonly property var issues: modelData.issues || []
+          readonly property color tint: view.host.columnAccent(modelData)
           width: isCollapsed ? view.host.stripWidth : view.host.columnWidth
-          implicitHeight: isCollapsed ? Math.max(strip.implicitHeight, flick.height) : cards.implicitHeight
+          implicitHeight: isCollapsed ? Math.max(strip.implicitHeight, flick.height) : cards.implicitHeight + Style.space(12)
+          clip: true  // while the width animates
+          Behavior on width { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+
+          // Glass pane behind the column.
+          Rectangle {
+            anchors.fill: parent
+            radius: Style.space(8)
+            color: Qt.rgba(view.host.foreground.r, view.host.foreground.g, view.host.foreground.b, column.isCollapsed && stripMouse.containsMouse ? 0.08 : 0.035)
+            border { width: 1; color: Qt.rgba(view.host.foreground.r, view.host.foreground.g, view.host.foreground.b, 0.08) }
+            Behavior on color { ColorAnimation { duration: 120 } }
+          }
 
           // Collapsed: a narrow strip with the count and the rotated name.
-          Rectangle {
+          Item {
             id: strip
-            visible: column.isCollapsed
             anchors.fill: parent
+            opacity: column.isCollapsed ? 1 : 0
+            visible: opacity > 0
+            Behavior on opacity { NumberAnimation { duration: 140 } }
             implicitHeight: stripCount.implicitHeight + stripName.implicitWidth + Style.space(24)
-            radius: Style.space(6)
-            color: stripMouse.containsMouse ? view.host.faint : "transparent"
-            border { width: 1; color: view.host.faint }
-            Pill { id: stripCount; anchors.horizontalCenter: parent.horizontalCenter; y: Style.space(6); label: String(column.issues.length); textColor: view.host.foreground }
+            Pill { id: stripCount; anchors.horizontalCenter: parent.horizontalCenter; y: Style.space(6); label: String(column.issues.length); textColor: view.host.foreground; border.color: column.tint }
             BoardText {
               id: stripName
               anchors.horizontalCenter: parent.horizontalCenter
               y: stripCount.y + stripCount.height + Style.space(6) + (implicitWidth - implicitHeight) / 2
               rotation: 90
               text: column.modelData.name
-              color: view.host.dim
+              color: stripMouse.containsMouse ? view.host.foreground : view.host.dim
               font.capitalization: Font.AllUppercase
             }
             MouseArea {
@@ -74,12 +85,16 @@ Item {
             }
           }
 
-          // Expanded: header with count badge and accent underline, then cards.
+          // Expanded: header in the column's color, then cards. Fixed width so
+          // text does not reflow while the column animates.
           Column {
             id: cards
-            visible: !column.isCollapsed
-            width: parent.width
+            x: Style.space(6); y: Style.space(6)
+            width: view.host.columnWidth - Style.space(12)
             spacing: Style.space(6)
+            opacity: column.isCollapsed ? 0 : 1
+            visible: opacity > 0
+            Behavior on opacity { NumberAnimation { duration: 140 } }
 
             Item {
               width: parent.width
@@ -87,6 +102,7 @@ Item {
               Row {
                 id: headerRow
                 spacing: Style.space(6)
+                Rectangle { anchors.verticalCenter: parent.verticalCenter; width: Style.space(8); height: width; radius: width / 2; color: column.tint }
                 BoardText {
                   anchors.verticalCenter: parent.verticalCenter
                   text: column.modelData.name
@@ -95,8 +111,9 @@ Item {
                 Pill { anchors.verticalCenter: parent.verticalCenter; label: String(column.issues.length); color: view.host.faint }
               }
               Rectangle {
-                anchors.bottom: parent.bottom; width: parent.width; height: Math.max(1, Style.space(2))
-                color: view.host.accent; opacity: headerMouse.containsMouse ? 1 : 0.6
+                anchors.bottom: parent.bottom; width: parent.width; height: Math.max(1, Style.space(2)); radius: height / 2
+                color: column.tint; opacity: headerMouse.containsMouse ? 1 : 0.7
+                Behavior on opacity { NumberAnimation { duration: 120 } }
               }
               MouseArea {
                 id: headerMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
@@ -117,12 +134,26 @@ Item {
                 id: card
                 required property var modelData
                 readonly property var chips: (modelData.labels || []).filter(function(l) { return l !== column.modelData.name })
-                width: column.width
-                implicitHeight: cardText.implicitHeight + (chipFlow.visible ? chipFlow.implicitHeight + Style.space(6) : 0) + Style.space(16)
+                readonly property var assignees: modelData.assignees || []
+                readonly property bool hovered: cardMouse.containsMouse
+                readonly property color fg: view.host.foreground
+                width: cards.width
+                implicitHeight: cardText.implicitHeight + (chipFlow.visible ? chipFlow.implicitHeight + Style.space(6) : 0)
+                  + footer.implicitHeight + Style.space(22)
                 radius: Style.space(6)
                 opacity: column.modelData.kind === "closed" ? 0.65 : 1
-                color: cardMouse.containsMouse ? view.host.faint : "transparent"
-                border { width: 1; color: cardMouse.containsMouse ? view.host.accent : view.host.faint }
+                color: Qt.rgba(fg.r, fg.g, fg.b, hovered ? 0.1 : 0.05)
+                border { width: 1; color: hovered ? column.tint : Qt.rgba(fg.r, fg.g, fg.b, 0.1) }
+                // Hover: lift by a couple of pixels and brighten.
+                transform: Translate { y: card.hovered ? -Style.space(2) : 0; Behavior on y { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } } }
+                Behavior on color { ColorAnimation { duration: 120 } }
+                Behavior on border.color { ColorAnimation { duration: 120 } }
+
+                // Glass sheen along the top edge.
+                Rectangle {
+                  x: card.radius; y: 1; width: parent.width - card.radius * 2; height: 1
+                  color: Qt.rgba(card.fg.r, card.fg.g, card.fg.b, card.hovered ? 0.22 : 0.12)
+                }
                 BoardText {
                   id: cardText
                   x: Style.space(8); y: Style.space(8); width: parent.width - Style.space(16)
@@ -138,7 +169,37 @@ Item {
                   anchors { top: cardText.bottom; topMargin: Style.space(6) }
                   Repeater {
                     model: card.chips
-                    delegate: Pill { required property var modelData; label: String(modelData); pixelSize: Math.max(8, Style.font.caption - 1) }
+                    delegate: LabelChip { required property var modelData; host: view.host; name: String(modelData); pixelSize: Math.max(8, Style.font.caption - 1) }
+                  }
+                }
+                // Footer: up to three avatars (+N), then comment count and age.
+                Item {
+                  id: footer
+                  x: Style.space(8); width: parent.width - Style.space(16)
+                  anchors { top: chipFlow.visible ? chipFlow.bottom : cardText.bottom; topMargin: Style.space(6) }
+                  implicitHeight: Math.max(people.implicitHeight, meta.implicitHeight)
+                  Row {
+                    id: people
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: -Style.space(4)
+                    Repeater {
+                      model: card.assignees.slice(0, card.assignees.length > 3 ? 2 : 3)
+                      delegate: Avatar { required property var modelData; host: view.host; person: modelData }
+                    }
+                    Pill {
+                      visible: card.assignees.length > 3
+                      anchors.verticalCenter: parent.verticalCenter
+                      label: "+" + (card.assignees.length - 2)
+                      color: view.host.faint
+                      pixelSize: Math.max(8, Style.font.caption - 1)
+                    }
+                  }
+                  BoardText {
+                    id: meta
+                    anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+                    text: (card.modelData.notes > 0 ? "\uf075 " + card.modelData.notes + "   " : "") + view.host.age(card.modelData.createdAt)
+                    color: view.host.dim
+                    font.pixelSize: Math.max(8, Style.font.caption - 1)
                   }
                 }
                 MouseArea {

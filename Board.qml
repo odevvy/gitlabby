@@ -18,6 +18,7 @@ Panel {
   readonly property color foreground: Commons.Color.popups.text
   readonly property color accent: Commons.Color.accent
   readonly property color background: Commons.Color.popups.background
+  readonly property color muted: Commons.Color.muted
   // Solid blends so they also work inside StyledText markup.
   readonly property color dim: Qt.tint(foreground, Qt.rgba(background.r, background.g, background.b, 0.45))
   readonly property color faint: Qt.tint(background, Qt.rgba(foreground.r, foreground.g, foreground.b, 0.12))
@@ -36,7 +37,7 @@ Panel {
   property string boardName: defaultBoardName
   // Saved preferences.
   property int refreshIntervalSec: Math.max(30, parseInt(String(setting("refreshIntervalSec", 60)), 10) || 60)
-  property var defaultCollapsed: lowerList(setting("defaultCollapsed", ["closed", "research"]))
+  property var defaultCollapsed: lowerList(setting("defaultCollapsed", ["closed", "research", "open"]))
   property var boardStates: setting("boardStates", ({})) || ({})
 
   // Board data from the last fetch.
@@ -46,6 +47,7 @@ Panel {
   property string message: ""
   property string updatedAt: ""
   property var columns: []
+  property var labelColors: ({})
   property string resolvedBoardId: ""
   property string firstBoardId: ""
   readonly property bool onDefault: project === defaultProject && resolvedBoardId === (defaultBoardId || firstBoardId)
@@ -78,6 +80,27 @@ Panel {
     var key = String(name).toLowerCase()
     return has(list, key) ? list.filter(function(v) { return v !== key }) : list.concat([key])
   }
+  // GitLab label colors (validated #rrggbb from board-fetch). Text color: the
+  // label's own text_color, else black or white by luminance.
+  function labelStyle(name) {
+    var c = labelColors[name]
+    if (!c || !c.color) return null
+    var bg = Qt.color(c.color)
+    var light = 0.299 * bg.r + 0.587 * bg.g + 0.114 * bg.b > 0.6
+    return { bg: bg, fg: c.textColor ? Qt.color(c.textColor) : (light ? "#1f1e24" : "#ffffff") }
+  }
+  function columnAccent(column) {
+    if (column.color) return Qt.color(column.color)
+    return column.kind === "open" ? accent : column.kind === "closed" ? muted : dim
+  }
+  // "5m", "3h", "4d", "2w", "6mo", "1y", relative to the last refresh.
+  function age(iso) {
+    var ms = new Date(updatedAt || Date.now()) - new Date(iso)
+    if (!iso || !(ms >= 0)) return ""
+    var m = ms / 60000, h = m / 60, d = h / 24
+    return m < 60 ? Math.floor(m) + "m" : h < 24 ? Math.floor(h) + "h" : d < 14 ? Math.floor(d) + "d"
+      : d < 60 ? Math.floor(d / 7) + "w" : d < 365 ? Math.floor(d / 30) + "mo" : Math.floor(d / 365) + "y"
+  }
   function escaped(text) { return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") }
 
   // Per board: stored lists win; a board never touched uses defaultCollapsed.
@@ -103,6 +126,29 @@ Panel {
     if (isCollapsed(name) !== on) toggleCollapsed(name)
     else persist()
   }
+  // One-time update to settings revision 2 (v1.3): Open joins the collapsed
+  // defaults and every saved board, without touching anything else. Runs again
+  // only if it could not be saved.
+  readonly property int settingsRevision: 2
+  function migrateSettings() {
+    if ((parseInt(String(setting("settingsRevision", 1)), 10) || 1) >= settingsRevision) return
+    if (!bar || !bar.shell || typeof bar.shell.updateEntryInline !== "function") return
+    if (setting("defaultCollapsed", null) === null && setting("boardStates", null) === null) return  // nothing saved yet
+    // Read the saved values directly: the property bindings may not have caught up.
+    var collapsed = lowerList(setting("defaultCollapsed", ["closed", "research"]))
+    var saved = setting("boardStates", ({})) || ({})
+    var next = {}
+    for (var key in saved) {
+      var entry = saved[key] || {}
+      next[key] = Array.isArray(entry.collapsed) && !has(entry.collapsed, "open")
+        ? { collapsed: entry.collapsed.concat(["open"]), hidden: entry.hidden || [] } : entry
+    }
+    defaultCollapsed = has(collapsed, "open") ? collapsed : collapsed.concat(["open"])
+    boardStates = next
+    persist()
+  }
+  onSettingsChanged: Qt.callLater(migrateSettings)
+
   function setRefreshInterval(seconds) { refreshIntervalSec = seconds; persist() }
 
   // Same write path as built-in widgets: merge into the inline entry and hand
@@ -120,6 +166,7 @@ Panel {
     entry.refreshIntervalSec = refreshIntervalSec
     entry.defaultCollapsed = defaultCollapsed
     entry.boardStates = boardStates
+    entry.settingsRevision = settingsRevision
     bar.shell.updateEntryInline(moduleName, entry)
   }
 
@@ -145,6 +192,7 @@ Panel {
     message = String(data.message || "")
     updatedAt = String(data.updatedAt || "")
     columns = Array.isArray(data.columns) ? data.columns : []
+    labelColors = data.labelColors || {}
     resolvedBoardId = data.board ? String(data.board.id) : ""
     firstBoardId = data.boards && data.boards.length > 0 ? String(data.boards[0].id) : ""
     if (data.board && boardName !== data.board.name) boardName = data.board.name
@@ -303,6 +351,18 @@ Panel {
         : root.view === "issue" ? issueView.implicitHeight : root.view === "picker" ? picker.implicitHeight : settingsView.implicitHeight)
       onCloseRequested: root.view !== "board" ? root.back() : root.close()
       onTextKey: function(text) { if (root.view === "board" && (text === "r" || text === "R")) root.refresh() }
+
+      // Glass wash: a soft light from the top of the card (the card itself is
+      // KeyboardPanel's, drawn in the theme's popups.background).
+      Rectangle {
+        anchors { fill: parent; margins: -panel.padding }
+        radius: Style.cornerRadius
+        gradient: Gradient {
+          GradientStop { position: 0; color: Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.07) }
+          GradientStop { position: 0.35; color: Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.015) }
+          GradientStop { position: 1; color: Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.03) }
+        }
+      }
 
       Item {
         id: header

@@ -33,6 +33,32 @@ back to workflow-label columns: research, todo, approved, in progress, review,
 Closed, and Unlabeled. Unlabeled appears only when it has issues. Each issue
 goes in the furthest-along label it has.
 
+## Cards and colors
+
+- Label chips use each label's GitLab color and text color.
+- Each column header has a dot and underline in its color: the label's color
+  for label lists, the theme accent for Open, and the theme's muted color for
+  Closed.
+- Each card shows up to three assignee avatars (two plus `+N` when there are
+  more), the comment count, and the issue's age (`45m`, `3h`, `4d`, `2w`,
+  `6mo`, `1y`). An avatar shows the person's initials until its image loads,
+  or if it doesn't load. Avatar images are loaded straight from GitLab's
+  `https` avatar URLs.
+- Columns slide when they collapse or expand, and cards lift slightly on hover.
+
+The popup card itself is drawn by Omarchy in your theme's
+`popups.background`. The plugin adds translucent panes and a soft light on
+top of it. To make every popup see-through, including this one, set an alpha
+in `~/.config/omarchy/shell.toml` (it applies live):
+
+```toml
+[popups]
+background-alpha = 0.88
+```
+
+Omarchy 4.0.6 has blur turned off and no blur rule for its popups, so what's
+behind the popup shows through without blur.
+
 ## Popup
 
 - The title, `group/project · Board ▾`, opens the picker. Pick a project (type
@@ -65,12 +91,17 @@ Everything is saved on the widget's entry in `~/.config/omarchy/shell.json`:
 | `defaultProject` | Default project: path or numeric id |
 | `defaultBoardId`, `defaultBoardName` | Default board; empty means the project's first board |
 | `refreshIntervalSec` | Refresh interval in seconds |
-| `defaultCollapsed` | Columns that start collapsed on a board you have not changed yet. Default `["closed","research"]`; matched case-insensitively |
+| `defaultCollapsed` | Columns that start collapsed on a board you have not changed yet. Default `["closed","research","open"]`; matched case-insensitively |
 | `boardStates` | Collapsed and hidden columns for each project and board, keyed `project#boardId` |
+| `settingsRevision` | Set to `2` by v0.1.3 after its one-time update |
 
 The board you're browsing isn't saved. Older keys (`project`, `boardId`,
 `boardName`, `collapsedColumns`, `hiddenColumns`) are dropped the first time
 v0.1.2 saves.
+
+v0.1.3 adds Open to `defaultCollapsed` and to the collapsed columns of every
+board in `boardStates`, once. It changes nothing else, and if you expand Open
+afterwards, it stays expanded.
 
 ## Requirements
 
@@ -112,7 +143,8 @@ omarchy bar set odevvy.gitlab-board refreshIntervalSec 120
 
 Requests per board refresh: one for the boards (which include their lists),
 the open issues (paginated), and one for the last 20 closed issues. The closed
-request is skipped when the board hides Closed.
+request is skipped when the board hides Closed. The issue requests ask for
+label details, so label colors don't need an extra request.
 
 ## Tests and debugging
 
