@@ -25,6 +25,9 @@ Item {
   property string postFor: ""
   property string postError: ""
   readonly property bool typing: box.activeFocus
+  // The comment box opens only once the issue and its comments have arrived.
+  property string notesReadyFor: ""
+  readonly property bool loaded: key !== "" && !host.issueLoading && notesReadyFor === key
 
   function when(iso) {
     return iso ? new Date(iso).toLocaleString(Qt.locale(), "yyyy-MM-dd HH:mm") : "—"
@@ -36,6 +39,7 @@ Item {
       shownKey = key
       notes = []; more = false; notesError = ""; postError = ""; box.text = ""
     }
+    notesReadyFor = ""  // (re)opened: lock the box until this visit's notes arrive
     loadNotes()
   }
 
@@ -50,13 +54,14 @@ Item {
   function notesDone(raw) {
     notesLoading = false
     if (notesFor !== key) return  // answer for an issue we already left
+    notesReadyFor = key
     var data = host.parse(raw)
     notesError = data.state === "ready" ? "" : String(data.message || "Could not load comments.")
     if (data.state === "ready") { notes = data.notes || []; more = !!data.more; notesAt = new Date().toISOString() }
   }
 
   function post() {
-    if (posting || key === "" || box.text.trim() === "") return
+    if (posting || !loaded || box.text.trim() === "") return
     posting = true
     postFor = key
     postError = ""
@@ -221,9 +226,9 @@ Item {
       TextArea {
         id: box
         width: parent.width
-        enabled: !view.posting
+        enabled: view.loaded && !view.posting
         wrapMode: TextEdit.Wrap
-        placeholderText: "Write a comment…  (Ctrl+Enter to post)"
+        placeholderText: view.loaded ? "Write a comment…  (Ctrl+Enter to post)" : "Loading…"
         placeholderTextColor: view.host.dim
         color: view.host.foreground
         selectionColor: view.host.accent
@@ -259,7 +264,7 @@ Item {
         Pill {
           id: postButton
           anchors.right: parent.right
-          readonly property bool ready: !view.posting && box.text.trim() !== ""
+          readonly property bool ready: view.loaded && !view.posting && box.text.trim() !== ""
           label: view.posting ? "Posting…" : "Post"
           clickable: ready
           opacity: ready ? 1 : 0.5
