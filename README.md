@@ -280,10 +280,16 @@ label details, so label colors don't need an extra request.
 
 ```bash
 tests/run.sh                            # board-fetch fixture tests with a fake glab
+node --test tests/logic.test.js         # Logic.js: move maths, ages, labels, Markdown
 ./board-fetch | jq                      # what the widget sees
 journalctl --user -t omarchy-shell -f   # shell log (QML errors)
 omarchy plugin validate .
 ```
+
+The QML files hold the views. The logic they share that needs no Qt (where a
+moved card lands, age labels, label text colors, the Markdown renderer) lives
+in `Logic.js`, which `tests/logic.test.js` loads under Node, as Omarchy's own
+panels do with their `Model.js`. CI runs both test suites.
 
 Saving a file under `~/.config/omarchy/plugins/` reloads the plugin.
 
