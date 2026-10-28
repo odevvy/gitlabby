@@ -3,7 +3,8 @@ import QtQuick.Controls
 import qs.Commons
 
 // In-popup settings: which columns new boards start with folded, and how
-// often to refresh. Changes are saved to shell.json right away.
+// often to refresh. Changes are saved to shell.json right away. The gear, ✕
+// or Esc returns to the board.
 Item {
   id: view
   required property var host
@@ -29,10 +30,11 @@ Item {
       width: parent.width - Style.space(8)
       spacing: Style.space(6)
 
-      Row {
-        spacing: Style.space(8)
-        Pill { label: "‹ Back"; clickable: true; textColor: view.host.foreground; onClicked: view.host.back() }
+      Item {
+        width: view.width  // past the scroll bar gutter, so the ✕ sits under the gear
+        implicitHeight: close.implicitHeight
         BoardText { anchors.verticalCenter: parent.verticalCenter; text: "Settings"; font { pixelSize: Style.font.bodySmall; bold: true } }
+        GlyphButton { id: close; anchors.right: parent.right; host: view.host; glyph: "\uf00d"; onClicked: view.host.back() }
       }
 
       Item { width: 1; height: Style.space(4) }

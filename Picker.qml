@@ -4,7 +4,8 @@ import qs.Commons
 import qs.Ui
 
 // Board switcher. Step 1: pick a project (filterable). Step 2: pick one of its
-// boards, or its workflow labels when it has none.
+// boards, or its workflow labels when it has none. ‹ steps back to the
+// projects; ✕ or Esc returns to the board.
 Item {
   id: view
   required property var host
@@ -21,14 +22,22 @@ Item {
     width: parent.width
     spacing: Style.space(8)
 
-    Row {
-      spacing: Style.space(8)
-      Pill { label: "‹ Back"; clickable: true; textColor: view.host.foreground; onClicked: view.onProjects ? view.host.back() : view.host.pickProjectStep() }
-      BoardText {
-        anchors.verticalCenter: parent.verticalCenter
-        text: view.onProjects ? "Choose a project" : "Choose a board in " + view.host.pickerProject
-        font { pixelSize: Style.font.bodySmall; bold: true }
+    Item {
+      width: parent.width
+      implicitHeight: close.implicitHeight
+      Row {
+        anchors { left: parent.left; right: close.left; rightMargin: Style.space(8); verticalCenter: parent.verticalCenter }
+        spacing: Style.space(4)
+        GlyphButton { id: stepBack; visible: !view.onProjects; host: view.host; glyph: "\uf053"; onClicked: view.host.pickProjectStep() }
+        BoardText {
+          anchors.verticalCenter: parent.verticalCenter
+          width: parent.width - (stepBack.visible ? stepBack.width + parent.spacing : 0)
+          elide: Text.ElideMiddle
+          text: view.onProjects ? "Choose a project" : "Choose a board in " + view.host.pickerProject
+          font { pixelSize: Style.font.bodySmall; bold: true }
+        }
       }
+      GlyphButton { id: close; anchors.right: parent.right; host: view.host; glyph: "\uf00d"; onClicked: view.host.back() }
     }
 
     TextField {
