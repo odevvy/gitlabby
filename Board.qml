@@ -359,12 +359,6 @@ Panel {
     Quickshell.execDetached(["omarchy-launch-browser", String(url)])
     close()
   }
-  // Markdown links: absolute http(s) as is; GitLab-relative paths on the issue's host.
-  function openLink(link) {
-    var value = String(link || "")
-    if (/^\//.test(value) && issue && issue.url) value = String(issue.url).replace(/^(https?:\/\/[^\/]+).*$/, "$1") + value
-    if (/^https?:\/\//.test(value)) openUrl(value)
-  }
 
   function statusText() {
     if (moveError !== "") return moveError
