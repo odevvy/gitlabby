@@ -123,6 +123,7 @@ fx board <<'J'
           {"id":13,"position":2,"label":null,"assignee":{"username":"alice"}},{"id":14,"position":3,"label":{"name":"a,b"}}]}
 J
 fx put <<<'{"iid":3,"state":"opened","labels":["approved","app-ui"]}'
+at() { jq -cn --arg s "$1" --argjson l "$2" '{iid: 3, state: $s, labels: $l}' | fx issue; }  # issue 3 on GitLab now
 mv_() { "$fetch" move --project group/app --board 7 --iid 3 "$@"; }
 put() { sed -n 's/^PUT projects\/group%2Fapp\/issues\/3 //p' "$FAKE_LOG" | tail -n1; }
 puts() { grep -c '^PUT ' "$FAKE_LOG"; }
@@ -132,19 +133,58 @@ body_is() { # name expected-json args...
   check "$name ready" '.state == "ready"' "$out"
   check "$name body" "(. | tojson) == ($want | tojson)" "$(put | jq -cS . 2>/dev/null || echo null)"
 }
+at opened '["todo","app-ui"]'
 body_is "M label->label" '{"add_labels":"approved","remove_labels":"todo"}' --from 11 --to 12
 check "M label->label message" '.message == "Moved #3 to approved." and .issue == {"iid":3,"state":"opened","labels":["approved","app-ui"]}' "$(mv_ --from 11 --to 12)"
-body_is "M open->label" '{"add_labels":"todo"}' --from open --to 11
 body_is "M label->closed" '{"state_event":"close"}' --from 11 --to closed
+at opened '["app-ui"]'
+body_is "M open->label" '{"add_labels":"todo"}' --from open --to 11
 body_is "M open->closed" '{"state_event":"close"}' --from open --to closed
+at closed '["todo"]'
 body_is "M closed->label" '{"add_labels":"todo","state_event":"reopen"}' --from closed --to 11
 body_is "M closed->open" '{"state_event":"reopen"}' --from closed --to open
+at opened '["approved"]'
 body_is "M label->open" '{"remove_labels":"approved"}' --from 12 --to open
+at opened '["todo","app-ui"]'
 : >"$FAKE_LOG"; mv_ --from 11 --to 12 >/dev/null
-check "M one PUT to the issue, after one GET of the board" '.' "$(grep -c '^api ' "$FAKE_LOG" | grep -qx 2 &&
-  grep -q '^api --hostname gitlab.com --method GET projects/group%2Fapp/boards/7$' "$FAKE_LOG" &&
+check "M GET board, GET issue, then one PUT to the issue" '.' "$(grep '^api ' "$FAKE_LOG" | cut -d' ' -f5,6 | tr '\n' ' ' |
+  grep -qx 'GET projects/group%2Fapp/boards/7 GET projects/group%2Fapp/issues/3 PUT --header ' &&
   grep -q '^api --hostname gitlab.com --method PUT --header Content-Type: application/json --input - projects/group%2Fapp/issues/3$' "$FAKE_LOG" &&
   [[ $(puts) == 1 ]] && ! grep -q BAD-WRITE "$FAKE_LOG" && echo true || echo false)"
+
+# Pre-move check: the card may be out of date. If GitLab says the issue is not
+# in --from anymore, nothing is written and the answer is state "stale".
+stale() { # name state labels args...
+  local name=$1; at "$2" "$3"; shift 3; : >"$FAKE_LOG"
+  local out; out=$(mv_ "$@")
+  check "$name" '.state == "stale" and .message == "#3 changed on GitLab. Board refreshed."' "$out"
+  check "$name: no write" '.' "$(grep -q NON-GET "$FAKE_LOG" && echo false || echo true)"
+}
+stale "MS label changed elsewhere" opened '["review"]' --from 11 --to 12
+stale "MS closed elsewhere" closed '["todo"]' --from 11 --to 12
+stale "MS closed elsewhere, from Open" closed '[]' --from open --to 11
+stale "MS closed elsewhere, to Closed" closed '["todo"]' --from 11 --to closed
+stale "MS reopened elsewhere" opened '["todo"]' --from closed --to 12
+stale "MS reopened elsewhere, to Open" opened '[]' --from closed --to open
+stale "MS already in the target" opened '["approved"]' --from 11 --to 12
+stale "MS left Open for a list" opened '["todo","bug"]' --from open --to 12
+stale "MS label objects" opened '[{"name":"review"}]' --from 11 --to 12
+at opened '["todo","approved"]'
+body_is "MS in both lists: normal swap" '{"add_labels":"approved","remove_labels":"todo"}' --from 11 --to 12
+at opened '[{"name":"todo","color":"#428BCA"}]'
+body_is "MS label objects in place" '{"add_labels":"approved","remove_labels":"todo"}' --from 11 --to 12
+at opened '["bug"]'
+body_is "MS Open with other labels" '{"add_labels":"approved"}' --from open --to 12
+check "MS issue read failure" '.state == "error" and .message == "Could not load issue #3."' "$(rm -f "$FAKE_DIR/issue.json"; : >"$FAKE_LOG"; mv_ --from 11 --to 12)"
+check "MS issue read failure: no write" '.' "$(grep -q NON-GET "$FAKE_LOG" && echo false || echo true)"
+fx issue <<<'{"iid":4,"state":"opened","labels":["todo"]}'
+rejects_() { check "$1" '.state == "error"' "$(: >"$FAKE_LOG"; mv_ --from 11 --to 12)"; check "$1: no write" '.' "$(grep -q NON-GET "$FAKE_LOG" && echo false || echo true)"; }
+rejects_ "MS answer for another issue"
+fx issue <<<'not json'
+rejects_ "MS unreadable issue"
+fx issue <<<'[{"iid":3,"state":"opened","labels":["todo"]}]'
+rejects_ "MS issue answer not an object"
+at opened '["todo"]'
 
 # Rejections: each must fail before any write.
 rejects() { # name args... (expects state error and no PUT)
@@ -289,12 +329,16 @@ src=$(grep -v '^ *#' "$fetch")
 check "R non-GETs in the script: one PUT, one POST" '.' "$(grep -oE -- '--method [A-Z]+' <<<"$src" | sort | tr '\n' ' ' | grep -qx -- '--method GET --method POST --method PUT ' && echo true || echo false)"
 check "R glab api only in get(), write_issue() and write_note()" '.' "$(grep -c 'glab api' <<<"$src" | grep -qx 3 && echo true || echo false)"
 check "R write_issue only inside move" '.' "$(awk '/^  move\)/{m=1} /^    exit 0 ;;/{if(m)m=2} /write_issue/{if(m!=1)bad=1} END{print bad?"false":"true"}' <<<"$src")"
+check "R move: issue read, then stale exit, then the PUT" '.' "$(awk '/^  move\)/{m=1} /^    exit 0 ;;/{if(m==1)m=2}
+  m==1 && /get "\$base\/issues\/\$iid"/{g=NR} m==1 && /emit stale/{st=NR} m==1 && /\| write_issue/{w=NR}
+  END{print (g && st && w && g < st && st < w) ? "true" : "false"}' <<<"$src")"
 check "R write_note only inside comment" '.' "$(awk '/^  comment\)/{m=1} /^    exit 0 ;;/{if(m)m=2} /write_note/{if(m!=1)bad=1} END{print bad?"false":"true"}' <<<"$src")"
 check "R stdin is read only for comment" '.' "$(: >"$FAKE_LOG"; echo '{"body":"x"}' | "$fetch" notes --project a/b --iid 1 >/dev/null; grep -q NON-GET "$FAKE_LOG" && echo false || echo true)"
 
 # --- safety: no token in any output --------------------------------------------
 fx board <<<'{"id":7,"name":"Dev","lists":[{"id":11,"label":{"name":"todo"}},{"id":12,"label":{"name":"approved"}}]}'
 fx put <<<'{"iid":3,"state":"opened","labels":["approved"]}'
+at opened '["todo"]'
 all=$(printf '%s\n' "$reads"; "$fetch"; "$fetch" projects; "$fetch" issue --iid 45; FAKE_AUTH=no "$fetch"; mv_ --from 11 --to 12; FAKE_PUT=fail mv_ --from 11 --to 12; mv_ --iid x
   "$fetch" notes --project a/b --iid 1; fx post <<<'{"id":1}'; echo hi | say; echo hi | FAKE_POST=fail say)
 check "no token leak" '.' "$(grep -qiE 'glpat|bearer' <<<"$all" && echo false || echo true)"

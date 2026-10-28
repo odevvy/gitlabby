@@ -53,6 +53,18 @@ Other labels on the issue are never touched. This follows GitLab's table in
 - The card moves right away. If GitLab refuses (no permission, network, a
   token without the `api` scope), it jumps back and the header shows why for
   a few seconds. When GitLab accepts, the board reloads.
+- **Out-of-date cards are never moved.** Just before writing, the plugin reads
+  the issue from GitLab and checks that it's still in the column you dragged
+  it from (still open with that label; for Open, open with none of the board's
+  list labels; for Closed, closed). If someone moved, closed or reopened it in
+  the meantime, nothing is written: the card jumps back, the header says
+  `#45 changed on GitLab. Board refreshed.`, and the board reloads so you see
+  where the issue really is. An issue that's already in the column you
+  dropped it on counts as changed too. A card that shows in two label columns
+  (two list labels) can still be moved from either.
+- That check and the write are two requests about a second apart, and GitLab
+  has no "only if unchanged" option for issues, so a change made by someone
+  else inside that second can still be overwritten.
 - One move at a time: while a move is on its way, cards can't be dragged.
 - You can't drop onto assignee, milestone or other unsupported lists, and
   nothing can be moved on the workflow-label fallback (a project without
@@ -154,7 +166,9 @@ behind the popup shows through without blur.
 | `Escape` | Leave the comment box; otherwise go back to the board; on the board, close |
 
 The board refreshes every 60 seconds (configurable) and each time the popup
-opens. A wide board scrolls sideways.
+opens. While it loads, the refresh icon in the header spins; it finishes its
+turn and stops when the new data is in. The board stays usable during a
+refresh. A wide board scrolls sideways.
 
 ## Saved state
 
@@ -224,9 +238,11 @@ omarchy bar set odevvy.gitlab-board refreshIntervalSec 120
 
 `move` takes list ids, not label names: `L` is `open`, `closed`, or the
 numeric id of a label list on that board (the board output gives each label
-column a `listId`). It loads the board from GitLab, looks the label names up
-there, refuses anything else (unknown or non-label lists, a hidden Open or
-Closed list, labels with commas, a non-numeric issue), and only then sends one
+column a `listId`). It loads the board and the issue from GitLab (two GETs),
+looks the label names up on the board, refuses anything else (unknown or
+non-label lists, a hidden Open or Closed list, labels with commas, a
+non-numeric issue), answers `{"state": "stale"}` without writing when the
+issue is no longer in `--from`, and only then sends one
 `PUT /projects/:id/issues/:iid` with `add_labels`, `remove_labels` and/or
 `state_event`. The body goes to glab on stdin as JSON, so glab never expands
 `@file` or `:placeholder` in it. All reads go through one GET-only function;

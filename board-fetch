@@ -13,6 +13,7 @@
 #   board-fetch move --project P --board ID --iid N --from L --to L   (PUT, write_issue())
 #     L is open, closed, or the numeric id of a label list on that board. Label
 #     names come from GitLab's own copy of the board, never from the caller.
+#     If the issue is no longer in --from on GitLab, nothing is written: state "stale".
 #   board-fetch comment --project P --iid N <body   (POST, write_note())
 #     The comment is read from stdin and never appears on a command line.
 #
@@ -111,7 +112,10 @@ case $cmd in
     # #dragging-issues-between-lists): label A -> label B swaps the two labels,
     # -> Closed closes (labels kept), Closed -> anywhere reopens, -> Open drops
     # the source label. Assignee, milestone and other lists are refused.
+    # The issue is read fresh too: a card can be out of date, and moving from a
+    # list the issue has already left could leave two list labels on it.
     get "$base/boards/$board_id" >"$tmp/b" || emit error "Could not load board $board_id."
+    get "$base/issues/$iid" >"$tmp/i" || emit error "Could not load issue #$iid."
     read -r -d '' PLAN <<'JQ'
 def list($spec):
   if $spec == "open" then (if .hide_backlog_list then {err: "This board has no Open list."} else {kind: "open", name: "Open"} end)
@@ -122,9 +126,19 @@ def list($spec):
       elif (.label.name | test("^[^,\\p{Cc}]{1,255}$") | not) then {err: "Unsupported label name."}
       else {kind: "label", name: .label.name} end)
   end;
-if type != "object" then {err: "GitLab returned an unreadable response."} else
+# Is the issue in list $l now? Same rules as the board: Closed = closed; a label
+# list = open with that label; Open = open with none of the board's list labels.
+def holds($l; $listLabels):
+  [(.labels // [])[] | if type == "object" then .name else . end | strings] as $names
+  | if $l.kind == "closed" then .state == "closed"
+    elif .state != "opened" then false
+    elif $l.kind == "label" then $names | index($l.name) != null
+    else [$names[] | select(IN($listLabels[]))] == [] end;
+$i[0] as $issue | [(.lists // [])[] | .label.name // empty] as $listLabels
+| if type != "object" or ($issue | type) != "object" or $issue.iid != $iid then {err: "GitLab returned an unreadable response."} else
 list($from) as $f | list($to) as $t
-| if $f.err then {err: $f.err} elif $t.err then {err: $t.err} else
+| if $f.err then {err: $f.err} elif $t.err then {err: $t.err}
+  elif ($issue | holds($f; $listLabels) | not) then {stale: "#\($iid) changed on GitLab. Board refreshed."} else
     {body: ((if $f.kind == "closed" then {state_event: "reopen"} else {} end)
       + (if $t.kind == "closed" then {state_event: "close"} else {} end)
       + (if $f.kind == "label" and $t.kind != "closed" then {remove_labels: $f.name} else {} end)
@@ -132,9 +146,12 @@ list($from) as $f | list($to) as $t
      to: $t.name}
   end end
 JQ
-    jq -c --arg from "$from" --arg to "$to" "$PLAN" "$tmp/b" >"$tmp/plan" 2>/dev/null || emit error "GitLab returned an unreadable response."
+    jq -c --arg from "$from" --arg to "$to" --argjson iid "$iid" --slurpfile i "$tmp/i" "$PLAN" "$tmp/b" >"$tmp/plan" 2>/dev/null ||
+      emit error "GitLab returned an unreadable response."
     err=$(jq -r '.err // empty' "$tmp/plan")
     [[ -z $err ]] || emit error "$err"
+    stale=$(jq -r '.stale // empty' "$tmp/plan")
+    [[ -z $stale ]] || emit stale "$stale"
     # The only non-GET request in this script. The JSON body goes in on stdin
     # (--input), so glab never expands @files or :placeholders in it.
     write_issue() {
