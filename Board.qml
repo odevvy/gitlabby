@@ -7,8 +7,9 @@ import qs.Commons as Commons
 import qs.Ui
 
 // GitLab issue board in the Omarchy bar. Left click opens the popup, right or
-// middle click refreshes. Data comes from ./board-fetch (read-only glab api).
-// Views: the board, one issue, the board picker, and settings. Selection,
+// middle click refreshes. Data comes from ./board-fetch through glab: reads are
+// GET only; the one write is `board-fetch move`, run when a card is dropped on
+// another column. Views: the board, one issue, the board picker, and settings. Selection,
 // per-board collapsed/hidden columns and defaults are saved inline in shell.json.
 Panel {
   id: root
@@ -19,6 +20,7 @@ Panel {
   readonly property color accent: Commons.Color.accent
   readonly property color background: Commons.Color.popups.background
   readonly property color muted: Commons.Color.muted
+  readonly property color urgent: Commons.Color.urgent
   // Solid blends so they also work inside StyledText markup.
   readonly property color dim: Qt.tint(foreground, Qt.rgba(background.r, background.g, background.b, 0.45))
   readonly property color faint: Qt.tint(background, Qt.rgba(foreground.r, foreground.g, foreground.b, 0.12))
@@ -49,6 +51,7 @@ Panel {
   property var columns: []
   property var labelColors: ({})
   property string resolvedBoardId: ""
+  property bool fallback: false
   property string firstBoardId: ""
   readonly property bool onDefault: project === defaultProject && resolvedBoardId === (defaultBoardId || firstBoardId)
   readonly property string stateKey: project + "#" + (resolvedBoardId || "labels")
@@ -70,6 +73,18 @@ Panel {
   property string auxError: ""
   property string auxKind: ""
   property var pendingAux: null
+
+  // Drag-to-move: one move at a time. The card moves at once (optimistic);
+  // the snapshot brings it back if GitLab refuses. moveSeq/fetchSeq drop any
+  // board answer that was requested before the latest move.
+  property bool moving: false
+  property int movingIid: -1
+  property var moveSnapshot: null
+  property string moveKey: ""
+  property string moveError: ""
+  property int moveSeq: 0
+  property int fetchSeq: 0
+  readonly property bool canMove: boardState === "ready" && !fallback && resolvedBoardId !== ""
 
   function lowerList(value) {
     var list = Array.isArray(value) ? value : String(value || "").split(",")
@@ -175,8 +190,9 @@ Panel {
   }
 
   function refresh() {
-    if (fetchProcess.running) { refreshQueued = true; return }
+    if (fetchProcess.running || moving) { refreshQueued = true; return }
     loading = true
+    fetchSeq = moveSeq
     fetchProcess.command = [helperPath(), "board", "--project", project, "--board", boardId]
     fetchProcess.running = true
   }
@@ -188,15 +204,72 @@ Panel {
   function apply(raw) {
     var data = parse(raw)
     if (data.project && data.project !== project) return  // answer for a project we already left
+    if (moving || fetchSeq !== moveSeq) { refreshQueued = true; return }  // older than the latest move
     boardState = String(data.state || "error")
     message = String(data.message || "")
     updatedAt = String(data.updatedAt || "")
     columns = Array.isArray(data.columns) ? data.columns : []
     labelColors = data.labelColors || {}
     resolvedBoardId = data.board ? String(data.board.id) : ""
+    fallback = !!data.fallback
     firstBoardId = data.boards && data.boards.length > 0 ? String(data.boards[0].id) : ""
     if (data.board && boardName !== data.board.name) boardName = data.board.name
     if (data.fallback) boardName = ""
+  }
+
+  // Columns a card can be dropped on: Open, Closed and label lists of a real
+  // board (not the workflow-label fallback, not assignee/milestone lists).
+  function canDrop(column) {
+    return canMove && !!column && (column.kind === "open" || column.kind === "closed" || (column.kind === "label" && !!column.listId))
+  }
+  function columnKey(column) { return column.kind + ":" + (column.listId || column.name) }
+  function listSpec(column) { return column.kind === "label" ? String(column.listId) : column.kind }
+
+  // Board columns after moving row from one column to another, as GitLab
+  // would show them: label swapped (kept when closing), card on top of target.
+  function movedColumns(row, from, to) {
+    var fromKey = columnKey(from), toKey = columnKey(to)
+    var labels = (row.labels || []).filter(function(l) { return !(from.kind === "label" && to.kind !== "closed" && l === from.name) })
+    if (to.kind === "label" && labels.indexOf(to.name) === -1) labels = labels.concat([to.name])
+    var moved = Object.assign({}, row, { labels: labels })
+    return columns.map(function(c) {
+      var key = columnKey(c)
+      var issues = (c.issues || []).filter(function(i) { return i.iid !== row.iid || (key !== fromKey && key !== toKey && to.kind !== "closed") })
+        .map(function(i) { return i.iid === row.iid ? moved : i })
+      return Object.assign({}, c, { issues: key === toKey ? [moved].concat(issues) : issues })
+    })
+  }
+
+  function moveIssue(row, from, to) {
+    if (moving || !row || !canDrop(from) || !canDrop(to) || columnKey(from) === columnKey(to)) return false
+    moveSnapshot = columns
+    moveKey = stateKey
+    movingIid = row.iid
+    moveError = ""
+    moving = true
+    moveSeq++
+    columns = movedColumns(row, from, to)
+    moveProcess.command = [helperPath(), "move", "--project", project, "--board", resolvedBoardId,
+      "--iid", String(row.iid), "--from", listSpec(from), "--to", listSpec(to)]
+    moveProcess.running = true
+    moveWatchdog.restart()
+    return true
+  }
+
+  function moveDone(raw) {
+    if (!moving) return  // late answer after the watchdog gave up
+    moveWatchdog.stop()
+    var data = parse(raw)
+    moving = false
+    movingIid = -1
+    if (data.state !== "ready") {
+      if (moveSnapshot && moveKey === stateKey) columns = moveSnapshot
+      moveError = String(data.message || "Move failed.")
+      moveErrorTimer.restart()
+    }
+    moveSnapshot = null
+    // Success: load the board as GitLab now has it. Failure: only if a refresh was due.
+    if (data.state === "ready" || refreshQueued) { refreshQueued = false; refresh() }
   }
 
   function runAux(kind, args) {
@@ -264,6 +337,7 @@ Panel {
     columns = []
     resolvedBoardId = id
     firstBoardId = ""
+    moveError = ""
     boardState = "loading"
     back()
     refresh()
@@ -291,6 +365,8 @@ Panel {
   }
 
   function statusText() {
+    if (moveError !== "") return moveError
+    if (moving) return "Moving #" + movingIid + "…"
     if (boardState === "ready") {
       if (loading) return "Refreshing…"
       var time = updatedAt !== "" ? "Updated " + new Date(updatedAt).toLocaleTimeString(Qt.locale(), "HH:mm") : ""
@@ -316,6 +392,19 @@ Panel {
     id: fetchProcess
     onExited: { root.loading = false; if (root.refreshQueued) { root.refreshQueued = false; Qt.callLater(root.refresh) } }
     stdout: StdioCollector { waitForEnd: true; onStreamFinished: root.apply(text) }
+  }
+
+  Process {
+    id: moveProcess
+    stdout: StdioCollector { waitForEnd: true; onStreamFinished: root.moveDone(text) }
+  }
+
+  Timer { id: moveErrorTimer; interval: 8000; onTriggered: root.moveError = "" }
+  // No answer in 30 s (glab hung or never started): put the card back and
+  // reload, since the move may or may not have reached GitLab.
+  Timer {
+    id: moveWatchdog; interval: 30000
+    onTriggered: { root.refreshQueued = true; root.moveDone(JSON.stringify({ state: "error", message: "No answer from glab; reloading the board." })) }
   }
 
   Process {
@@ -397,7 +486,7 @@ Panel {
           horizontalAlignment: Text.AlignRight
           elide: Text.ElideLeft
           text: root.statusText()
-          color: root.boardState === "ready" && root.message === "" ? root.dim : root.accent
+          color: root.moveError !== "" ? root.urgent : root.boardState === "ready" && root.message === "" && !root.moving ? root.dim : root.accent
           font.pixelSize: Style.font.bodySmall
         }
         BoardText {

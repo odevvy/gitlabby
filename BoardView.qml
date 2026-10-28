@@ -4,9 +4,13 @@ import qs.Commons
 
 // The board: chips to show or hide columns, then the columns. A column header
 // collapses its column to a strip; clicking a card opens the issue view.
+// Dragging a card past a small threshold drags a copy of it (the ghost); dropping
+// it on another column, expanded or collapsed, asks the host to move the issue.
 Item {
   id: view
   required property var host
+  property var dragRow: null   // card being pressed or dragged, and its column
+  property var dragFrom: null
 
   implicitHeight: chips.implicitHeight + host.gap + Math.max(board.implicitHeight, Style.space(60))
 
@@ -47,6 +51,7 @@ Item {
           readonly property bool isCollapsed: view.host.isCollapsed(modelData.name)
           readonly property var issues: modelData.issues || []
           readonly property color tint: view.host.columnAccent(modelData)
+          readonly property bool dropHot: dropArea.containsDrag
           width: isCollapsed ? view.host.stripWidth : view.host.columnWidth
           implicitHeight: isCollapsed ? Math.max(strip.implicitHeight, flick.height) : cards.implicitHeight + Style.space(12)
           clip: true  // while the width animates
@@ -56,8 +61,9 @@ Item {
           Rectangle {
             anchors.fill: parent
             radius: Style.space(8)
-            color: Qt.rgba(view.host.foreground.r, view.host.foreground.g, view.host.foreground.b, column.isCollapsed && stripMouse.containsMouse ? 0.08 : 0.035)
-            border { width: 1; color: Qt.rgba(view.host.foreground.r, view.host.foreground.g, view.host.foreground.b, 0.08) }
+            color: column.dropHot ? Qt.rgba(column.tint.r, column.tint.g, column.tint.b, 0.16)
+              : Qt.rgba(view.host.foreground.r, view.host.foreground.g, view.host.foreground.b, column.isCollapsed && stripMouse.containsMouse ? 0.08 : 0.035)
+            border { width: column.dropHot ? 2 : 1; color: column.dropHot ? column.tint : Qt.rgba(view.host.foreground.r, view.host.foreground.g, view.host.foreground.b, 0.08) }
             Behavior on color { ColorAnimation { duration: 120 } }
           }
 
@@ -136,12 +142,15 @@ Item {
                 readonly property var chips: (modelData.labels || []).filter(function(l) { return l !== column.modelData.name })
                 readonly property var assignees: modelData.assignees || []
                 readonly property bool hovered: cardMouse.containsMouse
+                readonly property bool movable: view.host.canDrop(column.modelData) && !view.host.moving
+                readonly property bool lifted: ghost.Drag.active && view.dragRow !== null && view.dragRow.iid === modelData.iid
+                  && view.host.columnKey(view.dragFrom) === view.host.columnKey(column.modelData)
                 readonly property color fg: view.host.foreground
                 width: cards.width
                 implicitHeight: cardText.implicitHeight + (chipFlow.visible ? chipFlow.implicitHeight + Style.space(6) : 0)
                   + footer.implicitHeight + Style.space(22)
                 radius: Style.space(6)
-                opacity: column.modelData.kind === "closed" ? 0.65 : 1
+                opacity: lifted || view.host.movingIid === modelData.iid ? 0.4 : column.modelData.kind === "closed" ? 0.65 : 1
                 color: Qt.rgba(fg.r, fg.g, fg.b, hovered ? 0.1 : 0.05)
                 border { width: 1; color: hovered ? column.tint : Qt.rgba(fg.r, fg.g, fg.b, 0.1) }
                 // Hover: lift by a couple of pixels and brighten.
@@ -203,14 +212,73 @@ Item {
                   }
                 }
                 MouseArea {
-                  id: cardMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                  onClicked: view.host.openIssue(card.modelData)
+                  id: cardMouse; anchors.fill: parent; hoverEnabled: true
+                  cursorShape: ghost.Drag.active && card.lifted ? Qt.ClosedHandCursor : Qt.PointingHandCursor
+                  property point pressedAt
+                  property bool dragged: false
+                  // The Flickable must not take the press over; a drag starts
+                  // once the pointer has moved past the threshold.
+                  preventStealing: true
+                  onPressed: function(mouse) { pressedAt = Qt.point(mouse.x, mouse.y); dragged = false }
+                  onPositionChanged: function(mouse) {
+                    if (!pressed) return
+                    if (!dragged) {
+                      if (!card.movable || Math.abs(mouse.x - pressedAt.x) + Math.abs(mouse.y - pressedAt.y) < Style.space(8)) return
+                      dragged = true
+                      view.dragRow = card.modelData
+                      view.dragFrom = column.modelData
+                      ghost.width = card.width
+                      ghost.Drag.hotSpot = pressedAt
+                    }
+                    var p = mapToItem(view, mouse.x, mouse.y)
+                    ghost.x = p.x - pressedAt.x
+                    ghost.y = p.y - pressedAt.y
+                    ghost.Drag.active = true
+                  }
+                  onReleased: if (dragged && ghost.Drag.active) { ghost.Drag.drop(); ghost.Drag.active = false }
+                  onCanceled: ghost.Drag.active = false
+                  onClicked: if (!dragged) view.host.openIssue(card.modelData)
                 }
               }
             }
           }
+
+          // Drop target: the whole column, strip included. Never the column the
+          // card came from, nor columns the host cannot move into.
+          DropArea {
+            id: dropArea
+            anchors.fill: parent
+            keys: ["odevvy-gitlab-issue"]
+            enabled: view.dragFrom !== null && view.host.canDrop(column.modelData)
+              && view.host.columnKey(view.dragFrom) !== view.host.columnKey(column.modelData)
+            onDropped: {
+              var row = view.dragRow, from = view.dragFrom, to = column.modelData
+              Qt.callLater(function() { view.host.moveIssue(row, from, to) })  // after the press ends
+            }
+          }
         }
       }
+    }
+  }
+
+  // The dragged copy of a card; the card's MouseArea moves it and sets Drag.active.
+  Rectangle {
+    id: ghost
+    visible: Drag.active
+    z: 10
+    height: ghostText.implicitHeight + Style.space(16)
+    radius: Style.space(6)
+    color: view.host.background
+    border { width: 1; color: view.host.accent }
+    opacity: 0.92
+    Drag.keys: ["odevvy-gitlab-issue"]
+    BoardText {
+      id: ghostText
+      x: Style.space(8); y: Style.space(8); width: parent.width - Style.space(16)
+      text: view.dragRow ? "#" + view.dragRow.iid + "  " + view.dragRow.title : ""
+      font.pixelSize: Style.font.bodySmall
+      elide: Text.ElideRight
+      maximumLineCount: 2; wrapMode: Text.Wrap
     }
   }
 }

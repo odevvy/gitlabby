@@ -33,6 +33,51 @@ back to workflow-label columns: research, todo, approved, in progress, review,
 Closed, and Unlabeled. Unlabeled appears only when it has issues. Each issue
 goes in the furthest-along label it has.
 
+## Moving issues
+
+Drag a card onto another column to move the issue. This writes to GitLab, the
+same way dragging it on GitLab's own board does:
+
+| From \ To | Open | Label list B | Closed |
+| --- | --- | --- | --- |
+| Open | - | add label B | close |
+| Label list A | remove label A | remove A, add B | close (labels kept) |
+| Closed | reopen | reopen, add label B | - |
+
+Other labels on the issue are never touched. This follows GitLab's table in
+[Dragging issues between lists](https://docs.gitlab.com/user/project/issue_board/#dragging-issues-between-lists).
+
+- A drag starts after the pointer moves a few pixels, so a plain click still
+  opens the issue. Collapsed columns accept drops too; the column under the
+  card lights up in its color.
+- The card moves right away. If GitLab refuses (no permission, network, a
+  token without the `api` scope), it jumps back and the header shows why for
+  a few seconds. When GitLab accepts, the board reloads.
+- One move at a time: while a move is on its way, cards can't be dragged.
+- You can't drop onto assignee, milestone or other unsupported lists, and
+  nothing can be moved on the workflow-label fallback (a project without
+  boards). Dropping a card on its own column does nothing.
+- Only dropping a card writes. Refreshes, opening issues and the picker only
+  read.
+
+**Moves can set off automations.** Anything that watches labels or issue state
+(bots, webhooks, CI rules, GitLab triage policies) reacts to a move exactly as
+it would to a change on the website. On phrase41, moving an issue into
+approved or review wakes the bots.
+
+### Trying it on a sandbox project first
+
+1. Create a private throwaway project on GitLab, for example
+   `you/board-sandbox`, and give it a few labels (say `todo`, `doing`,
+   `review`).
+2. In its **Plan > Issue boards**, add a list for each label, then create a
+   handful of test issues.
+3. In the popup, open the picker (click the title), choose the sandbox
+   project and its board. Browsing doesn't change your default board.
+4. Drag cards between columns, into Closed and back, and check each issue on
+   GitLab: its labels and state should match the table above.
+5. Click the title again and go back to your real board, or click **Default**.
+
 ## Cards and colors
 
 - Label chips use each label's GitLab color and text color.
@@ -71,6 +116,7 @@ behind the popup shows through without blur.
   interval.
 - Click a column header to collapse it to a narrow strip. Click a chip under
   the header to hide or show that column.
+- Drag a card to another column to move the issue (see "Moving issues").
 
 | Input | Action |
 | --- | --- |
@@ -110,9 +156,11 @@ afterwards, it stays expanded.
 - `jq`
 - A Nerd Font (Omarchy ships one)
 
-`glab` handles all authentication. The plugin only makes read-only
-`glab api --method GET` requests. It never reads, stores, or prints a token,
-and it discards glab's stderr.
+`glab` handles all authentication. Every read is a `glab api --method GET`
+request. The one write is a single `PUT` to the issue when you drop a card on
+another column; it needs a token with the `api` scope (what `glab auth login`
+asks for by default). The plugin never reads, stores, or prints a token, and
+it discards glab's stderr.
 
 ## Install
 
@@ -138,8 +186,20 @@ omarchy bar set odevvy.gitlab-board refreshIntervalSec 120
 ./board-fetch projects                            # projects you are a member of
 ./board-fetch boards --project P                  # boards of a project
 ./board-fetch issue --project P --iid N           # one issue with its description
+./board-fetch move --project P --board ID --iid N --from L --to L
+                                                  # move an issue (the only write)
 # all of them accept --hostname HOST (default gitlab.com)
 ```
+
+`move` takes list ids, not label names: `L` is `open`, `closed`, or the
+numeric id of a label list on that board (the board output gives each label
+column a `listId`). It loads the board from GitLab, looks the label names up
+there, refuses anything else (unknown or non-label lists, a hidden Open or
+Closed list, labels with commas, a non-numeric issue), and only then sends one
+`PUT /projects/:id/issues/:iid` with `add_labels`, `remove_labels` and/or
+`state_event`. The body goes to glab on stdin as JSON, so glab never expands
+`@file` or `:placeholder` in it. All reads go through one GET-only function;
+`tests/run.sh` checks that no read command ever sends anything else.
 
 Requests per board refresh: one for the boards (which include their lists),
 the open issues (paginated), and one for the last 20 closed issues. The closed
