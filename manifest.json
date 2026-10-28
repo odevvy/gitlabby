@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "id": "odevvy.gitlab-board",
   "name": "GitLab Board",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "author": "o_devvy",
   "license": "MIT",
-  "description": "A GitLab issue board in a bar popup: your project's real boards in their label colors, assignees, issue details, and a board picker.",
+  "description": "A GitLab issue board in a bar popup: your project's real boards in their label colors, assignees, issue details, a board picker, and drag-to-move.",
   "kinds": [
     "bar-widget"
   ],
@@ -14,7 +14,7 @@
   },
   "barWidget": {
     "displayName": "GitLab Board",
-    "description": "Shows a GitLab board's lists as columns. Click an issue for its details; switch project and board from the popup.",
+    "description": "Shows a GitLab board's lists as columns. Click an issue for its details, drag it to another column to move it; switch project and board from the popup.",
     "category": "Development",
     "allowMultiple": false,
     "defaultSection": "right",
