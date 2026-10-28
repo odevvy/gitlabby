@@ -55,7 +55,7 @@ Item {
         }
         Repeater {
           model: view.issue.labels || []
-          delegate: Pill { required property var modelData; label: String(modelData) }
+          delegate: LabelChip { required property var modelData; host: view.host; name: String(modelData) }
         }
       }
 
@@ -63,7 +63,7 @@ Item {
         columns: 2; columnSpacing: Style.space(12); rowSpacing: Style.space(3)
         Repeater {
           model: [
-            "Assignees", (view.issue.assignees || []).join(", ") || "—",
+            "Assignees", (view.issue.assignees || []).map(function(a) { return a.username || a }).join(", ") || "—",  // card rows carry objects
             "Author", view.issue.author || "—",
             "Milestone", view.issue.milestone || "—",
             "Created", view.when(view.issue.createdAt),
