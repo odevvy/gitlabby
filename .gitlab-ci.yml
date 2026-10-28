@@ -1,0 +1,28 @@
+# Lint and offline tests for the plugin. No secrets, no GitLab API calls:
+# board-fetch runs against tests/fake-glab.
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+      when: never # an MR pipeline already covers this push
+    - if: $CI_COMMIT_BRANCH
+
+check:
+  image: alpine:3.22
+  variables:
+    # Omarchy v4.0.6 (the version on logain), pinned by commit and checksum.
+    OMARCHY_COMMIT: 237f1b4071a0bff2296c6d740ba2b9fd695ebfa0
+    VALIDATOR_SHA256: f7507e5042eb970e3dc918bdf6bf251c7557443892a77e71a17d7019ddde72c8
+  script:
+    - apk add --no-cache bash jq shellcheck curl findutils qt6-qtdeclarative-dev
+    - for f in board-fetch tests/run.sh tests/fake-glab; do bash -n "$f" || exit 1; done
+    - shellcheck board-fetch tests/run.sh tests/fake-glab
+    - bash tests/run.sh
+    # Same checks as `omarchy plugin validate` (manifest JSON, schema, entry points, symlinks).
+    - curl -fsSL -o /tmp/validate "https://raw.githubusercontent.com/basecamp/omarchy/$OMARCHY_COMMIT/bin/omarchy-plugin-validate"
+    - echo "$VALIDATOR_SHA256  /tmp/validate" | sha256sum -c -
+    - bash /tmp/validate .
+    # Omarchy and Quickshell imports can't resolve outside the shell, so those
+    # categories are off. Syntax errors and any other warning still fail.
+    - /usr/lib/qt6/bin/qmllint --import disable --unqualified disable --missing-property disable --unresolved-type disable --max-warnings 0 *.qml
