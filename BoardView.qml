@@ -12,7 +12,14 @@ Item {
   property var dragRow: null   // card being pressed or dragged, and its column
   property var dragFrom: null
 
-  implicitHeight: chips.implicitHeight + host.gap + Math.max(board.implicitHeight, Style.space(60))
+  // Every column is as tall as the tallest one's content (or the viewport, if
+  // taller), so panes, strips and drop areas all run the full scroll length.
+  readonly property real tallest: {
+    var m = 0
+    for (var i = 0; i < board.children.length; i++) m = Math.max(m, board.children[i].contentHeight || 0)
+    return m
+  }
+  implicitHeight: chips.implicitHeight + host.gap + Math.max(tallest, Style.space(60))
 
   Flow {
     id: chips
@@ -53,7 +60,8 @@ Item {
           readonly property color tint: view.host.columnAccent(modelData)
           readonly property bool dropHot: dropArea.containsDrag
           width: isCollapsed ? view.host.stripWidth : view.host.columnWidth
-          implicitHeight: isCollapsed ? Math.max(strip.implicitHeight, flick.height) : cards.implicitHeight + Style.space(12)
+          readonly property real contentHeight: isCollapsed ? strip.implicitHeight : cards.implicitHeight + Style.space(12)
+          height: Math.max(view.tallest, flick.height)
           clip: true  // while the width animates
           Behavior on width { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
 
