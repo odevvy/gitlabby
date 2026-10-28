@@ -8,8 +8,9 @@ import qs.Ui
 
 // GitLab issue board in the Omarchy bar. Left click opens the popup, right or
 // middle click refreshes. Data comes from ./board-fetch through glab: reads are
-// GET only; the one write is `board-fetch move`, run when a card is dropped on
-// another column. Views: the board, one issue, the board picker, and settings. Selection,
+// GET only; the writes are `board-fetch move`, run when a card is dropped on
+// another column, and `board-fetch comment`, run by Post in the issue view.
+// Views: the board, one issue, the board picker, and settings. Selection,
 // per-board collapsed/hidden columns and defaults are saved inline in shell.json.
 Panel {
   id: root
@@ -108,9 +109,9 @@ Panel {
     if (column.color) return Qt.color(column.color)
     return column.kind === "open" ? accent : column.kind === "closed" ? muted : dim
   }
-  // "5m", "3h", "4d", "2w", "6mo", "1y", relative to the last refresh.
-  function age(iso) {
-    var ms = new Date(updatedAt || Date.now()) - new Date(iso)
+  // "5m", "3h", "4d", "2w", "6mo", "1y", relative to the last refresh (or to since).
+  function age(iso, since) {
+    var ms = new Date(since || updatedAt || Date.now()) - new Date(iso)
     if (!iso || !(ms >= 0)) return ""
     var m = ms / 60000, h = m / 60, d = h / 24
     return m < 60 ? Math.floor(m) + "m" : h < 24 ? Math.floor(h) + "h" : d < 14 ? Math.floor(d) + "d"
@@ -436,6 +437,7 @@ Panel {
     PanelKeyCatcher {
       id: keyCatcher
       anchors.fill: parent
+      blocked: issueView.typing  // the comment box gets every key (Omarchy PanelKeyCatcher.qml:27-31)
       implicitHeight: header.implicitHeight + root.gap + (root.view === "board" ? boardView.implicitHeight
         : root.view === "issue" ? issueView.implicitHeight : root.view === "picker" ? picker.implicitHeight : settingsView.implicitHeight)
       onCloseRequested: root.view !== "board" ? root.back() : root.close()

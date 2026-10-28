@@ -204,30 +204,99 @@ fx put <<<'not json'
 check "MF unreadable answer" '.state == "error"' "$(mv_ --from 11 --to 12)"
 check "MF logged out: no write" '.state == "logged-out"' "$(: >"$FAKE_LOG"; FAKE_AUTH=no mv_ --from 11 --to 12)"
 
+# --- N: notes (read) ----------------------------------------------------------
+# GitLab answers newest first (sort=desc); system notes are dropped, the rest
+# come back oldest first.
+reset
+fx notes <<'J'
+[{"id":5,"body":"newest","system":false,"created_at":"2026-10-27T12:00:00Z","author":{"username":"ann","name":"Ann Lee","avatar_url":"https://gitlab.com/a.png"}},
+ {"id":4,"body":"added ~approved label","system":true,"created_at":"2026-10-27T11:00:00Z","author":{"username":"bot"}},
+ {"id":3,"body":"middle\nsecond line","system":false,"created_at":"2026-10-27T10:00:00Z","author":{"username":"cy","avatar_url":"http://insecure/c.png"}},
+ {"id":2,"body":"changed the description","system":true,"created_at":"2026-10-27T09:00:00Z","author":{"username":"ann"}},
+ {"id":1,"body":"oldest","created_at":"2026-10-27T08:00:00Z","author":{"username":"dee","name":"Dee","avatar_url":null}}]
+J
+out=$("$fetch" notes --project a/b --iid 45)
+check "N ready" '.state == "ready" and .iid == 45 and .more == false' "$out"
+check "N comments only, oldest first" '[.notes[].id] == [1,3,5]' "$out"
+check "N fields" '.notes[2] == {"id":5,"body":"newest","createdAt":"2026-10-27T12:00:00Z","author":{"username":"ann","name":"Ann Lee","avatar":"https://gitlab.com/a.png"}}' "$out"
+check "N body kept as is, https avatars only" '.notes[1].body == "middle\nsecond line" and .notes[1].author == {"username":"cy","name":"cy","avatar":""} and .notes[0].author.avatar == ""' "$out"
+check "N endpoint" '.' "$(grep -qx 'api --hostname gitlab.com --method GET projects/a%2Fb/issues/45/notes?sort=desc&order_by=created_at&per_page=100' "$FAKE_LOG" && echo true || echo false)"
+jq -c '[range(100) | {id: ., body: "n", system: false, created_at: "2026-10-27T08:00:00Z", author: {username: "x"}}]' -n | fx notes
+check "N full page flags more" '.more == true and (.notes | length) == 100' "$("$fetch" notes --project a/b --iid 45)"
+fx notes <<<'[]'
+check "N no comments" '.state == "ready" and .notes == []' "$("$fetch" notes --project a/b --iid 45)"
+fx notes <<<'{"message":"404 Not found"}'
+check "N unreadable answer" '.state == "error"' "$("$fetch" notes --project a/b --iid 45)"
+rm -f "$FAKE_DIR/notes.json"
+check "N api failure" '.state == "error" and .message == "Could not load comments."' "$("$fetch" notes --project a/b --iid 45)"
+check "N bad iid, no glab" '.state == "error"' "$(: >"$FAKE_LOG"; "$fetch" notes --project a/b --iid '45/../1')"
+check "N bad iid ran nothing" '.' "$([[ -s $FAKE_LOG ]] && echo false || echo true)"
+
+# --- P: comment (the POST) ---------------------------------------------------
+reset
+fx post <<<'{"id":901,"body":"x","system":false,"noteable_iid":45}'
+say() { "$fetch" comment --project a/b --iid 45 "$@"; }
+posts() { grep -c '^POST ' "$FAKE_LOG"; }
+body=$'Looks good.\n\n- "quoted" & <b>\n$(id) `id` @/etc/passwd :id {placeholder} ünïcode\ttab\n'
+out=$(printf '%s' "$body" | say)
+check "P ready" '.state == "ready" and .message == "Comment posted." and .note == {"id":901}' "$out"
+check "P one POST to the notes endpoint, nothing else" '.' "$(grep -c '^api ' "$FAKE_LOG" | grep -qx 1 &&
+  grep -qx 'api --hostname gitlab.com --method POST --header Content-Type: application/json --input - projects/a%2Fb/issues/45/notes' "$FAKE_LOG" &&
+  [[ $(posts) == 1 ]] && ! grep -q 'BAD-WRITE\|^PUT ' "$FAKE_LOG" && echo true || echo false)"
+check "P body arrives on stdin, byte for byte" "(.body == $(jq -Rs . <<<"$body" | jq -c 'sub("\n$"; "")')) and (keys == [\"body\"])" \
+  "$(sed -n 's/^POST projects\/a%2Fb\/issues\/45\/notes //p' "$FAKE_LOG")"
+check "P body never on a glab command line" '.' "$(grep -v '^POST ' "$FAKE_LOG" | grep -q 'Looks good' && echo false || echo true)"
+nothing_ran() { # name stdin args... (expects state error and no glab call at all)
+  local name=$1 in=$2; shift 2; rm -f "$FAKE_LOG"
+  local out; out=$(printf '%s' "$in" | say "$@")
+  check "$name" '.state == "error"' "$out"
+  check "$name: no glab call" '.' "$([[ -s $FAKE_LOG ]] && echo false || echo true)"
+}
+nothing_ran "P empty body" ''
+nothing_ran "P whitespace body" $' \n\t \r\n  '
+check "P empty message" '.message == "Comment is empty."' "$(say </dev/null)"
+nothing_ran "P bad iid" 'hi' --iid '45;x'
+nothing_ran "P bad project" 'hi' --project 'a/../b'
+fx post-error <<<'{"message":"403 Forbidden glpat-LEAKLEAKLEAK Bearer abc.def"}'
+out=$(echo hi | FAKE_POST=fail say)
+check "PF refused" '.state == "error" and (.message | startswith("Comment failed: 403 Forbidden"))' "$out"
+check "PF refused: token redacted" '.' "$(grep -qiE 'glpat-|LEAK|abc\.def' <<<"$out" && echo false || echo true)"
+rm -f "$FAKE_DIR/post-error.json"
+check "PF no body" '.message == "Comment failed"' "$(echo hi | FAKE_POST=fail say)"
+fx post <<<'{"message":"odd"}'
+check "PF unexpected answer" '.state == "error"' "$(echo hi | say)"
+: >"$FAKE_LOG"
+check "PF logged out: no write" '.state == "logged-out"' "$(echo hi | FAKE_AUTH=no say)"
+check "PF logged out: no POST" '.' "$(grep -q NON-GET "$FAKE_LOG" && echo false || echo true)"
+
 # --- R: reads are GET only ---------------------------------------------------
 # Runtime: every read command, including a refresh with a board, issues only
-# GETs. Structure: board-fetch has exactly one non-GET request, in write_issue(),
-# defined and called only inside the move branch.
+# GETs. Structure: board-fetch has exactly two non-GET requests: the PUT in
+# write_issue() (move branch only) and the POST in write_note() (comment only).
 reset
 fx boards <<<'[{"id":7,"name":"Dev","lists":[{"id":11,"position":0,"label":{"name":"todo"}}]}]'
 fx open <<<'[{"iid":1,"title":"a","state":"opened","labels":["todo"],"web_url":"u"}]'
 fx closed <<<'[]'
 fx projects <<<'[{"id":1,"path_with_namespace":"a/b"}]'
 fx issue <<<'{"iid":1,"title":"a","state":"opened","labels":[],"web_url":"u"}'
-reads=$("$fetch"; "$fetch" board --project group/app --board 7; "$fetch" projects; "$fetch" boards --project a/b; "$fetch" issue --project a/b --iid 1)
+fx notes <<<'[{"id":1,"body":"b","system":false,"author":{"username":"x"}}]'
+reads=$("$fetch"; "$fetch" board --project group/app --board 7; "$fetch" projects; "$fetch" boards --project a/b; "$fetch" issue --project a/b --iid 1; "$fetch" notes --project a/b --iid 1)
 check "R refresh has listId" '.columns[1] | .name == "todo" and .listId == 11' "$("$fetch" --project group/app)"
 check "R reads ran" '.' "$(grep -c '^api ' "$FAKE_LOG" | grep -qxE '[0-9]{2,}' && echo true || echo false)"
 check "R reads are GET only" '.' "$(grep -q 'NON-GET' "$FAKE_LOG" && echo false || echo true)"
 check "R every api call says --method GET" '.' "$(grep '^api ' "$FAKE_LOG" | grep -qv -- '--method GET ' && echo false || echo true)"
 src=$(grep -v '^ *#' "$fetch")
-check "R one non-GET in the script" '.' "$(grep -oE -- '--method [A-Z]+' <<<"$src" | sort | tr '\n' ' ' | grep -qx -- '--method GET --method PUT ' && echo true || echo false)"
-check "R glab api only in get() and write_issue()" '.' "$(grep -c 'glab api' <<<"$src" | grep -qx 2 && echo true || echo false)"
+check "R non-GETs in the script: one PUT, one POST" '.' "$(grep -oE -- '--method [A-Z]+' <<<"$src" | sort | tr '\n' ' ' | grep -qx -- '--method GET --method POST --method PUT ' && echo true || echo false)"
+check "R glab api only in get(), write_issue() and write_note()" '.' "$(grep -c 'glab api' <<<"$src" | grep -qx 3 && echo true || echo false)"
 check "R write_issue only inside move" '.' "$(awk '/^  move\)/{m=1} /^    exit 0 ;;/{if(m)m=2} /write_issue/{if(m!=1)bad=1} END{print bad?"false":"true"}' <<<"$src")"
+check "R write_note only inside comment" '.' "$(awk '/^  comment\)/{m=1} /^    exit 0 ;;/{if(m)m=2} /write_note/{if(m!=1)bad=1} END{print bad?"false":"true"}' <<<"$src")"
+check "R stdin is read only for comment" '.' "$(: >"$FAKE_LOG"; echo '{"body":"x"}' | "$fetch" notes --project a/b --iid 1 >/dev/null; grep -q NON-GET "$FAKE_LOG" && echo false || echo true)"
 
 # --- safety: no token in any output --------------------------------------------
 fx board <<<'{"id":7,"name":"Dev","lists":[{"id":11,"label":{"name":"todo"}},{"id":12,"label":{"name":"approved"}}]}'
 fx put <<<'{"iid":3,"state":"opened","labels":["approved"]}'
-all=$(printf '%s\n' "$reads"; "$fetch"; "$fetch" projects; "$fetch" issue --iid 45; FAKE_AUTH=no "$fetch"; mv_ --from 11 --to 12; FAKE_PUT=fail mv_ --from 11 --to 12; mv_ --iid x)
+all=$(printf '%s\n' "$reads"; "$fetch"; "$fetch" projects; "$fetch" issue --iid 45; FAKE_AUTH=no "$fetch"; mv_ --from 11 --to 12; FAKE_PUT=fail mv_ --from 11 --to 12; mv_ --iid x
+  "$fetch" notes --project a/b --iid 1; fx post <<<'{"id":1}'; echo hi | say; echo hi | FAKE_POST=fail say)
 check "no token leak" '.' "$(grep -qiE 'glpat|bearer' <<<"$all" && echo false || echo true)"
 
 echo "passed $pass, failed $fail"

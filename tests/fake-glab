@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 # Test double for glab: serves JSON fixtures from $FAKE_DIR, logs every call to
 # $FAKE_LOG, and prints a fake token on stderr (must never reach output).
-# Any request that is not an explicit GET is logged as "NON-GET ...". The one
-# write board-fetch may make (a PUT with a JSON --input body to issues/N) is
+# Any request that is not an explicit GET is logged as "NON-GET ...". The move
+# write (a PUT with a JSON --input body to issues/N) is
 # also logged as "PUT <endpoint> <body>" and answered from put.json, or, with
-# FAKE_PUT=fail, from put-error.json with exit 1. Any other write fails.
+# FAKE_PUT=fail, from put-error.json with exit 1. The comment write (a POST
+# with a JSON --input body to issues/N/notes) is logged as "POST <endpoint>
+# <body>" and answered from post.json (FAKE_POST=fail: post-error.json, exit 1).
+# Any other write fails.
 printf '%s\n' "$*" >>"$FAKE_LOG"
 echo "glpat-FAKEFAKEFAKEFAKEFAKE Authorization: Bearer FAKE" >&2
 [[ $1 == auth ]] && { [[ ${FAKE_AUTH:-ok} == ok ]]; exit; }
@@ -16,6 +19,11 @@ if [[ " $* " != *" --method GET "* ]]; then
     if [[ ${FAKE_PUT:-ok} != ok ]]; then cat "$FAKE_DIR/put-error.json" 2>/dev/null; exit 1; fi
     cat "$FAKE_DIR/put.json"; exit
   fi
+  if [[ " $* " == *" --method POST --header Content-Type: application/json --input - "* && $endpoint =~ ^projects/[^/]+/issues/[0-9]+/notes$ ]]; then
+    printf 'POST %s %s\n' "$endpoint" "$(cat)" >>"$FAKE_LOG"
+    if [[ ${FAKE_POST:-ok} != ok ]]; then cat "$FAKE_DIR/post-error.json" 2>/dev/null; exit 1; fi
+    cat "$FAKE_DIR/post.json"; exit
+  fi
   echo "BAD-WRITE $*" >>"$FAKE_LOG"; exit 9
 fi
 case $endpoint in
@@ -24,6 +32,7 @@ case $endpoint in
   */boards/[0-9]*) f=board ;;
   */issues\?state=opened*) f=open ;;
   */issues\?state=closed*) f=closed ;;
+  */issues/*/notes\?*) f=notes ;;
   */issues/*) f=issue ;;
   *) exit 1 ;;
 esac
