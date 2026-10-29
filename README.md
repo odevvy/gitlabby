@@ -90,7 +90,11 @@ The columns are the lists on the selected GitLab board, in its order:
 - **Open**: open issues in none of the board's label lists.
 - **One column per label list**: open issues with that label. An issue with
   two list labels appears in both, as on GitLab.
-- **Closed**: the 20 most recently updated closed issues.
+- **Closed**: the 20 most recently updated closed issues. When it holds all
+  20, a quiet line at its bottom says "Showing the latest 20 · See all on
+  GitLab ↗" and opens the project's closed issues on GitLab, with the
+  board's label, milestone, assignee and weight filters. Open and the label
+  lists are not capped: they read every open issue.
 - **Assignee, milestone, and iteration lists**: a "not supported yet" note.
 
 Open and Closed are left out when the board hides them, and a board's scope
@@ -178,9 +182,11 @@ it, `Enter` or `Shift+Enter` adds a line, and `Escape` leaves the box.
 
 ## Labels
 
-**Edit labels** in the issue view adds and removes the issue's other labels:
-`×` on a label removes it, a `+` label adds it, and the filter narrows the
-list (`Enter` adds the first match, `Escape` closes it). **Done** closes it.
+**Edit labels** (right after the issue's labels, or `e`) adds and removes the
+issue's other labels: `×` on a label removes it, a `+` label adds it, and the
+filter narrows the list (`Enter` adds the first match, `Escape` closes it).
+The filter turns on once the labels have loaded. **Done** or **Done editing**
+closes it.
 
 - **Status labels are never edited here.** A label that is a list on any of
   the project's boards, or one of the workflow labels (`research`, `todo`,
@@ -194,7 +200,7 @@ list (`Enter` adds the first match, `Escape` closes it). **Done** closes it.
 
 ## Close and reopen
 
-**Close issue** in the issue view asks first ("Close #N? This closes it on
+**Close issue** (at the right of the labels row, or `x`) asks first ("Close #N? This closes it on
 GitLab.", with **Close** and **Cancel**), then closes the issue as you. Only
 its state changes: every label stays, including a status label such as
 `review`, and the question names it. A closed issue shows **Reopen issue**,
@@ -298,7 +304,8 @@ position. In the popup the keyboard cursor shows after the first move.
 | `Escape` | Cancel a confirm; leave the comment box; close the label editor; otherwise back to the board; on the board, close |
 
 Letters go to the comment box, the label filter or the picker's filter while
-you type in them.
+you type in them. While the label editor waits for the labels, letters do
+nothing.
 
 ## Saved state
 
@@ -341,7 +348,7 @@ to its notes when you comment; they need the `api` scope (what `glab auth login`
 default). A glab call that hasn't answered after 30 seconds is stopped; a
 write that times out may still have reached GitLab, so the view reloads.
 
-**Sign out** in the settings asks first, then runs
+**Sign out** (in the settings, beside your username) asks first, then runs
 `glab auth logout --hostname gitlab.com`. That is glab's own sign-out, so glab
 in your terminal is signed out too (a `GITLAB_TOKEN` in your environment still
 works; glab doesn't touch it). The token stays valid on GitLab; revoke it in

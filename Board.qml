@@ -543,10 +543,11 @@ Panel {
       onCloseRequested: {
         if (root.pendingMove) root.cancelMove()
         else if (root.view === "issue" && issueView.confirming) issueView.confirming = false
+        else if (root.view === "issue" && issueView.editing) issueView.doneEditing()  // labels still loading: the filter is off
         else if (root.view !== "board") root.back()
         else root.close()
       }
-      onDeleteRequested: if (root.view === "issue") issueView.toggleState()  // x
+      onDeleteRequested: if (root.view === "issue" && !issueView.editing) issueView.toggleState()  // x; not while labels load
       onTabRequested: function(direction) { root.switchPanel(direction) }
       onMoveRequested: function(dx, dy) {
         if (root.view === "board") root.moveCursor(dx, dy)
@@ -561,6 +562,7 @@ Panel {
       }
       onTextKey: function(text) {
         if (root.pendingMove) return  // Enter or Escape first
+        if (root.view === "issue" && issueView.editing) return  // typed for the filter while labels load
         if ((text === "H" || text === "L") && root.view === "board") { root.moveCursorCard(text === "H" ? -1 : 1); return }
         var key = text.toLowerCase()
         if (key === "r" && root.view === "board") root.refresh()
