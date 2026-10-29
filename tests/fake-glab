@@ -7,8 +7,12 @@
 # FAKE_PUT=fail, from put-error.json with exit 1. The comment write (a POST
 # with a JSON --input body to issues/N/notes) is logged as "POST <endpoint>
 # <body>" and answered from post.json (FAKE_POST=fail: post-error.json, exit 1).
-# Any other write fails.
+# Any other write fails. FAKE_HANG (see tests/run.sh, T) makes a call hang.
 printf '%s\n' "$*" >>"$FAKE_LOG"
+if [[ -n ${FAKE_HANG:-} && " $* " == *"$FAKE_HANG"* ]]; then  # never answers
+  [[ ${FAKE_HANG_TERM:-} == ignore ]] && trap '' TERM
+  exec sleep 5
+fi
 echo "glpat-FAKEFAKEFAKEFAKEFAKE Authorization: Bearer FAKE" >&2
 [[ $1 == auth ]] && { [[ ${FAKE_AUTH:-ok} == ok ]]; exit; }
 endpoint=${*: -1}

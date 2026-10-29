@@ -15,7 +15,7 @@ check:
     OMARCHY_COMMIT: 237f1b4071a0bff2296c6d740ba2b9fd695ebfa0
     VALIDATOR_SHA256: f7507e5042eb970e3dc918bdf6bf251c7557443892a77e71a17d7019ddde72c8
   script:
-    - apk add --no-cache bash jq shellcheck curl findutils nodejs qt6-qtdeclarative-dev
+    - apk add --no-cache bash coreutils jq shellcheck curl findutils nodejs qt6-qtdeclarative-dev
     - for f in board-fetch tests/run.sh tests/fake-glab; do bash -n "$f" || exit 1; done
     - shellcheck board-fetch tests/run.sh tests/fake-glab
     - bash tests/run.sh

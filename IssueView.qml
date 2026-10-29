@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import Quickshell.Io
 import qs.Commons
+import qs.Ui
 import "Logic.js" as Logic
 
 // One issue: title, state, labels, a one-line byline, the description as
@@ -104,6 +105,7 @@ Item {
     posting = false
     if (postFor !== key) return
     var data = host.parse(raw)
+    if (data.state === "timeout") loadNotes()  // it may have been posted: the reload shows whether
     if (data.state !== "ready") { postError = String(data.message || "Comment failed."); return }
     box.text = ""
     loadNotes()
@@ -216,7 +218,19 @@ Item {
         linkColor: view.host.accent
         font { family: Style.font.family; pixelSize: Style.font.bodySmall }
         onLinkActivated: function(link) { var url = Logic.linkUrl(link, view.issue.url); if (url) view.host.openUrl(url) }
-        HoverHandler { cursorShape: parent.hoveredLink !== "" ? Qt.PointingHandCursor : Qt.ArrowCursor }
+        HoverHandler { id: linkHover; cursorShape: parent.hoveredLink !== "" ? Qt.PointingHandCursor : Qt.ArrowCursor }
+        // Where a link really goes, at the pointer: its text can say otherwise.
+        PanelToolTip {
+          x: linkHover.point.position.x; y: linkHover.point.position.y + Style.space(16)
+          visible: description.hoveredLink !== ""
+          text: Logic.linkUrl(description.hoveredLink, view.issue.url) || "Only https links open."
+        }
+      }
+      Pill {
+        visible: description.visible && String(view.issue.description).length > Logic.descriptionLimit
+        label: "Truncated · Open in browser for the rest ↗"; clickable: true
+        textColor: view.host.accent; border.color: view.host.accent
+        onClicked: view.host.openUrl(view.issue.url)
       }
 
       Rectangle { width: parent.width; height: 1; color: view.host.faint }

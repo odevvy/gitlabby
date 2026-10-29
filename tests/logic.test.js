@@ -95,12 +95,14 @@ test("byline and people lines", () => {
   assert.equal(L.people({ assignees: [{ username: "dee" }] }), "assigned dee")
 })
 
-test("links: http(s) as is, GitLab-relative on the issue's host, nothing else", () => {
+test("links: https as is, GitLab-relative on the issue's host, nothing else", () => {
   const issueUrl = "https://gitlab.com/group/app/-/issues/5"
   assert.equal(L.linkUrl("/group/app/-/issues/6", issueUrl), "https://gitlab.com/group/app/-/issues/6")
   assert.equal(L.linkUrl("https://example.com/x", issueUrl), "https://example.com/x")
-  assert.equal(L.linkUrl("javascript:alert(1)", issueUrl), "")
+  for (const bad of ["javascript:alert(1)", "file:///etc/passwd", "http://example.com/x", "--gpu-launcher=x", "vscode://x"])
+    assert.equal(L.linkUrl(bad, issueUrl), "", bad)
   assert.equal(L.linkUrl("/relative", ""), "")
+  assert.equal(L.linkUrl("/relative", "http://gitlab.com/a"), "", "no http host for relative links either")
 })
 
 const md = (text) => L.markdown(text, (t) => t.length * 7, (px) => px)
@@ -110,6 +112,37 @@ test("markdown: raw HTML is text, images are links, hrefs can't break out", () =
   assert.ok(!x.includes("<script") && !x.includes("<img") && x.includes("&lt;img"))
   assert.ok(x.includes('<a href="https://evil.example/p.png">pic</a>'))
   assert.ok(!md('[a](https://x.example/"onmouseover=1)').includes('href="https://x.example/"onmouseover'))
+})
+
+test("markdown: long descriptions are cut at a line break, long lines stay plain", () => {
+  const para = "word ".repeat(19) + "ends\n"  // 100 characters
+  const x = md(para.repeat(300))
+  assert.equal(x, md(para.repeat(L.descriptionLimit / 100)), "cut after the last whole line under the limit")
+  assert.equal(md("a".repeat(L.descriptionLimit + 5)).length, md("a".repeat(L.descriptionLimit)).length, "no line break: cut at the limit")
+  assert.equal(L.inline("**b** ".repeat(500)), "**b** ".repeat(500), "a line over lineLimit gets no markup")
+  assert.equal(L.inline("x".repeat(L.lineLimit) + " **b**"), "x".repeat(L.lineLimit) + " **b**")
+  assert.ok(L.inline("x".repeat(L.lineLimit - 6) + " **b**").endsWith("<b>b</b>"))
+  assert.equal(L.inline("<b>".repeat(1000)), "&lt;b&gt;".repeat(1000), "still escaped")
+})
+
+test("markdown: hostile descriptions render fast", () => {
+  const fast = (name, text) => {
+    const start = process.hrtime.bigint(); md(text)
+    const ms = Number(process.hrtime.bigint() - start) / 1e6
+    assert.ok(ms < 100, name + ": " + ms.toFixed(1) + " ms")
+  }
+  fast("120 KB of *a", "*a" + " *a".repeat(40000))
+  fast("20 KB of [", "[".repeat(20000))
+  fast("1 MB of *a", "*a" + " *a".repeat(340000))
+  const line = (unit) => unit.repeat(Math.ceil(L.lineLimit / unit.length)).slice(0, L.lineLimit)
+  for (const unit of ["[](", "[a](" + "b".repeat(60), " *a", "[", "![", "\\*_a"])
+    fast("lines of " + unit.slice(0, 8) + " under both limits", Array(10).fill(line(unit)).join("\n"))
+})
+
+test("markdown: link text has no [, a title follows the URL", () => {
+  assert.equal(L.inline("[a [b](https://x)"), '[a <a href="https://x">b</a>')
+  assert.equal(L.inline('[t](https://x "T")'), '<a href="https://x">t</a>')
+  assert.equal(L.inline("[t](https://x)y)"), '<a href="https://x">t</a>y)')
 })
 
 test("markdown: code, inline styles and bare links", () => {

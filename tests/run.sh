@@ -5,6 +5,14 @@ here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 fetch="$here/../board-fetch"
 work=$(mktemp -d); trap 'rm -rf "$work"' EXIT
 mkdir -p "$work/bin"; cp "$here/fake-glab" "$work/bin/glab"
+# board-fetch runs glab as `timeout -k 5 30 glab ...`; this stand-in keeps the
+# real timeout (coreutils) but cuts the limits to 1 s so the T tests run fast.
+real_timeout=$(command -v timeout)
+{ printf '#!/usr/bin/env bash\nreal=%q\n' "$real_timeout"; cat <<'SH'; } >"$work/bin/timeout"
+[[ $1 == -k && $3 == 30 && $4 == glab ]] || exit 99
+exec "$real" -k 1 1 "${@:4}"
+SH
+chmod +x "$work/bin/timeout"
 export PATH="$work/bin:$PATH" FAKE_LOG="$work/log" FAKE_DIR="$work/fx"
 pass=0 fail=0
 check() { # name jq-expression json
@@ -327,13 +335,53 @@ check "R reads are GET only" '.' "$(grep -q 'NON-GET' "$FAKE_LOG" && echo false 
 check "R every api call says --method GET" '.' "$(grep '^api ' "$FAKE_LOG" | grep -qv -- '--method GET ' && echo false || echo true)"
 src=$(grep -v '^ *#' "$fetch")
 check "R non-GETs in the script: one PUT, one POST" '.' "$(grep -oE -- '--method [A-Z]+' <<<"$src" | sort | tr '\n' ' ' | grep -qx -- '--method GET --method POST --method PUT ' && echo true || echo false)"
-check "R glab api only in get(), write_issue() and write_note()" '.' "$(grep -c 'glab api' <<<"$src" | grep -qx 3 && echo true || echo false)"
+check "R glab runs only in bounded(), under timeout" '.' "$(grep -E '(^|[^-])\<glab "' <<<"$src" | grep -qv '^  { timeout -k 5 30 glab "\$@"; } 2>/dev/null' && echo false ||
+  grep -c 'timeout -k 5 30 glab' <<<"$src" | grep -qx 1 && echo true || echo false)"
+check "R glab api only in get(), write_issue() and write_note()" '.' "$(grep -c 'bounded api' <<<"$src" | grep -qx 3 && echo true || echo false)"
 check "R write_issue only inside move" '.' "$(awk '/^  move\)/{m=1} /^    exit 0 ;;/{if(m)m=2} /write_issue/{if(m!=1)bad=1} END{print bad?"false":"true"}' <<<"$src")"
 check "R move: issue read, then stale exit, then the PUT" '.' "$(awk '/^  move\)/{m=1} /^    exit 0 ;;/{if(m==1)m=2}
   m==1 && /get "\$base\/issues\/\$iid"/{g=NR} m==1 && /emit stale/{st=NR} m==1 && /\| write_issue/{w=NR}
   END{print (g && st && w && g < st && st < w) ? "true" : "false"}' <<<"$src")"
 check "R write_note only inside comment" '.' "$(awk '/^  comment\)/{m=1} /^    exit 0 ;;/{if(m)m=2} /write_note/{if(m!=1)bad=1} END{print bad?"false":"true"}' <<<"$src")"
 check "R stdin is read only for comment" '.' "$(: >"$FAKE_LOG"; echo '{"body":"x"}' | "$fetch" notes --project a/b --iid 1 >/dev/null; grep -q NON-GET "$FAKE_LOG" && echo false || echo true)"
+
+# --- T: a glab call that never answers ends with a clear message ------------
+# FAKE_HANG: a glab call whose arguments contain it sleeps; FAKE_HANG_TERM=ignore
+# makes it ignore the TERM, so only the KILL 1 s later ends it (exit 137).
+reset
+fx board <<<'{"id":7,"name":"Dev","lists":[{"id":11,"label":{"name":"todo"}},{"id":12,"label":{"name":"approved"}}]}'
+at opened '["todo"]'
+slow='.state == "error" and .message == "GitLab did not answer within 30 seconds."'
+check "T auth hangs" "$slow" "$(FAKE_HANG='auth status' "$fetch" --project a/b)"
+check "T board read hangs" "$slow" "$(FAKE_HANG='/boards?' "$fetch" --project a/b)"
+check "T read ignores TERM, killed" "$slow" "$(FAKE_HANG='/boards?' FAKE_HANG_TERM=ignore "$fetch" --project a/b)"
+check "T issue read hangs" "$slow" "$(FAKE_HANG='issues/45' "$fetch" issue --project a/b --iid 45)"
+check "T move PUT hangs" '.state == "error" and (.message | test("move may have gone through"))' "$(FAKE_HANG='--method PUT' mv_ --from 11 --to 12)"
+check "T comment POST hangs" '.state == "timeout" and (.message | test("may have been posted"))' "$(echo hi | FAKE_HANG='--method POST' say)"
+check "T comment POST killed" '.state == "timeout"' "$(echo hi | FAKE_HANG='--method POST' FAKE_HANG_TERM=ignore say)"
+check "T one JSON line each" '.' "$(n=$(echo hi | FAKE_HANG='--method POST' say | wc -l); m=$(FAKE_HANG='--method PUT' mv_ --from 11 --to 12 | wc -l)
+  [[ $n == 1 && $m == 1 ]] && echo true || echo false)"
+
+# --- U: GitLab values that must not pass through ------------------------------
+# Issue links: https only, so no file:, javascript: or --flag reaches the
+# browser. Board scope: a non-numeric assignee id adds no query parameter.
+reset
+fx boards <<<'[{"id":7,"name":"Dev","assignee":{"id":"1&x=y"},"lists":[]}]'
+fx open <<'J'
+[{"iid":1,"title":"a","state":"opened","labels":[],"web_url":"--gpu-launcher=touch /tmp/pwn"},
+ {"iid":2,"title":"b","state":"opened","labels":[],"web_url":"file:///etc/passwd"},
+ {"iid":3,"title":"c","state":"opened","labels":[],"web_url":"javascript:alert(1)"},
+ {"iid":4,"title":"d","state":"opened","labels":[],"web_url":"http://gitlab.com/a/b/-/issues/4"},
+ {"iid":5,"title":"e","state":"opened","labels":[],"web_url":"https://gitlab.com/a/b/-/issues/5"}]
+J
+fx closed <<<'[]'
+out=$("$fetch" --project a/b)
+check "U card links https only" '[.columns[0].issues[] | .url] == ["","","","","https://gitlab.com/a/b/-/issues/5"]' "$out"
+check "U string assignee id dropped" '.' "$(grep 'state=opened' "$FAKE_LOG" | grep -q 'assignee_id\|x=y' && echo false || echo true)"
+for u in '--gpu-launcher=touch /tmp/pwn' 'file:///etc/passwd' 'javascript:alert(1)'; do
+  jq -cn --arg u "$u" '{iid: 9, title: "x", state: "opened", web_url: $u}' | fx issue
+  check "U issue link dropped: $u" '.state == "ready" and .issue.url == ""' "$("$fetch" issue --project a/b --iid 9)"
+done
 
 # --- safety: no token in any output --------------------------------------------
 fx board <<<'{"id":7,"name":"Dev","lists":[{"id":11,"label":{"name":"todo"}},{"id":12,"label":{"name":"approved"}}]}'
