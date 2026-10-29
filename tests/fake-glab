@@ -26,6 +26,7 @@ if [[ $1 == auth ]]; then
     no) echo "x gitlab.com has not been authenticated with glab; run \`glab auth login --hostname gitlab.com\` to authenticate" >&2 ;;
     none) echo "no GitLab instances have been authenticated with glab; run \`glab auth login\` to authenticate" >&2 ;;
     401) echo "x gitlab.com: API call failed: GET https://gitlab.com/api/v4/user: 401 {message: 401 Unauthorized}" >&2 ;;
+    offline401) echo 'x git401lab.example: API call failed: Get "https://git401lab.example/api/v4/user": dial tcp: lookup git401lab.example: no such host' >&2 ;;
     offline) echo 'x gitlab.com: API call failed: Get "https://gitlab.com/api/v4/user": dial tcp: lookup gitlab.com: no such host' >&2 ;;
   esac
   exit 1
