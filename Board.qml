@@ -11,6 +11,8 @@ import "Logic.js" as Logic
 // GET only; the writes are `board-fetch move`, run when a card is dropped on
 // another column, and `board-fetch comment`, run by Post in the issue view.
 // Views: the board, one issue, the board picker, settings and the key list.
+// Until the first answer, the board shows its saved copy (`board-fetch
+// cached`, read at shell start and on switching boards), else a placeholder.
 // Selection, per-board collapsed/hidden columns and defaults are saved inline
 // in shell.json.
 Panel {
@@ -54,6 +56,8 @@ Panel {
   property string resolvedBoardId: ""
   property bool fallback: false
   property string firstBoardId: ""
+  // The board on screen is the saved copy, until the fresh answer replaces it.
+  property bool cached: false
   readonly property bool onDefault: project === defaultProject && resolvedBoardId === (defaultBoardId || firstBoardId)
   readonly property string stateKey: project + "#" + (resolvedBoardId || "labels")
   readonly property var boardEntry: boardStates[stateKey] || null
@@ -87,7 +91,7 @@ Panel {
   property string moveError: ""
   property int moveSeq: 0
   property int fetchSeq: 0
-  readonly property bool canMove: boardState === "ready" && !fallback && resolvedBoardId !== ""
+  readonly property bool canMove: boardState === "ready" && !cached && !fallback && resolvedBoardId !== ""
 
   // New board data would replace the card being moved or held under the
   // pointer, so while held, board answers are dropped and refetched after.
@@ -176,6 +180,7 @@ Panel {
   }
 
   function refresh() {
+    readCache()
     if (busy) { refreshQueued = true; return }
     fetchSeq = moveSeq
     fetchProcess.command = [helperPath(), "board", "--project", project, "--board", boardId]
@@ -186,10 +191,22 @@ Panel {
     try { return JSON.parse(String(raw || "")) } catch (error) { return { state: "error", message: "board-fetch returned no readable output." } }
   }
 
-  function apply(raw) {
+  // The saved copy, only while nothing is on screen: no GitLab call.
+  function readCache() {
+    if (boardState !== "loading" || cacheProcess.running) return
+    cacheProcess.key = project + "#" + boardId
+    cacheProcess.command = [helperPath(), "cached", "--project", project, "--board", boardId]
+    cacheProcess.running = true
+  }
+  function applyCache(raw, key) {
+    if (boardState === "loading" && key === project + "#" + boardId && parse(raw).cached === true) apply(raw, true)
+  }
+
+  function apply(raw, fromCache) {
     var data = parse(raw)
     if (data.project && data.project !== project) return  // answer for a project we already left
     if (held || fetchSeq !== moveSeq) { refreshQueued = true; return }  // mid-drag or mid-move, or older than the latest move
+    cached = !!fromCache
     boardState = String(data.state || "error")
     message = String(data.message || "")
     updatedAt = String(data.updatedAt || "")
@@ -293,6 +310,7 @@ Panel {
     boardId = id
     boardName = name
     columns = []
+    cached = false
     resolvedBoardId = id
     firstBoardId = ""
     moveError = ""
@@ -320,11 +338,12 @@ Panel {
   function statusText() {
     if (moveError !== "") return moveError
     if (move) return "Moving #" + move.iid + "…"
+    if (boardState === "ready" && cached) return Logic.savedNote(updatedAt)
     if (boardState === "ready") {
       var time = updatedAt !== "" ? "Updated " + new Date(updatedAt).toLocaleTimeString(Qt.locale(), "HH:mm") : ""
       return message !== "" ? message + "  " + time : time
     }
-    if (boardState === "loading") return "Loading GitLab issues…"
+    if (boardState === "loading") return view === "board" ? "" : "Loading GitLab issues…"  // the placeholder says it
     if (boardState === "logged-out") return message || "Not signed in. Run: glab auth login"
     return message || "Could not load issues."
   }
@@ -332,6 +351,7 @@ Panel {
   implicitWidth: button.implicitWidth
   implicitHeight: button.implicitHeight
 
+  Component.onCompleted: Qt.callLater(readCache)
   onOpenedChanged: if (opened) { view = "board"; cursor = null; refresh() } else boardView.endDrag()
 
   // Only while the popup is open; opening it refreshes (onOpenedChanged).
@@ -344,6 +364,12 @@ Panel {
   Process {
     id: fetchProcess
     stdout: StdioCollector { waitForEnd: true; onStreamFinished: root.apply(text) }
+  }
+
+  Process {
+    id: cacheProcess
+    property string key: ""  // project#boardId it was asked for
+    stdout: StdioCollector { waitForEnd: true; onStreamFinished: root.applyCache(text, cacheProcess.key) }
   }
 
   Process {
@@ -382,14 +408,15 @@ Panel {
     open: root.opened; focusTarget: keyCatcher
     // fittedContentWidth caps at availableCardWidth (screen minus margins);
     // anything wider scrolls horizontally inside the board.
-    contentWidth: panel.fittedContentWidth(Math.max(Style.space(520), root.view === "board" ? root.boardWidth + panel.padding * 2 + Style.space(4) : 0))
+    contentWidth: panel.fittedContentWidth(Math.max(Style.space(520), root.view !== "board" ? 0
+      : (root.boardState === "loading" ? skeleton.implicitWidth : root.boardWidth) + panel.padding * 2 + Style.space(4)))
     contentHeight: panel.fittedContentHeight(keyCatcher.implicitHeight, Style.space(640))
 
     PanelKeyCatcher {
       id: keyCatcher
       anchors.fill: parent
       blocked: issueView.typing || picker.typing  // text fields get every key (Omarchy PanelKeyCatcher.qml:26-29)
-      implicitHeight: header.implicitHeight + root.gap + (root.view === "board" ? boardView.implicitHeight
+      implicitHeight: header.implicitHeight + root.gap + (root.view === "board" ? (root.boardState === "loading" ? skeleton.implicitHeight : boardView.implicitHeight)
         : root.view === "issue" ? issueView.implicitHeight : root.view === "picker" ? picker.implicitHeight
         : root.view === "keys" ? keysView.implicitHeight : settingsView.implicitHeight)
       onCloseRequested: root.view !== "board" ? root.back() : root.close()
@@ -460,7 +487,7 @@ Panel {
           horizontalAlignment: Text.AlignRight
           elide: Text.ElideLeft
           text: root.statusText()
-          color: root.moveError !== "" ? root.urgent : root.boardState === "ready" && root.message === "" && !root.move ? root.dim : root.accent
+          color: root.moveError !== "" ? root.urgent : root.boardState === "ready" && root.message === "" && !root.move && !root.cached ? root.dim : root.accent
           font.pixelSize: Style.font.bodySmall
         }
         BoardText {
@@ -486,6 +513,7 @@ Panel {
 
       Item {
         anchors { top: header.bottom; topMargin: root.gap; left: parent.left; right: parent.right; bottom: parent.bottom }
+        Skeleton { id: skeleton; host: root; anchors.fill: parent; visible: root.view === "board" && root.boardState === "loading" }
         BoardView { id: boardView; host: root; anchors.fill: parent; visible: root.view === "board" && root.boardState === "ready" }
         IssueView { id: issueView; host: root; anchors.fill: parent; visible: root.view === "issue" }
         Picker { id: picker; host: root; anchors.fill: parent; visible: root.view === "picker" }

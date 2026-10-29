@@ -178,6 +178,12 @@ behind the popup shows through without blur.
 | Right- or middle-click the icon | Refresh |
 | Refresh button | Refresh |
 
+The first time the popup opens after a shell start, it shows the board as
+you last saw it (see "Saved board"), with "Saved 3h ago · updating…" in the
+header, until the fresh board arrives. Cards can't be dragged until then.
+With nothing saved yet, it shows a placeholder board that pulses while it
+loads.
+
 The board refreshes each time the popup opens and every 60 seconds
 (configurable) while it's open; while it's closed, only a right- or
 middle-click refreshes. While it loads, the refresh icon in the header spins;
@@ -236,6 +242,17 @@ v0.1.3 adds Open to `defaultCollapsed` and to the collapsed columns of every
 board in `boardStates`, once. It changes nothing else, and if you expand Open
 afterwards, it stays expanded.
 
+### Saved board
+
+After each board load, `board-fetch` saves a copy of the board (the same JSON
+the popup shows: titles, labels, assignee names; never anything from glab's
+login) in `~/.cache/odevvy.gitlab-board/` (or `$XDG_CACHE_HOME`), one file
+per project and board, readable only by you. To clear it:
+
+```bash
+rm -rf ~/.cache/odevvy.gitlab-board
+```
+
 ## Requirements
 
 - Omarchy 4.0.6 or later
@@ -272,7 +289,8 @@ omarchy bar set odevvy.gitlab-board refreshIntervalSec 120
 `board-fetch` is the helper the widget runs. It prints one JSON object.
 
 ```bash
-./board-fetch [board] [--project P] [--board ID]   # board columns (the default)
+./board-fetch [board] [--project P] [--board ID]   # board columns (the default), also saved
+./board-fetch cached [--project P] [--board ID]    # that saved copy, no GitLab call
 ./board-fetch projects                            # projects you are a member of
 ./board-fetch boards --project P                  # boards of a project
 ./board-fetch issue --project P --iid N           # one issue with its description

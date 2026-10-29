@@ -13,7 +13,7 @@ real_timeout=$(command -v timeout)
 exec "$real" -k 1 1 "${@:4}"
 SH
 chmod +x "$work/bin/timeout"
-export PATH="$work/bin:$PATH" FAKE_LOG="$work/log" FAKE_DIR="$work/fx"
+export PATH="$work/bin:$PATH" FAKE_LOG="$work/log" FAKE_DIR="$work/fx" XDG_CACHE_HOME="$work/cache"  # never the real ~/.cache
 pass=0 fail=0
 check() { # name jq-expression json
   if jq -e "$2" >/dev/null 2>&1 <<<"$3"; then pass=$((pass + 1)); else fail=$((fail + 1)); echo "FAIL: $1"; echo "  $3" | cut -c1-400; fi
@@ -382,6 +382,60 @@ for u in '--gpu-launcher=touch /tmp/pwn' 'file:///etc/passwd' 'javascript:alert(
   jq -cn --arg u "$u" '{iid: 9, title: "x", state: "opened", web_url: $u}' | fx issue
   check "U issue link dropped: $u" '.state == "ready" and .issue.url == ""' "$("$fetch" issue --project a/b --iid 9)"
 done
+
+# --- K: saved board (cache) --------------------------------------------------
+# Each board answer is saved per project and board; `cached` reads it back
+# with no glab call. Unreadable or foreign copies read as state "none".
+reset
+fx boards <<<'[{"id":7,"name":"Dev","lists":[{"id":11,"position":0,"label":{"name":"todo"}}]},{"id":8,"name":"Ops","lists":[]}]'
+fx open <<<'[{"iid":1,"title":"a","state":"opened","labels":["todo"],"web_url":"https://x/1"}]'
+fx closed <<<'[]'
+kdir=$XDG_CACHE_HOME/odevvy.gitlab-board; kfile=$kdir/group%2Fapp-7.json
+rm -rf "$XDG_CACHE_HOME"
+out=$("$fetch" --project group/app --board 7)
+check "K saved as printed" '.' "$([[ -f $kfile && $(cat "$kfile") == "$out" ]] && echo true || echo false)"
+check "K modes: dir 700, file 600, no temp left" '.' "$([[ $(stat -c %a "$kdir") == 700 && $(stat -c %a "$kfile") == 600 && $(find "$kdir" -mindepth 1 | wc -l) == 1 ]] && echo true || echo false)"
+: >"$FAKE_LOG"
+cached=$(FAKE_AUTH=no "$fetch" cached --project group/app --board 7)
+check "K read back, marked cached" "(del(.cached) | tojson) == ($out | tojson) and .cached == true and .state == \"ready\"" "$cached"
+check "K read runs no glab, even signed out" '.' "$([[ -s $FAKE_LOG ]] && echo false || echo true)"
+check "K other board: none" '. == {"state":"none"}' "$("$fetch" cached --project group/app --board 8)"
+check "K other project: none" '. == {"state":"none"}' "$("$fetch" cached --project group/other --board 7)"
+"$fetch" --project group/app >/dev/null
+check "K no board id: its own copy" '.cached == true and .board.id == 7' "$("$fetch" cached --project group/app)"
+check "K first-board file" '.' "$([[ -f $kdir/group%2Fapp-first.json ]] && echo true || echo false)"
+"$fetch" --project 12345 --board 8 >/dev/null
+check "K numeric project" '.cached == true and .board.id == 8 and .project == "12345"' "$("$fetch" cached --project 12345 --board 8)"
+cp "$kfile" "$kdir/group%2Fx-7.json"
+check "K copy for another project: none" '. == {"state":"none"}' "$("$fetch" cached --project group/x --board 7)"
+printf '{"state":"ready","proj' >"$kdir/group%2Fx-7.json"
+check "K corrupt: none" '. == {"state":"none"}' "$("$fetch" cached --project group/x --board 7)"
+printf '%s\n%s\n' "$out" "$out" >"$kdir/group%2Fx-7.json"
+check "K two objects: none" '. == {"state":"none"}' "$("$fetch" cached --project group/x --board 7)"
+echo '{"state":"error","message":"x","project":"group/x"}' >"$kdir/group%2Fx-7.json"
+check "K error answer: none" '. == {"state":"none"}' "$("$fetch" cached --project group/x --board 7)"
+chmod 000 "$kfile"
+[[ -r $kfile ]] || check "K unreadable: none" '. == {"state":"none"}' "$("$fetch" cached --project group/app --board 7)"
+chmod 600 "$kfile"
+check "K bad project still refused" '.state == "error"' "$("$fetch" cached --project 'a/../b')"
+before=$(cat "$kfile"); rm -f "$FAKE_DIR/open.json"
+check "K failed fetch: error" '.state == "error"' "$("$fetch" --project group/app --board 7)"
+check "K failed fetch keeps the old copy" '.' "$([[ $(cat "$kfile") == "$before" ]] && echo true || echo false)"
+fx open <<<'[{"iid":2,"title":"b","state":"opened","labels":[],"web_url":"https://x/2"}]'
+out=$("$fetch" --project group/app --board 7)
+check "K fresh answer replaces the copy" '.columns[0].issues[0].iid == 2' "$(cat "$kfile")"
+chmod 755 "$kdir"; "$fetch" --project group/app --board 7 >/dev/null
+check "K dir mode restored to 700" '.' "$([[ $(stat -c %a "$kdir") == 700 ]] && echo true || echo false)"
+rm -rf "$XDG_CACHE_HOME"; : >"$XDG_CACHE_HOME"  # a file where the dir should be
+check "K cache not writable: board still ready" '.state == "ready" and .columns[0].issues[0].iid == 2' "$("$fetch" --project group/app --board 7)"
+rm -f "$XDG_CACHE_HOME"
+mkdir -p "$work/home"
+check "K XDG_CACHE_HOME unset: ~/.cache" '.' "$(XDG_CACHE_HOME='' HOME="$work/home" "$fetch" --project group/app --board 7 >/dev/null
+  [[ -f $work/home/.cache/odevvy.gitlab-board/group%2Fapp-7.json ]] && echo true || echo false)"
+check "K relative XDG_CACHE_HOME ignored" '.' "$(cd "$work" && XDG_CACHE_HOME=rel HOME="$work/home2" "$fetch" --project group/app --board 7 >/dev/null
+  [[ ! -e $work/rel && -f $work/home2/.cache/odevvy.gitlab-board/group%2Fapp-7.json ]] && echo true || echo false)"
+saved=("$work"/home*/.cache/odevvy.gitlab-board/*)
+check "K no token in any saved copy" '.' "$([[ ${#saved[@]} == 2 && -f ${saved[0]} ]] && ! grep -qiE 'glpat|bearer' "${saved[@]}" && echo true || echo false)"
 
 # --- safety: no token in any output --------------------------------------------
 fx board <<<'{"id":7,"name":"Dev","lists":[{"id":11,"label":{"name":"todo"}},{"id":12,"label":{"name":"approved"}}]}'

@@ -47,6 +47,14 @@ const board = (cols) => [open, todo, doing, closed].map((c) => Object.assign({},
 const ids = (columns) => Object.fromEntries(columns.map((c) => [c.name, c.issues.map((i) => i.iid)]))
 const row = (iid, labels) => ({ iid, title: "#" + iid, labels })
 
+test("saved board note: how old the copy is, then updating", () => {
+  const now = "2026-10-28T12:00:00Z"
+  assert.equal(L.savedNote("2026-10-28T09:00:00Z", now), "Saved 3h ago · updating…")
+  assert.equal(L.savedNote("2026-10-28T11:59:30Z", now), "Saved just now · updating…")
+  assert.equal(L.savedNote("2026-10-28T12:05:00Z", now), "Saved just now · updating…", "clock skew")
+  assert.equal(L.savedNote("", now), "Saved just now · updating…")
+})
+
 test("move between label lists swaps the label and puts the card on top", () => {
   const columns = board({ todo: [row(1, ["todo", "bug"]), row(2, ["todo"])], doing: [row(3, ["doing"])] })
   const after = L.movedColumns(columns, columns[1].issues[0], todo, doing)

@@ -4,7 +4,9 @@
 # token, and glab's stderr is discarded.
 #
 # Reads (GET only, through get()):
-#   board-fetch [board] [--project P] [--board ID]  columns of a board (default)
+#   board-fetch [board] [--project P] [--board ID]  columns of a board (default),
+#                                                   also saved to the cache below
+#   board-fetch cached [--project P] [--board ID]   that saved copy; no glab call
 #   board-fetch projects                            projects you are a member of
 #   board-fetch boards --project P                  boards of a project
 #   board-fetch issue --project P --iid N           one issue with its description
@@ -21,7 +23,7 @@
 set -uo pipefail
 
 cmd=board project="firelink21/phrase41" board_id="" iid="" from="" to="" hostname="gitlab.com"
-case "${1:-}" in board|projects|boards|issue|notes|move|comment) cmd=$1; shift ;; esac
+case "${1:-}" in board|cached|projects|boards|issue|notes|move|comment) cmd=$1; shift ;; esac
 while (($#)); do
   case "$1" in
     --project) project=${2:-} ;;
@@ -56,6 +58,19 @@ if [[ $cmd == comment ]]; then
   jq -e '.body | test("\\S")' <<<"$note" >/dev/null || emit error "Comment is empty."
 fi
 [[ $hostname =~ ^[A-Za-z0-9][A-Za-z0-9.-]*(:[0-9]+)?$ ]] || emit error "Invalid GitLab hostname."
+
+# The last board answer per project and board, shown while a fresh one loads.
+# It holds the same JSON the widget gets (no auth data); dir 0700, file 0600.
+cache_root=${XDG_CACHE_HOME:-}
+[[ $cache_root == /* ]] || cache_root=${HOME:+$HOME/.cache}
+cache_dir=$cache_root/odevvy.gitlab-board
+cache_file=$cache_dir/$(jq -rn --arg p "$project" '$p | @uri')-${board_id:-first}.json
+if [[ $cmd == cached ]]; then
+  # Marked cached: true. A missing, unreadable or foreign file gives state "none".
+  jq -cse --arg p "$project" '.[0] | select(.state == "ready" and .project == $p and (.columns | type) == "array")
+    | .cached = true' "$cache_file" 2>/dev/null || printf '%s\n' '{"state":"none"}'
+  exit 0
+fi
 command -v glab >/dev/null 2>&1 || emit error "GitLab CLI (glab) is not installed or not on PATH."
 # Every glab call ends within 30 s (exit 124), so a hung one can't hold the widget.
 slow="GitLab did not answer within 30 seconds."
@@ -264,4 +279,11 @@ $b[0] as $board | ($o | add // []) as $rawOpen | ($c | add // []) as $rawClosed
   end
 JQ
 jq -cn --slurpfile b "$tmp/board" --slurpfile all "$tmp/boards" --slurpfile o "$tmp/open" --slurpfile c "$tmp/closed" \
-  --arg want "$board_id" --arg project "$project" "$DEFS $MAP" 2>/dev/null || emit error "GitLab returned an unreadable response."
+  --arg want "$board_id" --arg project "$project" "$DEFS $MAP" >"$tmp/out" 2>/dev/null || emit error "GitLab returned an unreadable response."
+# Best effort: write a temp file in the cache dir, then rename it over the old
+# copy, so a reader never sees half a file. A failed write changes nothing.
+if [[ -n $cache_root ]] && mkdir -p "$cache_dir" 2>/dev/null && chmod 700 "$cache_dir" 2>/dev/null &&
+  part=$(mktemp "$cache_dir/.part.XXXXXX" 2>/dev/null); then
+  { cat "$tmp/out" >"$part" && mv -f "$part" "$cache_file"; } 2>/dev/null || rm -f "$part"
+fi
+cat "$tmp/out"
