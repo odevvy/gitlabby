@@ -4,14 +4,19 @@ import qs.Commons
 // Placeholder board while nothing is on screen yet (first run, no saved
 // copy): chips and columns of faded cards that pulse, with "Loading…" over
 // them. Columns are unnamed: names come only with the board answer. Same
-// sizes as BoardView, so the popup opens at board size.
+// sizes as BoardView, and as wide as this board (or the last one) was when
+// shown this session (host.boardWidths), else four columns, so the popup
+// opens at about board size.
 Item {
   id: skeleton
   required property var host
-  readonly property var cards: [3, 2, 3, 2]  // placeholder cards per column
+  readonly property int knownWidth: host.boardWidths[host.stateKey] || host.lastBoardWidth
+  readonly property int columnCount: knownWidth > 0 ? Math.max(1, Math.floor(knownWidth / (host.columnWidth + host.gap))) : 4
+  // placeholder cards per column: 3, 2, 3, 2, ...
+  readonly property var cards: Array.apply(null, Array(columnCount)).map(function(x, i) { return i % 2 === 0 ? 3 : 2 })
   readonly property int cardHeight: Style.space(64)
   readonly property color fg: host.foreground
-  implicitWidth: cards.length * (host.columnWidth + host.gap)
+  implicitWidth: knownWidth > 0 ? knownWidth : cards.length * (host.columnWidth + host.gap)
   implicitHeight: chips.height + host.gap + Style.space(18) + Math.max.apply(null, cards) * (cardHeight + Style.space(6)) + Style.space(12)
 
   Item {
