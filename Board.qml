@@ -8,8 +8,9 @@ import "Logic.js" as Logic
 
 // GitLab issue board in the Omarchy bar. Left click opens the popup, right or
 // middle click refreshes. Data comes from ./board-fetch through glab: reads are
-// GET only; the writes are `board-fetch move`, run when a card is dropped on
-// another column, and `board-fetch comment`, run by Post in the issue view.
+// GET only; the writes are `board-fetch move` (a card dropped on another column,
+// or Shift+H/L; asks first for projects in settings.confirmMoves), and from the
+// issue view `comment`, `relabel`, `close` and `reopen`; Sign out runs `logout`.
 // Views: the board, one issue, the board picker, settings and the key list.
 // Until the first answer, the board shows its saved copy (`board-fetch
 // cached`, read at shell start and on switching boards), else a placeholder.
@@ -26,7 +27,7 @@ Panel {
   readonly property color muted: Commons.Color.muted
   readonly property color urgent: Commons.Color.urgent
   // Solid blends so they also work inside StyledText markup.
-  readonly property color dim: Qt.tint(foreground, Qt.rgba(background.r, background.g, background.b, 0.45))
+  readonly property color dim: Qt.tint(foreground, Qt.rgba(background.r, background.g, background.b, 0.35))
   readonly property color faint: Qt.tint(background, Qt.rgba(foreground.r, foreground.g, foreground.b, 0.12))
   readonly property int columnWidth: Style.space(220)
   readonly property int stripWidth: Style.space(34)
@@ -48,6 +49,8 @@ Panel {
   property var defaultCollapsed: Logic.lowerList(setting("defaultCollapsed", ["closed", "research", "open"]))
   // Busy markers (settings.bots, keyed by project; none by default), from the board on screen.
   readonly property var botStates: Logic.botStates(Logic.botsConfig(setting("bots", null), project), columns)
+  // Projects whose card moves ask first (settings.confirmMoves; none by default).
+  readonly property bool confirmMoves: Logic.has(Logic.lowerList(setting("confirmMoves", [])), project)
   property var boardStates: setting("boardStates", ({})) || ({})
 
   // Board data from the last fetch.
@@ -62,9 +65,19 @@ Panel {
   property string firstBoardId: ""
   // The board on screen is the saved copy, until the fresh answer replaces it.
   property bool cached: false
+  // A refresh failed while a board was on screen: it stays, with this reason
+  // kept for the record; the header says "Couldn't refresh · showing HH:MM".
+  property string refreshError: ""
+  // Widths of boards shown this session, so the placeholder opens at about
+  // the right size (Skeleton.qml): { stateKey: px }, and the last one.
+  property var boardWidths: ({})
+  property int lastBoardWidth: 0
   // First-run panel in place of the board: "no-glab", "logged-out", or
   // "pick" (no project yet); "" once there is a board to load.
   readonly property string setup: boardState === "no-glab" || boardState === "logged-out" ? boardState : project === "" ? "pick" : ""
+  // The board could not load and nothing is on screen: SetupView's error step
+  // (the reason and Try again) takes the board's place.
+  readonly property bool failed: setup === "" && boardState !== "ready" && boardState !== "loading"
   readonly property bool onDefault: project === defaultProject && resolvedBoardId === (defaultBoardId || firstBoardId)
   readonly property string stateKey: project + "#" + (resolvedBoardId || "labels")
   readonly property var boardEntry: boardStates[stateKey] || null
@@ -102,7 +115,7 @@ Panel {
 
   // New board data would replace the card being moved or held under the
   // pointer, so while held, board answers are dropped and refetched after.
-  readonly property bool held: move !== null || boardView.holding
+  readonly property bool held: move !== null || pendingMove !== null || boardView.holding
   // A refresh asked for while busy waits here and runs once nothing is busy.
   readonly property bool busy: loading || held
   property bool refreshQueued: false
@@ -138,7 +151,7 @@ Panel {
     if (isCollapsed(name) !== on) toggleCollapsed(name)
     else persist()
   }
-  // One-time update to settings revision 2 (v1.3): Open joins the collapsed
+  // One-time update to settings revision 2 (v0.1.3): Open joins the collapsed
   // defaults and every saved board, without touching anything else. Runs again
   // only if it could not be saved.
   readonly property int settingsRevision: 2
@@ -219,6 +232,10 @@ Panel {
     var data = parse(raw)
     if (data.project && data.project !== project) return  // answer for a project we already left
     if (held || fetchSeq !== moveSeq) { refreshQueued = true; return }  // mid-drag or mid-move, or older than the latest move
+    // A failed refresh keeps the board on screen (sign-in problems still show
+    // the sign-in panel); only with nothing loaded does the error take its place.
+    if (data.state === "error" && boardState === "ready" && columns.length > 0) { refreshError = String(data.message || "Could not load issues."); return }
+    refreshError = ""
     cached = !!fromCache
     boardState = String(data.state || "error")
     message = String(data.message || "")
@@ -230,12 +247,41 @@ Panel {
     firstBoardId = data.boards && data.boards.length > 0 ? String(data.boards[0].id) : ""
     if (data.board && boardName !== data.board.name) boardName = data.board.name
     if (data.fallback) boardName = ""
+    if (columns.length > 0) {
+      var widths = Object.assign({}, boardWidths)
+      widths[stateKey] = boardWidth
+      boardWidths = widths
+      lastBoardWidth = boardWidth
+    }
   }
 
   // Columns a card can be dropped on: Open, Closed and label lists of a real
   // board (not the workflow-label fallback, not assignee/milestone lists).
   function canDrop(column) {
     return canMove && !!column && (column.kind === "open" || column.kind === "closed" || (column.kind === "label" && !!column.listId))
+  }
+  // A drop or Shift+H/L. With confirmMoves on for this project the move waits
+  // in pendingMove for Move or Enter (MoveConfirm.qml); Cancel or Escape drops it.
+  property var pendingMove: null
+  function requestMove(row, from, to) {
+    if (move || pendingMove || !row || !canDrop(from) || !canDrop(to) || Logic.columnKey(from) === Logic.columnKey(to)) return false
+    if (!confirmMoves) return moveIssue(row, from, to)
+    pendingMove = { row: row, from: from, to: to, key: stateKey }
+    return true
+  }
+  function confirmMove() {
+    var p = pendingMove
+    pendingMove = null
+    if (p && p.key === stateKey) moveIssue(p.row, p.from, p.to)
+  }
+  function cancelMove() { pendingMove = null }
+  // Shift+H/L: the selected card to the nearest column it can go to on that side.
+  function moveCursorCard(dx) {
+    var row = cursorIssue()
+    if (!row) return
+    var from = shownColumns[cursor.col]
+    for (var i = cursor.col + dx; i >= 0 && i < shownColumns.length; i += dx)
+      if (canDrop(shownColumns[i])) { requestMove(row, from, shownColumns[i]); return }
   }
   function moveIssue(row, from, to) {
     // moveProcess can outlive move: the watchdog gives up on it, board-fetch's own timeouts end it.
@@ -337,6 +383,8 @@ Panel {
     resolvedBoardId = id
     firstBoardId = ""
     moveError = ""
+    refreshError = ""
+    pendingMove = null
     boardState = "loading"
     if (defaultProject === "") persist({ project: path, id: id, name: name })  // first board: the default
     back()
@@ -381,7 +429,7 @@ Panel {
     signingOut = false
     if (data.state !== "logged-out") { accountError = String(data.message || "Could not sign out."); return }
     session++
-    columns = []; projects = []; pickerBoards = []; cached = false; account = ""
+    columns = []; projects = []; pickerBoards = []; cached = false; account = ""; refreshError = ""; pendingMove = null
     message = String(data.message || ""); boardState = "logged-out"
     showView("board")
   }
@@ -399,12 +447,14 @@ Panel {
   function statusText() {
     if (moveError !== "") return moveError
     if (move) return "Moving #" + move.iid + "…"
+    if (boardState === "ready" && refreshError !== "")
+      return "Couldn't refresh · showing " + (updatedAt !== "" ? new Date(updatedAt).toLocaleTimeString(Qt.locale(), "HH:mm") : "the last board")
     if (boardState === "ready" && cached) return Logic.savedNote(updatedAt)
     if (boardState === "ready") {
       var time = updatedAt !== "" ? "Updated " + new Date(updatedAt).toLocaleTimeString(Qt.locale(), "HH:mm") : ""
       return message !== "" ? message + "  " + time : time
     }
-    if (view === "board" && (setup !== "" || boardState === "loading")) return ""  // the board body says it
+    if (view === "board" && (setup !== "" || failed || boardState === "loading")) return ""  // the board body says it
     if (project === "") return ""
     if (boardState === "loading") return "Loading GitLab issues…"
     if (boardState === "logged-out") return message || "Not signed in. Run: glab auth login"
@@ -415,7 +465,7 @@ Panel {
   implicitHeight: button.implicitHeight
 
   Component.onCompleted: Qt.callLater(readCache)
-  onOpenedChanged: if (opened) { view = "board"; cursor = null; refresh() } else boardView.endDrag()
+  onOpenedChanged: if (opened) { view = "board"; cursor = null; refresh() } else { boardView.endDrag(); pendingMove = null }
 
   // Only while the popup is open; opening it refreshes (onOpenedChanged).
   Timer {
@@ -480,28 +530,38 @@ Panel {
     // fittedContentWidth caps at availableCardWidth (screen minus margins);
     // anything wider scrolls horizontally inside the board.
     contentWidth: panel.fittedContentWidth(Math.max(Style.space(520), root.view !== "board" ? 0
-      : (root.setup !== "" || root.boardState === "loading" ? skeleton.implicitWidth : root.boardWidth) + panel.padding * 2 + Style.space(4)))
+      : (root.setup !== "" || root.failed || root.boardState === "loading" ? skeleton.implicitWidth : root.boardWidth) + panel.padding * 2 + Style.space(4)))
     contentHeight: panel.fittedContentHeight(keyCatcher.implicitHeight, Style.space(640))
 
     PanelKeyCatcher {
       id: keyCatcher
       anchors.fill: parent
       blocked: issueView.typing || picker.typing  // text fields get every key (Omarchy PanelKeyCatcher.qml:26-29)
-      implicitHeight: header.implicitHeight + root.gap + (botsRow.visible ? botsRow.height + root.gap : 0) + (root.view === "board" ? (root.setup !== "" ? Math.max(setupView.implicitHeight, skeleton.implicitHeight) : root.boardState === "loading" ? skeleton.implicitHeight : boardView.implicitHeight)
+      implicitHeight: header.implicitHeight + root.gap + (botsRow.visible ? botsRow.height + root.gap : 0) + (moveConfirm.visible ? moveConfirm.height + root.gap : 0) + (root.view === "board" ? (root.setup !== "" || root.failed ? Math.max(setupView.implicitHeight, skeleton.implicitHeight) : root.boardState === "loading" ? skeleton.implicitHeight : boardView.implicitHeight)
         : root.view === "issue" ? issueView.implicitHeight : root.view === "picker" ? picker.implicitHeight
         : root.view === "keys" ? keysView.implicitHeight : settingsView.implicitHeight)
-      onCloseRequested: root.view !== "board" ? root.back() : root.close()
+      onCloseRequested: {
+        if (root.pendingMove) root.cancelMove()
+        else if (root.view === "issue" && issueView.confirming) issueView.confirming = false
+        else if (root.view !== "board") root.back()
+        else root.close()
+      }
+      onDeleteRequested: if (root.view === "issue") issueView.toggleState()  // x
       onTabRequested: function(direction) { root.switchPanel(direction) }
       onMoveRequested: function(dx, dy) {
         if (root.view === "board") root.moveCursor(dx, dy)
         else if (root.view === "picker" && dy !== 0) picker.moveCursor(dy)
       }
       onActivateRequested: {
-        if (root.view === "board" && root.cursorIssue()) root.openIssue(root.cursorIssue())
+        if (root.pendingMove) root.confirmMove()
+        else if (root.view === "issue" && issueView.confirming) issueView.setState("close")
+        else if (root.view === "board" && root.cursorIssue()) root.openIssue(root.cursorIssue())
         else if (root.view === "picker") picker.activate()
-        else if (root.view === "board" && root.setup !== "") setupView.primary()
+        else if (root.view === "board" && (root.setup !== "" || root.failed)) setupView.primary()
       }
       onTextKey: function(text) {
+        if (root.pendingMove) return  // Enter or Escape first
+        if ((text === "H" || text === "L") && root.view === "board") { root.moveCursorCard(text === "H" ? -1 : 1); return }
         var key = text.toLowerCase()
         if (key === "r" && root.view === "board") root.refresh()
         else if (key === "o") {
@@ -509,6 +569,7 @@ Panel {
           if (row) root.openUrl(row.url)
         }
         else if (key === "c" && root.view === "issue") issueView.focusBox()
+        else if (key === "e" && root.view === "issue") issueView.editLabels()
         else if (key === "p") root.openPicker()
         else if (key === "s") root.toggleView("settings")
         else if (key === "?") root.toggleView("keys")
@@ -575,7 +636,7 @@ Panel {
           horizontalAlignment: Text.AlignRight
           elide: Text.ElideLeft
           text: root.statusText()
-          color: root.moveError !== "" ? root.urgent : root.boardState === "ready" && root.message === "" && !root.move && !root.cached ? root.dim : root.accent
+          color: root.moveError !== "" || (root.refreshError !== "" && root.boardState === "ready") ? root.urgent : root.boardState === "ready" && root.message === "" && !root.move && !root.cached ? root.dim : root.accent
           font.pixelSize: Style.font.bodySmall
         }
         BoardText {
@@ -608,9 +669,18 @@ Panel {
         height: visible ? implicitHeight : 0
       }
 
+      MoveConfirm {
+        id: moveConfirm
+        host: root
+        pending: root.pendingMove
+        visible: root.view === "board" && root.pendingMove !== null
+        anchors { top: botsRow.bottom; topMargin: visible ? root.gap : 0; left: parent.left; right: parent.right }
+        height: visible ? implicitHeight : 0
+      }
+
       Item {
-        anchors { top: botsRow.bottom; topMargin: root.gap; left: parent.left; right: parent.right; bottom: parent.bottom }
-        SetupView { id: setupView; host: root; anchors.fill: parent; visible: root.view === "board" && root.setup !== "" }
+        anchors { top: moveConfirm.bottom; topMargin: root.gap; left: parent.left; right: parent.right; bottom: parent.bottom }
+        SetupView { id: setupView; host: root; anchors.fill: parent; visible: root.view === "board" && (root.setup !== "" || root.failed) }
         Skeleton { id: skeleton; host: root; anchors.fill: parent; visible: root.view === "board" && root.setup === "" && root.boardState === "loading" }
         BoardView { id: boardView; host: root; anchors.fill: parent; visible: root.view === "board" && root.setup === "" && root.boardState === "ready" }
         IssueView { id: issueView; host: root; anchors.fill: parent; visible: root.view === "issue" }

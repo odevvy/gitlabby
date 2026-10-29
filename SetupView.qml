@@ -3,12 +3,15 @@ import qs.Commons
 
 // First run, in place of the board and at the placeholder board's size (so the
 // popup doesn't jump when the board arrives): install glab, sign in, or pick a
-// project. Checks again only on Try again, r, or when the popup opens.
+// project; or, when a board could not load at all, why, with Try again.
+// Checks again only on Try again, r, or when the popup opens.
 Item {
   id: setupView
   required property var host
-  readonly property string mode: host.setup
-  readonly property string step: mode === "pick" ? (host.boardState === "error" ? "error" : host.boardState === "ready" ? "pick" : "checking") : mode
+  // mode "failed": a board that could not load, with nothing on screen.
+  readonly property string mode: host.setup !== "" ? host.setup : host.failed ? "failed" : ""
+  readonly property string step: mode === "failed" ? "error"
+    : mode === "pick" ? (host.boardState === "error" ? "error" : host.boardState === "ready" ? "pick" : "checking") : mode
   property bool copied: false
   onModeChanged: copied = false
 
