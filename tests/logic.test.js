@@ -207,3 +207,21 @@ test("the key list names the setup panel's keys: Enter for the main button, r fo
   assert.match(action("Enter or Space"), /setup panel's main button/)
   assert.match(action("r"), /Try again on the setup panel/)
 })
+
+test("label editor: status labels are never editable or offered", () => {
+  const columns = [{ name: "Open", kind: "open" }, { name: "Doing", kind: "label", listId: 4 }, { name: "Closed", kind: "closed" }, { name: "alice", kind: "other" }]
+  const status = L.statusLabels(["Ready"], columns)
+  assert.deepEqual(status.slice().sort(), ["approved", "doing", "in progress", "ready", "research", "review", "todo"])
+  assert.deepEqual(L.editableLabels(["Doing", "bug", "TODO", "ux", "In Progress"], status), ["bug", "ux"])
+  const all = [{ name: "api" }, { name: "bug" }, { name: "Doing" }, { name: "Todo" }, { name: "ux" }, { name: "Bugfix" }]
+  assert.deepEqual(L.addableLabels(all, ["bug"], status, "").map(l => l.name), ["api", "ux", "Bugfix"])
+  assert.deepEqual(L.addableLabels(all, ["bug"], status, " BUG ").map(l => l.name), ["Bugfix"])
+  assert.deepEqual(L.addableLabels(all, [], status, "do").map(l => l.name), [])
+})
+
+test("label editor: colors from the labels list fill gaps, the board's win", () => {
+  const base = { bug: { color: "#ff0000" } }
+  const out = L.withColors(base, [{ name: "bug", color: "#000000" }, { name: "ux", color: "#00ff00", textColor: "#000000" }, { name: "api", color: null }])
+  assert.deepEqual(out, { bug: { color: "#ff0000" }, ux: { color: "#00ff00", textColor: "#000000" } })
+  assert.deepEqual(base, { bug: { color: "#ff0000" } })
+})

@@ -24,6 +24,33 @@ function labelStyle(entry) {
   return { bg: entry.color, fg: entry.textColor || (light ? "#1f1e24" : "#ffffff") }
 }
 
+// Status labels: the board's list labels and the workflow labels of the
+// no-board fallback. They change only by dragging a card, so the label editor
+// never offers them. board-fetch guards the same set (any board's list label).
+var workflowLabels = ["research", "todo", "approved", "in progress", "review"]
+function statusLabels(fetched, columns) {
+  var names = (columns || []).filter(function(c) { return c.kind === "label" }).map(function(c) { return c.name })
+  return lowerList(workflowLabels.concat(fetched || [], names))
+}
+function editableLabels(labels, status) {
+  return (labels || []).map(String).filter(function(name) { return !has(status, name) })
+}
+// Project labels ({ name, color, textColor }) the issue could take: not on it,
+// not status, matching the filter (any case, anywhere in the name).
+function addableLabels(all, current, status, filter) {
+  var needle = String(filter || "").trim().toLowerCase()
+  return (all || []).filter(function(l) {
+    return (current || []).indexOf(l.name) === -1 && !has(status, l.name) && l.name.toLowerCase().indexOf(needle) !== -1
+  })
+}
+// The board's label colors plus those from board-fetch labels.
+function withColors(colors, labels) {
+  var out = {}
+  Object.keys(colors || {}).forEach(function(k) { out[k] = colors[k] })
+  ;(labels || []).forEach(function(l) { if (l.color && !out[l.name]) out[l.name] = { color: l.color, textColor: l.textColor } })
+  return out
+}
+
 // "5m", "3h", "4d", "2w", "6mo", "1y" from iso to since (default: now).
 function age(iso, since) {
   var ms = new Date(since || Date.now()) - new Date(iso)
@@ -193,6 +220,7 @@ if (typeof module !== "undefined") {
   module.exports = {
     lowerList: lowerList, has: has, toggled: toggled, escaped: escaped, labelStyle: labelStyle, age: age, savedNote: savedNote,
     columnKey: columnKey, listSpec: listSpec, movedColumns: movedColumns, byline: byline, people: people,
+    workflowLabels: workflowLabels, statusLabels: statusLabels, editableLabels: editableLabels, addableLabels: addableLabels, withColors: withColors,
     linkUrl: linkUrl, inline: inline, lineLimit: lineLimit, markdown: markdown, descriptionLimit: descriptionLimit, cursorMove: cursorMove, cursorFix: cursorFix, keys: keys
   }
 }

@@ -9,6 +9,9 @@ import "Logic.js" as Logic
 // Markdown, then its comments and a box to add one. ✕ (or Esc) returns to the
 // board. The issue and its comments load through `board-fetch issue` and
 // `board-fetch notes` (GET); Post runs `board-fetch comment` with the text on stdin.
+// Edit labels lists the project's labels (`board-fetch labels`, GET) and adds or
+// removes one at a time (`board-fetch relabel`). Status labels (the board's
+// lists) are never offered: they change only by dragging the card.
 Item {
   id: view
   required property var host
@@ -32,7 +35,21 @@ Item {
   property bool posting: false
   property string postFor: ""
   property string postError: ""
-  readonly property bool typing: box.activeFocus
+  readonly property bool typing: box.activeFocus || labelFilter.activeFocus
+  // Label editor: open only on request; the label list loads when it opens.
+  property bool editing: false
+  property string labelsFor: ""
+  property string labelsState: ""  // "", loading, ready, error
+  property string labelsError: ""
+  property var allLabels: []
+  property var fetchedStatus: []
+  property string labelBusy: ""  // the label being added or removed
+  property string relabelFor: ""
+  property string labelError: ""
+  readonly property var status: Logic.statusLabels(fetchedStatus, host.columns)
+  readonly property var colors: Logic.withColors(host.labelColors, allLabels)
+  readonly property var addable: labelsState === "ready" ? Logic.addableLabels(allLabels, issue.labels, status, labelFilter.text) : []
+  readonly property int addableShown: 60
   // The comment box opens only once the issue and its comments have arrived.
   property string notesReadyFor: ""
   readonly property bool loaded: issueReady && notesReadyFor === key
@@ -48,6 +65,7 @@ Item {
     + "table { border-collapse: collapse; border-color: " + host.faint + "; margin-bottom: " + Style.space(6) + "px }</style>"
 
   onKeyChanged: {
+    closeEditor()
     if (key === "") return
     if (key !== shownKey) {  // another issue: drop the last one's thread and draft
       shownKey = key
@@ -91,6 +109,52 @@ Item {
     if (data.state === "ready") { notes = data.notes || []; more = !!data.more; notesAt = new Date().toISOString() }
   }
 
+  function editLabels() {
+    if (!issueReady || issueError !== "") return
+    editing = true
+    labelError = ""
+    loadLabels()
+    labelFilter.forceActiveFocus()
+  }
+  function closeEditor() { editing = false; labelFilter.text = ""; labelError = "" }
+  function doneEditing() {
+    closeEditor()
+    host.showView("issue")  // hand the keys back to the panel, as Esc in the comment box does
+  }
+  function loadLabels() {
+    if (labelsProcess.running) return
+    labelsFor = key
+    labelsState = "loading"
+    labelsProcess.command = [host.helperPath(), "labels", "--project", host.project]
+    labelsProcess.running = true
+  }
+  function labelsDone(raw) {
+    if (labelsFor !== key) { labelsState = ""; return }
+    var data = host.parse(raw)
+    labelsState = data.state === "ready" ? "ready" : "error"
+    labelsError = data.state === "ready" ? "" : String(data.message || "Could not load labels.")
+    if (data.state === "ready") { allLabels = data.labels || []; fetchedStatus = data.status || [] }
+  }
+  // op: "add" or "remove"; one change at a time, never a status label.
+  function relabel(op, name) {
+    if (labelBusy !== "" || !issueReady || Logic.has(status, name)) return
+    labelBusy = name
+    relabelFor = key
+    labelError = ""
+    relabelProcess.command = [host.helperPath(), "relabel", "--project", host.project, "--iid", String(issue.iid), op === "add" ? "--add" : "--remove", name]
+    relabelProcess.running = true
+  }
+  function relabelDone(raw) {
+    labelBusy = ""
+    if (relabelFor !== key) return
+    var data = host.parse(raw)
+    if (data.state !== "ready") { labelError = String(data.message || "Label change failed."); loadIssue(); return }
+    var next = Object.assign({}, issue)
+    next.labels = data.labels || []
+    issue = next
+    host.refresh()  // the card on the board
+  }
+
   function focusBox() { box.forceActiveFocus() }  // no-op while the box is disabled
   function post() {
     if (posting || !loaded || box.text.trim() === "") return
@@ -121,6 +185,14 @@ Item {
     id: notesProcess
     onExited: if (view.reloadQueued) { view.reloadQueued = false; Qt.callLater(view.loadNotes) }
     stdout: StdioCollector { waitForEnd: true; onStreamFinished: view.notesDone(text) }
+  }
+  Process {
+    id: labelsProcess
+    stdout: StdioCollector { waitForEnd: true; onStreamFinished: view.labelsDone(text) }
+  }
+  Process {
+    id: relabelProcess
+    stdout: StdioCollector { waitForEnd: true; onStreamFinished: view.relabelDone(text) }
   }
   // The text goes in on stdin, then stdin closes so board-fetch sees the end.
   Process {
@@ -190,7 +262,89 @@ Item {
         }
         Repeater {
           model: view.issue.labels || []
-          delegate: LabelChip { required property var modelData; host: view.host; name: String(modelData) }
+          // While editing, a label that is not a status label shows × and removes on click.
+          delegate: LabelChip {
+            id: chip
+            required property var modelData
+            readonly property bool removable: view.editing && !Logic.has(view.status, name)
+            host: view.host; colors: view.colors; name: String(modelData)
+            label: name + (removable ? "  \u00d7" : "")
+            clickable: removable && view.labelBusy === ""
+            // While editing, status labels fade: they are not editable here.
+            opacity: view.labelBusy === name || (view.editing && !removable) ? 0.5 : 1
+            onClicked: view.relabel("remove", name)
+          }
+        }
+      }
+
+      // A text action, not a pill, so it never reads as a label.
+      BoardText {
+        id: editAction
+        visible: !view.editing && view.issueReady && view.issueError === ""
+        text: "\uf040  Edit labels"  // Font Awesome pencil (Nerd Font)
+        color: view.host.accent
+        font.pixelSize: Style.font.bodySmall
+        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: view.editLabels() }
+      }
+
+      // The label editor: a filter with Done, then the labels the issue could take.
+      Column {
+        id: editor
+        visible: view.editing
+        width: parent.width; spacing: Style.space(6)
+        Row {
+          spacing: Style.space(8)
+          TextField {
+            id: labelFilter
+            width: Math.min(editor.width - doneButton.width - parent.spacing, Style.space(280))
+            foreground: view.host.foreground
+            placeholderText: "Filter labels"
+            onAccepted: if (view.addable.length > 0) view.relabel("add", view.addable[0].name)
+            Keys.onEscapePressed: view.doneEditing()
+          }
+          ActionButton {
+            id: doneButton
+            host: view.host; small: true
+            height: labelFilter.height
+            label: "Done"
+            onClicked: view.doneEditing()
+          }
+        }
+        Flow {
+          width: parent.width; spacing: Style.space(4)
+          visible: view.addable.length > 0
+          Repeater {
+            model: view.addable.slice(0, view.addableShown)
+            delegate: LabelChip {
+              required property var modelData
+              host: view.host; colors: view.colors; name: String(modelData.name)
+              label: "+ " + name
+              clickable: view.labelBusy === ""
+              opacity: view.labelBusy === "" || view.labelBusy === name ? 1 : 0.5
+              onClicked: view.relabel("add", name)
+            }
+          }
+        }
+        BoardText {
+          id: labelStatus
+          width: parent.width; wrapMode: Text.Wrap
+          visible: text !== ""
+          readonly property bool bad: view.labelError !== "" || view.labelsState === "error"
+          text: view.labelError !== "" ? view.labelError
+            : view.labelsState === "error" ? view.labelsError
+            : view.labelBusy !== "" ? "Saving " + view.labelBusy + "…"
+            : view.labelsState === "loading" ? "Loading labels…"
+            : view.labelsState !== "ready" ? ""
+            : view.addable.length > view.addableShown ? (view.addable.length - view.addableShown) + " more: filter to find them."
+            : view.addable.length === 0 ? (labelFilter.text.trim() !== "" ? "No label matches." : "No other labels to add.")
+            : ""
+          color: bad ? view.host.urgent : view.host.dim
+          font.pixelSize: Style.font.bodySmall
+        }
+        BoardText {
+          width: parent.width; wrapMode: Text.Wrap
+          text: "Board list labels change only by dragging the card."
+          color: view.host.dim; font.pixelSize: Style.font.caption
         }
       }
 
@@ -328,15 +482,12 @@ Item {
           color: view.postError !== "" ? view.host.urgent : view.host.dim
           font.pixelSize: Style.font.caption
         }
-        Pill {
+        ActionButton {
           id: postButton
           anchors.right: parent.right
-          readonly property bool ready: view.loaded && !view.posting && box.text.trim() !== ""
+          host: view.host; small: true; main: true
+          enabled: view.loaded && !view.posting && box.text.trim() !== ""
           label: view.posting ? "Posting…" : "Post"
-          clickable: ready
-          opacity: ready ? 1 : 0.5
-          textColor: view.host.accent
-          border.color: view.host.accent
           onClicked: view.post()
         }
       }
