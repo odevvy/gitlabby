@@ -44,6 +44,7 @@ Item {
     + ".h1, .h2 { font-size: " + (Style.font.bodySmall + 2) + "px } .h3 { font-size: " + (Style.font.bodySmall + 1) + "px }"
     + ".li { margin-bottom: " + Style.space(2) + "px } .quote { color: " + host.dim + " }"
     + "code, pre { background-color: " + host.faint + " }"
+    + "a { color: " + host.accent + " }"  // RichText ignores linkColor (Qt docs: Text.linkColor)
     + "table { border-collapse: collapse; border-color: " + host.faint + "; margin-bottom: " + Style.space(6) + "px }</style>"
 
   onKeyChanged: {
