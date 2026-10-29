@@ -288,7 +288,7 @@ Item {
               && Logic.columnKey(view.dragFrom) !== Logic.columnKey(column.modelData)
             onDropped: {
               var row = view.dragRow, from = view.dragFrom, to = column.modelData
-              Qt.callLater(function() { view.host.moveIssue(row, from, to) })  // after the press ends
+              Qt.callLater(function() { view.host.requestMove(row, from, to) })  // after the press ends
             }
           }
         }

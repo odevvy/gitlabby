@@ -7,7 +7,7 @@
 #   board-fetch [board] --project P [--board ID]    columns of a board (default),
 #                                                   also saved to the cache below
 #   board-fetch cached --project P [--board ID]     that saved copy; no glab call
-#   board-fetch projects                            projects you are a member of
+#   board-fetch projects                            projects you are a member of (up to 500)
 #   board-fetch boards --project P                  boards of a project
 #   board-fetch issue --project P --iid N           one issue with its description
 #   board-fetch notes --project P --iid N           its comments (newest 100), oldest first
@@ -20,7 +20,9 @@
 #     names come from GitLab's own copy of the board, never from the caller.
 #     If the issue is no longer in --from on GitLab, nothing is written: state "stale".
 #   board-fetch comment --project P --iid N <body   (POST, write_note())
-#     The comment is read from stdin and never appears on a command line.
+#     The comment is read from stdin and never appears on a command line. A line
+#     starting with / is refused: GitLab would run it as a quick action (/close,
+#     /label, /move ...), which no button here may do.
 #   board-fetch relabel --project P --iid N (--add L | --remove L)   (PUT, write_labels())
 #     One label at a time, through add_labels/remove_labels, so no other label is
 #     touched. Status labels are refused: every list label of every board in the
@@ -83,6 +85,8 @@ if [[ $cmd == comment ]]; then
   # Read before any glab call; jq builds the JSON body, so the text stays off argv.
   note=$(jq -Rsc '{body: .}') || emit error "Could not read the comment."
   jq -e '.body | test("\\S")' <<<"$note" >/dev/null || emit error "Comment is empty."
+  ! jq -e '.body | test("(^|\n)[ \t]*/")' <<<"$note" >/dev/null ||
+    emit error "A line starts with /, which GitLab runs as a quick action. Wrap it in \`backticks\` or use GitLab for quick actions."
 fi
 [[ $hostname =~ ^[A-Za-z0-9][A-Za-z0-9.-]*(:[0-9]+)?$ ]] || emit error "Invalid GitLab hostname."
 
@@ -121,13 +125,14 @@ if [[ $cmd == logout ]]; then
 fi
 # Signed in? glab's own read-only check. Its messages are only matched here,
 # never printed: no login for this host ("... authenticated with glab"), or
-# GitLab refusing the token (401), means signing in again helps. Anything else
+# GitLab refusing the token (glab's "API call failed: GET <url>: 401 ..."; a
+# 401 anywhere else, say in a host name, doesn't count), means signing in again helps. Anything else
 # (offline, GitLab down) is an error, so a network blip never asks for a login.
 errors=$tmp/auth bounded auth status --hostname "$hostname" >/dev/null
 case $? in
   0) ;;
   124) emit error "$slow" ;;
-  *) grep -qE 'authenticated with glab|(^|[^0-9])401([^0-9]|$)' "$tmp/auth" &&
+  *) grep -qE 'authenticated with glab|API call failed: .*: 401( |$)' "$tmp/auth" &&
        emit logged-out "Not signed in to $hostname. Run: glab auth login"
      emit error "Could not check your GitLab sign-in. Check your connection and try again." ;;
 esac
@@ -149,18 +154,28 @@ def names: [(.labels // [])[] | if type == "object" then .name else . end | stri
 def https: if type == "string" and test("^https://") then . else "" end;
 # GitLab's error message for a failed write: one line, anything token-shaped redacted.
 def hex: if type == "string" and test("^#[0-9A-Fa-f]{6}$") then . else null end;
+# The workflow labels, furthest along first: the columns of a project with no
+# board, and always status labels. Logic.js workflowLabels is the same list.
+def workflow: ["review", "in progress", "approved", "todo", "research"];
 # Status labels: the list labels of every board in $boards (pages of GET boards)
-# plus the workflow labels of the no-board fallback, lowercased.
+# plus the workflow labels, lowercased.
 def status($boards): [($boards | add // [])[] | (.lists // [])[] | .label.name // empty
-  | strings] + ["review", "in progress", "approved", "todo", "research"] | map(ascii_downcase) | unique;
+  | strings] + workflow | map(ascii_downcase) | unique;
 def reason: (.message // .error // empty) | (if type == "string" then . else tojson end)
   | gsub("\\p{Cc}"; "") | gsub("(gl[a-z]{2,6}-|[Bb]earer +)[A-Za-z0-9_.=-]+"; "[redacted]") | .[0:120];
 JQ
 
 case $cmd in
   projects)
-    get "projects?membership=true&simple=true&order_by=last_activity_at&per_page=100" >"$tmp/p" || emit error "Could not load projects."
-    jq -c '{state: "ready", message: "", projects: [.[] | {id, path: .path_with_namespace}]}' "$tmp/p" 2>/dev/null ||
+    # Page by page, at most 5 pages (500 projects, most recently active first),
+    # so a huge membership can't keep the widget waiting for long.
+    : >"$tmp/p"
+    for page in 1 2 3 4 5; do
+      get "projects?membership=true&simple=true&order_by=last_activity_at&per_page=100&page=$page" >"$tmp/page" || emit error "Could not load projects."
+      cat "$tmp/page" >>"$tmp/p"
+      [[ $(jq 'if type == "array" then length else 0 end' "$tmp/page" 2>/dev/null) == 100 ]] || break
+    done
+    jq -cs '{state: "ready", message: "", projects: (reduce (add // [])[] as $p ([]; if any(.[]; .id == $p.id) then . else . + [{id: $p.id, path: $p.path_with_namespace}] end))}' "$tmp/p" 2>/dev/null ||
       emit error "GitLab returned an unreadable response."
     exit 0 ;;
   whoami)
@@ -257,8 +272,12 @@ case $cmd in
     esac
     jq -c 'select(type == "object" and (.id | type) == "number")
       | {state: "ready", message: "Comment posted.", updatedAt: (now | todateiso8601), note: {id}}' "$tmp/r" 2>/dev/null |
-      grep . || emit error "GitLab returned an unexpected response to the comment."
-    exit 0 ;;
+      grep . && exit 0
+    # Defence: GitLab answers a comment made only of quick actions with what they
+    # changed and no note. Nothing above sends one, but if it happens, say so.
+    jq -e 'type == "object" and (has("commands_changes") or has("summary"))' "$tmp/r" >/dev/null 2>&1 &&
+      emit commands "GitLab ran this as quick actions instead of posting a comment. Check the issue."
+    emit error "GitLab returned an unexpected response to the comment." ;;  # emit exits
   move)
     # Both lists are looked up in GitLab's own copy of the board (a GET), so the
     # labels sent below are that board's list labels and nothing else.
@@ -367,7 +386,7 @@ $b[0] as $board | ($o | add // []) as $rawOpen | ($c | add // []) as $rawClosed
    boards: ($all | add // [] | map({id, name})),
    board: (if $board then {id: $board.id, name: $board.name} else null end), fallback: ($board == null)}
 + if $board == null then
-    ["review", "in progress", "approved", "todo", "research"] as $rank
+    workflow as $rank
     | {message: "No boards in this project: showing workflow label columns.",
        columns: ([$rank | reverse[] as $n | {name: $n, kind: "label", color: $colors[$n].color, issues: [$open[]
                    | . as $i | select(([$rank[] | select(. as $l | $i.labels | index($l))] | first) == $n) | row]}]

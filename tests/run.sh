@@ -75,7 +75,14 @@ check "D mapping" "$cols"' == {"research":[1],"todo":[2],"approved":[],"in progr
 fx projects <<<'[{"id":1,"path_with_namespace":"a/b","name_with_namespace":"A / B"},{"id":2,"path_with_namespace":"c/d"}]'
 out=$("$fetch" projects)
 check "F projects" '.projects == [{"id":1,"path":"a/b"},{"id":2,"path":"c/d"}]' "$out"
-check "F projects query" '.' "$(grep -q '^api --hostname gitlab.com --method GET projects?membership=true&simple=true&order_by=last_activity_at&per_page=100$' "$FAKE_LOG" && echo true || echo false)"
+check "F projects query" '.' "$(grep -q '^api --hostname gitlab.com --method GET projects?membership=true&simple=true&order_by=last_activity_at&per_page=100&page=1$' "$FAKE_LOG" && echo true || echo false)"
+check "F projects: a short page is the last" '.' "$([[ $(grep -c 'GET projects?' "$FAKE_LOG") == 1 ]] && echo true || echo false)"
+# Full pages: at most 5 (500 projects), duplicates across pages dropped, order kept.
+jq -n '[range(100) | {id: (99 - .), path_with_namespace: "g/p\(99 - .)"}]' | fx projects
+: >"$FAKE_LOG"; out=$("$fetch" projects)
+check "F projects: at most 5 pages" '.' "$([[ $(grep -c 'GET projects?' "$FAKE_LOG") == 5 ]] && grep -q 'page=5$' "$FAKE_LOG" && echo true || echo false)"
+check "F projects: one entry each, in GitLab's order" '(.projects | length) == 100 and .projects[0] == {"id":99,"path":"g/p99"}' "$out"
+fx projects <<<'[{"id":1,"path_with_namespace":"a/b","name_with_namespace":"A / B"},{"id":2,"path_with_namespace":"c/d"}]'
 fx boards <<<'[{"id":3,"name":"Main","lists":[]}]'
 check "F boards" '.boards == [{"id":3,"name":"Main"}]' "$("$fetch" boards --project a/b)"
 fx issue <<'J'
@@ -303,6 +310,14 @@ nothing_ran() { # name stdin args... (expects state error and no glab call at al
 nothing_ran "P empty body" ''
 nothing_ran "P whitespace body" $' \n\t \r\n  '
 check "P empty message" '.message == "Comment is empty."' "$(say </dev/null)"
+# Quick actions: GitLab runs a line starting with / (/close, /label ~x, /move)
+# instead of posting it, so such a comment is never sent.
+nothing_ran "P quick action" '/close'
+nothing_ran "P quick action after text" $'Looks good\n/label ~review'
+nothing_ran "P quick action, indented" $'ok\n  \t/unlabel ~"in progress"'
+check "P quick action message" '.message | test("starts with /")' "$(printf '/close' | say)"
+fx post <<<'{"id":901,"body":"x"}'
+check "P a / inside a line or in backticks is fine" '.state == "ready"' "$(printf '%s\n%s' 'see a/b and /usr' "\`/close\`" | say)"
 nothing_ran "P bad iid" 'hi' --iid '45;x'
 nothing_ran "P bad project" 'hi' --project 'a/../b'
 fx post-error <<<'{"message":"403 Forbidden glpat-LEAKLEAKLEAK Bearer abc.def"}'
@@ -313,9 +328,17 @@ rm -f "$FAKE_DIR/post-error.json"
 check "PF no body" '.message == "Comment failed"' "$(echo hi | FAKE_POST=fail say)"
 fx post <<<'{"message":"odd"}'
 check "PF unexpected answer" '.state == "error"' "$(echo hi | say)"
+fx post <<<'{"commands_changes":{"state_event":"close"},"summary":["Closed this issue."]}'
+check "PF quick actions ran anyway: said so" '.state == "commands" and (.message | test("quick actions"))' "$(echo hi | say)"
 : >"$FAKE_LOG"
 check "PF logged out: no write" '.state == "logged-out"' "$(echo hi | FAKE_AUTH=no say)"
 check "PF logged out: no POST" '.' "$(grep -q NON-GET "$FAKE_LOG" && echo false || echo true)"
+
+# --- W: one list of workflow labels on each side ----------------------------
+check "W board-fetch and Logic.js list the same workflow labels" '.' "$(
+  a=$(jq -cn "$(sed -n 's/^def workflow: \(.*\);$/\1/p' "$fetch") | sort")
+  b=$(node -e 'console.log(JSON.stringify(require(process.argv[1]).workflowLabels.slice().sort()))' "$here/../Logic.js")
+  [[ -n $a && $a == "$b" ]] && echo true || echo false)"
 
 # --- R: reads are GET only ---------------------------------------------------
 # Runtime: every read command, including a refresh with a board, issues only
@@ -402,6 +425,7 @@ check "V projects needs no project" '.state == "ready" and .projects == [{"id":1
 for a in no none 401; do
   check "V signed out ($a): logged-out" '.state == "logged-out" and (.message | test("glab auth login"))' "$(FAKE_AUTH=$a "$fetch" projects)"
 done
+check "V a 401 in the host name is not a sign-in prompt" '.state == "error"' "$(FAKE_AUTH=offline401 "$fetch" projects --hostname git401lab.example)"
 check "V offline is an error, not a sign-in prompt" '.state == "error" and (.message | test("connection"))' "$(FAKE_AUTH=offline "$fetch" projects)"
 check "V auth message never passed through" '.' "$(FAKE_AUTH=offline "$fetch" projects | grep -q 'dial tcp\|glpat' && echo false || echo true)"
 : >"$FAKE_LOG"; FAKE_AUTH=no "$fetch" --project a/b >/dev/null

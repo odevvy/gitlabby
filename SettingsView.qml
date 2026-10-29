@@ -66,19 +66,20 @@ Item {
           Row {
             spacing: Style.space(8)
             visible: !view.host.signingOut
-            Pill {
+            // Square buttons like the issue view's, never label-like pills.
+            ActionButton {
               visible: !view.confirming && (view.host.account !== "" || view.host.accountError !== "")
-              label: "Sign out"; pixelSize: Style.font.bodySmall; clickable: true
+              host: view.host; small: true; label: "Sign out"
               onClicked: view.confirming = true
             }
-            Pill {
+            ActionButton {
               visible: view.confirming
-              label: "Yes, sign out"; textColor: view.host.urgent; pixelSize: Style.font.bodySmall; clickable: true
+              host: view.host; small: true; danger: true; label: "Yes, sign out"
               onClicked: { view.confirming = false; view.host.signOut() }
             }
-            Pill {
+            ActionButton {
               visible: view.confirming
-              label: "Cancel"; pixelSize: Style.font.bodySmall; clickable: true
+              host: view.host; small: true; label: "Cancel"
               onClicked: view.confirming = false
             }
           }
