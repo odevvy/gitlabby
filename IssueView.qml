@@ -9,9 +9,10 @@ import "Logic.js" as Logic
 // Markdown, then its comments and a box to add one. ✕ (or Esc) returns to the
 // board. The issue and its comments load through `board-fetch issue` and
 // `board-fetch notes` (GET); Post runs `board-fetch comment` with the text on stdin.
-// Edit labels lists the project's labels (`board-fetch labels`, GET) and adds or
-// removes one at a time (`board-fetch relabel`). Status labels (the board's
-// lists) are never offered: they change only by dragging the card.
+// Edit labels (a text action after the labels) lists the project's labels
+// (`board-fetch labels`, GET) and adds or removes one at a time
+// (`board-fetch relabel`). Status labels (the board's lists) are never
+// offered: they change only by dragging the card.
 // Close issue asks first, then runs `board-fetch close` (state only, labels
 // stay); a closed issue offers Reopen issue (`board-fetch reopen`) instead.
 Item {
@@ -123,7 +124,7 @@ Item {
     editing = true
     labelError = ""
     loadLabels()
-    labelFilter.forceActiveFocus()
+    if (labelsState === "ready") labelFilter.forceActiveFocus()  // else once they load (labelsDone)
   }
   function closeEditor() { editing = false; labelFilter.text = ""; labelError = "" }
   function doneEditing() {
@@ -143,6 +144,7 @@ Item {
     labelsState = data.state === "ready" ? "ready" : "error"
     labelsError = data.state === "ready" ? "" : String(data.message || "Could not load labels.")
     if (data.state === "ready") { allLabels = data.labels || []; fetchedStatus = data.status || [] }
+    if (labelsState === "ready" && editing) labelFilter.forceActiveFocus()
   }
   // op: "add" or "remove"; one change at a time, never a status label.
   function relabel(op, name) {
@@ -298,56 +300,65 @@ Item {
         }
       }
 
-      Flow {
-        width: parent.width; spacing: Style.space(4)
-        Pill {
-          visible: !!view.issue.state
-          label: view.issue.state === "closed" ? "Closed" : "Open"
-          textColor: view.issue.state === "closed" ? view.host.dim : view.host.accent
-          border.color: textColor
-        }
-        Repeater {
-          model: view.issue.labels || []
-          // While editing, a label that is not a status label shows × and removes on click.
-          delegate: LabelChip {
-            id: chip
-            required property var modelData
-            readonly property bool removable: view.editing && !Logic.has(view.status, name)
-            host: view.host; colors: view.colors; name: String(modelData)
-            label: name + (removable ? "  \u00d7" : "")
-            clickable: removable && view.labelBusy === ""
-            // While editing, status labels fade: they are not editable here.
-            opacity: view.labelBusy === name || (view.editing && !removable) ? 0.5 : 1
-            onClicked: view.relabel("remove", name)
+      // One row: the state, the labels, then Edit labels as an accent text
+      // action (Done editing while the editor is open); Close or Reopen issue
+      // as a quiet text action at its right. Neither moves when the editor or
+      // the close question opens below.
+      Item {
+        id: labelRow
+        width: parent.width
+        implicitHeight: labelFlow.implicitHeight
+        Flow {
+          id: labelFlow
+          width: parent.width - (stateAction.visible ? stateAction.implicitWidth + Style.space(12) : 0)
+          spacing: Style.space(4)
+          Pill {
+            id: statePill
+            visible: !!view.issue.state
+            label: view.issue.state === "closed" ? "Closed" : "Open"
+            textColor: view.issue.state === "closed" ? view.host.dim : view.host.accent
+            border.color: textColor
+          }
+          Repeater {
+            model: view.issue.labels || []
+            // While editing, a label that is not a status label shows × and removes on click.
+            delegate: LabelChip {
+              id: chip
+              required property var modelData
+              readonly property bool removable: view.editing && !Logic.has(view.status, name)
+              host: view.host; colors: view.colors; name: String(modelData)
+              label: name + (removable ? "  \u00d7" : "")
+              clickable: removable && view.labelBusy === ""
+              // While editing, status labels fade: they are not editable here.
+              opacity: view.labelBusy === name || (view.editing && !removable) ? 0.5 : 1
+              onClicked: view.relabel("remove", name)
+            }
+          }
+          BoardText {
+            id: editAction
+            visible: view.issueReady && view.issueError === ""
+            height: Math.max(implicitHeight, statePill.height)
+            verticalAlignment: Text.AlignVCenter
+            leftPadding: Style.space(4)
+            // Font Awesome pencil / check (Nerd Font)
+            text: view.editing ? "\uf00c  Done editing" : "\uf040  Edit labels"
+            color: view.host.accent
+            font.pixelSize: Style.font.bodySmall
+            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: view.editing ? view.doneEditing() : view.editLabels() }
           }
         }
-      }
-
-      // Actions under the labels: Edit labels as a text action (never reads
-      // as a label) on the left, Close or Reopen issue as a quiet button on the right.
-      Item {
-        id: actions
-        width: parent.width
-        visible: view.issueReady && view.issueError === ""
-        implicitHeight: Math.max(editAction.implicitHeight, stateButton.implicitHeight)
         BoardText {
-          id: editAction
-          anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-          visible: !view.editing && view.issueReady && view.issueError === ""
-          text: "\uf040  Edit labels"  // Font Awesome pencil (Nerd Font)
-          color: view.host.accent
-          font.pixelSize: Style.font.bodySmall
-          MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: view.editLabels() }
-        }
-        ActionButton {
-          id: stateButton
-          anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-          visible: !view.confirming
-          host: view.host; small: true
+          id: stateAction
+          anchors.right: parent.right
+          height: Math.max(implicitHeight, statePill.height)
+          verticalAlignment: Text.AlignVCenter
+          visible: view.issueReady && view.issueError === ""
           enabled: view.stateBusy === ""
-          label: view.stateBusy === "close" ? "Closing…" : view.stateBusy === "reopen" ? "Reopening…"
+          text: view.stateBusy === "close" ? "Closing…" : view.stateBusy === "reopen" ? "Reopening…"
             : view.issue.state === "closed" ? "Reopen issue" : "Close issue"
-          onClicked: view.issue.state === "closed" ? view.setState("reopen") : view.askClose()
+          color: stateMouse.containsMouse && enabled ? view.host.foreground : view.host.dim
+          font.pixelSize: Style.font.bodySmall
+          MouseArea { id: stateMouse; anchors.fill: parent; enabled: parent.enabled; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: view.toggleState() }
         }
       }
 
@@ -396,9 +407,14 @@ Item {
         width: parent.width; spacing: Style.space(6)
         Row {
           spacing: Style.space(8)
+          // Compact; off (dimmed) until the labels have loaded, then focused.
           TextField {
             id: labelFilter
-            width: Math.min(editor.width - doneButton.width - parent.spacing, Style.space(280))
+            width: Math.min(editor.width - doneButton.width - parent.spacing, Style.space(220))
+            enabled: view.labelsState === "ready"
+            opacity: enabled ? 1 : 0.5
+            verticalPadding: Style.space(3)
+            font.pixelSize: Style.font.bodySmall
             foreground: view.host.foreground
             placeholderText: "Filter labels"
             onAccepted: if (view.addable.length > 0) view.relabel("add", view.addable[0].name)
@@ -578,18 +594,20 @@ Item {
         implicitHeight: Math.max(postButton.implicitHeight, postStatus.implicitHeight)
         BoardText {
           id: postStatus
-          anchors { left: parent.left; right: postButton.left; rightMargin: Style.space(8); verticalCenter: parent.verticalCenter }
+          // Its own width beside Post: it wraps, never runs under the button.
+          anchors.verticalCenter: parent.verticalCenter
+          width: parent.width - postButton.width - Style.space(12)
           wrapMode: Text.Wrap
           readonly property bool slash: Logic.quickAction(box.text)
           text: view.postError !== "" ? view.postError
             : slash ? "A line starts with /, which GitLab runs as a quick action, so this can't be posted. Wrap it in `backticks`."
-            : "Posts as you on GitLab. Lines starting with / (quick actions) aren't sent."
+            : "Posts as you. Lines starting with / aren't sent."
           color: view.postError !== "" || slash ? view.host.urgent : view.host.dim
           font.pixelSize: Style.font.caption
         }
         ActionButton {
           id: postButton
-          anchors.right: parent.right
+          anchors { right: parent.right; verticalCenter: parent.verticalCenter }
           host: view.host; small: true; main: true
           enabled: view.loaded && !view.posting && box.text.trim() !== "" && !postStatus.slash
           label: view.posting ? "Posting…" : "Post"
