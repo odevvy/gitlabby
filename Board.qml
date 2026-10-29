@@ -32,8 +32,10 @@ Panel {
   readonly property int stripWidth: Style.space(34)
   readonly property int gap: Style.space(10)
 
-  // Saved default board (empty id = the project's first board).
-  readonly property string defaultProject: String(setting("defaultProject", "firelink21/phrase41")).trim()
+  // Saved default board (empty id = the project's first board). The only
+  // place the default project is set: none, so a new install starts in the
+  // picker, and the first board opened there becomes the default.
+  readonly property string defaultProject: String(setting("defaultProject", "")).trim()
   readonly property string defaultBoardId: String(setting("defaultBoardId", ""))
   readonly property string defaultBoardName: String(setting("defaultBoardName", ""))
   // Board on screen: starts as the default on every shell start; browsing
@@ -58,6 +60,9 @@ Panel {
   property string firstBoardId: ""
   // The board on screen is the saved copy, until the fresh answer replaces it.
   property bool cached: false
+  // First-run panel in place of the board: "no-glab", "logged-out", or
+  // "pick" (no project yet); "" once there is a board to load.
+  readonly property string setup: boardState === "no-glab" || boardState === "logged-out" ? boardState : project === "" ? "pick" : ""
   readonly property bool onDefault: project === defaultProject && resolvedBoardId === (defaultBoardId || firstBoardId)
   readonly property string stateKey: project + "#" + (resolvedBoardId || "labels")
   readonly property var boardEntry: boardStates[stateKey] || null
@@ -180,6 +185,9 @@ Panel {
   }
 
   function refresh() {
+    // No project yet: the project list doubles as the sign-in check, and
+    // landing in the picker is the next step.
+    if (project === "") { boardState = "loading"; runAux("projects", []); return }
     readCache()
     if (busy) { refreshQueued = true; return }
     fetchSeq = moveSeq
@@ -193,7 +201,7 @@ Panel {
 
   // The saved copy, only while nothing is on screen: no GitLab call.
   function readCache() {
-    if (boardState !== "loading" || cacheProcess.running) return
+    if (project === "" || boardState !== "loading" || cacheProcess.running) return
     cacheProcess.key = project + "#" + boardId
     cacheProcess.command = [helperPath(), "cached", "--project", project, "--board", boardId]
     cacheProcess.running = true
@@ -269,6 +277,13 @@ Panel {
     var kind = data.projects ? "projects" : data.boards ? "boards" : auxKind
     auxLoading = false
     auxError = error
+    // Not set up: the first-run panel replaces the picker.
+    if (data.state === "no-glab" || data.state === "logged-out") { boardState = data.state; message = String(data.message || ""); showView("board"); return }
+    if (kind === "projects" && project === "") {
+      boardState = error ? "error" : "ready"
+      message = error
+      if (!error && view === "board") pickProjectStep()
+    }
     if (kind === "projects") projects = data.projects || []
     else {
       var boards = data.boards || []
@@ -315,6 +330,7 @@ Panel {
     firstBoardId = ""
     moveError = ""
     boardState = "loading"
+    if (defaultProject === "") persist({ project: path, id: id, name: name })  // first board: the default
     back()
     refresh()
   }
@@ -335,6 +351,15 @@ Panel {
     close()
   }
 
+  // First run. glab asks for the token in its own terminal: this plugin never
+  // sees it. Same launcher as Omarchy's update widget (SystemUpdate.qml).
+  readonly property string installCommand: "sudo pacman -S glab"
+  function signIn() {
+    Quickshell.execDetached(["omarchy-launch-floating-terminal-with-presentation", "glab auth login"])
+    close()
+  }
+  function copyInstall() { Quickshell.execDetached(["wl-copy", installCommand]) }
+
   function statusText() {
     if (moveError !== "") return moveError
     if (move) return "Moving #" + move.iid + "…"
@@ -343,7 +368,9 @@ Panel {
       var time = updatedAt !== "" ? "Updated " + new Date(updatedAt).toLocaleTimeString(Qt.locale(), "HH:mm") : ""
       return message !== "" ? message + "  " + time : time
     }
-    if (boardState === "loading") return view === "board" ? "" : "Loading GitLab issues…"  // the placeholder says it
+    if (view === "board" && (setup !== "" || boardState === "loading")) return ""  // the board body says it
+    if (project === "") return ""
+    if (boardState === "loading") return "Loading GitLab issues…"
     if (boardState === "logged-out") return message || "Not signed in. Run: glab auth login"
     return message || "Could not load issues."
   }
@@ -357,7 +384,7 @@ Panel {
   // Only while the popup is open; opening it refreshes (onOpenedChanged).
   Timer {
     interval: root.refreshIntervalSec * 1000
-    repeat: true; running: root.opened
+    repeat: true; running: root.opened && root.setup === ""
     onTriggered: root.refresh()
   }
 
@@ -395,7 +422,7 @@ Panel {
     id: button
     anchors.fill: parent; bar: root.bar
     text: "\uf296"
-    tooltipText: "GitLab board · " + root.project
+    tooltipText: "GitLab board" + (root.project !== "" ? " · " + root.project : "")
     onPressed: function(buttonCode) {
       if (buttonCode === Qt.RightButton || buttonCode === Qt.MiddleButton) root.refresh()
       else root.toggle()
@@ -408,7 +435,7 @@ Panel {
     open: root.opened; focusTarget: keyCatcher
     // fittedContentWidth caps at availableCardWidth (screen minus margins);
     // anything wider scrolls horizontally inside the board.
-    contentWidth: panel.fittedContentWidth(Math.max(Style.space(520), root.view !== "board" ? 0
+    contentWidth: panel.fittedContentWidth(Math.max(Style.space(520), root.view !== "board" || root.setup !== "" ? 0
       : (root.boardState === "loading" ? skeleton.implicitWidth : root.boardWidth) + panel.padding * 2 + Style.space(4)))
     contentHeight: panel.fittedContentHeight(keyCatcher.implicitHeight, Style.space(640))
 
@@ -416,7 +443,7 @@ Panel {
       id: keyCatcher
       anchors.fill: parent
       blocked: issueView.typing || picker.typing  // text fields get every key (Omarchy PanelKeyCatcher.qml:26-29)
-      implicitHeight: header.implicitHeight + root.gap + (root.view === "board" ? (root.boardState === "loading" ? skeleton.implicitHeight : boardView.implicitHeight)
+      implicitHeight: header.implicitHeight + root.gap + (root.view === "board" ? (root.setup !== "" ? setupView.implicitHeight : root.boardState === "loading" ? skeleton.implicitHeight : boardView.implicitHeight)
         : root.view === "issue" ? issueView.implicitHeight : root.view === "picker" ? picker.implicitHeight
         : root.view === "keys" ? keysView.implicitHeight : settingsView.implicitHeight)
       onCloseRequested: root.view !== "board" ? root.back() : root.close()
@@ -469,7 +496,7 @@ Panel {
           anchors.verticalCenter: parent.verticalCenter
           width: Math.max(0, Math.min(implicitWidth, header.titleRoom))
           elide: Text.ElideRight
-          text: root.project + (root.boardName !== "" ? " · " + root.boardName : "")
+          text: root.project === "" ? "GitLab board" : root.project + (root.boardName !== "" ? " · " + root.boardName : "")
           color: titleMouse.containsMouse ? root.accent : root.foreground
           font { pixelSize: Style.font.title; bold: true }
         }
@@ -488,12 +515,12 @@ Panel {
         BoardText {
           id: defaultMark
           anchors { left: chevron.right; leftMargin: Style.space(8); verticalCenter: parent.verticalCenter }
-          text: root.onDefault ? "\uf005" : "\uf006 Default"
+          text: root.project === "" ? "" : root.onDefault ? "\uf005" : "\uf006 Default"
           color: root.onDefault || defaultMouse.containsMouse ? root.accent : root.dim
           font.pixelSize: Style.font.bodySmall
           MouseArea {
             id: defaultMouse; anchors.fill: parent; anchors.margins: -Style.space(4)
-            enabled: !root.onDefault; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+            enabled: !root.onDefault && root.project !== ""; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
             onClicked: root.openDefault()
           }
         }
@@ -529,8 +556,9 @@ Panel {
 
       Item {
         anchors { top: header.bottom; topMargin: root.gap; left: parent.left; right: parent.right; bottom: parent.bottom }
-        Skeleton { id: skeleton; host: root; anchors.fill: parent; visible: root.view === "board" && root.boardState === "loading" }
-        BoardView { id: boardView; host: root; anchors.fill: parent; visible: root.view === "board" && root.boardState === "ready" }
+        SetupView { id: setupView; host: root; anchors.fill: parent; visible: root.view === "board" && root.setup !== "" }
+        Skeleton { id: skeleton; host: root; anchors.fill: parent; visible: root.view === "board" && root.setup === "" && root.boardState === "loading" }
+        BoardView { id: boardView; host: root; anchors.fill: parent; visible: root.view === "board" && root.setup === "" && root.boardState === "ready" }
         IssueView { id: issueView; host: root; anchors.fill: parent; visible: root.view === "issue" }
         Picker { id: picker; host: root; anchors.fill: parent; visible: root.view === "picker" }
         SettingsView { id: settingsView; host: root; anchors.fill: parent; visible: root.view === "settings" }

@@ -19,7 +19,7 @@
     "allowMultiple": false,
     "defaultSection": "right",
     "defaults": {
-      "defaultProject": "firelink21/phrase41",
+      "defaultProject": "",
       "defaultBoardId": "",
       "defaultBoardName": "",
       "refreshIntervalSec": 60,
@@ -35,8 +35,8 @@
         "key": "defaultProject",
         "type": "string",
         "label": "Default GitLab project",
-        "description": "Project opened on shell start, e.g. group/project. Star a board in the picker to change the default board.",
-        "defaultValue": "firelink21/phrase41"
+        "description": "Project opened on shell start, e.g. group/project. Empty: the first board you open in the picker. Star a board to change it.",
+        "defaultValue": ""
       },
       {
         "key": "refreshIntervalSec",
