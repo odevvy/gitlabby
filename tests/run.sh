@@ -319,9 +319,9 @@ check "PF logged out: no POST" '.' "$(grep -q NON-GET "$FAKE_LOG" && echo false 
 
 # --- R: reads are GET only ---------------------------------------------------
 # Runtime: every read command, including a refresh with a board, issues only
-# GETs. Structure: board-fetch has exactly three non-GET requests: the PUTs in
-# write_issue() (move only) and write_labels() (relabel only), and the POST in
-# write_note() (comment only).
+# GETs. Structure: board-fetch has exactly four non-GET requests: the PUTs in
+# write_issue() (move only), write_labels() (relabel only) and write_state()
+# (close and reopen only), and the POST in write_note() (comment only).
 reset
 fx boards <<<'[{"id":7,"name":"Dev","lists":[{"id":11,"position":0,"label":{"name":"todo"}}]}]'
 fx open <<<'[{"iid":1,"title":"a","state":"opened","labels":["todo"],"web_url":"u"}]'
@@ -336,11 +336,11 @@ check "R reads ran" '.' "$(grep -c '^api ' "$FAKE_LOG" | grep -qxE '[0-9]{2,}' &
 check "R reads are GET only" '.' "$(grep -q 'NON-GET' "$FAKE_LOG" && echo false || echo true)"
 check "R every api call says --method GET" '.' "$(grep '^api ' "$FAKE_LOG" | grep -qv -- '--method GET ' && echo false || echo true)"
 src=$(grep -v '^ *#' "$fetch")
-check "R non-GETs in the script: two PUTs, one POST" '.' "$(grep -oE -- '--method [A-Z]+' <<<"$src" | sort | tr '\n' ' ' | grep -qx -- '--method GET --method POST --method PUT --method PUT ' && echo true || echo false)"
+check "R non-GETs in the script: three PUTs, one POST" '.' "$(grep -oE -- '--method [A-Z]+' <<<"$src" | sort | tr '\n' ' ' | grep -qx -- '--method GET --method POST --method PUT --method PUT --method PUT ' && echo true || echo false)"
 # shellcheck disable=SC2016  # the pattern is literal board-fetch source
 check "R glab runs only in bounded(), under timeout" '.' "$(grep -E '(^|[^-])\<glab "' <<<"$src" | grep -qvF '  { timeout -k 5 30 glab "$@"; } 2>"${errors:-/dev/null}"' && echo false ||
   grep -c 'timeout -k 5 30 glab' <<<"$src" | grep -qx 1 && echo true || echo false)"
-check "R glab api only in get(), write_issue(), write_labels() and write_note()" '.' "$(grep -c 'bounded api' <<<"$src" | grep -qx 4 && echo true || echo false)"
+check "R glab api only in get(), write_issue(), write_labels(), write_state() and write_note()" '.' "$(grep -c 'bounded api' <<<"$src" | grep -qx 5 && echo true || echo false)"
 check "R write_issue only inside move" '.' "$(awk '/^  move\)/{m=1} /^    exit 0 ;;/{if(m)m=2} /write_issue/{if(m!=1)bad=1} END{print bad?"false":"true"}' <<<"$src")"
 check "R move: issue read, then stale exit, then the PUT" '.' "$(awk '/^  move\)/{m=1} /^    exit 0 ;;/{if(m==1)m=2}
   m==1 && /get "\$base\/issues\/\$iid"/{g=NR} m==1 && /emit stale/{st=NR} m==1 && /\| write_issue/{w=NR}
@@ -348,6 +348,7 @@ check "R move: issue read, then stale exit, then the PUT" '.' "$(awk '/^  move\)
 check "R write_labels only inside relabel" '.' "$(awk '/^  relabel\)/{m=1} /^    exit 0 ;;/{if(m)m=2} /write_labels/{if(m!=1)bad=1} END{print bad?"false":"true"}' <<<"$src")"
 check "R relabel: status guard, then the PUT" '.' "$(awk '/^  relabel\)/{m=1} /^    exit 0 ;;/{if(m==1)m=2}
   m==1 && /is a board list label/{g=NR} m==1 && /\| write_labels/{w=NR} END{print (g && w && g < w) ? "true" : "false"}' <<<"$src")"
+check "R write_state only inside close|reopen" '.' "$(awk '/^  close\|reopen\)/{m=1} /^    exit 0 ;;/{if(m)m=2} /write_state/{if(m!=1)bad=1} END{print bad?"false":"true"}' <<<"$src")"
 check "R write_note only inside comment" '.' "$(awk '/^  comment\)/{m=1} /^    exit 0 ;;/{if(m)m=2} /write_note/{if(m!=1)bad=1} END{print bad?"false":"true"}' <<<"$src")"
 check "R stdin is read only for comment" '.' "$(: >"$FAKE_LOG"; echo '{"body":"x"}' | "$fetch" notes --project a/b --iid 1 >/dev/null; grep -q NON-GET "$FAKE_LOG" && echo false || echo true)"
 
@@ -366,6 +367,8 @@ check "T move PUT hangs" '.state == "error" and (.message | test("move may have 
 check "T comment POST hangs" '.state == "timeout" and (.message | test("may have been posted"))' "$(echo hi | FAKE_HANG='--method POST' say)"
 check "T comment POST killed" '.state == "timeout"' "$(echo hi | FAKE_HANG='--method POST' FAKE_HANG_TERM=ignore say)"
 check "T relabel PUT hangs" '.state == "error" and (.message | test("label change may have gone through"))' "$(fx labels <<<'[{"name":"bug"}]'; fx boards <<<'[]'; FAKE_HANG='--method PUT' "$fetch" relabel --project a/b --iid 3 --add bug)"
+check "T close PUT hangs" '.state == "error" and .message == "GitLab did not answer within 30 seconds. The issue may have been closed."' "$(FAKE_HANG='--method PUT' "$fetch" close --project a/b --iid 3)"
+check "T close PUT killed" '.state == "error" and (.message | test("may have been closed"))' "$(FAKE_HANG='--method PUT' FAKE_HANG_TERM=ignore "$fetch" close --project a/b --iid 3)"
 check "T one JSON line each" '.' "$(n=$(echo hi | FAKE_HANG='--method POST' say | wc -l); m=$(FAKE_HANG='--method PUT' mv_ --from 11 --to 12 | wc -l)
   [[ $n == 1 && $m == 1 ]] && echo true || echo false)"
 
@@ -562,6 +565,36 @@ fx boards <<<'{"not":"a list"}'
 check "L boards odd: refused, no write" '.state == "error" and (.message | test("unreadable"))' "$(rl --add api)"
 labels_out=$(rl --add api; "$fetch" labels --project a/b; FAKE_PUT=fail rl --remove api)
 
+# --- X: close and reopen: one state_event, labels untouched ---------------------
+reset
+fx put <<<'{"iid":3,"state":"closed","labels":["review","app-ui"]}'
+cl() { : >"$FAKE_LOG"; "$fetch" "$@"; }
+out=$(cl close --project a/b --iid 3)
+check "X close: ready, new state, labels as GitLab has them" '.state == "ready" and .message == "Closed #3." and .issueState == "closed" and .labels == ["review","app-ui"]' "$out"
+check "X close: one PUT with only state_event close" '.' "$(grep '^PUT ' "$FAKE_LOG" | grep -qxF 'PUT projects/a%2Fb/issues/3 {"state_event":"close"}' && [[ $(grep -c NON-GET "$FAKE_LOG") == 1 ]] && echo true || echo false)"
+check "X close: no other GitLab call but the sign-in check" '.' "$([[ $(grep -c '^api ' "$FAKE_LOG") == 1 ]] && echo true || echo false)"
+check "X close: no label field in the body" '.' "$(grep '^PUT ' "$FAKE_LOG" | grep -q 'labels' && echo false || echo true)"
+fx put <<<'{"iid":3,"state":"opened","labels":["todo"]}'
+out=$(cl reopen --project a/b --iid 3)
+check "X reopen: ready" '.state == "ready" and .message == "Reopened #3." and .issueState == "opened"' "$out"
+check "X reopen: one PUT with only state_event reopen" '.' "$(grep -qxF 'PUT projects/a%2Fb/issues/3 {"state_event":"reopen"}' "$FAKE_LOG" && echo true || echo false)"
+check "X close: answer still open is an error" '.state == "error" and (.message | test("unexpected response"))' "$(cl close --project a/b --iid 3)"
+fx put <<<'{"iid":4,"state":"closed","labels":[]}'
+check "X close: answer for another issue is an error" '.state == "error" and (.message | test("unexpected response"))' "$(cl close --project a/b --iid 3)"
+fx put-error <<<'{"message":"403 Forbidden Bearer abc.def"}'
+out=$(FAKE_PUT=fail cl close --project a/b --iid 3)
+check "X close refused: friendly reason, redacted" '.state == "error" and (.message | startswith("Closing failed: 403 Forbidden")) and (.message | test("abc.def") | not)' "$out"
+check "X reopen refused" '.state == "error" and (.message | startswith("Reopening failed"))' "$(FAKE_PUT=fail cl reopen --project a/b --iid 3)"
+for bad in "--iid 0" "--iid x" "" "--iid 3 --project ../x"; do
+  # shellcheck disable=SC2086  # split on purpose
+  out=$(: >"$FAKE_LOG"; "$fetch" close --project a/b $bad)
+  check "X close refuses '$bad' before any glab call" '.state == "error"' "$out"
+  check "X close '$bad': no glab call" '.' "$([[ ! -s $FAKE_LOG ]] && echo true || echo false)"
+done
+check "X logged out: no write" '.state == "logged-out"' "$(FAKE_AUTH=no cl close --project a/b --iid 3)"
+check "X logged out: no PUT" '.' "$(grep -q NON-GET "$FAKE_LOG" && echo false || echo true)"
+close_out=$(fx put <<<'{"iid":3,"state":"closed"}'; cl close --project a/b --iid 3; FAKE_PUT=fail cl reopen --project a/b --iid 3)
+
 # --- safety: no token in any output --------------------------------------------
 fx board <<<'{"id":7,"name":"Dev","lists":[{"id":11,"label":{"name":"todo"}},{"id":12,"label":{"name":"approved"}}]}'
 fx put <<<'{"iid":3,"state":"opened","labels":["approved"]}'
@@ -569,7 +602,7 @@ at opened '["todo"]'
 all=$(printf '%s\n' "$reads"; "$fetch" --project group/app; "$fetch" projects; "$fetch" issue --project a/b --iid 45; FAKE_AUTH=no "$fetch" --project a/b;
   FAKE_AUTH=401 "$fetch" --project a/b; FAKE_AUTH=offline "$fetch" --project a/b; mv_ --from 11 --to 12; FAKE_PUT=fail mv_ --from 11 --to 12; mv_ --iid x
   "$fetch" notes --project a/b --iid 1; fx post <<<'{"id":1}'; echo hi | say; echo hi | FAKE_POST=fail say;
-  fx user <<<'{"username":"dev1","private_token":"glpat-SECRET"}'; "$fetch" whoami; "$fetch" logout; FAKE_LOGOUT=fail "$fetch" logout; printf '%s\n' "$labels_out")
+  fx user <<<'{"username":"dev1","private_token":"glpat-SECRET"}'; "$fetch" whoami; "$fetch" logout; FAKE_LOGOUT=fail "$fetch" logout; printf '%s\n' "$labels_out" "$close_out")
 check "no token leak" '.' "$(grep -qiE 'glpat|bearer' <<<"$all" && echo false || echo true)"
 
 echo "passed $pass, failed $fail"

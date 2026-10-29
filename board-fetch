@@ -14,7 +14,7 @@
 #   board-fetch whoami                              your GitLab username (never saved)
 #   board-fetch labels --project P                  the project's labels a person may edit:
 #                                                   every label but the status ones (below)
-# The three writes, each in its own function and branch:
+# The four writes, each in its own function and branch:
 #   board-fetch move --project P --board ID --iid N --from L --to L   (PUT, write_issue())
 #     L is open, closed, or the numeric id of a label list on that board. Label
 #     names come from GitLab's own copy of the board, never from the caller.
@@ -27,6 +27,9 @@
 #     project, plus the workflow labels (research, todo, approved, in progress,
 #     review), in any case. They change only by dragging a card. --add takes only
 #     a label the project already has, so a typo never creates one.
+#   board-fetch close|reopen --project P --iid N   (PUT, write_state())
+#     One state_event (close or reopen) and nothing else: labels stay as they
+#     are. The answer must be that issue, in the new state.
 #   board-fetch logout   glab auth logout for the host (glab's own local change: it
 #     forgets the token, GitLab is not called), then deletes the saved boards.
 #
@@ -37,7 +40,7 @@
 set -uo pipefail
 
 cmd=board project="" board_id="" iid="" from="" to="" add="" remove="" hostname="gitlab.com"
-case "${1:-}" in board|cached|projects|boards|issue|notes|move|comment|whoami|logout|labels|relabel) cmd=$1; shift ;; esac
+case "${1:-}" in board|cached|projects|boards|issue|notes|move|comment|whoami|logout|labels|relabel|close|reopen) cmd=$1; shift ;; esac
 while (($#)); do
   case "$1" in
     --project) project=${2:-} ;;
@@ -65,7 +68,7 @@ if [[ ! $cmd =~ ^(projects|whoami|logout)$ ]]; then
     emit error "Invalid project: $project"
 fi
 [[ $board_id =~ ^[0-9]*$ ]] || emit error "Invalid board id."
-[[ ! $cmd =~ ^(issue|notes|move|comment|relabel)$ || $iid =~ ^[1-9][0-9]*$ ]] || emit error "Invalid issue number."
+[[ ! $cmd =~ ^(issue|notes|move|comment|relabel|close|reopen)$ || $iid =~ ^[1-9][0-9]*$ ]] || emit error "Invalid issue number."
 if [[ $cmd == move ]]; then
   [[ $board_id =~ ^[1-9][0-9]*$ ]] || emit error "Moving needs a board id."
   [[ $from =~ ^(open|closed|[1-9][0-9]*)$ && $to =~ ^(open|closed|[1-9][0-9]*)$ ]] || emit error "Invalid list."
@@ -201,6 +204,24 @@ case $cmd in
       | {state: "ready", message: (if $a != "" then "Added \($a)." else "Removed \($r)." end), labels: names,
          updatedAt: (now | todateiso8601)}' "$tmp/r" 2>/dev/null |
       grep . || emit error "GitLab returned an unexpected response to the label change."
+    exit 0 ;;
+  close|reopen)
+    # A PUT like write_issue(): the JSON body on stdin, only a state_event.
+    write_state() {
+      bounded api --hostname "$hostname" --method PUT --header "Content-Type: application/json" --input - "$base/issues/$iid"
+    }
+    if [[ $cmd == close ]]; then want=closed done_=closed doing=Closing; else want=opened done_=reopened doing=Reopening; fi
+    jq -cn --arg e "$cmd" '{state_event: $e}' | write_state >"$tmp/r"
+    case $? in
+      0) ;;
+      124) emit error "GitLab did not answer within 30 seconds. The issue may have been $done_." ;;
+      *) reason=$(jq -r "$DEFS reason" "$tmp/r" 2>/dev/null)
+         emit error "$doing failed${reason:+: $reason}" ;;
+    esac
+    jq -c --argjson iid "$iid" --arg want "$want" "$DEFS"' select(type == "object" and .iid == $iid and .state == $want)
+      | {state: "ready", message: (if $want == "closed" then "Closed #\($iid)." else "Reopened #\($iid)." end), issueState: .state,
+         labels: names, updatedAt: (now | todateiso8601)}' "$tmp/r" 2>/dev/null |
+      grep . || emit error "GitLab returned an unexpected response."
     exit 0 ;;
   boards)
     get --paginate "$base/boards?per_page=100" >"$tmp/b" || emit error "Could not load boards for $project."
