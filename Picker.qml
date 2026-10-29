@@ -62,11 +62,16 @@ Item {
       Keys.onEscapePressed: view.host.back()
     }
 
-    BoardText {
-      visible: text !== ""
-      width: parent.width; wrapMode: Text.Wrap
-      text: view.host.auxLoading ? "Loading…" : view.host.auxError
-      color: view.host.dim; font.italic: true
+    Row {
+      width: parent.width; spacing: Style.space(6)
+      visible: auxStatus.text !== ""
+      Spinner { id: auxSpinner; running: view.host.auxLoading; anchors.verticalCenter: auxStatus.verticalCenter }
+      BoardText {
+        id: auxStatus
+        width: parent.width - (auxSpinner.visible ? auxSpinner.width + parent.spacing : 0); wrapMode: Text.Wrap
+        text: view.host.auxLoading ? "Loading…" : view.host.auxError
+        color: view.host.dim; font.italic: true
+      }
     }
   }
 
