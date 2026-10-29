@@ -1,177 +1,57 @@
 # GitLab Board for Omarchy
 
-A bar icon that opens a GitLab issue board in a popup. Out of the box it shows
-the first board of `firelink21/phrase41`.
+A bar icon that opens a GitLab issue board in a popup: the board's lists as
+columns in their label colors, issue details with comments, and drag-to-move.
+
+## Install
+
+```bash
+omarchy plugin add <this-repo-url> --enable
+# or, from a local checkout:
+omarchy plugin add "$PWD" --enable
+```
+
+Needs Omarchy 4.0.6 or later, `jq`, a Nerd Font (Omarchy ships one), and the
+GitLab CLI `glab`.
+
+## First run
+
+The popup walks you through setup in its body:
+
+1. **No `glab`:** it shows the install command, `sudo pacman -S glab`, with a
+   **Copy** button. Run it in a terminal, then click **Try again**.
+2. **Not signed in:** **Sign in to GitLab** opens a terminal running
+   `glab auth login`; answer its questions there, then reopen the popup or
+   click **Try again**. The plugin never sees your password or token: glab
+   keeps the login.
+3. **Signed in, no project yet:** the project picker opens. The first board
+   you open becomes your default.
+
+The popup checks again only when it opens or you click **Try again**; it
+never polls. Offline or GitLab errors show the reason instead of a sign-in
+prompt.
 
 ## Default board
 
-Every shell start or restart opens the default board. Browsing other boards in
-the picker doesn't change it. To make a board the default, click the star on
-its row in the picker's board step; only one board can be the default. The
-header shows a star while you're on the default board. On any other board it
-shows a **Default** button that takes you back.
-
-## Columns
-
-The columns are the lists on the selected GitLab board, in the board's order:
-
-- **Open**: open issues that are in none of the board's label lists. Not shown
-  if the board hides it.
-- **One column per label list**: open issues with that label, in the board's
-  order. An issue with two list labels appears in both columns, as it does on
-  GitLab.
-- **Closed**: the 20 most recently updated closed issues. Not shown if the
-  board hides it.
-- **Assignee, milestone, and iteration lists**: shown with a "not supported
-  yet" note.
-
-If the board has a scope (labels, milestone, assignee, or weight), only issues
-in that scope are shown.
-
-If the project has no boards, the popup says so in its header. It then falls
-back to workflow-label columns: research, todo, approved, in progress, review,
-Closed, and Unlabeled. Unlabeled appears only when it has issues. Each issue
-goes in the furthest-along label it has.
-
-## Moving issues
-
-Drag a card onto another column to move the issue. This writes to GitLab, the
-same way dragging it on GitLab's own board does:
-
-| From \ To | Open | Label list B | Closed |
-| --- | --- | --- | --- |
-| Open | - | add label B | close |
-| Label list A | remove label A | remove A, add B | close (labels kept) |
-| Closed | reopen | reopen, add label B | - |
-
-Other labels on the issue are never touched. This follows GitLab's table in
-[Dragging issues between lists](https://docs.gitlab.com/user/project/issue_board/#dragging-issues-between-lists).
-
-- A drag starts after the pointer moves a few pixels, so a plain click still
-  opens the issue. Collapsed columns accept drops too; the column under the
-  card lights up in its color.
-- The card moves right away. If GitLab refuses (no permission, network, a
-  token without the `api` scope), it jumps back and the header shows why for
-  a few seconds. When GitLab accepts, the board reloads.
-- **Out-of-date cards are never moved.** Just before writing, the plugin reads
-  the issue from GitLab and checks that it's still in the column you dragged
-  it from (still open with that label; for Open, open with none of the board's
-  list labels; for Closed, closed). If someone moved, closed or reopened it in
-  the meantime, nothing is written: the card jumps back, the header says
-  `#45 changed on GitLab. Board refreshed.`, and the board reloads so you see
-  where the issue really is. An issue that's already in the column you
-  dropped it on counts as changed too. A card that shows in two label columns
-  (two list labels) can still be moved from either.
-- That check and the write are two requests about a second apart, and GitLab
-  has no "only if unchanged" option for issues, so a change made by someone
-  else inside that second can still be overwritten.
-- One move at a time: while a move is on its way, cards can't be dragged.
-- You can't drop onto assignee, milestone or other unsupported lists, and
-  nothing can be moved on the workflow-label fallback (a project without
-  boards). Dropping a card on its own column does nothing.
-- Only dropping a card and posting a comment write. Refreshes, opening issues
-  and the picker only read.
-
-**Moves can set off automations.** Anything that watches labels or issue state
-(bots, webhooks, CI rules, GitLab triage policies) reacts to a move exactly as
-it would to a change on the website. On phrase41, moving an issue into
-approved or review wakes the bots.
-
-## Comments
-
-The issue view lists the issue's comments under the description, oldest first,
-each with the author's avatar, name, age and text (shown as plain text, not
-Markdown). System notes such as "added ~approved label" are left out. The
-comments load each time you open the issue; a small spinning icon next to
-**Comments** shows while they load.
-
-Under the thread is a box for a new comment. Click **Post** or press
-`Ctrl+Enter` to send it; `Shift+Enter` or `Enter` adds a line, and `Escape`
-leaves the box (a second `Escape` goes back to the board).
-
-- **Posting writes to GitLab as you.** The comment appears under your name,
-  sends the usual notifications, and wakes anything that watches comments
-  (webhooks, bots). It needs a `glab` token with the `api` scope; a
-  read-only token gets a `403`.
-- While a comment is on its way the box and button are disabled. When GitLab
-  accepts it, the box clears and the thread reloads. When it fails, your text
-  stays in the box and the reason shows in red under it.
-- Empty or whitespace-only comments are never sent.
-- Going back and reopening the same issue keeps an unsent draft; opening
-  another issue clears it.
-- The thread shows the newest 100 notes (one GitLab page, system notes
-  included in that count). If there are more, it says so; open the issue in
-  the browser for the rest.
-- Edit, delete, replies to a thread, and Markdown preview are not supported;
-  use GitLab for those.
-
-### Trying it on a sandbox project first
-
-1. Create a private throwaway project on GitLab, for example
-   `you/board-sandbox`, and give it a few labels (say `todo`, `doing`,
-   `review`).
-2. In its **Plan > Issue boards**, add a list for each label, then create a
-   handful of test issues.
-3. In the popup, open the picker (click the title), choose the sandbox
-   project and its board. Browsing doesn't change your default board.
-4. Drag cards between columns, into Closed and back, and check each issue on
-   GitLab: its labels and state should match the table above.
-5. Click the title again and go back to your real board, or click **Default**.
-
-## Cards and colors
-
-- Label chips use each label's GitLab color and text color.
-- Each column header has a dot and underline in its color: the label's color
-  for label lists, the theme accent for Open, and the theme's muted color for
-  Closed.
-- Each card shows up to three assignee avatars (two plus `+N` when there are
-  more), the comment count, and the issue's age (`45m`, `3h`, `4d`, `2w`,
-  `6mo`, `1y`). An avatar shows the person's initials until its image loads,
-  or if it doesn't load. Avatar images are loaded straight from GitLab's
-  `https` avatar URLs.
-- Columns slide when they collapse or expand, and cards lift slightly on hover.
-
-The popup card itself is drawn by Omarchy in your theme's
-`popups.background`. The plugin adds translucent panes and a soft light on
-top of it. To make every popup see-through, including this one, set an alpha
-in `~/.config/omarchy/shell.toml` (it applies live):
-
-```toml
-[popups]
-background-alpha = 0.88
-```
-
-Omarchy 4.0.6 has blur turned off and no blur rule for its popups, so what's
-behind the popup shows through without blur.
+Every shell start opens the default board; browsing other boards in the
+picker doesn't change it. To change it, click the star on a board's row in
+the picker's board step. The header shows a star on the default board and a
+**Default** button that takes you back everywhere else.
 
 ## Popup
 
-- The title, `group/project · Board ▾`, opens the picker. Pick a project (type
+- The title, `group/project · Board ▾`, opens the picker: pick a project (type
   to filter your 100 most recently active projects), then one of its boards.
-- Click an issue to see its details. Its number and title show at once, with a
-  thin bar sliding under the title until the issue and its comments have
-  loaded. Under the state and labels is one line with the author and how long
-  ago it was created and updated, plus a second line with the assignees and
-  milestone when it has any. Below that is the description, then the comments
-  and a box to add one (see "Comments"). The view also has an "Open in
-  browser" link.
-- The description is GitLab Markdown drawn by the plugin: headings,
-  paragraphs, bold, italic, strikethrough, links, inline code and code blocks,
-  lists (including task lists), quotes, tables and rules. Raw HTML shows as
-  text, and images show as links, so nothing is loaded from the web. Anything
-  fancier (diagrams, math, references like `#62`) shows as plain text; open
-  the issue in the browser for those. Links show in the theme's accent color.
-  Hovering a link shows where it goes, and only `https` links open. A description over 20,000 characters is cut at a
-  line break, with a link to the rest.
-- The gear opens the settings: which columns start collapsed, and the refresh
-  interval. It stays lit while they're open; click it again to go back.
-- The issue view, the picker and the settings each have a ✕ at the top right
-  that goes back to the board, like `Escape`. It stays put while the view
-  scrolls. In the picker's board step, ‹
-  goes back to the project list.
-- Click a column header to collapse it to a narrow strip. Click a chip under
+- Click a column header to collapse it to a narrow strip; click a chip under
   the header to hide or show that column.
-- Drag a card to another column to move the issue (see "Moving issues").
+- Click an issue for its details: state, labels, author, ages, assignees,
+  milestone, the description, the comments and a box to add one, and an
+  "Open in browser" link. A thin bar slides under the title while it loads.
+- The gear opens the settings: which columns start collapsed, and the refresh
+  interval.
+- The issue view, the picker and the settings have a ✕ at the top right that
+  goes back to the board, like `Escape`; it stays put while the view scrolls.
+  In the picker's board step, ‹ goes back to the project list.
 
 | Input | Action |
 | --- | --- |
@@ -179,20 +59,110 @@ behind the popup shows through without blur.
 | Right- or middle-click the icon | Refresh |
 | Refresh button | Refresh |
 
-The first time the popup opens after a shell start, it shows the board as
-you last saw it (see "Saved board"), with "Saved 3h ago · updating…" in the
-header, until the fresh board arrives. Cards can't be dragged until then.
-With nothing saved yet, it shows a placeholder board that pulses while it
-loads.
+The board refreshes when the popup opens and every 60 seconds (configurable)
+while it's open; while it's closed, only a right- or middle-click refreshes.
+The refresh icon spins while it loads, and the board stays usable. A refresh
+that comes due while you hold a card waits until you let go. After a shell
+start, the popup first shows the board as you last saw it ("Saved 3h ago ·
+updating…"; cards can't be dragged until the fresh board arrives), or a
+pulsing placeholder when nothing is saved.
 
-The board refreshes each time the popup opens and every 60 seconds
-(configurable) while it's open; while it's closed, only a right- or
-middle-click refreshes. While it loads, the refresh icon in the header spins;
-it finishes its turn and stops when the new data is in. The board stays
-usable during a refresh. A refresh that comes due while you're holding or dragging a card
-waits until you let go, so the card can't change under the pointer. A wide
-board scrolls sideways. A tall one scrolls down, and every column, collapsed
-strips too, stretches to the tallest so they end together.
+The description is GitLab Markdown drawn by the plugin: headings, bold,
+italic, strikethrough, links, code, lists (including task lists), quotes,
+tables and rules. Raw HTML shows as text and images as links, so nothing is
+loaded from the web; anything fancier (diagrams, math, `#62` references)
+shows as plain text. Links use the theme's accent color, hovering one shows
+where it goes, and only `https` links open. A description over 20,000
+characters is cut at a line break, with a link to the rest.
+
+## Columns
+
+The columns are the lists on the selected GitLab board, in its order:
+
+- **Open**: open issues in none of the board's label lists.
+- **One column per label list**: open issues with that label. An issue with
+  two list labels appears in both, as on GitLab.
+- **Closed**: the 20 most recently updated closed issues.
+- **Assignee, milestone, and iteration lists**: a "not supported yet" note.
+
+Open and Closed are left out when the board hides them, and a board's scope
+(labels, milestone, assignee, weight) limits the issues shown. A project
+without boards falls back to workflow-label columns (research, todo,
+approved, in progress, review, Closed, and Unlabeled when it has issues),
+with each issue in the furthest-along label it has; the header says so.
+
+## Moving issues
+
+Drag a card onto another column to move the issue. This writes to GitLab the
+same way GitLab's own board does
+([Dragging issues between lists](https://docs.gitlab.com/user/project/issue_board/#dragging-issues-between-lists)):
+
+| From \ To | Open | Label list B | Closed |
+| --- | --- | --- | --- |
+| Open | - | add label B | close |
+| Label list A | remove label A | remove A, add B | close (labels kept) |
+| Closed | reopen | reopen, add label B | - |
+
+Other labels are never touched.
+
+- A drag starts after a few pixels, so a click still opens the issue.
+  Collapsed columns accept drops; the target lights up in its color.
+- The card moves at once. If GitLab refuses (permission, network, a token
+  without the `api` scope), it jumps back and the header says why.
+- **Out-of-date cards are never moved.** Just before writing, the plugin
+  rereads the issue and checks it's still in the column you dragged it from.
+  If not (including when it's already in the target), nothing is written, the
+  header says `#45 changed on GitLab. Board refreshed.`, and the board
+  reloads. The check and the write are about a second apart and GitLab has no
+  "only if unchanged" option, so a change inside that second can still be
+  overwritten.
+- One move at a time. No drops on unsupported lists, on the workflow-label
+  fallback, or on the card's own column.
+
+**Moves can set off automations.** Bots, webhooks, CI rules or triage
+policies that watch labels or state react as they would to a change on the
+website. On phrase41, moving an issue into approved or review wakes the bots.
+
+To try moves safely, make a private throwaway project with a few labels and a
+board list for each, pick it in the picker, drag cards around, and check the
+issues on GitLab against the table. Click **Default** to go back.
+
+## Comments
+
+The issue view lists the comments under the description, oldest first, with
+avatar, name, age and plain text; system notes ("added ~approved label") are
+left out. They reload each time you open the issue.
+
+Under the thread is a box for a new comment: **Post** or `Ctrl+Enter` sends
+it, `Enter` or `Shift+Enter` adds a line, and `Escape` leaves the box.
+
+- **Posting writes to GitLab as you**, with the usual notifications and
+  anything that watches comments. It needs a token with the `api` scope; a
+  read-only token gets a `403`.
+- While it's on its way the box is disabled. On success the box clears and
+  the thread reloads; on failure your text stays and the reason shows in red.
+- Empty comments are never sent. An unsent draft survives going back to the
+  same issue; opening another issue clears it.
+- The thread shows the newest 100 notes (one GitLab page) and says when there
+  are more. Editing, deleting, replies and Markdown preview: use GitLab.
+
+## Cards and colors
+
+- Label chips use each label's GitLab colors. Column headers have a dot and
+  underline in the label's color (the accent for Open, muted for Closed).
+- Cards show up to three assignee avatars (two plus `+N`), the comment count,
+  and the age (`45m`, `3h`, `4d`, `2w`, `6mo`, `1y`). Avatars show initials
+  until the image loads from GitLab's `https` URL, or if it doesn't.
+- Columns slide when they collapse, and cards lift slightly on hover.
+
+The popup card is Omarchy's, in your theme's `popups.background`. To make
+every popup see-through, set an alpha in `~/.config/omarchy/shell.toml` (it
+applies live; Omarchy 4.0.6 doesn't blur popups):
+
+```toml
+[popups]
+background-alpha = 0.88
+```
 
 ## Keyboard
 
@@ -224,142 +194,105 @@ Letters go to the comment box or the picker's filter while you type in them.
 
 ## Saved state
 
-Everything is saved on the widget's entry in `~/.config/omarchy/shell.json`:
+Settings live on the widget's entry in `~/.config/omarchy/shell.json`:
 
 | Key | Meaning |
 | --- | --- |
-| `defaultProject` | Default project: path or numeric id |
+| `defaultProject` | Default project: path or numeric id. Empty (the default): the first board you open |
 | `defaultBoardId`, `defaultBoardName` | Default board; empty means the project's first board |
 | `refreshIntervalSec` | Refresh interval in seconds |
 | `defaultCollapsed` | Columns that start collapsed on a board you have not changed yet. Default `["closed","research","open"]`; matched case-insensitively |
 | `boardStates` | Collapsed and hidden columns for each project and board, keyed `project#boardId` |
 | `settingsRevision` | Set to `2` by v0.1.3 after its one-time update |
 
-The board you're browsing isn't saved. Older keys (`project`, `boardId`,
-`boardName`, `collapsedColumns`, `hiddenColumns`) are dropped the first time
-v0.1.2 saves.
-
-v0.1.3 adds Open to `defaultCollapsed` and to the collapsed columns of every
-board in `boardStates`, once. It changes nothing else, and if you expand Open
-afterwards, it stays expanded.
-
-### Saved board
-
-After each board load, `board-fetch` saves a copy of the board (the same JSON
-the popup shows: titles, labels, assignee names; never anything from glab's
-login) in `~/.cache/odevvy.gitlab-board/` (or `$XDG_CACHE_HOME`), one file
-per project and board, readable only by you. To clear it:
-
-```bash
-rm -rf ~/.cache/odevvy.gitlab-board
-```
-
-## Requirements
-
-- Omarchy 4.0.6 or later
-- `glab`, signed in with `glab auth login` (check with `glab auth status`)
-- `jq`
-- A Nerd Font (Omarchy ships one)
-
-`glab` handles all authentication. Every read is a `glab api --method GET`
-request. There are two writes: a single `PUT` to the issue when you drop a card
-on another column, and a single `POST` to the issue's notes when you post a
-comment. Both need a token with the `api` scope (what `glab auth login` asks
-for by default). The plugin never reads, stores, or prints a token, and
-it discards glab's stderr. A glab call that hasn't answered after 30 seconds is
-stopped; a comment or move that times out may still have reached GitLab, so
-the plugin reloads to show what happened.
-
-## Install
-
-```bash
-omarchy plugin add <this-repo-url> --enable
-# or, from a local checkout:
-omarchy plugin add "$PWD" --enable
-```
-
-## Settings from the command line
-
 ```bash
 omarchy bar set odevvy.gitlab-board defaultProject group/project
 omarchy bar set odevvy.gitlab-board refreshIntervalSec 120
 ```
 
+The board you're browsing isn't saved. v0.1.2 drops older keys (`project`,
+`boardId`, `boardName`, `collapsedColumns`, `hiddenColumns`). v0.1.3 adds Open
+to `defaultCollapsed` and to every board in `boardStates`, once; expanding
+Open afterwards sticks.
+
+After each board load, `board-fetch` saves a copy of the board (the JSON the
+popup shows; never anything from glab's login) in
+`~/.cache/odevvy.gitlab-board/` (or `$XDG_CACHE_HOME`), one file per project
+and board, readable only by you. Clear it with
+`rm -rf ~/.cache/odevvy.gitlab-board`.
+
+## GitLab access
+
+`glab` handles all authentication; the plugin never reads, stores, or prints
+a token, and never shows glab's own messages. Every read is a
+`glab api --method GET` request. The two writes are one `PUT` to the issue
+when you drop a card and one `POST` to its notes when you comment; both need
+the `api` scope (what `glab auth login` asks for by default). A glab call that
+hasn't answered after 30 seconds is stopped; a move or comment that times out
+may still have reached GitLab, so the board reloads.
+
 ## board-fetch
 
-`board-fetch` is the helper the widget runs. It prints one JSON object.
+`board-fetch` is the helper the widget runs. It prints one JSON object whose
+`state` is `ready`, `error`, `stale`, `no-glab` (glab isn't installed) or
+`logged-out` (`glab auth status` says no login for the host, or GitLab
+answers `401`).
 
 ```bash
-./board-fetch [board] [--project P] [--board ID]   # board columns (the default), also saved
-./board-fetch cached [--project P] [--board ID]    # that saved copy, no GitLab call
-./board-fetch projects                            # projects you are a member of
-./board-fetch boards --project P                  # boards of a project
-./board-fetch issue --project P --iid N           # one issue with its description
-./board-fetch notes --project P --iid N           # its comments, oldest first
+./board-fetch [board] --project P [--board ID]   # board columns (the default), also saved
+./board-fetch cached --project P [--board ID]    # that saved copy, no GitLab call
+./board-fetch projects                          # projects you are a member of
+./board-fetch boards --project P                # boards of a project
+./board-fetch issue --project P --iid N         # one issue with its description
+./board-fetch notes --project P --iid N         # its comments, oldest first
 ./board-fetch move --project P --board ID --iid N --from L --to L
-                                                  # move an issue (a write)
-./board-fetch comment --project P --iid N <file   # post stdin as a comment (a write)
+                                                # move an issue (a write)
+./board-fetch comment --project P --iid N <file # post stdin as a comment (a write)
 # all of them accept --hostname HOST (default gitlab.com)
 ```
 
-`move` takes list ids, not label names: `L` is `open`, `closed`, or the
-numeric id of a label list on that board (the board output gives each label
-column a `listId`). It loads the board and the issue from GitLab (two GETs),
-looks the label names up on the board, refuses anything else (unknown or
-non-label lists, a hidden Open or Closed list, labels with commas, a
-non-numeric issue), answers `{"state": "stale"}` without writing when the
-issue is no longer in `--from`, and only then sends one
-`PUT /projects/:id/issues/:iid` with `add_labels`, `remove_labels` and/or
-`state_event`. The body goes to glab on stdin as JSON, so glab never expands
-`@file` or `:placeholder` in it. All reads go through one GET-only function;
-`tests/run.sh` checks that no read command ever sends anything else.
+`move` takes list ids: `L` is `open`, `closed`, or the `listId` of a label
+column in the board output. It loads the board and the issue (two GETs),
+refuses anything else (unknown or non-label lists, a hidden Open or Closed,
+labels with commas, a non-numeric issue), answers `{"state": "stale"}`
+without writing when the issue is no longer in `--from`, and only then sends
+one `PUT /projects/:id/issues/:iid` with `add_labels`, `remove_labels` and/or
+`state_event`, as JSON on glab's stdin so glab never expands `@file` or
+`:placeholder`.
 
-`notes` asks for the newest 100 notes (`sort=desc`, `per_page=100`, GitLab's
-page maximum), drops system notes, and returns the rest oldest first with
-`more: true` when the page was full. That's enough for v0.1.5; longer threads
-would need pagination.
+`notes` asks for the newest 100 notes (`sort=desc`, `per_page=100`), drops
+system notes, and returns the rest oldest first, with `more: true` when the
+page was full. `comment` refuses empty text before any glab call and sends
+one `POST /projects/:id/issues/:iid/notes`; the text never goes on a command
+line or into a log.
 
-`comment` reads the comment from stdin, refuses it if it's empty or only
-whitespace (before any glab call), and sends one
-`POST /projects/:id/issues/:iid/notes` with `{"body": ...}` as JSON on glab's
-stdin. The text never goes on a command line or into a log.
-
-Requests per board refresh: one for the boards (which include their lists),
-the open issues (paginated), and one for the last 20 closed issues. The closed
-request is skipped when the board hides Closed. The issue requests ask for
-label details, so label colors don't need an extra request.
+A board refresh makes one request for the boards (with their lists), the open
+issues (paginated), and one for the last 20 closed issues, skipped when the
+board hides Closed. Issues come with label details, so colors need no extra
+request.
 
 ## Tests and debugging
 
 ```bash
-tests/run.sh                            # board-fetch fixture tests with a fake glab
+tests/run.sh                            # board-fetch tests with a fake glab
 node --test tests/logic.test.js         # Logic.js: move maths, ages, labels, Markdown
-./board-fetch | jq                      # what the widget sees
+./board-fetch --project group/app | jq  # what the widget sees
 journalctl --user -t omarchy-shell -f   # shell log (QML errors)
 omarchy plugin validate .
 ```
 
-The QML files hold the views. The logic they share that needs no Qt (where a
-moved card lands, age labels, label text colors, the Markdown renderer) lives
-in `Logic.js`, which `tests/logic.test.js` loads under Node, as Omarchy's own
-panels do with their `Model.js`. CI runs both test suites.
+The QML files hold the views; logic that needs no Qt (where a moved card
+lands, ages, label text colors, the Markdown renderer) is in `Logic.js`,
+which the Node tests load, as Omarchy's panels do with their `Model.js`. CI
+runs both suites, and `tests/run.sh` checks that reads never send anything but
+GET. Saving a file under `~/.config/omarchy/plugins/` reloads the plugin.
 
-Saving a file under `~/.config/omarchy/plugins/` reloads the plugin.
-
-## Roll back
-
-To go back to v0.1.4 (no comments), check out the previous version and update:
+## Update, roll back, remove
 
 ```bash
-git checkout main   # or the v0.1.4 commit
-omarchy plugin update odevvy.gitlab-board
+omarchy plugin update odevvy.gitlab-board   # after checking out the version you want
 omarchy-restart-shell
-```
-
-Comments you already posted stay on GitLab; delete them there if needed.
-
-## Remove
-
-```bash
 omarchy plugin remove odevvy.gitlab-board
 ```
+
+Moves and comments already made stay on GitLab.
