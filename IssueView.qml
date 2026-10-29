@@ -443,21 +443,26 @@ Item {
             }
           }
         }
-        BoardText {
-          id: labelStatus
-          width: parent.width; wrapMode: Text.Wrap
-          visible: text !== ""
-          readonly property bool bad: view.labelError !== "" || view.labelsState === "error"
-          text: view.labelError !== "" ? view.labelError
-            : view.labelsState === "error" ? view.labelsError
-            : view.labelBusy !== "" ? "Saving " + view.labelBusy + "…"
-            : view.labelsState === "loading" ? "Loading labels…"
-            : view.labelsState !== "ready" ? ""
-            : view.addable.length > view.addableShown ? (view.addable.length - view.addableShown) + " more: filter to find them."
-            : view.addable.length === 0 ? (labelFilter.text.trim() !== "" ? "No label matches." : "No other labels to add.")
-            : ""
-          color: bad ? view.host.urgent : view.host.dim
-          font.pixelSize: Style.font.bodySmall
+        Row {
+          width: parent.width; spacing: Style.space(6)
+          visible: labelStatus.text !== ""
+          Spinner { id: labelSpinner; running: labelStatus.busy; anchors.verticalCenter: labelStatus.verticalCenter }
+          BoardText {
+            id: labelStatus
+            width: parent.width - (labelSpinner.visible ? labelSpinner.width + parent.spacing : 0); wrapMode: Text.Wrap
+            readonly property bool bad: view.labelError !== "" || view.labelsState === "error"
+            readonly property bool busy: !bad && (view.labelBusy !== "" || view.labelsState === "loading")
+            text: view.labelError !== "" ? view.labelError
+              : view.labelsState === "error" ? view.labelsError
+              : view.labelBusy !== "" ? "Saving " + view.labelBusy + "…"
+              : view.labelsState === "loading" ? "Loading labels…"
+              : view.labelsState !== "ready" ? ""
+              : view.addable.length > view.addableShown ? (view.addable.length - view.addableShown) + " more: filter to find them."
+              : view.addable.length === 0 ? (labelFilter.text.trim() !== "" ? "No label matches." : "No other labels to add.")
+              : ""
+            color: bad ? view.host.urgent : view.host.dim
+            font.pixelSize: Style.font.bodySmall
+          }
         }
         BoardText {
           width: parent.width; wrapMode: Text.Wrap
@@ -516,14 +521,7 @@ Item {
           color: view.host.dim
           font { pixelSize: Style.font.bodySmall; bold: true }
         }
-        // Same spin as the header's refresh icon (Board.qml), while comments load.
-        BoardText {
-          visible: view.notesLoading
-          text: "\uf021"
-          color: view.host.accent
-          font.pixelSize: Style.font.bodySmall
-          RotationAnimation on rotation { running: view.notesLoading; alwaysRunToEnd: true; loops: Animation.Infinite; from: 0; to: 360; duration: 900 }
-        }
+        Spinner { running: view.notesLoading }
       }
       BoardText {
         width: parent.width; wrapMode: Text.Wrap
