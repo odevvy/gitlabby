@@ -166,7 +166,8 @@ behind the popup shows through without blur.
 - The gear opens the settings: which columns start collapsed, and the refresh
   interval. It stays lit while they're open; click it again to go back.
 - The issue view, the picker and the settings each have a ✕ at the top right
-  that goes back to the board, like `Escape`. In the picker's board step, ‹
+  that goes back to the board, like `Escape`. It stays put while the view
+  scrolls. In the picker's board step, ‹
   goes back to the project list.
 - Click a column header to collapse it to a narrow strip. Click a chip under
   the header to hide or show that column.

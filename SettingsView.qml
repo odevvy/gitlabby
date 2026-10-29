@@ -12,15 +12,24 @@ Item {
   readonly property color pane: Qt.rgba(fg.r, fg.g, fg.b, 0.035)
   readonly property color line: Qt.rgba(fg.r, fg.g, fg.b, 0.08)
 
-  implicitHeight: content.implicitHeight
+  implicitHeight: top.implicitHeight + Style.space(6) + content.implicitHeight
 
   component Heading: BoardText {
     color: view.host.dim
     font { bold: true; capitalization: Font.AllUppercase; letterSpacing: 1 }
   }
 
+  // Fixed top row: only the settings below it scroll.
+  Item {
+    id: top
+    width: parent.width
+    implicitHeight: close.implicitHeight
+    BoardText { anchors.verticalCenter: parent.verticalCenter; text: "Settings"; font { pixelSize: Style.font.bodySmall; bold: true } }
+    GlyphButton { id: close; anchors.right: parent.right; host: view.host; glyph: "\uf00d"; onClicked: view.host.back() }
+  }
+
   Flickable {
-    anchors.fill: parent
+    anchors { top: top.bottom; topMargin: Style.space(6); left: parent.left; right: parent.right; bottom: parent.bottom }
     contentWidth: width; contentHeight: content.implicitHeight
     clip: true; boundsBehavior: Flickable.StopAtBounds
     ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
@@ -29,13 +38,6 @@ Item {
       id: content
       width: parent.width - Style.space(8)
       spacing: Style.space(6)
-
-      Item {
-        width: view.width  // past the scroll bar gutter, so the ✕ sits under the gear
-        implicitHeight: close.implicitHeight
-        BoardText { anchors.verticalCenter: parent.verticalCenter; text: "Settings"; font { pixelSize: Style.font.bodySmall; bold: true } }
-        GlyphButton { id: close; anchors.right: parent.right; host: view.host; glyph: "\uf00d"; onClicked: view.host.back() }
-      }
 
       Item { width: 1; height: Style.space(4) }
       Heading { text: "Start collapsed" }
