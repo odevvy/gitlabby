@@ -173,6 +173,53 @@ which reopens it at once. On success the issue and the board update; on
 failure the reason shows in red and the issue reloads. Bots, webhooks or
 automations that watch the project see the close like any other.
 
+## Who's busy
+
+If a team of bots (or people) works the board through owner labels, a row
+under the header can show who is busy. It's off until you add a `bots` entry
+for the project in settings, and it reads only the board already on screen:
+no extra GitLab calls, no polling. Example for a board where each builder has
+an owner label and a reviewer takes everything in review:
+
+```json
+"bots": {
+  "firelink21/phrase41": {
+    "busyLists": ["approved", "in progress", "review"],
+    "bots": [
+      { "name": "App UI", "label": "app-ui" },
+      { "name": "API Engineer", "label": "api" },
+      { "name": "Auth & Mail", "label": "auth-mail" },
+      { "name": "Product Lead", "label": "" },
+      { "name": "Spec QA", "list": "review" }
+    ]
+  }
+}
+```
+
+- `busyLists`: the label columns that count. Open, Closed and other lists
+  never count.
+- `{ "label": "app-ui" }`: issues in a busy list with that label. An issue
+  with two owner labels counts for both bots.
+- `{ "label": "" }`: issues in a busy list with none of the bots' labels.
+- `{ "list": "review" }`: every issue in that list, owner or not.
+- `workingLists` (optional, default `["in progress"]`): where an issue makes
+  its bot working rather than waiting.
+
+Each bot gets a filled dot when it has an issue in a working list (a `list`
+bot whenever its list has any), a hollow dot when it only has issues waiting
+in other busy lists (approved or review), and a dim dot with "idle" when it
+has none. The issue numbers follow; click one to open the issue. Labels and
+lists match in any case.
+
+Set it from a terminal (this replaces the whole `bots` value, so include every
+project you use it for):
+
+```bash
+omarchy bar set odevvy.gitlab-board bots '{"firelink21/phrase41":{"busyLists":["approved","in progress","review"],"bots":[{"name":"App UI","label":"app-ui"},{"name":"API Engineer","label":"api"},{"name":"Auth & Mail","label":"auth-mail"},{"name":"Product Lead","label":""},{"name":"Spec QA","list":"review"}]}}' --json
+```
+
+Remove it with `omarchy bar set odevvy.gitlab-board bots '{}' --json`.
+
 ## Cards and colors
 
 - Label chips use each label's GitLab colors. Column headers have a dot and
@@ -231,6 +278,7 @@ Settings live on the widget's entry in `~/.config/omarchy/shell.json`:
 | `refreshIntervalSec` | Refresh interval in seconds |
 | `defaultCollapsed` | Columns that start collapsed on a board you have not changed yet. Default `["closed","research","open"]`; matched case-insensitively |
 | `boardStates` | Collapsed and hidden columns for each project and board, keyed `project#boardId` |
+| `bots` | Busy markers per project (see [Who's busy](#whos-busy)). Default `{}`: no row |
 | `settingsRevision` | Set to `2` by v0.1.3 after its one-time update |
 
 ```bash

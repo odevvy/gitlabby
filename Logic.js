@@ -55,6 +55,52 @@ function withColors(colors, labels) {
   return out
 }
 
+// Busy markers for a team of bots, read from the board on screen (no extra
+// calls). config is settings.bots[project]:
+//   { busyLists: ["approved", "in progress", "review"], workingLists: ["in progress"],
+//     bots: [{ name, label }, { name, label: "" }, { name, list }] }
+// A label bot owns open issues with its label in a busy list; label "" owns
+// those with none of the bots' labels; a list bot owns every issue in its list.
+// An issue with two owner labels counts for both. Closed and Open never count.
+// working: an owned issue in a working list (default "in progress"), or any
+// for a list bot; waiting: only other busy lists; idle: none. Names match in
+// any case. Returns null (no row) unless the config has at least one bot.
+function botsConfig(all, project) {
+  var c = all && typeof all === "object" ? all[project] : null
+  if (!c || typeof c !== "object" || !Array.isArray(c.bots)) return null
+  var bots = c.bots.filter(function(b) {
+    return b && typeof b.name === "string" && b.name.trim() !== "" && (typeof b.label === "string" || (typeof b.list === "string" && b.list.trim() !== ""))
+  }).map(function(b) {
+    return typeof b.list === "string" && b.list.trim() !== "" ? { name: b.name.trim(), list: b.list.trim().toLowerCase() } : { name: b.name.trim(), label: b.label.trim().toLowerCase() }
+  })
+  if (bots.length === 0) return null
+  return { bots: bots, busyLists: lowerList(c.busyLists || []), workingLists: lowerList(c.workingLists || ["in progress"]) }
+}
+function botStates(config, columns) {
+  if (!config) return []
+  var owners = config.bots.filter(function(b) { return b.label }).map(function(b) { return b.label })
+  return config.bots.map(function(bot) {
+    var found = {}, order = []
+    ;(columns || []).forEach(function(c) {
+      if (c.kind !== "label") return
+      var list = String(c.name).toLowerCase()
+      if (bot.list !== undefined ? list !== bot.list : config.busyLists.indexOf(list) === -1) return
+      ;(c.issues || []).forEach(function(row) {
+        var labels = lowerList(row.labels || [])
+        var mine = bot.list !== undefined || (bot.label ? labels.indexOf(bot.label) !== -1
+          : !labels.some(function(l) { return owners.indexOf(l) !== -1 }))
+        if (!mine) return
+        var working = bot.list !== undefined || config.workingLists.indexOf(list) !== -1
+        if (!found[row.iid]) { found[row.iid] = { iid: row.iid, list: c.name, working: working, row: row }; order.push(row.iid) }
+        else if (working && !found[row.iid].working) { found[row.iid].list = c.name; found[row.iid].working = true }
+      })
+    })
+    var issues = order.map(function(iid) { return found[iid] })
+    return { name: bot.name, byList: bot.list !== undefined, issues: issues,
+             state: issues.some(function(i) { return i.working }) ? "working" : issues.length > 0 ? "waiting" : "idle" }
+  })
+}
+
 // "5m", "3h", "4d", "2w", "6mo", "1y" from iso to since (default: now).
 function age(iso, since) {
   var ms = new Date(since || Date.now()) - new Date(iso)
@@ -224,7 +270,7 @@ if (typeof module !== "undefined") {
   module.exports = {
     lowerList: lowerList, has: has, toggled: toggled, escaped: escaped, labelStyle: labelStyle, age: age, savedNote: savedNote,
     columnKey: columnKey, listSpec: listSpec, movedColumns: movedColumns, byline: byline, people: people,
-    workflowLabels: workflowLabels, statusLabels: statusLabels, editableLabels: editableLabels, addableLabels: addableLabels, withColors: withColors, statusOn: statusOn,
+    workflowLabels: workflowLabels, statusLabels: statusLabels, editableLabels: editableLabels, addableLabels: addableLabels, withColors: withColors, statusOn: statusOn, botsConfig: botsConfig, botStates: botStates,
     linkUrl: linkUrl, inline: inline, lineLimit: lineLimit, markdown: markdown, descriptionLimit: descriptionLimit, cursorMove: cursorMove, cursorFix: cursorFix, keys: keys
   }
 }
