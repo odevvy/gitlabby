@@ -44,6 +44,7 @@ Item {
     + ".h1, .h2 { font-size: " + (Style.font.bodySmall + 2) + "px } .h3 { font-size: " + (Style.font.bodySmall + 1) + "px }"
     + ".li { margin-bottom: " + Style.space(2) + "px } .quote { color: " + host.dim + " }"
     + "code, pre { background-color: " + host.faint + " }"
+    + "a { color: " + host.accent + " }"  // RichText ignores linkColor (Qt docs: Text.linkColor)
     + "table { border-collapse: collapse; border-color: " + host.faint + "; margin-bottom: " + Style.space(6) + "px }</style>"
 
   onKeyChanged: {
@@ -129,10 +130,24 @@ Item {
     stdout: StdioCollector { waitForEnd: true; onStreamFinished: view.postDone(text) }
   }
 
-  implicitHeight: content.implicitHeight
+  implicitHeight: top.implicitHeight + Style.space(8) + content.implicitHeight
+
+  // Fixed top row, right under the gear: only the issue below it scrolls.
+  Row {
+    id: top
+    anchors.right: parent.right
+    spacing: Style.space(8)
+    Pill {
+      anchors.verticalCenter: parent.verticalCenter
+      visible: !!view.issue.url
+      label: "Open in browser ↗"; clickable: true
+      onClicked: view.host.openUrl(view.issue.url)
+    }
+    GlyphButton { host: view.host; glyph: "\uf00d"; onClicked: view.host.back() }
+  }
 
   Flickable {
-    anchors.fill: parent
+    anchors { top: top.bottom; topMargin: Style.space(8); left: parent.left; right: parent.right; bottom: parent.bottom }
     contentWidth: width; contentHeight: content.implicitHeight
     clip: true; boundsBehavior: Flickable.StopAtBounds
     ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
@@ -141,19 +156,6 @@ Item {
       id: content
       width: parent.width - Style.space(8)
       spacing: Style.space(8)
-
-      Row {
-        // Out over the scroll bar gutter, so the ✕ sits under the gear.
-        anchors { right: parent.right; rightMargin: -Style.space(8) }
-        spacing: Style.space(8)
-        Pill {
-          anchors.verticalCenter: parent.verticalCenter
-          visible: !!view.issue.url
-          label: "Open in browser ↗"; clickable: true
-          onClicked: view.host.openUrl(view.issue.url)
-        }
-        GlyphButton { host: view.host; glyph: "\uf00d"; onClicked: view.host.back() }
-      }
 
       BoardText {
         width: parent.width; wrapMode: Text.Wrap
