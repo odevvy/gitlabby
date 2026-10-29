@@ -458,20 +458,36 @@ Panel {
         id: header
         width: parent.width
         implicitHeight: Math.max(title.implicitHeight, status.implicitHeight)
+        // The title gets all the room the rest of the row doesn't need; the
+        // status gets at most 40% of it, and elides from the left.
+        readonly property real titleRoom: width - chevron.implicitWidth - defaultMark.implicitWidth - refreshButton.implicitWidth - gear.implicitWidth
+          - Style.space(8 + 12 + 8 + 10) - Math.min(status.implicitWidth, width * 0.4)
 
+        // Elides at the end, so the board name goes before the project.
         BoardText {
           id: title
           anchors.verticalCenter: parent.verticalCenter
-          width: Math.min(implicitWidth, parent.width * 0.6)
-          elide: Text.ElideMiddle
-          text: root.project + (root.boardName !== "" ? " · " + root.boardName : "") + " ▾"
+          width: Math.max(0, Math.min(implicitWidth, header.titleRoom))
+          elide: Text.ElideRight
+          text: root.project + (root.boardName !== "" ? " · " + root.boardName : "")
           color: titleMouse.containsMouse ? root.accent : root.foreground
           font { pixelSize: Style.font.title; bold: true }
-          MouseArea { id: titleMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.openPicker() }
+        }
+        BoardText {
+          id: chevron
+          anchors { left: title.right; verticalCenter: parent.verticalCenter }
+          text: " ▾"
+          color: title.color
+          font: title.font
+        }
+        MouseArea {
+          id: titleMouse
+          x: title.x; width: chevron.x + chevron.width - title.x; height: parent.height
+          hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.openPicker()
         }
         BoardText {
           id: defaultMark
-          anchors { left: title.right; leftMargin: Style.space(8); verticalCenter: parent.verticalCenter }
+          anchors { left: chevron.right; leftMargin: Style.space(8); verticalCenter: parent.verticalCenter }
           text: root.onDefault ? "\uf005" : "\uf006 Default"
           color: root.onDefault || defaultMouse.containsMouse ? root.accent : root.dim
           font.pixelSize: Style.font.bodySmall
