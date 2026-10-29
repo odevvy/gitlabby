@@ -1,8 +1,9 @@
 import QtQuick
 import QtQuick.Controls
 import qs.Commons
+import qs.Ui
 
-// In-popup settings: the GitLab account (who is signed in, sign out), which
+// In-popup settings: the account (who is signed in, Sign out), which
 // columns new boards start with folded, and how often to refresh. Changes are
 // saved to shell.json right away. The gear, ✕ or Esc returns to the board.
 Item {
@@ -42,46 +43,52 @@ Item {
       spacing: Style.space(6)
 
       Item { width: 1; height: Style.space(4) }
-      Heading { text: "GitLab account" }
-      Rectangle {
+      Heading { text: "Account" }
+      // One row, no frame: who is signed in on the left, Sign out as a text
+      // action on the right (like Edit labels). Sign out asks first in the same
+      // row: the question on the left, Yes / Cancel on the right.
+      Item {
+        id: accountRow
         width: parent.width
-        implicitHeight: account.implicitHeight + Style.space(20)
-        radius: Style.space(8)
-        color: view.pane
-        border { width: 1; color: view.line }
-
-        Column {
-          id: account
-          x: Style.space(12); y: Style.space(10); width: parent.width - Style.space(24)
+        implicitHeight: Math.max(accountText.implicitHeight, Style.space(28))
+        BoardText {
+          id: accountText
+          anchors.verticalCenter: parent.verticalCenter
+          width: parent.width - Style.space(12) - (signOutLink.visible ? signOutLink.implicitWidth : confirmRow.visible ? confirmRow.implicitWidth : 0)
+          wrapMode: Text.Wrap
+          color: view.host.accountError !== "" && !view.confirming ? view.host.urgent : view.host.foreground
+          text: view.host.signingOut ? "Signing out…"
+            : view.confirming ? "Sign out of gitlab.com?"
+            : view.host.accountError !== "" ? view.host.accountError
+            : view.host.account !== "" ? "Signed in as " + view.host.account + " on gitlab.com" : "Checking your GitLab account…"
+        }
+        BoardText {
+          id: signOutLink
+          anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+          visible: !view.host.signingOut && !view.confirming && (view.host.account !== "" || view.host.accountError !== "")
+          text: "Sign out"
+          color: view.host.accent
+          font.pixelSize: Style.font.bodySmall
+          MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: view.confirming = true }
+        }
+        Row {
+          id: confirmRow
+          anchors { right: parent.right; verticalCenter: parent.verticalCenter }
           spacing: Style.space(8)
-          BoardText {
-            id: accountText
-            width: parent.width; wrapMode: Text.Wrap
-            color: view.host.accountError !== "" && !view.confirming ? view.host.urgent : view.host.foreground
-            text: view.host.signingOut ? "Signing out…"
-              : view.confirming ? "Sign out of glab on this computer? glab in your terminal is signed out too, and the saved boards are deleted."
-              : view.host.accountError !== "" ? view.host.accountError
-              : view.host.account !== "" ? "Signed in as " + view.host.account + " on gitlab.com" : "Checking your GitLab account…"
+          visible: view.confirming && !view.host.signingOut
+          ActionButton {
+            id: yesButton
+            host: view.host; small: true; danger: true; label: "Yes, sign out"
+            onClicked: { view.confirming = false; view.host.signOut() }
+            PanelToolTip {
+              y: parent.height + Style.space(4); visible: yesButton.hovered
+              text: "Signs out glab in your terminal too\nand deletes the saved boards."
+              onAboutToShow: x = parent.width - implicitWidth  // keep it inside the popup
+            }
           }
-          Row {
-            spacing: Style.space(8)
-            visible: !view.host.signingOut
-            // Square buttons like the issue view's, never label-like pills.
-            ActionButton {
-              visible: !view.confirming && (view.host.account !== "" || view.host.accountError !== "")
-              host: view.host; small: true; label: "Sign out"
-              onClicked: view.confirming = true
-            }
-            ActionButton {
-              visible: view.confirming
-              host: view.host; small: true; danger: true; label: "Yes, sign out"
-              onClicked: { view.confirming = false; view.host.signOut() }
-            }
-            ActionButton {
-              visible: view.confirming
-              host: view.host; small: true; label: "Cancel"
-              onClicked: view.confirming = false
-            }
+          ActionButton {
+            host: view.host; small: true; label: "Cancel"
+            onClicked: view.confirming = false
           }
         }
       }

@@ -12,6 +12,7 @@ Rectangle {
   property bool main: false
   property bool small: false
   property bool danger: false
+  readonly property bool hovered: mouse.containsMouse  // for a tooltip
   signal clicked()
   readonly property color fg: host.foreground
   readonly property color tone: danger ? host.urgent : host.accent
