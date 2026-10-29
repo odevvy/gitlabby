@@ -33,6 +33,12 @@ function age(iso, since) {
     : d < 60 ? Math.floor(d / 7) + "w" : d < 365 ? Math.floor(d / 30) + "mo" : Math.floor(d / 365) + "y"
 }
 
+// Header note while the saved board shows and the fresh one loads.
+function savedNote(iso, now) {
+  var a = age(iso, now)
+  return (a === "" || a === "0m" ? "Saved just now" : "Saved " + a + " ago") + " · updating…"
+}
+
 function columnKey(column) { return column.kind + ":" + (column.listId || column.name) }
 // The list argument board-fetch move takes: open, closed, or a label list id.
 function listSpec(column) { return column.kind === "label" ? String(column.listId) : column.kind }
@@ -185,7 +191,7 @@ var keys = [
 
 if (typeof module !== "undefined") {
   module.exports = {
-    lowerList: lowerList, has: has, toggled: toggled, escaped: escaped, labelStyle: labelStyle, age: age,
+    lowerList: lowerList, has: has, toggled: toggled, escaped: escaped, labelStyle: labelStyle, age: age, savedNote: savedNote,
     columnKey: columnKey, listSpec: listSpec, movedColumns: movedColumns, byline: byline, people: people,
     linkUrl: linkUrl, inline: inline, lineLimit: lineLimit, markdown: markdown, descriptionLimit: descriptionLimit, cursorMove: cursorMove, cursorFix: cursorFix, keys: keys
   }
