@@ -357,13 +357,14 @@ scope=$(jq -r 'if . == null then "" else [
     (if (.weight | type) == "number" and .weight >= 0 then "weight=\(.weight)" else empty end)
   ] | map("&" + .) | join("") end' "$tmp/board")
 hide_closed=$(jq -r '.hide_closed_list // false' "$tmp/board")
+closed_cap=20  # Closed shows the latest 20; a full column links to GitLab for the rest (seeAll)
 
 get --paginate "$base/issues?state=opened&scope=all&order_by=relative_position&sort=asc&per_page=100&with_labels_details=true$scope" >"$tmp/open" ||
   emit error "Could not load open issues for $project."
 if [[ $hide_closed == true ]]; then
   echo '[]' >"$tmp/closed"
 else
-  get "$base/issues?state=closed&scope=all&order_by=updated_at&sort=desc&per_page=20&with_labels_details=true$scope" >"$tmp/closed" ||
+  get "$base/issues?state=closed&scope=all&order_by=updated_at&sort=desc&per_page=$closed_cap&with_labels_details=true$scope" >"$tmp/closed" ||
     emit error "Could not load closed issues for $project."
 fi
 
@@ -382,6 +383,17 @@ $b[0] as $board | ($o | add // []) as $rawOpen | ($c | add // []) as $rawClosed
    | map(select((.name | type) == "string" and (.color | hex)) | {(.name): {color: (.color | hex), textColor: (.text_color | hex)}})
    | add // {}) as $colors
 | ($rawOpen | map(select(.state == "opened") | .labels = names)) as $open | ($rawClosed | map(.labels = names)) as $closed
+# A full Closed column (the cap) links to the project's closed issues on GitLab,
+# with the board's label, milestone, assignee and weight filters when it has them.
+| (if ($rawClosed | length) >= $cap
+   then [$rawClosed[0].web_url | https | capture("^(?<p>https://[^?#]+)/-/issues/[0-9]+$") | .p] | first else null end) as $proj
+| (if $board == null then "" else
+     [(($board.labels // [])[] | .name | strings | "&label_name%5B%5D=" + @uri),
+      ($board.milestone.title | strings | "&milestone_title=" + @uri),
+      ($board.assignee.username | strings | "&assignee_username=" + @uri),
+      (if ($board.weight | type) == "number" and $board.weight >= 0 then "&weight=\($board.weight)" else empty end)] | join("") end) as $webScope
+| ({name: "Closed", kind: "closed", issues: [$closed[] | row]} + (if $proj then {seeAll: ($proj + "/-/issues?state=closed" + $webScope)} else {} end))
+  as $closedColumn
 | {state: "ready", updatedAt: (now | todateiso8601), project: $project, labelColors: $colors,
    boards: ($all | add // [] | map({id, name})),
    board: (if $board then {id: $board.id, name: $board.name} else null end), fallback: ($board == null)}
@@ -390,7 +402,7 @@ $b[0] as $board | ($o | add // []) as $rawOpen | ($c | add // []) as $rawClosed
     | {message: "No boards in this project: showing workflow label columns.",
        columns: ([$rank | reverse[] as $n | {name: $n, kind: "label", color: $colors[$n].color, issues: [$open[]
                    | . as $i | select(([$rank[] | select(. as $l | $i.labels | index($l))] | first) == $n) | row]}]
-         + [{name: "Closed", kind: "closed", issues: [$closed[] | row]}]
+         + [$closedColumn]
          + [{name: "Unlabeled", kind: "open", issues: [$open[] | select(has_any($rank) | not) | row]}])}
   else
     ($board.lists // [] | sort_by(.position)) as $lists
@@ -403,11 +415,11 @@ $b[0] as $board | ($o | add // []) as $rawOpen | ($c | add // []) as $rawClosed
                .label.name as $l | {name: $l, kind: "label", listId: .id, color: ((.label.color | hex) // $colors[$l].color), issues: [$open[] | select(.labels | index($l)) | row]}
              else {name: (.assignee.username // .milestone.title // .iteration.title // .status.name // "List"),
                    kind: "other", note: "This list type is not supported yet.", issues: []} end]
-         + (if $board.hide_closed_list then [] else [{name: "Closed", kind: "closed", issues: [$closed[] | row]}] end))}
+         + (if $board.hide_closed_list then [] else [$closedColumn] end))}
   end
 JQ
 jq -cn --slurpfile b "$tmp/board" --slurpfile all "$tmp/boards" --slurpfile o "$tmp/open" --slurpfile c "$tmp/closed" \
-  --arg want "$board_id" --arg project "$project" "$DEFS $MAP" >"$tmp/out" 2>/dev/null || emit error "GitLab returned an unreadable response."
+  --arg want "$board_id" --arg project "$project" --argjson cap "$closed_cap" "$DEFS $MAP" >"$tmp/out" 2>/dev/null || emit error "GitLab returned an unreadable response."
 # Best effort: write a temp file in the cache dir, then rename it over the old
 # copy, so a reader never sees half a file. A failed write changes nothing.
 if [[ -n $cache_root ]] && mkdir -p "$cache_dir" 2>/dev/null && chmod 700 "$cache_dir" 2>/dev/null &&

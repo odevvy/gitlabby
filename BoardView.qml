@@ -276,6 +276,19 @@ Item {
                 }
               }
             }
+
+            // A capped column (board-fetch: Closed holds the latest 20) says so
+            // and links to the rest on GitLab. Open and label columns are never capped.
+            BoardText {
+              visible: !!column.modelData.seeAll
+              width: parent.width; wrapMode: Text.Wrap
+              horizontalAlignment: Text.AlignHCenter
+              topPadding: Style.space(2)
+              text: "Showing the latest " + column.issues.length + " · See all on GitLab ↗"
+              color: seeAllMouse.containsMouse ? view.host.accent : view.host.dim
+              font.pixelSize: Style.font.caption
+              MouseArea { id: seeAllMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: view.host.openUrl(column.modelData.seeAll) }
+            }
           }
 
           // Drop target: the whole column, strip included. Never the column the

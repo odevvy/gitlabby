@@ -619,6 +619,40 @@ check "X logged out: no write" '.state == "logged-out"' "$(FAKE_AUTH=no cl close
 check "X logged out: no PUT" '.' "$(grep -q NON-GET "$FAKE_LOG" && echo false || echo true)"
 close_out=$(fx put <<<'{"iid":3,"state":"closed"}'; cl close --project a/b --iid 3; FAKE_PUT=fail cl reopen --project a/b --iid 3)
 
+# --- CL: Closed shows the latest 20; a full column links to GitLab for the rest -
+# Open and label columns read every open issue (--paginate): no cap, no link.
+closed_n() { # n web-url-prefix
+  jq -cn --argjson n "$1" --arg u "$2" '[range($n) | {iid: (100 + .), title: "c", state: "closed", labels: [], web_url: "\($u)\(100 + .)"}]'; }
+reset
+fx boards <<'J'
+[{"id":7,"name":"Dev","hide_backlog_list":false,"hide_closed_list":false,"labels":[],"milestone":null,"assignee":null,"lists":[]},
+ {"id":8,"name":"Scoped","hide_backlog_list":false,"hide_closed_list":false,"labels":[{"name":"team-a"},{"name":"a b"}],
+  "milestone":{"title":"v1.0"},"assignee":{"id":42,"username":"alice"},"weight":3,"lists":[]}]
+J
+fx open <<<'[]'
+closed_n 20 https://gitlab.com/group/app/-/issues/ | fx closed
+out=$("$fetch" --project group/app)
+check "CL closed asks for the latest 20 only" '.' "$(grep -q 'state=closed&scope=all&order_by=updated_at&sort=desc&per_page=20&' "$FAKE_LOG" && echo true || echo false)"
+check "CL open issues are read in full (--paginate)" '.' "$(grep -q -- '--paginate projects/group%2Fapp/issues?state=opened' "$FAKE_LOG" && echo true || echo false)"
+check "CL 20 closed: a link to all closed issues" '(.columns[] | select(.kind == "closed") | .seeAll) == "https://gitlab.com/group/app/-/issues?state=closed"
+  and ([.columns[] | select(.kind != "closed") | has("seeAll")] | any | not)' "$out"
+out=$("$fetch" --project group/app --board 8)
+check "CL scoped board: the link keeps its label, milestone, assignee and weight filters" '(.columns[] | select(.kind == "closed") | .seeAll)
+  == "https://gitlab.com/group/app/-/issues?state=closed&label_name%5B%5D=team-a&label_name%5B%5D=a%20b&milestone_title=v1.0&assignee_username=alice&weight=3"' "$out"
+closed_n 19 https://gitlab.com/group/app/-/issues/ | fx closed
+out=$("$fetch" --project group/app)
+check "CL 19 closed: all of them, no link" '.columns[] | select(.kind == "closed") | (.issues | length) == 19 and (has("seeAll") | not)' "$out"
+closed_n 20 http://gitlab.com/group/app/-/issues/ | fx closed
+out=$("$fetch" --project group/app)
+check "CL a non-https issue URL gives no link" '.columns[] | select(.kind == "closed") | has("seeAll") | not' "$out"
+closed_n 20 'https://gitlab.com/group/app/-/merge_requests/' | fx closed
+out=$("$fetch" --project group/app)
+check "CL an unexpected URL shape gives no link" '.columns[] | select(.kind == "closed") | has("seeAll") | not' "$out"
+fx boards <<<'[]'
+closed_n 20 https://gitlab.example.org/sub/group/app/-/issues/ | fx closed
+out=$("$fetch" --project sub/group/app)
+check "CL no board (workflow columns): the link too, unscoped" '(.columns[] | select(.kind == "closed") | .seeAll) == "https://gitlab.example.org/sub/group/app/-/issues?state=closed"' "$out"
+
 # --- safety: no token in any output --------------------------------------------
 fx board <<<'{"id":7,"name":"Dev","lists":[{"id":11,"label":{"name":"todo"}},{"id":12,"label":{"name":"approved"}}]}'
 fx put <<<'{"iid":3,"state":"opened","labels":["approved"]}'
