@@ -177,11 +177,11 @@ function cursorAt(lanes, col, row) {
 // The popup's keys, shown by ? and listed in the README's Keyboard section.
 var keys = [
   ["h j k l or arrows", "Move between cards; up and down in the picker"],
-  ["Enter or Space", "Open the selected issue; pick the selected row"],
+  ["Enter or Space", "Open the selected issue; pick the selected row; the setup panel's main button"],
   ["o", "Open the issue in the browser"],
   ["c", "Write a comment (issue view)"],
   ["Ctrl+Enter", "Post the comment"],
-  ["r", "Refresh the board"],
+  ["r", "Refresh the board; Try again on the setup panel"],
   ["p", "Choose a project and board"],
   ["s", "Settings"],
   ["?", "This list of keys"],

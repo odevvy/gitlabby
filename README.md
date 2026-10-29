@@ -27,7 +27,7 @@ The popup walks you through setup in its body:
 3. **Signed in, no project yet:** the project picker opens. The first board
    you open becomes your default.
 
-The popup checks again only when it opens or you click **Try again**; it
+The popup checks again only when it opens or you click **Try again** (or press `r`); it
 never polls. Offline or GitLab errors show the reason instead of a sign-in
 prompt.
 
@@ -179,11 +179,11 @@ position. In the popup the keyboard cursor shows after the first move.
 | Key | Action |
 | --- | --- |
 | `h j k l` or arrows | Move between cards; up and down in the picker |
-| `Enter` or `Space` | Open the selected issue; pick the selected row |
+| `Enter` or `Space` | Open the selected issue; pick the selected row; the setup panel's main button |
 | `o` | Open the issue in the browser |
 | `c` | Write a comment (issue view) |
 | `Ctrl+Enter` | Post the comment |
-| `r` | Refresh the board |
+| `r` | Refresh the board; Try again on the setup panel |
 | `p` | Choose a project and board |
 | `s` | Settings |
 | `?` | This list of keys |

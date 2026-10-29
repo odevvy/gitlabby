@@ -387,6 +387,7 @@ Panel {
   // First run. glab asks for the token in its own terminal: this plugin never
   // sees it. Same launcher as Omarchy's update widget (SystemUpdate.qml).
   readonly property string installCommand: "sudo pacman -S glab"
+  readonly property string icon: "\uf296"  // Font Awesome gitlab (Nerd Font): the bar icon and the setup panel
   function signIn() {
     Quickshell.execDetached(["omarchy-launch-floating-terminal-with-presentation", "glab auth login"])
     close()
@@ -462,7 +463,7 @@ Panel {
   BarIconButton {
     id: button
     anchors.fill: parent; bar: root.bar
-    text: "\uf296"
+    text: root.icon
     tooltipText: "GitLab board" + (root.project !== "" ? " · " + root.project : "")
     onPressed: function(buttonCode) {
       if (buttonCode === Qt.RightButton || buttonCode === Qt.MiddleButton) root.refresh()
@@ -476,15 +477,15 @@ Panel {
     open: root.opened; focusTarget: keyCatcher
     // fittedContentWidth caps at availableCardWidth (screen minus margins);
     // anything wider scrolls horizontally inside the board.
-    contentWidth: panel.fittedContentWidth(Math.max(Style.space(520), root.view !== "board" || root.setup !== "" ? 0
-      : (root.boardState === "loading" ? skeleton.implicitWidth : root.boardWidth) + panel.padding * 2 + Style.space(4)))
+    contentWidth: panel.fittedContentWidth(Math.max(Style.space(520), root.view !== "board" ? 0
+      : (root.setup !== "" || root.boardState === "loading" ? skeleton.implicitWidth : root.boardWidth) + panel.padding * 2 + Style.space(4)))
     contentHeight: panel.fittedContentHeight(keyCatcher.implicitHeight, Style.space(640))
 
     PanelKeyCatcher {
       id: keyCatcher
       anchors.fill: parent
       blocked: issueView.typing || picker.typing  // text fields get every key (Omarchy PanelKeyCatcher.qml:26-29)
-      implicitHeight: header.implicitHeight + root.gap + (root.view === "board" ? (root.setup !== "" ? setupView.implicitHeight : root.boardState === "loading" ? skeleton.implicitHeight : boardView.implicitHeight)
+      implicitHeight: header.implicitHeight + root.gap + (root.view === "board" ? (root.setup !== "" ? Math.max(setupView.implicitHeight, skeleton.implicitHeight) : root.boardState === "loading" ? skeleton.implicitHeight : boardView.implicitHeight)
         : root.view === "issue" ? issueView.implicitHeight : root.view === "picker" ? picker.implicitHeight
         : root.view === "keys" ? keysView.implicitHeight : settingsView.implicitHeight)
       onCloseRequested: root.view !== "board" ? root.back() : root.close()
@@ -496,6 +497,7 @@ Panel {
       onActivateRequested: {
         if (root.view === "board" && root.cursorIssue()) root.openIssue(root.cursorIssue())
         else if (root.view === "picker") picker.activate()
+        else if (root.view === "board" && root.setup !== "") setupView.primary()
       }
       onTextKey: function(text) {
         var key = text.toLowerCase()
