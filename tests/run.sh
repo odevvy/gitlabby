@@ -319,8 +319,9 @@ check "PF logged out: no POST" '.' "$(grep -q NON-GET "$FAKE_LOG" && echo false 
 
 # --- R: reads are GET only ---------------------------------------------------
 # Runtime: every read command, including a refresh with a board, issues only
-# GETs. Structure: board-fetch has exactly two non-GET requests: the PUT in
-# write_issue() (move branch only) and the POST in write_note() (comment only).
+# GETs. Structure: board-fetch has exactly three non-GET requests: the PUTs in
+# write_issue() (move only) and write_labels() (relabel only), and the POST in
+# write_note() (comment only).
 reset
 fx boards <<<'[{"id":7,"name":"Dev","lists":[{"id":11,"position":0,"label":{"name":"todo"}}]}]'
 fx open <<<'[{"iid":1,"title":"a","state":"opened","labels":["todo"],"web_url":"u"}]'
@@ -328,21 +329,25 @@ fx closed <<<'[]'
 fx projects <<<'[{"id":1,"path_with_namespace":"a/b"}]'
 fx issue <<<'{"iid":1,"title":"a","state":"opened","labels":[],"web_url":"u"}'
 fx notes <<<'[{"id":1,"body":"b","system":false,"author":{"username":"x"}}]'
-reads=$("$fetch" --project group/app; "$fetch" board --project group/app --board 7; "$fetch" projects; "$fetch" boards --project a/b; "$fetch" issue --project a/b --iid 1; "$fetch" notes --project a/b --iid 1; "$fetch" whoami)
+reads=$("$fetch" --project group/app; "$fetch" board --project group/app --board 7; "$fetch" projects; "$fetch" boards --project a/b; "$fetch" issue --project a/b --iid 1; "$fetch" notes --project a/b --iid 1; "$fetch" whoami
+  fx labels <<<'[{"name":"bug","color":"#ff0000"}]'; "$fetch" labels --project a/b)
 check "R refresh has listId" '.columns[1] | .name == "todo" and .listId == 11' "$("$fetch" --project group/app)"
 check "R reads ran" '.' "$(grep -c '^api ' "$FAKE_LOG" | grep -qxE '[0-9]{2,}' && echo true || echo false)"
 check "R reads are GET only" '.' "$(grep -q 'NON-GET' "$FAKE_LOG" && echo false || echo true)"
 check "R every api call says --method GET" '.' "$(grep '^api ' "$FAKE_LOG" | grep -qv -- '--method GET ' && echo false || echo true)"
 src=$(grep -v '^ *#' "$fetch")
-check "R non-GETs in the script: one PUT, one POST" '.' "$(grep -oE -- '--method [A-Z]+' <<<"$src" | sort | tr '\n' ' ' | grep -qx -- '--method GET --method POST --method PUT ' && echo true || echo false)"
+check "R non-GETs in the script: two PUTs, one POST" '.' "$(grep -oE -- '--method [A-Z]+' <<<"$src" | sort | tr '\n' ' ' | grep -qx -- '--method GET --method POST --method PUT --method PUT ' && echo true || echo false)"
 # shellcheck disable=SC2016  # the pattern is literal board-fetch source
 check "R glab runs only in bounded(), under timeout" '.' "$(grep -E '(^|[^-])\<glab "' <<<"$src" | grep -qvF '  { timeout -k 5 30 glab "$@"; } 2>"${errors:-/dev/null}"' && echo false ||
   grep -c 'timeout -k 5 30 glab' <<<"$src" | grep -qx 1 && echo true || echo false)"
-check "R glab api only in get(), write_issue() and write_note()" '.' "$(grep -c 'bounded api' <<<"$src" | grep -qx 3 && echo true || echo false)"
+check "R glab api only in get(), write_issue(), write_labels() and write_note()" '.' "$(grep -c 'bounded api' <<<"$src" | grep -qx 4 && echo true || echo false)"
 check "R write_issue only inside move" '.' "$(awk '/^  move\)/{m=1} /^    exit 0 ;;/{if(m)m=2} /write_issue/{if(m!=1)bad=1} END{print bad?"false":"true"}' <<<"$src")"
 check "R move: issue read, then stale exit, then the PUT" '.' "$(awk '/^  move\)/{m=1} /^    exit 0 ;;/{if(m==1)m=2}
   m==1 && /get "\$base\/issues\/\$iid"/{g=NR} m==1 && /emit stale/{st=NR} m==1 && /\| write_issue/{w=NR}
   END{print (g && st && w && g < st && st < w) ? "true" : "false"}' <<<"$src")"
+check "R write_labels only inside relabel" '.' "$(awk '/^  relabel\)/{m=1} /^    exit 0 ;;/{if(m)m=2} /write_labels/{if(m!=1)bad=1} END{print bad?"false":"true"}' <<<"$src")"
+check "R relabel: status guard, then the PUT" '.' "$(awk '/^  relabel\)/{m=1} /^    exit 0 ;;/{if(m==1)m=2}
+  m==1 && /is a board list label/{g=NR} m==1 && /\| write_labels/{w=NR} END{print (g && w && g < w) ? "true" : "false"}' <<<"$src")"
 check "R write_note only inside comment" '.' "$(awk '/^  comment\)/{m=1} /^    exit 0 ;;/{if(m)m=2} /write_note/{if(m!=1)bad=1} END{print bad?"false":"true"}' <<<"$src")"
 check "R stdin is read only for comment" '.' "$(: >"$FAKE_LOG"; echo '{"body":"x"}' | "$fetch" notes --project a/b --iid 1 >/dev/null; grep -q NON-GET "$FAKE_LOG" && echo false || echo true)"
 
@@ -360,6 +365,7 @@ check "T issue read hangs" "$slow" "$(FAKE_HANG='issues/45' "$fetch" issue --pro
 check "T move PUT hangs" '.state == "error" and (.message | test("move may have gone through"))' "$(FAKE_HANG='--method PUT' mv_ --from 11 --to 12)"
 check "T comment POST hangs" '.state == "timeout" and (.message | test("may have been posted"))' "$(echo hi | FAKE_HANG='--method POST' say)"
 check "T comment POST killed" '.state == "timeout"' "$(echo hi | FAKE_HANG='--method POST' FAKE_HANG_TERM=ignore say)"
+check "T relabel PUT hangs" '.state == "error" and (.message | test("label change may have gone through"))' "$(fx labels <<<'[{"name":"bug"}]'; fx boards <<<'[]'; FAKE_HANG='--method PUT' "$fetch" relabel --project a/b --iid 3 --add bug)"
 check "T one JSON line each" '.' "$(n=$(echo hi | FAKE_HANG='--method POST' say | wc -l); m=$(FAKE_HANG='--method PUT' mv_ --from 11 --to 12 | wc -l)
   [[ $n == 1 && $m == 1 ]] && echo true || echo false)"
 
@@ -490,6 +496,72 @@ check "K relative XDG_CACHE_HOME ignored" '.' "$(cd "$work" && XDG_CACHE_HOME=re
 saved=("$work"/home*/.cache/odevvy.gitlab-board/*)
 check "K no token in any saved copy" '.' "$([[ ${#saved[@]} == 2 && -f ${saved[0]} ]] && ! grep -qiE 'glpat|bearer' "${saved[@]}" && echo true || echo false)"
 
+# --- L: labels: read the editable ones, add or remove one at a time ------------
+# Status labels never show and are never written: every board's list labels
+# (here "Doing" on board 7, "Ready" on board 8) plus the workflow labels, in any
+# case ("In Progress"). A write is one add_labels or remove_labels PUT.
+reset
+fx boards <<'J'
+[{"id":7,"name":"Dev","lists":[{"id":1,"label":{"name":"Doing"}},{"id":2,"assignee":{"username":"a"}}]}]
+[{"id":8,"name":"Ops","lists":[{"id":3,"label":{"name":"Ready"}}]}]
+J
+fx labels <<'J'
+[{"name":"ux","color":"#00ff00","text_color":"#000000"},{"name":"Doing","color":"#111111"},{"name":"todo"},{"name":"In Progress"}]
+[{"name":"Bug","color":"#ff0000","text_color":"#FFFFFF"},{"name":"Ready"},{"name":"api","color":"red; x","text_color":"#12345"}]
+J
+fx put <<<'{"iid":3,"state":"opened","labels":["Doing","api","ux"]}'
+out=$("$fetch" labels --project a/b)
+check "L editable labels: status ones filtered out, sorted" '.state == "ready" and [.labels[].name] == ["api","Bug","ux"]' "$out"
+check "L colors kept" '.labels[2] == {"name":"ux","color":"#00ff00","textColor":"#000000"}' "$out"
+check "L colors: only #rrggbb passes" '.labels[0] == {"name":"api","color":null,"textColor":null}' "$out"
+check "L status list: every board's list labels + workflow labels" '.status == (["approved","doing","in progress","ready","research","review","todo"])' "$out"
+check "L labels read is GET only, all pages" '.' "$(grep -q NON-GET "$FAKE_LOG" && echo false || grep -qF -- '--method GET --paginate projects/a%2Fb/labels?per_page=100' "$FAKE_LOG" && echo true || echo false)"
+rl() { : >"$FAKE_LOG"; "$fetch" relabel --project a/b --iid 3 "$@"; }
+out=$(rl --add api)
+check "L add: ready, new labels" '.state == "ready" and .message == "Added api." and .labels == ["Doing","api","ux"]' "$out"
+check "L add: one PUT with add_labels only" '.' "$(grep '^PUT ' "$FAKE_LOG" | grep -qxF 'PUT projects/a%2Fb/issues/3 {"add_labels":"api"}' && [[ $(grep -c NON-GET "$FAKE_LOG") == 1 ]] && echo true || echo false)"
+out=$(rl --remove ux)
+check "L remove: one PUT with remove_labels only" '.' "$(grep '^PUT ' "$FAKE_LOG" | grep -qxF 'PUT projects/a%2Fb/issues/3 {"remove_labels":"ux"}' && echo true || echo false)"
+check "L remove: message" '.state == "ready" and .message == "Removed ux."' "$out"
+check "L a label with spaces goes through as one value" '.' "$(fx labels <<<'[{"name":"needs design"}]'; rl --add 'needs design' >/dev/null; grep -qxF 'PUT projects/a%2Fb/issues/3 {"add_labels":"needs design"}' "$FAKE_LOG" && echo true || echo false)"
+fx labels <<'J'
+[{"name":"ux"},{"name":"Doing"},{"name":"todo"},{"name":"api"}]
+J
+# The guard: each of these must fail before any write.
+for l in Doing doing Ready todo TODO research approved review "in progress" "In Progress"; do
+  for op in --add --remove; do
+    out=$(rl "$op" "$l")
+    check "L guard refuses $op '$l'" '.state == "error" and (.message | test("board list label. Drag the card"))' "$out"
+    check "L guard: no write for $op '$l'" '.' "$(grep -q NON-GET "$FAKE_LOG" && echo false || echo true)"
+  done
+done
+for args in "--add a,b" "--add" "--remove" "" "--add api --remove ux"; do
+  # shellcheck disable=SC2086  # split on purpose
+  out=$(rl $args)
+  check "L refuses '$args'" '.state == "error"' "$out"
+  check "L no glab call for '$args'" '.' "$([[ ! -s $FAKE_LOG ]] && echo true || echo false)"
+done
+out=$(rl --add $'bug\nx')
+check "L refuses a control character" '.state == "error" and .message == "Unsupported label name."' "$out"
+out=$(rl --add nosuch)
+check "L add: unknown label refused, nothing created" '.state == "error" and (.message | test("no label \"nosuch\""))' "$out"
+check "L add unknown: no write" '.' "$(grep -q NON-GET "$FAKE_LOG" && echo false || echo true)"
+out=$("$fetch" relabel --project a/b --iid 0 --add api)
+check "L bad iid" '.state == "error" and .message == "Invalid issue number."' "$out"
+fx put-error <<<'{"message":"403 Forbidden glpat-LEAKLEAK"}'
+out=$(FAKE_PUT=fail rl --add api)
+check "L GitLab refuses: friendly reason, redacted" '.state == "error" and (.message | startswith("Label change failed: 403 Forbidden")) and (.message | test("glpat") | not)' "$out"
+fx put <<<'{"iid":99,"labels":[]}'
+check "L answer for another issue" '.state == "error" and (.message | test("unexpected response"))' "$(rl --add api)"
+fx put <<<'{"iid":3,"state":"opened","labels":["Doing","api","ux"]}'
+check "L logged out: no write" '.state == "logged-out"' "$(FAKE_AUTH=no rl --add api)"
+rm "$FAKE_DIR/boards.json"
+check "L boards unreadable: refused" '.state == "error" and (.message | test("Could not load boards"))' "$(rl --add api)"
+check "L boards unreadable: no write" '.' "$(grep -q NON-GET "$FAKE_LOG" && echo false || echo true)"
+fx boards <<<'{"not":"a list"}'
+check "L boards odd: refused, no write" '.state == "error" and (.message | test("unreadable"))' "$(rl --add api)"
+labels_out=$(rl --add api; "$fetch" labels --project a/b; FAKE_PUT=fail rl --remove api)
+
 # --- safety: no token in any output --------------------------------------------
 fx board <<<'{"id":7,"name":"Dev","lists":[{"id":11,"label":{"name":"todo"}},{"id":12,"label":{"name":"approved"}}]}'
 fx put <<<'{"iid":3,"state":"opened","labels":["approved"]}'
@@ -497,7 +569,7 @@ at opened '["todo"]'
 all=$(printf '%s\n' "$reads"; "$fetch" --project group/app; "$fetch" projects; "$fetch" issue --project a/b --iid 45; FAKE_AUTH=no "$fetch" --project a/b;
   FAKE_AUTH=401 "$fetch" --project a/b; FAKE_AUTH=offline "$fetch" --project a/b; mv_ --from 11 --to 12; FAKE_PUT=fail mv_ --from 11 --to 12; mv_ --iid x
   "$fetch" notes --project a/b --iid 1; fx post <<<'{"id":1}'; echo hi | say; echo hi | FAKE_POST=fail say;
-  fx user <<<'{"username":"dev1","private_token":"glpat-SECRET"}'; "$fetch" whoami; "$fetch" logout; FAKE_LOGOUT=fail "$fetch" logout)
+  fx user <<<'{"username":"dev1","private_token":"glpat-SECRET"}'; "$fetch" whoami; "$fetch" logout; FAKE_LOGOUT=fail "$fetch" logout; printf '%s\n' "$labels_out")
 check "no token leak" '.' "$(grep -qiE 'glpat|bearer' <<<"$all" && echo false || echo true)"
 
 echo "passed $pass, failed $fail"

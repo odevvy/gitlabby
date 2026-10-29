@@ -24,28 +24,6 @@ Item {
   implicitWidth: column.implicitWidth
   implicitHeight: column.implicitHeight + Style.space(48)
 
-  // Buttons styled like Omarchy's ConfirmDialog (Ui/ConfirmDialog.qml):
-  // the main one in the accent on a faint fill, the other a quiet outline.
-  component SetupButton: Rectangle {
-    id: button
-    property string label: ""
-    property bool main: false
-    signal clicked()
-    readonly property color fg: setupView.host.foreground
-    implicitWidth: Math.max(Style.space(120), buttonText.implicitWidth + Style.space(32))
-    implicitHeight: Style.space(34)
-    color: main || mouse.containsMouse ? Qt.rgba(fg.r, fg.g, fg.b, 0.08) : "transparent"
-    border { width: 1; color: main || mouse.containsMouse ? setupView.host.accent : Qt.rgba(fg.r, fg.g, fg.b, 0.38) }
-    BoardText {
-      id: buttonText
-      anchors.centerIn: parent
-      text: button.label
-      color: button.main ? setupView.host.accent : button.fg
-      font { pixelSize: Style.font.body; bold: button.main }
-    }
-    MouseArea { id: mouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: button.clicked() }
-  }
-
   Column {
     id: column
     anchors.centerIn: parent
@@ -85,23 +63,26 @@ Item {
         border { width: 1; color: Qt.rgba(setupView.host.foreground.r, setupView.host.foreground.g, setupView.host.foreground.b, 0.12) }
         BoardText { id: command; anchors.centerIn: parent; text: setupView.host.installCommand }
       }
-      SetupButton { label: setupView.copied ? "Copied" : "Copy"; main: true; onClicked: setupView.copy() }
+      ActionButton { host: setupView.host; label: setupView.copied ? "Copied" : "Copy"; main: true; onClicked: setupView.copy() }
     }
 
     Row {
       anchors.horizontalCenter: parent.horizontalCenter
       spacing: Style.space(10)
-      SetupButton {
+      ActionButton {
+        host: setupView.host
         visible: setupView.step === "logged-out"
         label: "Sign in to GitLab"; main: true
         onClicked: setupView.host.signIn()
       }
-      SetupButton {
+      ActionButton {
+        host: setupView.host
         visible: setupView.step === "pick"
         label: "Choose a project"; main: true
         onClicked: setupView.host.openPicker()
       }
-      SetupButton {
+      ActionButton {
+        host: setupView.host
         visible: setupView.step === "logged-out" || setupView.step === "no-glab" || setupView.step === "error"
         label: "Try again"; main: setupView.step === "error"
         onClicked: setupView.host.refresh()

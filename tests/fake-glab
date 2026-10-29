@@ -2,7 +2,7 @@
 # Test double for glab: serves JSON fixtures from $FAKE_DIR, logs every call to
 # $FAKE_LOG, and prints a fake token on stderr (must never reach output).
 # Any request that is not an explicit GET is logged as "NON-GET ...". The move
-# write (a PUT with a JSON --input body to issues/N) is
+# and relabel writes (a PUT with a JSON --input body to issues/N) are
 # also logged as "PUT <endpoint> <body>" and answered from put.json, or, with
 # FAKE_PUT=fail, from put-error.json with exit 1. The comment write (a POST
 # with a JSON --input body to issues/N/notes) is logged as "POST <endpoint>
@@ -49,6 +49,7 @@ case $endpoint in
   projects\?*) f=projects ;;
   */boards\?*) f=boards ;;
   */boards/[0-9]*) f=board ;;
+  */labels\?*) f=labels ;;
   */issues\?state=opened*) f=open ;;
   */issues\?state=closed*) f=closed ;;
   */issues/*/notes\?*) f=notes ;;

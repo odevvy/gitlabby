@@ -5,7 +5,8 @@ import "Logic.js" as Logic
 Pill {
   required property var host
   required property string name
-  readonly property var style: Logic.labelStyle(host.labelColors[name])
+  property var colors: host.labelColors
+  readonly property var style: Logic.labelStyle(colors[name])
   label: name
   color: style ? style.bg : "transparent"
   textColor: style ? style.fg : host.dim

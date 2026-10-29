@@ -1,7 +1,8 @@
 # GitLab Board for Omarchy
 
 A bar icon that opens a GitLab issue board in a popup: the board's lists as
-columns in their label colors, issue details with comments, and drag-to-move.
+columns in their label colors, issue details with comments and labels, and
+drag-to-move.
 
 ## Install
 
@@ -146,6 +147,22 @@ it, `Enter` or `Shift+Enter` adds a line, and `Escape` leaves the box.
 - The thread shows the newest 100 notes (one GitLab page) and says when there
   are more. Editing, deleting, replies and Markdown preview: use GitLab.
 
+## Labels
+
+**Edit labels** in the issue view adds and removes the issue's other labels:
+`×` on a label removes it, a `+` label adds it, and the filter narrows the
+list (`Enter` adds the first match, `Escape` closes it). **Done** closes it.
+
+- **Status labels are never edited here.** A label that is a list on any of
+  the project's boards, or one of the workflow labels (`research`, `todo`,
+  `approved`, `in progress`, `review`), in any case, is neither offered nor
+  removable; it changes by dragging the card. board-fetch refuses it too.
+- Each click is one write to GitLab as you (`add_labels` or `remove_labels`,
+  so no other label changes) and needs the `api` scope. Only labels the
+  project already has are offered, so nothing new is created.
+- One change at a time. On success the issue and the board update; on failure
+  the reason shows in red and the issue reloads.
+
 ## Cards and colors
 
 - Label chips use each label's GitLab colors. Column headers have a dot and
@@ -190,7 +207,8 @@ position. In the popup the keyboard cursor shows after the first move.
 | `Tab` or `Shift+Tab` | Next or previous bar panel |
 | `Escape` | Leave the comment box; otherwise back to the board; on the board, close |
 
-Letters go to the comment box or the picker's filter while you type in them.
+Letters go to the comment box, the label filter or the picker's filter while
+you type in them.
 
 ## Saved state
 
@@ -225,11 +243,11 @@ and board, readable only by you. Clear it with
 
 `glab` handles all authentication; the plugin never reads, stores, or prints
 a token, and never shows glab's own messages. Every read is a
-`glab api --method GET` request. The two writes are one `PUT` to the issue
-when you drop a card and one `POST` to its notes when you comment; both need
-the `api` scope (what `glab auth login` asks for by default). A glab call that
-hasn't answered after 30 seconds is stopped; a move or comment that times out
-may still have reached GitLab, so the board reloads.
+`glab api --method GET` request. The writes are one `PUT` to the issue when
+you drop a card or add or remove a label, and one `POST` to its notes when you
+comment; they need the `api` scope (what `glab auth login` asks for by
+default). A glab call that hasn't answered after 30 seconds is stopped; a
+write that times out may still have reached GitLab, so the view reloads.
 
 **Sign out** in the settings asks first, then runs
 `glab auth logout --hostname gitlab.com`. That is glab's own sign-out, so glab
@@ -258,6 +276,9 @@ answers `401`).
 ./board-fetch move --project P --board ID --iid N --from L --to L
                                                 # move an issue (a write)
 ./board-fetch comment --project P --iid N <file # post stdin as a comment (a write)
+./board-fetch labels --project P                # the labels you may edit, and the status ones
+./board-fetch relabel --project P --iid N --add L    # add one label (a write)
+./board-fetch relabel --project P --iid N --remove L # remove one label (a write)
 # all of them accept --hostname HOST (default gitlab.com)
 ```
 
@@ -275,6 +296,13 @@ system notes, and returns the rest oldest first, with `more: true` when the
 page was full. `comment` refuses empty text before any glab call and sends
 one `POST /projects/:id/issues/:iid/notes`; the text never goes on a command
 line or into a log.
+
+`relabel` takes exactly one `--add` or `--remove`. It loads every board of
+the project and refuses a status label (a list label of any board, or a
+workflow label, in any case); `--add` also needs a label the project has. Only
+then does it send one `PUT /projects/:id/issues/:iid` with just `add_labels`
+or `remove_labels`, as JSON on stdin like `move`. `labels` returns the
+project's labels without the status ones, plus the status list.
 
 A board refresh makes one request for the boards (with their lists), the open
 issues (paginated), and one for the last 20 closed issues, skipped when the
