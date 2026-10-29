@@ -516,14 +516,7 @@ Item {
           color: view.host.dim
           font { pixelSize: Style.font.bodySmall; bold: true }
         }
-        // Same spin as the header's refresh icon (Board.qml), while comments load.
-        BoardText {
-          visible: view.notesLoading
-          text: "\uf021"
-          color: view.host.accent
-          font.pixelSize: Style.font.bodySmall
-          RotationAnimation on rotation { running: view.notesLoading; alwaysRunToEnd: true; loops: Animation.Infinite; from: 0; to: 360; duration: 900 }
-        }
+        Spinner { running: view.notesLoading }
       }
       BoardText {
         width: parent.width; wrapMode: Text.Wrap
