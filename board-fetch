@@ -11,6 +11,7 @@
 #   board-fetch boards --project P                  boards of a project
 #   board-fetch issue --project P --iid N           one issue with its description
 #   board-fetch notes --project P --iid N           its comments (newest 100), oldest first
+#   board-fetch whoami                              your GitLab username (never saved)
 # The two writes, each in its own function and branch:
 #   board-fetch move --project P --board ID --iid N --from L --to L   (PUT, write_issue())
 #     L is open, closed, or the numeric id of a label list on that board. Label
@@ -18,15 +19,17 @@
 #     If the issue is no longer in --from on GitLab, nothing is written: state "stale".
 #   board-fetch comment --project P --iid N <body   (POST, write_note())
 #     The comment is read from stdin and never appears on a command line.
+#   board-fetch logout   glab auth logout for the host (glab's own local change: it
+#     forgets the token, GitLab is not called), then deletes the saved boards.
 #
-# P is a project path (group/name) or numeric id; every command but projects
-# needs one. --hostname defaults to gitlab.com.
+# P is a project path (group/name) or numeric id; every command but projects,
+# whoami and logout needs one. --hostname defaults to gitlab.com.
 # Before any GitLab call: state "no-glab" if glab is missing, "logged-out" if
 # glab has no login for the host (or GitLab refuses it).
 set -uo pipefail
 
 cmd=board project="" board_id="" iid="" from="" to="" hostname="gitlab.com"
-case "${1:-}" in board|cached|projects|boards|issue|notes|move|comment) cmd=$1; shift ;; esac
+case "${1:-}" in board|cached|projects|boards|issue|notes|move|comment|whoami|logout) cmd=$1; shift ;; esac
 while (($#)); do
   case "$1" in
     --project) project=${2:-} ;;
@@ -46,7 +49,7 @@ emit() { # state message
 }
 command -v jq >/dev/null 2>&1 || { printf '%s\n' '{"state":"error","message":"jq is required."}'; exit 0; }
 
-if [[ $cmd != projects ]]; then
+if [[ ! $cmd =~ ^(projects|whoami|logout)$ ]]; then
   [[ -n $project ]] || emit error "No project given: pass --project group/name."
   [[ $project =~ ^[0-9]+$ || ($project =~ ^[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)+$ && $project != *..*) ]] ||
     emit error "Invalid project: $project"
@@ -90,6 +93,14 @@ bounded() {
   ((rc == 137)) && rc=124
   return $rc
 }
+# Sign out: glab drops the host's token from its config and keyring. glab
+# auth logout never prompts (--hostname is required); it works offline. Then the
+# saved boards go, so a signed-out machine keeps no board data.
+if [[ $cmd == logout ]]; then
+  bounded auth logout --hostname "$hostname" >/dev/null || emit error "glab could not sign out of $hostname."
+  [[ -z $cache_root ]] || rm -rf -- "$cache_dir" 2>/dev/null || emit error "Signed out, but the saved boards in $cache_dir could not be deleted."
+  emit logged-out "Signed out of $hostname."
+fi
 # Signed in? glab's own read-only check. Its messages are only matched here,
 # never printed: no login for this host ("... authenticated with glab"), or
 # GitLab refusing the token (401), means signing in again helps. Anything else
@@ -127,6 +138,11 @@ case $cmd in
   projects)
     get "projects?membership=true&simple=true&order_by=last_activity_at&per_page=100" >"$tmp/p" || emit error "Could not load projects."
     jq -c '{state: "ready", message: "", projects: [.[] | {id, path: .path_with_namespace}]}' "$tmp/p" 2>/dev/null ||
+      emit error "GitLab returned an unreadable response."
+    exit 0 ;;
+  whoami)
+    get user >"$tmp/u" || emit error "Could not load your GitLab account."
+    jq -ce 'if (.username | type) == "string" then {state: "ready", message: "", user: .username} else null end' "$tmp/u" 2>/dev/null ||
       emit error "GitLab returned an unreadable response."
     exit 0 ;;
   boards)

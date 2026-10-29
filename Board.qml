@@ -185,12 +185,14 @@ Panel {
   }
 
   function refresh() {
+    if (signingOut) return
     // No project yet: the project list doubles as the sign-in check, and
     // landing in the picker is the next step.
     if (project === "") { boardState = "loading"; runAux("projects", []); return }
     readCache()
     if (busy) { refreshQueued = true; return }
     fetchSeq = moveSeq
+    fetchProcess.session = session
     fetchProcess.command = [helperPath(), "board", "--project", project, "--board", boardId]
     fetchProcess.running = true
   }
@@ -203,6 +205,7 @@ Panel {
   function readCache() {
     if (project === "" || boardState !== "loading" || cacheProcess.running) return
     cacheProcess.key = project + "#" + boardId
+    cacheProcess.session = session
     cacheProcess.command = [helperPath(), "cached", "--project", project, "--board", boardId]
     cacheProcess.running = true
   }
@@ -265,6 +268,7 @@ Panel {
   function runAux(kind, args) {
     if (auxProcess.running) { pendingAux = { kind: kind, args: args }; return }
     auxKind = kind
+    auxProcess.session = session
     auxError = ""
     auxLoading = true
     auxProcess.command = [helperPath(), kind].concat(args)
@@ -277,6 +281,7 @@ Panel {
     var kind = data.projects ? "projects" : data.boards ? "boards" : auxKind
     auxLoading = false
     auxError = error
+    if (kind === "whoami") { account = error ? "" : String(data.user || ""); accountError = data.state === "logged-out" ? "" : error }
     // Not set up: the first-run panel replaces the picker.
     if (data.state === "no-glab" || data.state === "logged-out") { boardState = data.state; message = String(data.message || ""); showView("board"); return }
     if (kind === "projects" && project === "") {
@@ -285,13 +290,14 @@ Panel {
       if (!error && view === "board") pickProjectStep()
     }
     if (kind === "projects") projects = data.projects || []
-    else {
+    else if (kind === "boards") {
       var boards = data.boards || []
       pickerBoards = boards.length > 0 || error ? boards : [{ id: "", name: "Workflow labels (no boards)" }]
     }
   }
 
   function showView(name) {
+    if (name === "settings" && view !== "settings") checkAccount()
     view = name
     Qt.callLater(function() {
       if (name === "picker" && picker.filterField.visible) picker.filterField.forceActiveFocus()
@@ -351,6 +357,33 @@ Panel {
     close()
   }
 
+  // Account (settings only). The username stays in memory, never on disk.
+  property string account: ""
+  property string accountError: ""
+  function checkAccount() { account = ""; accountError = ""; runAux("whoami", []) }
+  // Sign out: board-fetch runs glab auth logout (no prompt; glab forgets the
+  // token for every glab user on this machine) and deletes the saved boards.
+  // Answers to requests made before it are dropped (session), and nothing
+  // refreshes meanwhile; the popup then shows the sign-in panel.
+  property bool signingOut: false
+  property int session: 0
+  function signOut() {
+    if (signingOut) return
+    signingOut = true
+    accountError = ""
+    logoutProcess.command = [helperPath(), "logout"]
+    logoutProcess.running = true
+  }
+  function signedOut(raw) {
+    var data = parse(raw)
+    signingOut = false
+    if (data.state !== "logged-out") { accountError = String(data.message || "Could not sign out."); return }
+    session++
+    columns = []; projects = []; pickerBoards = []; cached = false; account = ""
+    message = String(data.message || ""); boardState = "logged-out"
+    showView("board")
+  }
+
   // First run. glab asks for the token in its own terminal: this plugin never
   // sees it. Same launcher as Omarchy's update widget (SystemUpdate.qml).
   readonly property string installCommand: "sudo pacman -S glab"
@@ -390,13 +423,15 @@ Panel {
 
   Process {
     id: fetchProcess
-    stdout: StdioCollector { waitForEnd: true; onStreamFinished: root.apply(text) }
+    property int session: 0  // root.session it was started in
+    stdout: StdioCollector { waitForEnd: true; onStreamFinished: if (fetchProcess.session === root.session) root.apply(text) }
   }
 
   Process {
     id: cacheProcess
     property string key: ""  // project#boardId it was asked for
-    stdout: StdioCollector { waitForEnd: true; onStreamFinished: root.applyCache(text, cacheProcess.key) }
+    property int session: 0
+    stdout: StdioCollector { waitForEnd: true; onStreamFinished: if (cacheProcess.session === root.session) root.applyCache(text, cacheProcess.key) }
   }
 
   Process {
@@ -414,8 +449,14 @@ Panel {
 
   Process {
     id: auxProcess
+    property int session: 0
     onExited: if (root.pendingAux) { var next = root.pendingAux; root.pendingAux = null; Qt.callLater(function() { root.runAux(next.kind, next.args) }) }
-    stdout: StdioCollector { waitForEnd: true; onStreamFinished: root.applyAux(text) }
+    stdout: StdioCollector { waitForEnd: true; onStreamFinished: if (auxProcess.session === root.session) root.applyAux(text); else root.auxLoading = false }
+  }
+
+  Process {
+    id: logoutProcess
+    stdout: StdioCollector { waitForEnd: true; onStreamFinished: root.signedOut(text) }
   }
 
   BarIconButton {

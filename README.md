@@ -47,8 +47,8 @@ the picker's board step. The header shows a star on the default board and a
 - Click an issue for its details: state, labels, author, ages, assignees,
   milestone, the description, the comments and a box to add one, and an
   "Open in browser" link. A thin bar slides under the title while it loads.
-- The gear opens the settings: which columns start collapsed, and the refresh
-  interval.
+- The gear opens the settings: who is signed in, which columns start
+  collapsed, and the refresh interval.
 - The issue view, the picker and the settings have a ✕ at the top right that
   goes back to the board, like `Escape`; it stays put while the view scrolls.
   In the picker's board step, ‹ goes back to the project list.
@@ -231,6 +231,14 @@ the `api` scope (what `glab auth login` asks for by default). A glab call that
 hasn't answered after 30 seconds is stopped; a move or comment that times out
 may still have reached GitLab, so the board reloads.
 
+**Sign out** in the settings asks first, then runs
+`glab auth logout --hostname gitlab.com`. That is glab's own sign-out, so glab
+in your terminal is signed out too (a `GITLAB_TOKEN` in your environment still
+works; glab doesn't touch it). The token stays valid on GitLab; revoke it in
+your GitLab user settings if you need to. The saved boards in
+`~/.cache/odevvy.gitlab-board` are deleted with it, and the popup shows the
+sign-in panel.
+
 ## board-fetch
 
 `board-fetch` is the helper the widget runs. It prints one JSON object whose
@@ -242,6 +250,8 @@ answers `401`).
 ./board-fetch [board] --project P [--board ID]   # board columns (the default), also saved
 ./board-fetch cached --project P [--board ID]    # that saved copy, no GitLab call
 ./board-fetch projects                          # projects you are a member of
+./board-fetch whoami                            # your username (not saved)
+./board-fetch logout                            # glab auth logout, then delete the saved boards
 ./board-fetch boards --project P                # boards of a project
 ./board-fetch issue --project P --iid N         # one issue with its description
 ./board-fetch notes --project P --iid N         # its comments, oldest first

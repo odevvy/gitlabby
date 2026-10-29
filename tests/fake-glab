@@ -7,7 +7,8 @@
 # FAKE_PUT=fail, from put-error.json with exit 1. The comment write (a POST
 # with a JSON --input body to issues/N/notes) is logged as "POST <endpoint>
 # <body>" and answered from post.json (FAKE_POST=fail: post-error.json, exit 1).
-# Any other write fails. FAKE_AUTH: see auth below. FAKE_HANG (see tests/run.sh, T) makes a call hang.
+# Any other write fails. FAKE_AUTH: see auth status below; auth logout succeeds
+# unless FAKE_LOGOUT=fail. FAKE_HANG (see tests/run.sh, T) makes a call hang.
 printf '%s\n' "$*" >>"$FAKE_LOG"
 if [[ -n ${FAKE_HANG:-} && " $* " == *"$FAKE_HANG"* ]]; then  # never answers
   [[ ${FAKE_HANG_TERM:-} == ignore ]] && trap '' TERM
@@ -15,6 +16,10 @@ if [[ -n ${FAKE_HANG:-} && " $* " == *"$FAKE_HANG"* ]]; then  # never answers
 fi
 echo "glpat-FAKEFAKEFAKEFAKEFAKE Authorization: Bearer FAKE" >&2
 # auth status: FAKE_AUTH picks one of glab's real answers (its stderr, exit 1).
+if [[ $1 == auth && $2 == logout ]]; then
+  [[ ${FAKE_LOGOUT:-ok} == ok ]] || { echo "could not write config" >&2; exit 1; }
+  echo "Successfully logged out of ${*: -1}" >&2; exit 0
+fi
 if [[ $1 == auth ]]; then
   case ${FAKE_AUTH:-ok} in
     ok) exit 0 ;;
@@ -48,6 +53,7 @@ case $endpoint in
   */issues\?state=closed*) f=closed ;;
   */issues/*/notes\?*) f=notes ;;
   */issues/*) f=issue ;;
+  user) f=user ;;
   *) exit 1 ;;
 esac
 [[ -f $FAKE_DIR/$f.json ]] || exit 1
