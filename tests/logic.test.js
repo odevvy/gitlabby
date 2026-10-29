@@ -201,3 +201,9 @@ test("the README's Keyboard section lists exactly the keys the popup shows", () 
   const rows = section.split("\n").filter(l => /^\| (?!Key |---)/.test(l)).map(l => l.replace(/`/g, ""))
   assert.deepEqual(rows, L.keys.map(([k, a]) => "| " + k + " | " + a + " |"))
 })
+
+test("the key list names the setup panel's keys: Enter for the main button, r for Try again", () => {
+  const action = key => (L.keys.find(([k]) => k === key) || [])[1] || ""
+  assert.match(action("Enter or Space"), /setup panel's main button/)
+  assert.match(action("r"), /Try again on the setup panel/)
+})
