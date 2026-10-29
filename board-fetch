@@ -12,13 +12,21 @@
 #   board-fetch issue --project P --iid N           one issue with its description
 #   board-fetch notes --project P --iid N           its comments (newest 100), oldest first
 #   board-fetch whoami                              your GitLab username (never saved)
-# The two writes, each in its own function and branch:
+#   board-fetch labels --project P                  the project's labels a person may edit:
+#                                                   every label but the status ones (below)
+# The three writes, each in its own function and branch:
 #   board-fetch move --project P --board ID --iid N --from L --to L   (PUT, write_issue())
 #     L is open, closed, or the numeric id of a label list on that board. Label
 #     names come from GitLab's own copy of the board, never from the caller.
 #     If the issue is no longer in --from on GitLab, nothing is written: state "stale".
 #   board-fetch comment --project P --iid N <body   (POST, write_note())
 #     The comment is read from stdin and never appears on a command line.
+#   board-fetch relabel --project P --iid N (--add L | --remove L)   (PUT, write_labels())
+#     One label at a time, through add_labels/remove_labels, so no other label is
+#     touched. Status labels are refused: every list label of every board in the
+#     project, plus the workflow labels (research, todo, approved, in progress,
+#     review), in any case. They change only by dragging a card. --add takes only
+#     a label the project already has, so a typo never creates one.
 #   board-fetch logout   glab auth logout for the host (glab's own local change: it
 #     forgets the token, GitLab is not called), then deletes the saved boards.
 #
@@ -28,8 +36,8 @@
 # glab has no login for the host (or GitLab refuses it).
 set -uo pipefail
 
-cmd=board project="" board_id="" iid="" from="" to="" hostname="gitlab.com"
-case "${1:-}" in board|cached|projects|boards|issue|notes|move|comment|whoami|logout) cmd=$1; shift ;; esac
+cmd=board project="" board_id="" iid="" from="" to="" add="" remove="" hostname="gitlab.com"
+case "${1:-}" in board|cached|projects|boards|issue|notes|move|comment|whoami|logout|labels|relabel) cmd=$1; shift ;; esac
 while (($#)); do
   case "$1" in
     --project) project=${2:-} ;;
@@ -37,6 +45,8 @@ while (($#)); do
     --iid) iid=${2:-} ;;
     --from) from=${2:-} ;;
     --to) to=${2:-} ;;
+    --add) add=${2:-} ;;
+    --remove) remove=${2:-} ;;
     --hostname) hostname=${2:-} ;;
   esac
   shift $(($# >= 2 ? 2 : 1))
@@ -55,11 +65,16 @@ if [[ ! $cmd =~ ^(projects|whoami|logout)$ ]]; then
     emit error "Invalid project: $project"
 fi
 [[ $board_id =~ ^[0-9]*$ ]] || emit error "Invalid board id."
-[[ ! $cmd =~ ^(issue|notes|move|comment)$ || $iid =~ ^[1-9][0-9]*$ ]] || emit error "Invalid issue number."
+[[ ! $cmd =~ ^(issue|notes|move|comment|relabel)$ || $iid =~ ^[1-9][0-9]*$ ]] || emit error "Invalid issue number."
 if [[ $cmd == move ]]; then
   [[ $board_id =~ ^[1-9][0-9]*$ ]] || emit error "Moving needs a board id."
   [[ $from =~ ^(open|closed|[1-9][0-9]*)$ && $to =~ ^(open|closed|[1-9][0-9]*)$ ]] || emit error "Invalid list."
   [[ $from != "$to" ]] || emit error "Already in that list."
+fi
+if [[ $cmd == relabel ]]; then
+  [[ -n $add$remove && (-z $add || -z $remove) ]] || emit error "Give one label: --add or --remove."
+  # No comma (GitLab would read two labels), no control characters, 1-255 chars.
+  jq -en --arg l "$add$remove" '$l | test("^[^,\\p{Cc}]{1,255}$")' >/dev/null || emit error "Unsupported label name."
 fi
 if [[ $cmd == comment ]]; then
   # Read before any glab call; jq builds the JSON body, so the text stays off argv.
@@ -130,6 +145,11 @@ def names: [(.labels // [])[] | if type == "object" then .name else . end | stri
 # file:, javascript: or --flag value ever reaches the browser.
 def https: if type == "string" and test("^https://") then . else "" end;
 # GitLab's error message for a failed write: one line, anything token-shaped redacted.
+def hex: if type == "string" and test("^#[0-9A-Fa-f]{6}$") then . else null end;
+# Status labels: the list labels of every board in $boards (pages of GET boards)
+# plus the workflow labels of the no-board fallback, lowercased.
+def status($boards): [($boards | add // [])[] | (.lists // [])[] | .label.name // empty
+  | strings] + ["review", "in progress", "approved", "todo", "research"] | map(ascii_downcase) | unique;
 def reason: (.message // .error // empty) | (if type == "string" then . else tojson end)
   | gsub("\\p{Cc}"; "") | gsub("(gl[a-z]{2,6}-|[Bb]earer +)[A-Za-z0-9_.=-]+"; "[redacted]") | .[0:120];
 JQ
@@ -144,6 +164,43 @@ case $cmd in
     get user >"$tmp/u" || emit error "Could not load your GitLab account."
     jq -ce 'if (.username | type) == "string" then {state: "ready", message: "", user: .username} else null end' "$tmp/u" 2>/dev/null ||
       emit error "GitLab returned an unreadable response."
+    exit 0 ;;
+  labels)
+    get --paginate "$base/boards?per_page=100" >"$tmp/b" || emit error "Could not load boards for $project."
+    get --paginate "$base/labels?per_page=100" >"$tmp/l" || emit error "Could not load labels for $project."
+    jq -cn --slurpfile b "$tmp/b" --slurpfile l "$tmp/l" "$DEFS"' status($b) as $status
+      | {state: "ready", message: "", status: $status,
+         labels: [($l | add // [])[] | select((.name | type) == "string" and (.name | ascii_downcase | IN($status[]) | not))
+           | {name, color: (.color | hex), textColor: (.text_color | hex)}] | unique_by(.name) | sort_by(.name | ascii_downcase)}' 2>/dev/null ||
+      emit error "GitLab returned an unreadable response."
+    exit 0 ;;
+  relabel)
+    label=$add$remove
+    get --paginate "$base/boards?per_page=100" >"$tmp/b" || emit error "Could not load boards for $project."
+    kind=$(jq -rn --slurpfile b "$tmp/b" --arg l "$label" "$DEFS"' if $l | ascii_downcase | IN(status($b)[]) then "status" else "free" end' 2>/dev/null)
+    [[ $kind == free ]] || emit error "$([[ $kind == status ]] && echo "\"$label\" is a board list label. Drag the card to change it." ||
+      echo "GitLab returned an unreadable response.")"
+    if [[ -n $add ]]; then
+      get --paginate "$base/labels?per_page=100" >"$tmp/l" || emit error "Could not load labels for $project."
+      known=$(jq -rn --slurpfile all "$tmp/l" --arg l "$label" '[($all | add // [])[] | .name] | index($l) != null' 2>/dev/null)
+      [[ $known == true ]] || emit error "$([[ $known == false ]] && echo "This project has no label \"$label\"." ||
+        echo "GitLab returned an unreadable response.")"
+    fi
+    # PUT like write_issue(): the JSON body on stdin, never on the command line.
+    write_labels() {
+      bounded api --hostname "$hostname" --method PUT --header "Content-Type: application/json" --input - "$base/issues/$iid"
+    }
+    jq -cn --arg a "$add" --arg r "$remove" 'if $a != "" then {add_labels: $a} else {remove_labels: $r} end' | write_labels >"$tmp/r"
+    case $? in
+      0) ;;
+      124) emit error "GitLab did not answer within 30 seconds. The label change may have gone through." ;;
+      *) reason=$(jq -r "$DEFS reason" "$tmp/r" 2>/dev/null)
+         emit error "Label change failed${reason:+: $reason}" ;;
+    esac
+    jq -c --argjson iid "$iid" --arg a "$add" --arg r "$remove" "$DEFS"' select(type == "object" and .iid == $iid)
+      | {state: "ready", message: (if $a != "" then "Added \($a)." else "Removed \($r)." end), labels: names,
+         updatedAt: (now | todateiso8601)}' "$tmp/r" 2>/dev/null |
+      grep . || emit error "GitLab returned an unexpected response to the label change."
     exit 0 ;;
   boards)
     get --paginate "$base/boards?per_page=100" >"$tmp/b" || emit error "Could not load boards for $project."
@@ -228,7 +285,7 @@ JQ
     [[ -z $err ]] || emit error "$err"
     stale=$(jq -r '.stale // empty' "$tmp/plan")
     [[ -z $stale ]] || emit stale "$stale"
-    # The only non-GET request in this script. The JSON body goes in on stdin
+    # A PUT, like write_labels() above. The JSON body goes in on stdin
     # (--input), so glab never expands @files or :placeholders in it.
     write_issue() {
       bounded api --hostname "$hostname" --method PUT --header "Content-Type: application/json" --input - "$base/issues/$iid"
@@ -277,7 +334,6 @@ fi
 # Issues come with_labels_details, so .labels are objects: their colors go into
 # one labelColors map and rows keep plain label names.
 read -r -d '' MAP <<'JQ'
-def hex: if type == "string" and test("^#[0-9A-Fa-f]{6}$") then . else null end;
 def row: {iid, title, labels: names, url: (.web_url | https), createdAt: .created_at, notes: (.user_notes_count // 0),
   assignees: [(.assignees // [])[] | {username, name: (.name // .username), avatar: (.avatar_url | https)}]};
 def has_any($names): [.labels[] | select(IN($names[]))] | length > 0;
