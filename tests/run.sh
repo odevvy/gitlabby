@@ -328,7 +328,7 @@ fx closed <<<'[]'
 fx projects <<<'[{"id":1,"path_with_namespace":"a/b"}]'
 fx issue <<<'{"iid":1,"title":"a","state":"opened","labels":[],"web_url":"u"}'
 fx notes <<<'[{"id":1,"body":"b","system":false,"author":{"username":"x"}}]'
-reads=$("$fetch" --project group/app; "$fetch" board --project group/app --board 7; "$fetch" projects; "$fetch" boards --project a/b; "$fetch" issue --project a/b --iid 1; "$fetch" notes --project a/b --iid 1)
+reads=$("$fetch" --project group/app; "$fetch" board --project group/app --board 7; "$fetch" projects; "$fetch" boards --project a/b; "$fetch" issue --project a/b --iid 1; "$fetch" notes --project a/b --iid 1; "$fetch" whoami)
 check "R refresh has listId" '.columns[1] | .name == "todo" and .listId == 11' "$("$fetch" --project group/app)"
 check "R reads ran" '.' "$(grep -c '^api ' "$FAKE_LOG" | grep -qxE '[0-9]{2,}' && echo true || echo false)"
 check "R reads are GET only" '.' "$(grep -q 'NON-GET' "$FAKE_LOG" && echo false || echo true)"
@@ -405,6 +405,37 @@ check "V no glab: no-glab state" '.state == "no-glab" and (.message | test("not 
 check "V no glab, board too" '.state == "no-glab"' "$(noglab --project a/b)"
 check "V no glab: cached still reads" '.state == "none"' "$(noglab cached --project x/never)"
 
+# --- A: account: who is signed in, and signing out ------------------------------
+reset
+fx user <<<'{"id":5,"username":"dev1","name":"Dev One","email":"dev1@example.com","private_token":"glpat-SECRET"}'
+out=$(: >"$FAKE_LOG"; "$fetch" whoami)
+check "A whoami: the username only" '. == {state: "ready", message: "", user: "dev1"}' "$out"
+check "A whoami: one GET of /user after the auth check" '.' "$([[ $(sed -n 2p "$FAKE_LOG") == 'api --hostname gitlab.com --method GET user' && $(grep -c . "$FAKE_LOG") == 2 ]] && echo true || echo false)"
+check "A whoami: signed out" '.state == "logged-out"' "$(FAKE_AUTH=no "$fetch" whoami)"
+fx user <<<'{"message":"500 Internal Server Error"}'
+check "A whoami: no username is an error" '.state == "error"' "$("$fetch" whoami)"
+fx user <<<'{"username":"dev1"}'
+rm -rf "$XDG_CACHE_HOME"; "$fetch" whoami >/dev/null
+check "A whoami: nothing saved" '.' "$([[ -e $XDG_CACHE_HOME ]] && echo false || echo true)"
+fx boards <<<'[{"id":7,"name":"Dev","lists":[]}]'; fx open <<<'[]'; fx closed <<<'[]'
+"$fetch" --project group/app --board 7 >/dev/null
+adir=$XDG_CACHE_HOME/odevvy.gitlab-board
+check "A (a saved board exists)" '.' "$([[ -n $(find "$adir" -name '*.json') ]] && echo true || echo false)"
+out=$(: >"$FAKE_LOG"; FAKE_LOGOUT=fail "$fetch" logout)
+check "A logout failure: error, saved boards kept" '.state == "error"' "$out"
+check "A logout failure: cache still there" '.' "$([[ -d $adir ]] && echo true || echo false)"
+out=$(: >"$FAKE_LOG"; FAKE_AUTH=offline "$fetch" logout)
+check "A logout: logged-out, works offline" '.state == "logged-out" and (.message | test("Signed out of gitlab.com"))' "$out"
+check "A logout: exactly glab auth logout --hostname, no API call" '.' "$([[ $(cat "$FAKE_LOG") == 'auth logout --hostname gitlab.com' ]] && echo true || echo false)"
+check "A logout: saved boards deleted" '.' "$([[ -e $adir ]] && echo false || echo true)"
+: >"$FAKE_LOG"; "$fetch" logout --hostname gitlab.example.com >/dev/null
+check "A logout: the given host" '.' "$(grep -qx 'auth logout --hostname gitlab.example.com' "$FAKE_LOG" && echo true || echo false)"
+check "A logout: no glab" '.state == "no-glab"' "$(PATH="$work/noglab" "$BASH" "$fetch" logout)"
+check "A logout: no cache dir known, still signs out" '.state == "logged-out"' "$(env -u XDG_CACHE_HOME HOME= "$fetch" logout)"
+mkdir -p "$adir"; touch "$adir/x.json"
+check "A logout: hung glab is an error, cache kept" '.state == "error"' "$(FAKE_HANG='auth logout' "$fetch" logout)"
+check "A (cache kept after the hang)" '.' "$([[ -e $adir/x.json ]] && echo true || echo false)"
+
 # --- K: saved board (cache) --------------------------------------------------
 # Each board answer is saved per project and board; `cached` reads it back
 # with no glab call. Unreadable or foreign copies read as state "none".
@@ -465,7 +496,8 @@ fx put <<<'{"iid":3,"state":"opened","labels":["approved"]}'
 at opened '["todo"]'
 all=$(printf '%s\n' "$reads"; "$fetch" --project group/app; "$fetch" projects; "$fetch" issue --project a/b --iid 45; FAKE_AUTH=no "$fetch" --project a/b;
   FAKE_AUTH=401 "$fetch" --project a/b; FAKE_AUTH=offline "$fetch" --project a/b; mv_ --from 11 --to 12; FAKE_PUT=fail mv_ --from 11 --to 12; mv_ --iid x
-  "$fetch" notes --project a/b --iid 1; fx post <<<'{"id":1}'; echo hi | say; echo hi | FAKE_POST=fail say)
+  "$fetch" notes --project a/b --iid 1; fx post <<<'{"id":1}'; echo hi | say; echo hi | FAKE_POST=fail say;
+  fx user <<<'{"username":"dev1","private_token":"glpat-SECRET"}'; "$fetch" whoami; "$fetch" logout; FAKE_LOGOUT=fail "$fetch" logout)
 check "no token leak" '.' "$(grep -qiE 'glpat|bearer' <<<"$all" && echo false || echo true)"
 
 echo "passed $pass, failed $fail"
