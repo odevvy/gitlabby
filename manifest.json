@@ -28,7 +28,8 @@
         "research",
         "open"
       ],
-      "boardStates": {}
+      "boardStates": {},
+      "bots": {}
     },
     "schema": [
       {
