@@ -385,8 +385,9 @@ $b[0] as $board | ($o | add // []) as $rawOpen | ($c | add // []) as $rawClosed
 | ($rawOpen | map(select(.state == "opened") | .labels = names)) as $open | ($rawClosed | map(.labels = names)) as $closed
 # A full Closed column (the cap) links to the project's closed issues on GitLab,
 # with the board's label, milestone, assignee and weight filters when it has them.
+# GitLab.com now gives issues /-/work_items/<iid> web URLs; older hosts /-/issues/<iid>.
 | (if ($rawClosed | length) >= $cap
-   then [$rawClosed[0].web_url | https | capture("^(?<p>https://[^?#]+)/-/issues/[0-9]+$") | .p] | first else null end) as $proj
+   then [$rawClosed[0].web_url | https | capture("^(?<p>https://[^?#]+)/-/(?:issues|work_items)/[0-9]+$") | .p] | first else null end) as $proj
 | (if $board == null then "" else
      [(($board.labels // [])[] | .name | strings | "&label_name%5B%5D=" + @uri),
       ($board.milestone.title | strings | "&milestone_title=" + @uri),
