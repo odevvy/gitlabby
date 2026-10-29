@@ -46,6 +46,8 @@ Panel {
   // Saved preferences.
   property int refreshIntervalSec: Math.max(30, parseInt(String(setting("refreshIntervalSec", 60)), 10) || 60)
   property var defaultCollapsed: Logic.lowerList(setting("defaultCollapsed", ["closed", "research", "open"]))
+  // Busy markers (settings.bots, keyed by project; none by default), from the board on screen.
+  readonly property var botStates: Logic.botStates(Logic.botsConfig(setting("bots", null), project), columns)
   property var boardStates: setting("boardStates", ({})) || ({})
 
   // Board data from the last fetch.
@@ -485,7 +487,7 @@ Panel {
       id: keyCatcher
       anchors.fill: parent
       blocked: issueView.typing || picker.typing  // text fields get every key (Omarchy PanelKeyCatcher.qml:26-29)
-      implicitHeight: header.implicitHeight + root.gap + (root.view === "board" ? (root.setup !== "" ? Math.max(setupView.implicitHeight, skeleton.implicitHeight) : root.boardState === "loading" ? skeleton.implicitHeight : boardView.implicitHeight)
+      implicitHeight: header.implicitHeight + root.gap + (botsRow.visible ? botsRow.height + root.gap : 0) + (root.view === "board" ? (root.setup !== "" ? Math.max(setupView.implicitHeight, skeleton.implicitHeight) : root.boardState === "loading" ? skeleton.implicitHeight : boardView.implicitHeight)
         : root.view === "issue" ? issueView.implicitHeight : root.view === "picker" ? picker.implicitHeight
         : root.view === "keys" ? keysView.implicitHeight : settingsView.implicitHeight)
       onCloseRequested: root.view !== "board" ? root.back() : root.close()
@@ -597,8 +599,17 @@ Panel {
         }
       }
 
+      BotsRow {
+        id: botsRow
+        host: root
+        states: root.botStates
+        visible: root.view === "board" && root.setup === "" && root.boardState === "ready" && root.botStates.length > 0
+        anchors { top: header.bottom; topMargin: visible ? root.gap : 0; left: parent.left; right: parent.right }
+        height: visible ? implicitHeight : 0
+      }
+
       Item {
-        anchors { top: header.bottom; topMargin: root.gap; left: parent.left; right: parent.right; bottom: parent.bottom }
+        anchors { top: botsRow.bottom; topMargin: root.gap; left: parent.left; right: parent.right; bottom: parent.bottom }
         SetupView { id: setupView; host: root; anchors.fill: parent; visible: root.view === "board" && root.setup !== "" }
         Skeleton { id: skeleton; host: root; anchors.fill: parent; visible: root.view === "board" && root.setup === "" && root.boardState === "loading" }
         BoardView { id: boardView; host: root; anchors.fill: parent; visible: root.view === "board" && root.setup === "" && root.boardState === "ready" }
