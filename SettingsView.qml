@@ -2,15 +2,17 @@ import QtQuick
 import QtQuick.Controls
 import qs.Commons
 
-// In-popup settings: which columns new boards start with folded, and how
-// often to refresh. Changes are saved to shell.json right away. The gear, ✕
-// or Esc returns to the board.
+// In-popup settings: the GitLab account (who is signed in, sign out), which
+// columns new boards start with folded, and how often to refresh. Changes are
+// saved to shell.json right away. The gear, ✕ or Esc returns to the board.
 Item {
   id: view
   required property var host
   readonly property color fg: host.foreground
   readonly property color pane: Qt.rgba(fg.r, fg.g, fg.b, 0.035)
   readonly property color line: Qt.rgba(fg.r, fg.g, fg.b, 0.08)
+  property bool confirming: false  // Sign out asks first, inline
+  onVisibleChanged: confirming = false
 
   implicitHeight: top.implicitHeight + Style.space(6) + content.implicitHeight
 
@@ -40,6 +42,50 @@ Item {
       spacing: Style.space(6)
 
       Item { width: 1; height: Style.space(4) }
+      Heading { text: "GitLab account" }
+      Rectangle {
+        width: parent.width
+        implicitHeight: account.implicitHeight + Style.space(20)
+        radius: Style.space(8)
+        color: view.pane
+        border { width: 1; color: view.line }
+
+        Column {
+          id: account
+          x: Style.space(12); y: Style.space(10); width: parent.width - Style.space(24)
+          spacing: Style.space(8)
+          BoardText {
+            id: accountText
+            width: parent.width; wrapMode: Text.Wrap
+            color: view.host.accountError !== "" && !view.confirming ? view.host.urgent : view.host.foreground
+            text: view.host.signingOut ? "Signing out…"
+              : view.confirming ? "Sign out of glab on this computer? glab in your terminal is signed out too, and the saved boards are deleted."
+              : view.host.accountError !== "" ? view.host.accountError
+              : view.host.account !== "" ? "Signed in as " + view.host.account + " on gitlab.com" : "Checking your GitLab account…"
+          }
+          Row {
+            spacing: Style.space(8)
+            visible: !view.host.signingOut
+            Pill {
+              visible: !view.confirming && (view.host.account !== "" || view.host.accountError !== "")
+              label: "Sign out"; pixelSize: Style.font.bodySmall; clickable: true
+              onClicked: view.confirming = true
+            }
+            Pill {
+              visible: view.confirming
+              label: "Yes, sign out"; textColor: view.host.urgent; pixelSize: Style.font.bodySmall; clickable: true
+              onClicked: { view.confirming = false; view.host.signOut() }
+            }
+            Pill {
+              visible: view.confirming
+              label: "Cancel"; pixelSize: Style.font.bodySmall; clickable: true
+              onClicked: view.confirming = false
+            }
+          }
+        }
+      }
+
+      Item { width: 1; height: Style.space(6) }
       Heading { text: "Start collapsed" }
       BoardText {
         width: parent.width; wrapMode: Text.Wrap; color: view.host.dim
