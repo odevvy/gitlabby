@@ -208,7 +208,8 @@ Panel {
     return canMove && !!column && (column.kind === "open" || column.kind === "closed" || (column.kind === "label" && !!column.listId))
   }
   function moveIssue(row, from, to) {
-    if (move || !row || !canDrop(from) || !canDrop(to) || Logic.columnKey(from) === Logic.columnKey(to)) return false
+    // moveProcess can outlive move: the watchdog gives up on it, board-fetch's own timeouts end it.
+    if (move || moveProcess.running || !row || !canDrop(from) || !canDrop(to) || Logic.columnKey(from) === Logic.columnKey(to)) return false
     move = { iid: row.iid, snapshot: columns, key: stateKey }
     moveError = ""
     moveSeq++
@@ -309,8 +310,9 @@ Panel {
     persist({ project: pickerProject, id: String(b.id || ""), name: b.id ? String(b.name) : "" })
   }
 
+  // https only, so no file:, javascript: or --flag value reaches the browser.
   function openUrl(url) {
-    if (!url) return
+    if (!/^https:\/\//.test(String(url || ""))) return
     Quickshell.execDetached(["omarchy-launch-browser", String(url)])
     close()
   }
@@ -332,9 +334,10 @@ Panel {
 
   onOpenedChanged: if (opened) { view = "board"; cursor = null; refresh() } else boardView.endDrag()
 
+  // Only while the popup is open; opening it refreshes (onOpenedChanged).
   Timer {
     interval: root.refreshIntervalSec * 1000
-    repeat: true; running: true; triggeredOnStart: true
+    repeat: true; running: root.opened
     onTriggered: root.refresh()
   }
 
