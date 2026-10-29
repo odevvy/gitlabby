@@ -639,6 +639,9 @@ check "CL 20 closed: a link to all closed issues" '(.columns[] | select(.kind ==
 out=$("$fetch" --project group/app --board 8)
 check "CL scoped board: the link keeps its label, milestone, assignee and weight filters" '(.columns[] | select(.kind == "closed") | .seeAll)
   == "https://gitlab.com/group/app/-/issues?state=closed&label_name%5B%5D=team-a&label_name%5B%5D=a%20b&milestone_title=v1.0&assignee_username=alice&weight=3"' "$out"
+closed_n 20 https://gitlab.com/group/app/-/work_items/ | fx closed
+out=$("$fetch" --project group/app)
+check "CL work-item issue URLs (GitLab.com today) give the same link" '(.columns[] | select(.kind == "closed") | .seeAll) == "https://gitlab.com/group/app/-/issues?state=closed"' "$out"
 closed_n 19 https://gitlab.com/group/app/-/issues/ | fx closed
 out=$("$fetch" --project group/app)
 check "CL 19 closed: all of them, no link" '.columns[] | select(.kind == "closed") | (.issues | length) == 19 and (has("seeAll") | not)' "$out"
