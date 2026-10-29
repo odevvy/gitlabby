@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "odevvy.gitlab-board",
   "name": "GitLab Board",
-  "version": "0.1.16",
+  "version": "0.1.17",
   "author": "o_devvy",
   "license": "MIT",
   "description": "A GitLab issue board in a bar popup: your project's real boards in their label colors, assignees, issue details with comments, a board picker, and drag-to-move.",
@@ -19,7 +19,7 @@
     "allowMultiple": false,
     "defaultSection": "right",
     "defaults": {
-      "defaultProject": "firelink21/phrase41",
+      "defaultProject": "",
       "defaultBoardId": "",
       "defaultBoardName": "",
       "refreshIntervalSec": 60,
@@ -35,8 +35,8 @@
         "key": "defaultProject",
         "type": "string",
         "label": "Default GitLab project",
-        "description": "Project opened on shell start, e.g. group/project. Star a board in the picker to change the default board.",
-        "defaultValue": "firelink21/phrase41"
+        "description": "Project opened on shell start, e.g. group/project. Empty: the first board you open in the picker. Star a board to change it.",
+        "defaultValue": ""
       },
       {
         "key": "refreshIntervalSec",

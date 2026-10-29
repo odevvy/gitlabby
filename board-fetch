@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Data helper for the Omarchy GitLab Board widget. Prints one JSON object.
 # Auth stays in glab's own store; this script never reads, prints, or stores a
-# token, and glab's stderr is discarded.
+# token, and never prints glab's stderr.
 #
 # Reads (GET only, through get()):
-#   board-fetch [board] [--project P] [--board ID]  columns of a board (default),
+#   board-fetch [board] --project P [--board ID]    columns of a board (default),
 #                                                   also saved to the cache below
-#   board-fetch cached [--project P] [--board ID]   that saved copy; no glab call
+#   board-fetch cached --project P [--board ID]     that saved copy; no glab call
 #   board-fetch projects                            projects you are a member of
 #   board-fetch boards --project P                  boards of a project
 #   board-fetch issue --project P --iid N           one issue with its description
@@ -19,10 +19,13 @@
 #   board-fetch comment --project P --iid N <body   (POST, write_note())
 #     The comment is read from stdin and never appears on a command line.
 #
-# P is a project path (group/name) or numeric id. --hostname defaults to gitlab.com.
+# P is a project path (group/name) or numeric id; every command but projects
+# needs one. --hostname defaults to gitlab.com.
+# Before any GitLab call: state "no-glab" if glab is missing, "logged-out" if
+# glab has no login for the host (or GitLab refuses it).
 set -uo pipefail
 
-cmd=board project="firelink21/phrase41" board_id="" iid="" from="" to="" hostname="gitlab.com"
+cmd=board project="" board_id="" iid="" from="" to="" hostname="gitlab.com"
 case "${1:-}" in board|cached|projects|boards|issue|notes|move|comment) cmd=$1; shift ;; esac
 while (($#)); do
   case "$1" in
@@ -43,8 +46,11 @@ emit() { # state message
 }
 command -v jq >/dev/null 2>&1 || { printf '%s\n' '{"state":"error","message":"jq is required."}'; exit 0; }
 
-[[ $project =~ ^[0-9]+$ || ($project =~ ^[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)+$ && $project != *..*) ]] ||
-  emit error "Invalid project: $project"
+if [[ $cmd != projects ]]; then
+  [[ -n $project ]] || emit error "No project given: pass --project group/name."
+  [[ $project =~ ^[0-9]+$ || ($project =~ ^[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)+$ && $project != *..*) ]] ||
+    emit error "Invalid project: $project"
+fi
 [[ $board_id =~ ^[0-9]*$ ]] || emit error "Invalid board id."
 [[ ! $cmd =~ ^(issue|notes|move|comment)$ || $iid =~ ^[1-9][0-9]*$ ]] || emit error "Invalid issue number."
 if [[ $cmd == move ]]; then
@@ -71,21 +77,31 @@ if [[ $cmd == cached ]]; then
     | .cached = true' "$cache_file" 2>/dev/null || printf '%s\n' '{"state":"none"}'
   exit 0
 fi
-command -v glab >/dev/null 2>&1 || emit error "GitLab CLI (glab) is not installed or not on PATH."
+command -v glab >/dev/null 2>&1 || emit no-glab "The GitLab CLI (glab) is not installed."
+tmp=$(mktemp -d) || emit error "Could not create a temporary directory."
+trap 'rm -rf "$tmp"' EXIT
 # Every glab call ends within 30 s (exit 124), so a hung one can't hold the widget.
 slow="GitLab did not answer within 30 seconds."
 # 137: glab ignored the TERM and was killed 5 s later; that is a timeout too.
+# glab's stderr is discarded, except where errors= names a file for it.
 bounded() {
-  { timeout -k 5 30 glab "$@"; } 2>/dev/null  # braces: bash's "Killed" notice goes there too
+  { timeout -k 5 30 glab "$@"; } 2>"${errors:-/dev/null}"  # braces: bash's "Killed" notice goes there too
   local rc=$?
   ((rc == 137)) && rc=124
   return $rc
 }
-bounded auth status --hostname "$hostname" >/dev/null
-case $? in 0) ;; 124) emit error "$slow" ;; *) emit logged-out "Not signed in. Run: glab auth login --hostname $hostname" ;; esac
-
-tmp=$(mktemp -d) || emit error "Could not create a temporary directory."
-trap 'rm -rf "$tmp"' EXIT
+# Signed in? glab's own read-only check. Its messages are only matched here,
+# never printed: no login for this host ("... authenticated with glab"), or
+# GitLab refusing the token (401), means signing in again helps. Anything else
+# (offline, GitLab down) is an error, so a network blip never asks for a login.
+errors=$tmp/auth bounded auth status --hostname "$hostname" >/dev/null
+case $? in
+  0) ;;
+  124) emit error "$slow" ;;
+  *) grep -qE 'authenticated with glab|(^|[^0-9])401([^0-9]|$)' "$tmp/auth" &&
+       emit logged-out "Not signed in to $hostname. Run: glab auth login"
+     emit error "Could not check your GitLab sign-in. Check your connection and try again." ;;
+esac
 # Every read goes through get(), which is GET by construction.
 get() {
   bounded api --hostname "$hostname" --method GET "$@"

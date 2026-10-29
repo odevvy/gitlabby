@@ -7,14 +7,24 @@
 # FAKE_PUT=fail, from put-error.json with exit 1. The comment write (a POST
 # with a JSON --input body to issues/N/notes) is logged as "POST <endpoint>
 # <body>" and answered from post.json (FAKE_POST=fail: post-error.json, exit 1).
-# Any other write fails. FAKE_HANG (see tests/run.sh, T) makes a call hang.
+# Any other write fails. FAKE_AUTH: see auth below. FAKE_HANG (see tests/run.sh, T) makes a call hang.
 printf '%s\n' "$*" >>"$FAKE_LOG"
 if [[ -n ${FAKE_HANG:-} && " $* " == *"$FAKE_HANG"* ]]; then  # never answers
   [[ ${FAKE_HANG_TERM:-} == ignore ]] && trap '' TERM
   exec sleep 5
 fi
 echo "glpat-FAKEFAKEFAKEFAKEFAKE Authorization: Bearer FAKE" >&2
-[[ $1 == auth ]] && { [[ ${FAKE_AUTH:-ok} == ok ]]; exit; }
+# auth status: FAKE_AUTH picks one of glab's real answers (its stderr, exit 1).
+if [[ $1 == auth ]]; then
+  case ${FAKE_AUTH:-ok} in
+    ok) exit 0 ;;
+    no) echo "x gitlab.com has not been authenticated with glab; run \`glab auth login --hostname gitlab.com\` to authenticate" >&2 ;;
+    none) echo "no GitLab instances have been authenticated with glab; run \`glab auth login\` to authenticate" >&2 ;;
+    401) echo "x gitlab.com: API call failed: GET https://gitlab.com/api/v4/user: 401 {message: 401 Unauthorized}" >&2 ;;
+    offline) echo 'x gitlab.com: API call failed: Get "https://gitlab.com/api/v4/user": dial tcp: lookup gitlab.com: no such host' >&2 ;;
+  esac
+  exit 1
+fi
 endpoint=${*: -1}
 if [[ " $* " != *" --method GET "* ]]; then
   echo "NON-GET $*" >>"$FAKE_LOG"

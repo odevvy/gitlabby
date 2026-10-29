@@ -115,11 +115,11 @@ check "H label details requested" '.' "$(grep -c 'with_labels_details=true' "$FA
 # --- G: validation, auth, failures ------------------------------------------
 check "G bad project" '.state == "error"' "$("$fetch" --project 'a/../b')"
 check "G bad project 2" '.state == "error"' "$("$fetch" --project 'a b;rm')"
-check "G bad board" '.state == "error"' "$("$fetch" --board 1x)"
-check "G bad iid" '.state == "error"' "$("$fetch" issue --iid '1;x')"
-check "G logged out" '.state == "logged-out"' "$(FAKE_AUTH=no "$fetch")"
+check "G bad board" '.state == "error"' "$("$fetch" --project a/b --board 1x)"
+check "G bad iid" '.state == "error"' "$("$fetch" issue --project a/b --iid '1;x')"
+check "G logged out" '.state == "logged-out"' "$(FAKE_AUTH=no "$fetch" --project a/b)"
 rm -f "$FAKE_DIR/open.json"; fx boards <<<'[]'
-check "G api failure" '.state == "error"' "$("$fetch")"
+check "G api failure" '.state == "error"' "$("$fetch" --project a/b)"
 
 # --- M: move (the one write) -------------------------------------------------
 # Board 7: Open, label lists todo (11) / approved (12), an assignee list (13),
@@ -328,14 +328,15 @@ fx closed <<<'[]'
 fx projects <<<'[{"id":1,"path_with_namespace":"a/b"}]'
 fx issue <<<'{"iid":1,"title":"a","state":"opened","labels":[],"web_url":"u"}'
 fx notes <<<'[{"id":1,"body":"b","system":false,"author":{"username":"x"}}]'
-reads=$("$fetch"; "$fetch" board --project group/app --board 7; "$fetch" projects; "$fetch" boards --project a/b; "$fetch" issue --project a/b --iid 1; "$fetch" notes --project a/b --iid 1)
+reads=$("$fetch" --project group/app; "$fetch" board --project group/app --board 7; "$fetch" projects; "$fetch" boards --project a/b; "$fetch" issue --project a/b --iid 1; "$fetch" notes --project a/b --iid 1)
 check "R refresh has listId" '.columns[1] | .name == "todo" and .listId == 11' "$("$fetch" --project group/app)"
 check "R reads ran" '.' "$(grep -c '^api ' "$FAKE_LOG" | grep -qxE '[0-9]{2,}' && echo true || echo false)"
 check "R reads are GET only" '.' "$(grep -q 'NON-GET' "$FAKE_LOG" && echo false || echo true)"
 check "R every api call says --method GET" '.' "$(grep '^api ' "$FAKE_LOG" | grep -qv -- '--method GET ' && echo false || echo true)"
 src=$(grep -v '^ *#' "$fetch")
 check "R non-GETs in the script: one PUT, one POST" '.' "$(grep -oE -- '--method [A-Z]+' <<<"$src" | sort | tr '\n' ' ' | grep -qx -- '--method GET --method POST --method PUT ' && echo true || echo false)"
-check "R glab runs only in bounded(), under timeout" '.' "$(grep -E '(^|[^-])\<glab "' <<<"$src" | grep -qv '^  { timeout -k 5 30 glab "\$@"; } 2>/dev/null' && echo false ||
+# shellcheck disable=SC2016  # the pattern is literal board-fetch source
+check "R glab runs only in bounded(), under timeout" '.' "$(grep -E '(^|[^-])\<glab "' <<<"$src" | grep -qvF '  { timeout -k 5 30 glab "$@"; } 2>"${errors:-/dev/null}"' && echo false ||
   grep -c 'timeout -k 5 30 glab' <<<"$src" | grep -qx 1 && echo true || echo false)"
 check "R glab api only in get(), write_issue() and write_note()" '.' "$(grep -c 'bounded api' <<<"$src" | grep -qx 3 && echo true || echo false)"
 check "R write_issue only inside move" '.' "$(awk '/^  move\)/{m=1} /^    exit 0 ;;/{if(m)m=2} /write_issue/{if(m!=1)bad=1} END{print bad?"false":"true"}' <<<"$src")"
@@ -382,6 +383,27 @@ for u in '--gpu-launcher=touch /tmp/pwn' 'file:///etc/passwd' 'javascript:alert(
   jq -cn --arg u "$u" '{iid: 9, title: "x", state: "opened", web_url: $u}' | fx issue
   check "U issue link dropped: $u" '.state == "ready" and .issue.url == ""' "$("$fetch" issue --project a/b --iid 9)"
 done
+
+# --- V: first run: no project, no glab, not signed in ---------------------------
+reset
+fx projects <<<'[{"id":1,"path_with_namespace":"a/b"}]'
+check "V no project: board refused before glab" '.state == "error" and (.message | test("No project"))' "$(: >"$FAKE_LOG"; "$fetch")"
+check "V no project: no glab call" '.' "$([[ -s $FAKE_LOG ]] && echo false || echo true)"
+check "V projects needs no project" '.state == "ready" and .projects == [{"id":1,"path":"a/b"}]' "$("$fetch" projects)"
+for a in no none 401; do
+  check "V signed out ($a): logged-out" '.state == "logged-out" and (.message | test("glab auth login"))' "$(FAKE_AUTH=$a "$fetch" projects)"
+done
+check "V offline is an error, not a sign-in prompt" '.state == "error" and (.message | test("connection"))' "$(FAKE_AUTH=offline "$fetch" projects)"
+check "V auth message never passed through" '.' "$(FAKE_AUTH=offline "$fetch" projects | grep -q 'dial tcp\|glpat' && echo false || echo true)"
+: >"$FAKE_LOG"; FAKE_AUTH=no "$fetch" --project a/b >/dev/null
+check "V signed out: only the auth check ran" '.' "$([[ $(grep -c . "$FAKE_LOG") == 1 ]] && grep -q '^auth status --hostname gitlab.com$' "$FAKE_LOG" && echo true || echo false)"
+# glab missing: a PATH with only the tools board-fetch needs.
+mkdir -p "$work/noglab"
+for t in jq mktemp rm cat grep timeout mkdir chmod mv cp; do ln -sf "$(command -v "$t")" "$work/noglab/$t"; done
+noglab() { PATH="$work/noglab" "$BASH" "$fetch" "$@"; }
+check "V no glab: no-glab state" '.state == "no-glab" and (.message | test("not installed"))' "$(noglab projects)"
+check "V no glab, board too" '.state == "no-glab"' "$(noglab --project a/b)"
+check "V no glab: cached still reads" '.state == "none"' "$(noglab cached --project x/never)"
 
 # --- K: saved board (cache) --------------------------------------------------
 # Each board answer is saved per project and board; `cached` reads it back
@@ -441,7 +463,8 @@ check "K no token in any saved copy" '.' "$([[ ${#saved[@]} == 2 && -f ${saved[0
 fx board <<<'{"id":7,"name":"Dev","lists":[{"id":11,"label":{"name":"todo"}},{"id":12,"label":{"name":"approved"}}]}'
 fx put <<<'{"iid":3,"state":"opened","labels":["approved"]}'
 at opened '["todo"]'
-all=$(printf '%s\n' "$reads"; "$fetch"; "$fetch" projects; "$fetch" issue --iid 45; FAKE_AUTH=no "$fetch"; mv_ --from 11 --to 12; FAKE_PUT=fail mv_ --from 11 --to 12; mv_ --iid x
+all=$(printf '%s\n' "$reads"; "$fetch" --project group/app; "$fetch" projects; "$fetch" issue --project a/b --iid 45; FAKE_AUTH=no "$fetch" --project a/b;
+  FAKE_AUTH=401 "$fetch" --project a/b; FAKE_AUTH=offline "$fetch" --project a/b; mv_ --from 11 --to 12; FAKE_PUT=fail mv_ --from 11 --to 12; mv_ --iid x
   "$fetch" notes --project a/b --iid 1; fx post <<<'{"id":1}'; echo hi | say; echo hi | FAKE_POST=fail say)
 check "no token leak" '.' "$(grep -qiE 'glpat|bearer' <<<"$all" && echo false || echo true)"
 
