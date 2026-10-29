@@ -232,3 +232,67 @@ test("closing: the status labels an issue keeps, in its order, any case", () => 
   assert.deepEqual(L.statusOn(["bug"], status), [])
   assert.deepEqual(L.statusOn(undefined, status), [])
 })
+
+const P41 = { "group/p41": { busyLists: ["approved", "in progress", "review"], bots: [
+  { name: "App UI", label: "app-ui" }, { name: "API Engineer", label: "api" }, { name: "Auth & Mail", label: "auth-mail" },
+  { name: "Product Lead", label: "" }, { name: "Spec QA", list: "review" }] } }
+const card = (iid, labels) => ({ iid, title: "t" + iid, labels })
+const BOT_COLUMNS = [
+  { name: "Open", kind: "open", issues: [card(1, ["app-ui"]), card(2, [])] },
+  { name: "todo", kind: "label", issues: [card(3, ["todo", "auth-mail"]), card(4, ["todo"])] },
+  { name: "Approved", kind: "label", issues: [card(5, ["Approved", "APP-UI"])] },
+  { name: "in progress", kind: "label", issues: [card(6, ["in progress", "app-ui"]), card(7, ["in progress"]), card(8, ["in progress", "api", "auth-mail"])] },
+  { name: "review", kind: "label", issues: [card(9, ["review", "api"]), card(10, ["review", "docs"])] },
+  { name: "In Progress", kind: "other", issues: [card(11, ["app-ui", "in progress"])] },
+  { name: "review", kind: "other", issues: [card(14, ["review"])] },
+  { name: "Closed", kind: "closed", issues: [card(12, ["auth-mail", "in progress"]), card(13, ["review", "api"])] }]
+const view = states => Object.fromEntries(states.map(s => [s.name, s.state + " " + s.issues.map(i => "#" + i.iid + ":" + i.list).join(",")]))
+
+test("bots: busy rules (owner labels, no owner, two owners, Spec QA's list, any case)", () => {
+  assert.deepEqual(view(L.botStates(L.botsConfig(P41, "group/p41"), BOT_COLUMNS)), {
+    "App UI": "working #5:Approved,#6:in progress",
+    "API Engineer": "working #8:in progress,#9:review",
+    "Auth & Mail": "working #8:in progress",
+    "Product Lead": "working #7:in progress,#10:review",
+    "Spec QA": "working #9:review,#10:review"
+  })
+})
+
+test("bots: closed, Open, todo and non-label lists (even with a busy name) never count; waiting vs idle", () => {
+  const cols = BOT_COLUMNS.filter(c => c.name !== "in progress")
+  assert.deepEqual(view(L.botStates(L.botsConfig(P41, "group/p41"), cols)), {
+    "App UI": "waiting #5:Approved",
+    "API Engineer": "waiting #9:review",
+    "Auth & Mail": "idle ",
+    "Product Lead": "waiting #10:review",
+    "Spec QA": "working #9:review,#10:review"
+  })
+  const empty = L.botStates(L.botsConfig(P41, "group/p41"), [{ name: "review", kind: "label", issues: [] }])
+  assert.deepEqual(empty.map(s => s.state), ["idle", "idle", "idle", "idle", "idle"])
+})
+
+test("bots: an issue in two busy lists counts once, as working if either is", () => {
+  const cols = [{ name: "approved", kind: "label", issues: [card(20, ["approved", "in progress", "api"])] },
+                { name: "in progress", kind: "label", issues: [card(20, ["approved", "in progress", "api"])] }]
+  const api = L.botStates(L.botsConfig(P41, "group/p41"), cols)[1]
+  assert.equal(api.state, "working")
+  assert.deepEqual(api.issues.map(i => [i.iid, i.list]), [[20, "in progress"]])
+})
+
+test("bots: no config, another project, or no usable bot shows nothing", () => {
+  assert.equal(L.botsConfig(undefined, "group/p41"), null)
+  assert.equal(L.botsConfig({}, "group/p41"), null)
+  assert.equal(L.botsConfig(P41, "group/other"), null)
+  assert.equal(L.botsConfig({ "a/b": { bots: [] } }, "a/b"), null)
+  assert.equal(L.botsConfig({ "a/b": { bots: "x" } }, "a/b"), null)
+  assert.equal(L.botsConfig({ "a/b": { bots: [{ name: "" , label: "x" }, { name: "N" }, { name: "Q", list: " " }, null] } }, "a/b"), null)
+  assert.deepEqual(L.botStates(null, BOT_COLUMNS), [])
+})
+
+test("bots: workingLists can be set; a list bot is working whenever its list has issues, busy list or not", () => {
+  const cfg = L.botsConfig({ "a/b": { busyLists: ["Doing", "Check"], workingLists: ["check"], bots: [{ name: "Dev", label: "dev" }, { name: "QA", list: "CHECK" }] } }, "a/b")
+  const cols = [{ name: "Doing", kind: "label", issues: [card(1, ["Doing", "DEV"])] }, { name: "Check", kind: "label", issues: [] }]
+  assert.deepEqual(L.botStates(cfg, cols).map(s => s.state), ["waiting", "idle"])
+  const qa = L.botsConfig({ "a/b": { busyLists: ["Doing"], bots: [{ name: "QA", list: "check" }] } }, "a/b")
+  assert.deepEqual(L.botStates(qa, [{ name: "Check", kind: "label", issues: [card(2, [])] }]).map(s => s.state + s.issues.length), ["working1"])
+})
