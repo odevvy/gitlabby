@@ -42,7 +42,7 @@ the picker's board step. The header shows a star on the default board and a
 ## Popup
 
 - The title, `group/project · Board ▾`, opens the picker: pick a project (type
-  to filter your 100 most recently active projects), then one of its boards.
+  to filter your projects, up to 500, most recently active first), then one of its boards.
 - Click a column header to collapse it to a narrow strip; click a chip under
   the header to hide or show that column.
 - Click an issue for its details: state, labels, author, ages, assignees,
@@ -66,7 +66,14 @@ The refresh icon spins while it loads, and the board stays usable. A refresh
 that comes due while you hold a card waits until you let go. After a shell
 start, the popup first shows the board as you last saw it ("Saved 3h ago ·
 updating…"; cards can't be dragged until the fresh board arrives), or a
-pulsing placeholder when nothing is saved.
+pulsing placeholder when nothing is saved (as wide as that board, or the last
+one, was earlier in the session).
+
+A refresh that fails (offline, GitLab down, a timeout) keeps the board on
+screen and the header says `Couldn't refresh · showing 14:05`, the time of the
+board you're looking at; the next refresh tries again. The full error takes
+the board's place only when nothing was loaded yet. Not being signed in still
+shows the sign-in panel.
 
 The description is GitLab Markdown drawn by the plugin: headings, bold,
 italic, strikethrough, links, code, lists (including task lists), quotes,
@@ -119,10 +126,27 @@ Other labels are never touched.
   overwritten.
 - One move at a time. No drops on unsupported lists, on the workflow-label
   fallback, or on the card's own column.
+- From the keyboard: select a card with `h j k l`, then `Shift+H` or
+  `Shift+L` moves it to the nearest column on that side it can go to.
 
 **Moves can set off automations.** Bots, webhooks, CI rules or triage
 policies that watch labels or state react as they would to a change on the
 website. On phrase41, moving an issue into approved or review wakes the bots.
+
+### Ask before moving
+
+For boards where a move matters, list the project in `confirmMoves` (none by
+default). A drop or `Shift+H`/`Shift+L` then waits under the header: "Move #112
+from in progress to review?" with what it changes on GitLab ("This changes its
+status label on GitLab."), and **Move** (`Enter`) or **Cancel** (`Escape`).
+The card stays where it is until you confirm, and the board doesn't refresh
+under the question.
+
+```bash
+omarchy bar set odevvy.gitlab-board confirmMoves '["firelink21/phrase41"]' --json
+```
+
+The value is the whole list (project paths, any case); `'[]'` turns it off.
 
 To try moves safely, make a private throwaway project with a few labels and a
 board list for each, pick it in the picker, drag cards around, and check the
@@ -142,6 +166,11 @@ it, `Enter` or `Shift+Enter` adds a line, and `Escape` leaves the box.
   read-only token gets a `403`.
 - While it's on its way the box is disabled. On success the box clears and
   the thread reloads; on failure your text stays and the reason shows in red.
+- **Lines starting with `/` are never sent.** GitLab would run them as quick
+  actions (`/close`, `/label ~review`, `/move ...`), which would bypass the
+  rules above, so the box says so and Post stays off. A `/` inside a line, or
+  in `backticks` at the start, is fine. Should GitLab still answer a comment
+  with quick-action changes, the view says so and reloads.
 - Empty comments are never sent. An unsent draft survives going back to the
   same issue; opening another issue clears it.
 - The thread shows the newest 100 notes (one GitLab page) and says when there
@@ -208,7 +237,8 @@ an owner label and a reviewer takes everything in review:
 Each bot gets a filled dot when it has an issue in a working list (a `list`
 bot whenever its list has any), a hollow dot when it only has issues waiting
 in other busy lists (approved or review), and a dim dot with "idle" when it
-has none. The issue numbers follow; click one to open the issue. Labels and
+has none. Up to 5 issue numbers follow (hover one for its title, click it
+to open the issue), then `+N more` (hover for the rest). Labels and
 lists match in any case.
 
 Set it from a terminal (this replaces the whole `bots` value, so include every
@@ -253,16 +283,19 @@ position. In the popup the keyboard cursor shows after the first move.
 | Key | Action |
 | --- | --- |
 | `h j k l` or arrows | Move between cards; up and down in the picker |
-| `Enter` or `Space` | Open the selected issue; pick the selected row; the setup panel's main button |
+| `Shift+H` or `Shift+L` | Move the selected card to the column on the left or right |
+| `Enter` or `Space` | Open the selected issue; pick the selected row; confirm a move or a close; the setup panel's main button |
 | `o` | Open the issue in the browser |
 | `c` | Write a comment (issue view) |
 | `Ctrl+Enter` | Post the comment |
+| `e` | Edit labels (issue view) |
+| `x` | Close the issue, after a confirm, or reopen it (issue view) |
 | `r` | Refresh the board; Try again on the setup panel |
 | `p` | Choose a project and board |
 | `s` | Settings |
 | `?` | This list of keys |
 | `Tab` or `Shift+Tab` | Next or previous bar panel |
-| `Escape` | Leave the comment box; otherwise back to the board; on the board, close |
+| `Escape` | Cancel a confirm; leave the comment box; close the label editor; otherwise back to the board; on the board, close |
 
 Letters go to the comment box, the label filter or the picker's filter while
 you type in them.
@@ -278,6 +311,7 @@ Settings live on the widget's entry in `~/.config/omarchy/shell.json`:
 | `refreshIntervalSec` | Refresh interval in seconds |
 | `defaultCollapsed` | Columns that start collapsed on a board you have not changed yet. Default `["closed","research","open"]`; matched case-insensitively |
 | `boardStates` | Collapsed and hidden columns for each project and board, keyed `project#boardId` |
+| `confirmMoves` | Projects whose card moves ask first (see [Ask before moving](#ask-before-moving)). Default `[]` |
 | `bots` | Busy markers per project (see [Who's busy](#whos-busy)). Default `{}`: no row |
 | `settingsRevision` | Set to `2` by v0.1.3 after its one-time update |
 
@@ -325,7 +359,7 @@ answers `401`).
 ```bash
 ./board-fetch [board] --project P [--board ID]   # board columns (the default), also saved
 ./board-fetch cached --project P [--board ID]    # that saved copy, no GitLab call
-./board-fetch projects                          # projects you are a member of
+./board-fetch projects                          # projects you are a member of (up to 500)
 ./board-fetch whoami                            # your username (not saved)
 ./board-fetch logout                            # glab auth logout, then delete the saved boards
 ./board-fetch boards --project P                # boards of a project

@@ -270,16 +270,19 @@ function cursorAt(lanes, col, row) {
 // The popup's keys, shown by ? and listed in the README's Keyboard section.
 var keys = [
   ["h j k l or arrows", "Move between cards; up and down in the picker"],
-  ["Enter or Space", "Open the selected issue; pick the selected row; the setup panel's main button"],
+  ["Shift+H or Shift+L", "Move the selected card to the column on the left or right"],
+  ["Enter or Space", "Open the selected issue; pick the selected row; confirm a move or a close; the setup panel's main button"],
   ["o", "Open the issue in the browser"],
   ["c", "Write a comment (issue view)"],
   ["Ctrl+Enter", "Post the comment"],
+  ["e", "Edit labels (issue view)"],
+  ["x", "Close the issue, after a confirm, or reopen it (issue view)"],
   ["r", "Refresh the board; Try again on the setup panel"],
   ["p", "Choose a project and board"],
   ["s", "Settings"],
   ["?", "This list of keys"],
   ["Tab or Shift+Tab", "Next or previous bar panel"],
-  ["Escape", "Leave the comment box; otherwise back to the board; on the board, close"]
+  ["Escape", "Cancel a confirm; leave the comment box; close the label editor; otherwise back to the board; on the board, close"]
 ]
 
 if (typeof module !== "undefined") {

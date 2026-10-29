@@ -29,7 +29,8 @@
         "open"
       ],
       "boardStates": {},
-      "bots": {}
+      "bots": {},
+      "confirmMoves": []
     },
     "schema": [
       {
