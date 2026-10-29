@@ -12,7 +12,7 @@ import "Logic.js" as Logic
 // another column, and `board-fetch comment`, run by Post in the issue view.
 // Views: the board, one issue, the board picker, settings and the key list.
 // Until the first answer, the board shows its saved copy (`board-fetch
-// cached`, read at shell start and on switching boards).
+// cached`, read at shell start and on switching boards), else a placeholder.
 // Selection, per-board collapsed/hidden columns and defaults are saved inline
 // in shell.json.
 Panel {
@@ -343,7 +343,7 @@ Panel {
       var time = updatedAt !== "" ? "Updated " + new Date(updatedAt).toLocaleTimeString(Qt.locale(), "HH:mm") : ""
       return message !== "" ? message + "  " + time : time
     }
-    if (boardState === "loading") return "Loading GitLab issues…"
+    if (boardState === "loading") return view === "board" ? "" : "Loading GitLab issues…"  // the placeholder says it
     if (boardState === "logged-out") return message || "Not signed in. Run: glab auth login"
     return message || "Could not load issues."
   }
@@ -408,14 +408,15 @@ Panel {
     open: root.opened; focusTarget: keyCatcher
     // fittedContentWidth caps at availableCardWidth (screen minus margins);
     // anything wider scrolls horizontally inside the board.
-    contentWidth: panel.fittedContentWidth(Math.max(Style.space(520), root.view === "board" ? root.boardWidth + panel.padding * 2 + Style.space(4) : 0))
+    contentWidth: panel.fittedContentWidth(Math.max(Style.space(520), root.view !== "board" ? 0
+      : (root.boardState === "loading" ? skeleton.implicitWidth : root.boardWidth) + panel.padding * 2 + Style.space(4)))
     contentHeight: panel.fittedContentHeight(keyCatcher.implicitHeight, Style.space(640))
 
     PanelKeyCatcher {
       id: keyCatcher
       anchors.fill: parent
       blocked: issueView.typing || picker.typing  // text fields get every key (Omarchy PanelKeyCatcher.qml:26-29)
-      implicitHeight: header.implicitHeight + root.gap + (root.view === "board" ? boardView.implicitHeight
+      implicitHeight: header.implicitHeight + root.gap + (root.view === "board" ? (root.boardState === "loading" ? skeleton.implicitHeight : boardView.implicitHeight)
         : root.view === "issue" ? issueView.implicitHeight : root.view === "picker" ? picker.implicitHeight
         : root.view === "keys" ? keysView.implicitHeight : settingsView.implicitHeight)
       onCloseRequested: root.view !== "board" ? root.back() : root.close()
@@ -512,6 +513,7 @@ Panel {
 
       Item {
         anchors { top: header.bottom; topMargin: root.gap; left: parent.left; right: parent.right; bottom: parent.bottom }
+        Skeleton { id: skeleton; host: root; anchors.fill: parent; visible: root.view === "board" && root.boardState === "loading" }
         BoardView { id: boardView; host: root; anchors.fill: parent; visible: root.view === "board" && root.boardState === "ready" }
         IssueView { id: issueView; host: root; anchors.fill: parent; visible: root.view === "issue" }
         Picker { id: picker; host: root; anchors.fill: parent; visible: root.view === "picker" }

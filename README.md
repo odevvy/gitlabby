@@ -181,6 +181,8 @@ behind the popup shows through without blur.
 The first time the popup opens after a shell start, it shows the board as
 you last saw it (see "Saved board"), with "Saved 3h ago · updating…" in the
 header, until the fresh board arrives. Cards can't be dragged until then.
+With nothing saved yet, it shows a placeholder board that pulses while it
+loads.
 
 The board refreshes each time the popup opens and every 60 seconds
 (configurable) while it's open; while it's closed, only a right- or
