@@ -34,8 +34,9 @@ while (($#)); do
   shift $(($# >= 2 ? 2 : 1))
 done
 
+exec 3>&1  # emit writes here, so it also works inside get() while stdout goes to a file
 emit() { # state message
-  jq -cn --arg s "$1" --arg m "$2" '{state:$s,message:$m,updatedAt:(now|todateiso8601)}'
+  jq -cn --arg s "$1" --arg m "$2" '{state:$s,message:$m,updatedAt:(now|todateiso8601)}' >&3
   exit 0
 }
 command -v jq >/dev/null 2>&1 || { printf '%s\n' '{"state":"error","message":"jq is required."}'; exit 0; }
@@ -56,19 +57,35 @@ if [[ $cmd == comment ]]; then
 fi
 [[ $hostname =~ ^[A-Za-z0-9][A-Za-z0-9.-]*(:[0-9]+)?$ ]] || emit error "Invalid GitLab hostname."
 command -v glab >/dev/null 2>&1 || emit error "GitLab CLI (glab) is not installed or not on PATH."
-glab auth status --hostname "$hostname" >/dev/null 2>&1 || emit logged-out "Not signed in. Run: glab auth login --hostname $hostname"
+# Every glab call ends within 30 s (exit 124), so a hung one can't hold the widget.
+slow="GitLab did not answer within 30 seconds."
+# 137: glab ignored the TERM and was killed 5 s later; that is a timeout too.
+bounded() {
+  { timeout -k 5 30 glab "$@"; } 2>/dev/null  # braces: bash's "Killed" notice goes there too
+  local rc=$?
+  ((rc == 137)) && rc=124
+  return $rc
+}
+bounded auth status --hostname "$hostname" >/dev/null
+case $? in 0) ;; 124) emit error "$slow" ;; *) emit logged-out "Not signed in. Run: glab auth login --hostname $hostname" ;; esac
 
 tmp=$(mktemp -d) || emit error "Could not create a temporary directory."
 trap 'rm -rf "$tmp"' EXIT
 # Every read goes through get(), which is GET by construction.
-get() { glab api --hostname "$hostname" --method GET "$@" 2>/dev/null; }
+get() {
+  bounded api --hostname "$hostname" --method GET "$@"
+  local rc=$?
+  ((rc != 124)) || emit error "$slow"
+  return $rc
+}
 base="projects/$(jq -rn --arg p "$project" '$p | @uri')"
 
 # jq helpers shared by the programs below.
 read -r -d '' DEFS <<'JQ'
 # Label names, whether GitLab sent names or label objects (with_labels_details).
 def names: [(.labels // [])[] | if type == "object" then .name else . end | strings];
-# Avatars only over https, so nothing loads in the clear.
+# Avatars and issue links only over https: nothing loads in the clear, and no
+# file:, javascript: or --flag value ever reaches the browser.
 def https: if type == "string" and test("^https://") then . else "" end;
 # GitLab's error message for a failed write: one line, anything token-shaped redacted.
 def reason: (.message // .error // empty) | (if type == "string" then . else tojson end)
@@ -88,7 +105,7 @@ case $cmd in
     exit 0 ;;
   issue)
     get "$base/issues/$iid" >"$tmp/i" || emit error "Could not load issue #$iid."
-    jq -c '{state: "ready", message: "", issue: {iid, title, state, labels: (.labels // []), url: .web_url,
+    jq -c "$DEFS"' {state: "ready", message: "", issue: {iid, title, state, labels: (.labels // []), url: (.web_url | https),
       description: (.description // ""), author: (.author.username // ""), milestone: (.milestone.title // ""),
       assignees: [(.assignees // [])[].username], createdAt: .created_at, updatedAt: .updated_at}}' "$tmp/i" 2>/dev/null ||
       emit error "GitLab returned an unreadable response."
@@ -104,12 +121,15 @@ case $cmd in
   comment)
     # The only POST in this script, the same way as write_issue(): JSON on stdin.
     write_note() {
-      glab api --hostname "$hostname" --method POST --header "Content-Type: application/json" --input - "$base/issues/$iid/notes" 2>/dev/null
+      bounded api --hostname "$hostname" --method POST --header "Content-Type: application/json" --input - "$base/issues/$iid/notes"
     }
-    if ! printf '%s' "$note" | write_note >"$tmp/r"; then
-      reason=$(jq -r "$DEFS reason" "$tmp/r" 2>/dev/null)
-      emit error "Comment failed${reason:+: $reason}"
-    fi
+    printf '%s' "$note" | write_note >"$tmp/r"
+    case $? in
+      0) ;;
+      124) emit timeout "GitLab did not answer within 30 seconds. The comment may have been posted." ;;
+      *) reason=$(jq -r "$DEFS reason" "$tmp/r" 2>/dev/null)
+         emit error "Comment failed${reason:+: $reason}" ;;
+    esac
     jq -c 'select(type == "object" and (.id | type) == "number")
       | {state: "ready", message: "Comment posted.", updatedAt: (now | todateiso8601), note: {id}}' "$tmp/r" 2>/dev/null |
       grep . || emit error "GitLab returned an unexpected response to the comment."
@@ -164,12 +184,15 @@ JQ
     # The only non-GET request in this script. The JSON body goes in on stdin
     # (--input), so glab never expands @files or :placeholders in it.
     write_issue() {
-      glab api --hostname "$hostname" --method PUT --header "Content-Type: application/json" --input - "$base/issues/$iid" 2>/dev/null
+      bounded api --hostname "$hostname" --method PUT --header "Content-Type: application/json" --input - "$base/issues/$iid"
     }
-    if ! jq -c '.body' "$tmp/plan" | write_issue >"$tmp/r"; then
-      reason=$(jq -r "$DEFS reason" "$tmp/r" 2>/dev/null)
-      emit error "Move failed${reason:+: $reason}"
-    fi
+    jq -c '.body' "$tmp/plan" | write_issue >"$tmp/r"
+    case $? in
+      0) ;;
+      124) emit error "GitLab did not answer within 30 seconds. The move may have gone through." ;;
+      *) reason=$(jq -r "$DEFS reason" "$tmp/r" 2>/dev/null)
+         emit error "Move failed${reason:+: $reason}" ;;
+    esac
     jq -c --argjson iid "$iid" --slurpfile plan "$tmp/plan" 'select(type == "object" and .iid == $iid)
       | {state: "ready", message: "Moved #\(.iid) to \($plan[0].to).", updatedAt: (now | todateiso8601)}' "$tmp/r" 2>/dev/null |
       grep . || emit error "GitLab returned an unexpected response to the move."
@@ -186,7 +209,7 @@ jq -cs --arg want "$board_id" 'add // [] | (map(select((.id | tostring) == $want
 scope=$(jq -r 'if . == null then "" else [
     (if (.labels // []) | length > 0 then "labels=" + ([.labels[].name] | join(",") | @uri) else empty end),
     (if .milestone.title then "milestone=" + (.milestone.title | @uri) else empty end),
-    (if .assignee.id then "assignee_id=\(.assignee.id)" else empty end),
+    (.assignee.id | numbers | "assignee_id=\(.)"),
     (if (.weight | type) == "number" and .weight >= 0 then "weight=\(.weight)" else empty end)
   ] | map("&" + .) | join("") end' "$tmp/board")
 hide_closed=$(jq -r '.hide_closed_list // false' "$tmp/board")
@@ -208,7 +231,7 @@ fi
 # one labelColors map and rows keep plain label names.
 read -r -d '' MAP <<'JQ'
 def hex: if type == "string" and test("^#[0-9A-Fa-f]{6}$") then . else null end;
-def row: {iid, title, labels: names, url: .web_url, createdAt: .created_at, notes: (.user_notes_count // 0),
+def row: {iid, title, labels: names, url: (.web_url | https), createdAt: .created_at, notes: (.user_notes_count // 0),
   assignees: [(.assignees // [])[] | {username, name: (.name // .username), avatar: (.avatar_url | https)}]};
 def has_any($names): [.labels[] | select(IN($names[]))] | length > 0;
 $b[0] as $board | ($o | add // []) as $rawOpen | ($c | add // []) as $rawClosed
