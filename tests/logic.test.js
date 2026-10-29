@@ -212,7 +212,6 @@ test("label editor: status labels are never editable or offered", () => {
   const columns = [{ name: "Open", kind: "open" }, { name: "Doing", kind: "label", listId: 4 }, { name: "Closed", kind: "closed" }, { name: "alice", kind: "other" }]
   const status = L.statusLabels(["Ready"], columns)
   assert.deepEqual(status.slice().sort(), ["approved", "doing", "in progress", "ready", "research", "review", "todo"])
-  assert.deepEqual(L.editableLabels(["Doing", "bug", "TODO", "ux", "In Progress"], status), ["bug", "ux"])
   const all = [{ name: "api" }, { name: "bug" }, { name: "Doing" }, { name: "Todo" }, { name: "ux" }, { name: "Bugfix" }]
   assert.deepEqual(L.addableLabels(all, ["bug"], status, "").map(l => l.name), ["api", "ux", "Bugfix"])
   assert.deepEqual(L.addableLabels(all, ["bug"], status, " BUG ").map(l => l.name), ["Bugfix"])
@@ -295,4 +294,26 @@ test("bots: workingLists can be set; a list bot is working whenever its list has
   assert.deepEqual(L.botStates(cfg, cols).map(s => s.state), ["waiting", "idle"])
   const qa = L.botsConfig({ "a/b": { busyLists: ["Doing"], bots: [{ name: "QA", list: "check" }] } }, "a/b")
   assert.deepEqual(L.botStates(qa, [{ name: "Check", kind: "label", issues: [card(2, [])] }]).map(s => s.state + s.issues.length), ["working1"])
+})
+
+test("markdown: a URL inside link text is not linked again; marker characters can't fake a span", () => {
+  assert.equal(L.inline("[see https://x.io/a](https://y.io/b)"), '<a href="https://y.io/b">see https://x.io/a</a>')
+  assert.equal(L.inline("go https://a.io/x and [t](https://b.io)"), 'go <a href="https://a.io/x">https://a.io/x</a> and <a href="https://b.io">t</a>')
+  assert.equal(L.inline("x \x010\x01 \x020\x02 y"), "x 0 0 y")
+  assert.equal(L.inline("**[b](https://c.io)**"), '<b><a href="https://c.io">b</a></b>')
+})
+
+test("comments: a line starting with / is a quick action; / elsewhere or in backticks is not", () => {
+  for (const t of ["/close", "Looks good\n/label ~review", "ok\n  \t/unlabel ~x"]) assert.equal(L.quickAction(t), true, t)
+  for (const t of ["", "see a/b and /usr", "`/close`", "path: /etc"]) assert.equal(L.quickAction(t), false, t)
+})
+
+test("move confirm: says what the move does on GitLab", () => {
+  const open = { kind: "open" }, closed = { kind: "closed" }, a = { kind: "label", name: "a" }, b = { kind: "label", name: "b" }
+  assert.equal(L.moveNote(a, b), "This changes its status label on GitLab.")
+  assert.equal(L.moveNote(open, a), "This changes its status label on GitLab.")
+  assert.equal(L.moveNote(a, open), "This removes its status label on GitLab.")
+  assert.equal(L.moveNote(a, closed), "This closes it on GitLab. Its labels stay.")
+  assert.equal(L.moveNote(closed, a), "This reopens it on GitLab and changes its status label.")
+  assert.equal(L.moveNote(closed, open), "This reopens it on GitLab.")
 })

@@ -26,14 +26,12 @@ function labelStyle(entry) {
 
 // Status labels: the board's list labels and the workflow labels of the
 // no-board fallback. They change only by dragging a card, so the label editor
-// never offers them. board-fetch guards the same set (any board's list label).
+// never offers them. board-fetch guards the same set (any board's list label);
+// its `def workflow` is this list (tests/run.sh checks they match).
 var workflowLabels = ["research", "todo", "approved", "in progress", "review"]
 function statusLabels(fetched, columns) {
   var names = (columns || []).filter(function(c) { return c.kind === "label" }).map(function(c) { return c.name })
   return lowerList(workflowLabels.concat(fetched || [], names))
-}
-function editableLabels(labels, status) {
-  return (labels || []).map(String).filter(function(name) { return !has(status, name) })
 }
 // Project labels ({ name, color, textColor }) the issue could take: not on it,
 // not status, matching the filter (any case, anywhere in the name).
@@ -162,18 +160,36 @@ function linkUrl(link, issueUrl) {
 // become links, so nothing is loaded from the network.
 // A longer line stays plain text: the passes below can take time quadratic in
 // a line's length, and they run on the shell's UI thread.
+// Code spans and Markdown links are set aside as \x01n\x01 / \x02n\x02 while
+// the other passes run (a URL inside link text is not linked again), then put
+// back. Those two characters are dropped from the text first.
 var lineLimit = 2000
 function inline(text) {
-  var spans = []
-  if (String(text).length > lineLimit) return escaped(text)
+  var spans = [], links = []
+  text = String(text).replace(/[\x01\x02]/g, "")
+  if (text.length > lineLimit) return escaped(text)
   return escaped(text)
     .replace(/`([^`]+)`/g, function(m, c) { spans.push(c); return "\x01" + (spans.length - 1) + "\x01" })
-    .replace(/!?\[([^\][]*)\]\(([^)\s"]+)(?:[\s"][^)]*)?\)/g, function(m, t, url) { return "<a href=\"" + url + "\">" + (t || url) + "</a>" })
-    .replace(/(^|[\s(])(https?:\/\/[^\s()"]+)/g, "$1<a href=\"$2\">$2</a>")
+    .replace(/!?\[([^\][]*)\]\(([^)\s"]+)(?:[\s"][^)]*)?\)/g, function(m, t, url) {
+      links.push("<a href=\"" + url + "\">" + (t || url) + "</a>"); return "\x02" + (links.length - 1) + "\x02" })
+    .replace(/(^|[\s(])(https?:\/\/[^\s()"<]+)/g, "$1<a href=\"$2\">$2</a>")
     .replace(/\*\*(.+?)\*\*|__(.+?)__/g, "<b>$1$2</b>")
     .replace(/(^|\W)([*_])(\S(?:.*?\S)?)\2(?=\W|$)/g, "$1<i>$3</i>")
     .replace(/~~(.+?)~~/g, "<s>$1</s>")
+    .replace(/\x02(\d+)\x02/g, function(m, i) { return links[i] })
     .replace(/\x01(\d+)\x01/g, function(m, i) { return "<code>&nbsp;" + spans[i] + "&nbsp;</code>" })
+}
+
+// A comment line GitLab would run as a quick action (/close, /label ...):
+// board-fetch refuses those, the box says so before Post.
+function quickAction(text) { return /(^|\n)[ \t]*\//.test(String(text || "")) }
+
+// What a confirmed move does on GitLab, for the confirm (settings.confirmMoves).
+function moveNote(from, to) {
+  if (to.kind === "closed") return "This closes it on GitLab. Its labels stay."
+  if (from.kind === "closed") return to.kind === "label" ? "This reopens it on GitLab and changes its status label." : "This reopens it on GitLab."
+  if (from.kind === "label" && to.kind === "open") return "This removes its status label on GitLab."
+  return "This changes its status label on GitLab."
 }
 // Only the first descriptionLimit characters are drawn, cut at a line break;
 // the issue view links to the rest on GitLab.
@@ -270,7 +286,7 @@ if (typeof module !== "undefined") {
   module.exports = {
     lowerList: lowerList, has: has, toggled: toggled, escaped: escaped, labelStyle: labelStyle, age: age, savedNote: savedNote,
     columnKey: columnKey, listSpec: listSpec, movedColumns: movedColumns, byline: byline, people: people,
-    workflowLabels: workflowLabels, statusLabels: statusLabels, editableLabels: editableLabels, addableLabels: addableLabels, withColors: withColors, statusOn: statusOn, botsConfig: botsConfig, botStates: botStates,
-    linkUrl: linkUrl, inline: inline, lineLimit: lineLimit, markdown: markdown, descriptionLimit: descriptionLimit, cursorMove: cursorMove, cursorFix: cursorFix, keys: keys
+    workflowLabels: workflowLabels, statusLabels: statusLabels, addableLabels: addableLabels, withColors: withColors, statusOn: statusOn, botsConfig: botsConfig, botStates: botStates,
+    linkUrl: linkUrl, inline: inline, quickAction: quickAction, moveNote: moveNote, lineLimit: lineLimit, markdown: markdown, descriptionLimit: descriptionLimit, cursorMove: cursorMove, cursorFix: cursorFix, keys: keys
   }
 }

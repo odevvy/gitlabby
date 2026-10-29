@@ -192,8 +192,13 @@ Item {
   }
 
   function focusBox() { box.forceActiveFocus() }  // no-op while the box is disabled
+  // Keys (Board.qml): x closes after the confirm, or reopens; Enter and Escape answer the confirm.
+  function toggleState() {
+    if (issue.state === "closed") setState("reopen")
+    else askClose()
+  }
   function post() {
-    if (posting || !loaded || box.text.trim() === "") return
+    if (posting || !loaded || box.text.trim() === "" || Logic.quickAction(box.text)) return
     posting = true
     postFor = key
     postError = ""
@@ -207,6 +212,7 @@ Item {
     if (postFor !== key) return
     var data = host.parse(raw)
     if (data.state === "timeout") loadNotes()  // it may have been posted: the reload shows whether
+    if (data.state === "commands") { loadIssue(); loadNotes(); host.refresh() }  // GitLab ran it as quick actions
     if (data.state !== "ready") { postError = String(data.message || "Comment failed."); return }
     box.text = ""
     loadNotes()
@@ -574,15 +580,18 @@ Item {
           id: postStatus
           anchors { left: parent.left; right: postButton.left; rightMargin: Style.space(8); verticalCenter: parent.verticalCenter }
           wrapMode: Text.Wrap
-          text: view.postError !== "" ? view.postError : "Posts as you on GitLab."
-          color: view.postError !== "" ? view.host.urgent : view.host.dim
+          readonly property bool slash: Logic.quickAction(box.text)
+          text: view.postError !== "" ? view.postError
+            : slash ? "A line starts with /, which GitLab runs as a quick action, so this can't be posted. Wrap it in `backticks`."
+            : "Posts as you on GitLab. Lines starting with / (quick actions) aren't sent."
+          color: view.postError !== "" || slash ? view.host.urgent : view.host.dim
           font.pixelSize: Style.font.caption
         }
         ActionButton {
           id: postButton
           anchors.right: parent.right
           host: view.host; small: true; main: true
-          enabled: view.loaded && !view.posting && box.text.trim() !== ""
+          enabled: view.loaded && !view.posting && box.text.trim() !== "" && !postStatus.slash
           label: view.posting ? "Posting…" : "Post"
           onClicked: view.post()
         }
