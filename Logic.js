@@ -65,28 +65,41 @@ function people(issue) {
     .filter(function(part) { return part !== "" }).join(" · ")
 }
 
-// A Markdown link to open: absolute http(s) as is, GitLab-relative paths on
+// A Markdown link to open: absolute https as is, GitLab-relative paths on
 // the issue's host; anything else "".
 function linkUrl(link, issueUrl) {
   var value = String(link || "")
-  if (/^\//.test(value) && issueUrl) value = String(issueUrl).replace(/^(https?:\/\/[^\/]+).*$/, "$1") + value
-  return /^https?:\/\//.test(value) ? value : ""
+  if (/^\//.test(value) && issueUrl) value = String(issueUrl).replace(/^(https:\/\/[^\/]+).*$/, "$1") + value
+  return /^https:\/\//.test(value) ? value : ""
 }
 
 // GitLab Markdown to the HTML subset Text.RichText draws, so headings,
 // spacing, bullets and code can be styled (Text.MarkdownText can't be).
 // All text is escaped first: raw HTML in the issue shows as text, and images
 // become links, so nothing is loaded from the network.
+// A longer line stays plain text: the passes below can take time quadratic in
+// a line's length, and they run on the shell's UI thread.
+var lineLimit = 2000
 function inline(text) {
   var spans = []
+  if (String(text).length > lineLimit) return escaped(text)
   return escaped(text)
     .replace(/`([^`]+)`/g, function(m, c) { spans.push(c); return "\x01" + (spans.length - 1) + "\x01" })
-    .replace(/!?\[([^\]]*)\]\(([^)\s"]+)[^)]*\)/g, function(m, t, url) { return "<a href=\"" + url + "\">" + (t || url) + "</a>" })
+    .replace(/!?\[([^\][]*)\]\(([^)\s"]+)(?:[\s"][^)]*)?\)/g, function(m, t, url) { return "<a href=\"" + url + "\">" + (t || url) + "</a>" })
     .replace(/(^|[\s(])(https?:\/\/[^\s()"]+)/g, "$1<a href=\"$2\">$2</a>")
     .replace(/\*\*(.+?)\*\*|__(.+?)__/g, "<b>$1$2</b>")
     .replace(/(^|\W)([*_])(\S(?:.*?\S)?)\2(?=\W|$)/g, "$1<i>$3</i>")
     .replace(/~~(.+?)~~/g, "<s>$1</s>")
     .replace(/\x01(\d+)\x01/g, function(m, i) { return "<code>&nbsp;" + spans[i] + "&nbsp;</code>" })
+}
+// Only the first descriptionLimit characters are drawn, cut at a line break;
+// the issue view links to the rest on GitLab.
+var descriptionLimit = 20000
+function clipped(md) {
+  var text = String(md)
+  if (text.length <= descriptionLimit) return text
+  var cut = text.lastIndexOf("\n", descriptionLimit)
+  return text.slice(0, cut > 0 ? cut : descriptionLimit)
 }
 // advance(text): its width in px in the description font; space(px): Style.space.
 function markdown(md, advance, space) {
@@ -96,7 +109,7 @@ function markdown(md, advance, space) {
     if (rows.length) out.push("<table border='1' cellspacing='0' cellpadding='" + space(3) + "'>" + rows.join("") + "</table>")
     block = []; rows = []; open = "<p>"
   }
-  String(md).replace(/\r/g, "").split("\n").forEach(function(line) {
+  clipped(md).replace(/\r/g, "").split("\n").forEach(function(line) {
     var m
     if (code !== null) {
       if (/^\s*(```|~~~)/.test(line)) { out.push("<pre>" + code.join("\n") + "</pre>"); code = null }
@@ -174,6 +187,6 @@ if (typeof module !== "undefined") {
   module.exports = {
     lowerList: lowerList, has: has, toggled: toggled, escaped: escaped, labelStyle: labelStyle, age: age,
     columnKey: columnKey, listSpec: listSpec, movedColumns: movedColumns, byline: byline, people: people,
-    linkUrl: linkUrl, inline: inline, markdown: markdown, cursorMove: cursorMove, cursorFix: cursorFix, keys: keys
+    linkUrl: linkUrl, inline: inline, lineLimit: lineLimit, markdown: markdown, descriptionLimit: descriptionLimit, cursorMove: cursorMove, cursorFix: cursorFix, keys: keys
   }
 }
