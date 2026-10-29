@@ -43,6 +43,10 @@ function addableLabels(all, current, status, filter) {
     return (current || []).indexOf(l.name) === -1 && !has(status, l.name) && l.name.toLowerCase().indexOf(needle) !== -1
   })
 }
+// The issue's status labels, in its own order: closing keeps them.
+function statusOn(labels, status) {
+  return (labels || []).map(String).filter(function(name) { return has(status, name) })
+}
 // The board's label colors plus those from board-fetch labels.
 function withColors(colors, labels) {
   var out = {}
@@ -220,7 +224,7 @@ if (typeof module !== "undefined") {
   module.exports = {
     lowerList: lowerList, has: has, toggled: toggled, escaped: escaped, labelStyle: labelStyle, age: age, savedNote: savedNote,
     columnKey: columnKey, listSpec: listSpec, movedColumns: movedColumns, byline: byline, people: people,
-    workflowLabels: workflowLabels, statusLabels: statusLabels, editableLabels: editableLabels, addableLabels: addableLabels, withColors: withColors,
+    workflowLabels: workflowLabels, statusLabels: statusLabels, editableLabels: editableLabels, addableLabels: addableLabels, withColors: withColors, statusOn: statusOn,
     linkUrl: linkUrl, inline: inline, lineLimit: lineLimit, markdown: markdown, descriptionLimit: descriptionLimit, cursorMove: cursorMove, cursorFix: cursorFix, keys: keys
   }
 }

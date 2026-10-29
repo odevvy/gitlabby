@@ -225,3 +225,10 @@ test("label editor: colors from the labels list fill gaps, the board's win", () 
   assert.deepEqual(out, { bug: { color: "#ff0000" }, ux: { color: "#00ff00", textColor: "#000000" } })
   assert.deepEqual(base, { bug: { color: "#ff0000" } })
 })
+
+test("closing: the status labels an issue keeps, in its order, any case", () => {
+  const status = L.statusLabels([], [{ name: "Doing", kind: "label", listId: 3 }])
+  assert.deepEqual(L.statusOn(["app-ui", "Review", "doing", "bug"], status), ["Review", "doing"])
+  assert.deepEqual(L.statusOn(["bug"], status), [])
+  assert.deepEqual(L.statusOn(undefined, status), [])
+})

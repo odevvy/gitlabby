@@ -12,6 +12,8 @@ import "Logic.js" as Logic
 // Edit labels lists the project's labels (`board-fetch labels`, GET) and adds or
 // removes one at a time (`board-fetch relabel`). Status labels (the board's
 // lists) are never offered: they change only by dragging the card.
+// Close issue asks first, then runs `board-fetch close` (state only, labels
+// stay); a closed issue offers Reopen issue (`board-fetch reopen`) instead.
 Item {
   id: view
   required property var host
@@ -50,6 +52,12 @@ Item {
   readonly property var colors: Logic.withColors(host.labelColors, allLabels)
   readonly property var addable: labelsState === "ready" ? Logic.addableLabels(allLabels, issue.labels, status, labelFilter.text) : []
   readonly property int addableShown: 60
+  // Close / reopen: one at a time; closing asks first.
+  property bool confirming: false
+  property string stateBusy: ""  // "close" or "reopen" while it runs
+  property string stateFor: ""
+  property string stateError: ""
+  readonly property var statusOn: Logic.statusOn(issue.labels, status)
   // The comment box opens only once the issue and its comments have arrived.
   property string notesReadyFor: ""
   readonly property bool loaded: issueReady && notesReadyFor === key
@@ -66,6 +74,7 @@ Item {
 
   onKeyChanged: {
     closeEditor()
+    confirming = false; stateError = ""
     if (key === "") return
     if (key !== shownKey) {  // another issue: drop the last one's thread and draft
       shownKey = key
@@ -155,6 +164,33 @@ Item {
     host.refresh()  // the card on the board
   }
 
+  function askClose() {
+    if (stateBusy !== "" || !issueReady || issueError !== "") return
+    stateError = ""
+    confirming = true
+  }
+  // op: "close" or "reopen". Only the issue's state changes; labels stay.
+  function setState(op) {
+    if (stateBusy !== "" || !issueReady || issueError !== "") return
+    confirming = false
+    stateBusy = op
+    stateFor = key
+    stateError = ""
+    stateProcess.command = [host.helperPath(), op, "--project", host.project, "--iid", String(issue.iid)]
+    stateProcess.running = true
+  }
+  function stateDone(raw) {
+    stateBusy = ""
+    if (stateFor !== key) return
+    var data = host.parse(raw)
+    if (data.state !== "ready") { stateError = String(data.message || "Request failed."); loadIssue(); return }
+    var next = Object.assign({}, issue)
+    next.state = data.issueState
+    if (Array.isArray(data.labels)) next.labels = data.labels
+    issue = next
+    host.refresh()  // the card moves to or from Closed
+  }
+
   function focusBox() { box.forceActiveFocus() }  // no-op while the box is disabled
   function post() {
     if (posting || !loaded || box.text.trim() === "") return
@@ -193,6 +229,10 @@ Item {
   Process {
     id: relabelProcess
     stdout: StdioCollector { waitForEnd: true; onStreamFinished: view.relabelDone(text) }
+  }
+  Process {
+    id: stateProcess
+    stdout: StdioCollector { waitForEnd: true; onStreamFinished: view.stateDone(text) }
   }
   // The text goes in on stdin, then stdin closes so board-fetch sees the end.
   Process {
@@ -277,14 +317,70 @@ Item {
         }
       }
 
-      // A text action, not a pill, so it never reads as a label.
+      // Actions under the labels: Edit labels as a text action (never reads
+      // as a label) on the left, Close or Reopen issue as a quiet button on the right.
+      Item {
+        id: actions
+        width: parent.width
+        visible: view.issueReady && view.issueError === ""
+        implicitHeight: Math.max(editAction.implicitHeight, stateButton.implicitHeight)
+        BoardText {
+          id: editAction
+          anchors { left: parent.left; verticalCenter: parent.verticalCenter }
+          visible: !view.editing && view.issueReady && view.issueError === ""
+          text: "\uf040  Edit labels"  // Font Awesome pencil (Nerd Font)
+          color: view.host.accent
+          font.pixelSize: Style.font.bodySmall
+          MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: view.editLabels() }
+        }
+        ActionButton {
+          id: stateButton
+          anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+          visible: !view.confirming
+          host: view.host; small: true
+          enabled: view.stateBusy === ""
+          label: view.stateBusy === "close" ? "Closing…" : view.stateBusy === "reopen" ? "Reopening…"
+            : view.issue.state === "closed" ? "Reopen issue" : "Close issue"
+          onClicked: view.issue.state === "closed" ? view.setState("reopen") : view.askClose()
+        }
+      }
+
+      // Close asks first: what happens, which status label stays, Close / Cancel.
+      Rectangle {
+        id: confirmBox
+        visible: view.confirming
+        width: parent.width
+        implicitHeight: confirmColumn.implicitHeight + Style.space(20)
+        color: "transparent"
+        border { width: 1; color: view.host.faint }
+        Column {
+          id: confirmColumn
+          anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter; margins: Style.space(10) }
+          spacing: Style.space(8)
+          BoardText {
+            width: parent.width; wrapMode: Text.Wrap
+            text: "Close #" + (view.issue.iid || "") + "? This closes it on GitLab."
+            font.bold: true
+          }
+          BoardText {
+            width: parent.width; wrapMode: Text.Wrap
+            visible: view.statusOn.length > 0
+            text: "Its labels stay as they are, " + view.statusOn.join(", ") + " included."
+            color: view.host.dim; font.pixelSize: Style.font.bodySmall
+          }
+          Row {
+            spacing: Style.space(8)
+            ActionButton { host: view.host; small: true; main: true; label: "Close"; onClicked: view.setState("close") }
+            ActionButton { host: view.host; small: true; label: "Cancel"; onClicked: view.confirming = false }
+          }
+        }
+      }
       BoardText {
-        id: editAction
-        visible: !view.editing && view.issueReady && view.issueError === ""
-        text: "\uf040  Edit labels"  // Font Awesome pencil (Nerd Font)
-        color: view.host.accent
+        width: parent.width; wrapMode: Text.Wrap
+        visible: view.stateError !== ""
+        text: view.stateError
+        color: view.host.urgent
         font.pixelSize: Style.font.bodySmall
-        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: view.editLabels() }
       }
 
       // The label editor: a filter with Done, then the labels the issue could take.

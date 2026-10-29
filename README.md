@@ -163,6 +163,16 @@ list (`Enter` adds the first match, `Escape` closes it). **Done** closes it.
 - One change at a time. On success the issue and the board update; on failure
   the reason shows in red and the issue reloads.
 
+## Close and reopen
+
+**Close issue** in the issue view asks first ("Close #N? This closes it on
+GitLab.", with **Close** and **Cancel**), then closes the issue as you. Only
+its state changes: every label stays, including a status label such as
+`review`, and the question names it. A closed issue shows **Reopen issue**,
+which reopens it at once. On success the issue and the board update; on
+failure the reason shows in red and the issue reloads. Bots, webhooks or
+automations that watch the project see the close like any other.
+
 ## Cards and colors
 
 - Label chips use each label's GitLab colors. Column headers have a dot and
@@ -244,8 +254,8 @@ and board, readable only by you. Clear it with
 `glab` handles all authentication; the plugin never reads, stores, or prints
 a token, and never shows glab's own messages. Every read is a
 `glab api --method GET` request. The writes are one `PUT` to the issue when
-you drop a card or add or remove a label, and one `POST` to its notes when you
-comment; they need the `api` scope (what `glab auth login` asks for by
+you drop a card, add or remove a label, or close or reopen it, and one `POST`
+to its notes when you comment; they need the `api` scope (what `glab auth login` asks for by
 default). A glab call that hasn't answered after 30 seconds is stopped; a
 write that times out may still have reached GitLab, so the view reloads.
 
@@ -279,6 +289,8 @@ answers `401`).
 ./board-fetch labels --project P                # the labels you may edit, and the status ones
 ./board-fetch relabel --project P --iid N --add L    # add one label (a write)
 ./board-fetch relabel --project P --iid N --remove L # remove one label (a write)
+./board-fetch close --project P --iid N         # close an issue (a write)
+./board-fetch reopen --project P --iid N        # reopen it (a write)
 # all of them accept --hostname HOST (default gitlab.com)
 ```
 
@@ -303,6 +315,10 @@ workflow label, in any case); `--add` also needs a label the project has. Only
 then does it send one `PUT /projects/:id/issues/:iid` with just `add_labels`
 or `remove_labels`, as JSON on stdin like `move`. `labels` returns the
 project's labels without the status ones, plus the status list.
+
+`close` and `reopen` send one `PUT /projects/:id/issues/:iid` with only
+`state_event`, as JSON on stdin, and answer `ready` only if GitLab returns
+that issue in the new state.
 
 A board refresh makes one request for the boards (with their lists), the open
 issues (paginated), and one for the last 20 closed issues, skipped when the
