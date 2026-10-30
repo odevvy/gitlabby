@@ -39,6 +39,7 @@ Item {
   property string postFor: ""
   property string postError: ""
   readonly property bool typing: box.activeFocus || labelFilter.activeFocus
+  readonly property Item labelFilter: labelPicker.field
   // Label editor: open only on request; the label list loads when it opens.
   property bool editing: false
   property string labelsFor: ""
@@ -405,63 +406,23 @@ Item {
         id: editor
         visible: view.editing
         width: parent.width; spacing: Style.space(6)
-        Row {
-          spacing: Style.space(8)
-          // Compact; off (dimmed) until the labels have loaded, then focused.
-          TextField {
-            id: labelFilter
-            width: Math.min(editor.width - doneButton.width - parent.spacing, Style.space(220))
-            enabled: view.labelsState === "ready"
-            opacity: enabled ? 1 : 0.5
-            verticalPadding: Style.space(3)
-            font.pixelSize: Style.font.bodySmall
-            foreground: view.host.foreground
-            placeholderText: "Filter labels"
-            onAccepted: if (view.addable.length > 0) view.relabel("add", view.addable[0].name)
-            Keys.onEscapePressed: view.doneEditing()
-          }
+        LabelPicker {
+          id: labelPicker
+          width: parent.width
+          host: view.host; colors: view.colors
+          options: view.addable; shown: view.addableShown
+          labelsState: view.labelsState
+          error: view.labelError !== "" ? view.labelError : view.labelsState === "error" ? view.labelsError : ""
+          busyText: view.labelBusy !== "" ? "Saving " + view.labelBusy + "…" : ""
+          busyName: view.labelBusy
+          onPicked: function(name) { view.relabel("add", name) }
+          onEscaped: view.doneEditing()
           ActionButton {
             id: doneButton
             host: view.host; small: true
-            height: labelFilter.height
+            height: labelPicker.field.height
             label: "Done"
             onClicked: view.doneEditing()
-          }
-        }
-        Flow {
-          width: parent.width; spacing: Style.space(4)
-          visible: view.addable.length > 0
-          Repeater {
-            model: view.addable.slice(0, view.addableShown)
-            delegate: LabelChip {
-              required property var modelData
-              host: view.host; colors: view.colors; name: String(modelData.name)
-              label: "+ " + name
-              clickable: view.labelBusy === ""
-              opacity: view.labelBusy === "" || view.labelBusy === name ? 1 : 0.5
-              onClicked: view.relabel("add", name)
-            }
-          }
-        }
-        Row {
-          width: parent.width; spacing: Style.space(6)
-          visible: labelStatus.text !== ""
-          Spinner { id: labelSpinner; running: labelStatus.busy; anchors.verticalCenter: labelStatus.verticalCenter }
-          BoardText {
-            id: labelStatus
-            width: parent.width - (labelSpinner.visible ? labelSpinner.width + parent.spacing : 0); wrapMode: Text.Wrap
-            readonly property bool bad: view.labelError !== "" || view.labelsState === "error"
-            readonly property bool busy: !bad && (view.labelBusy !== "" || view.labelsState === "loading")
-            text: view.labelError !== "" ? view.labelError
-              : view.labelsState === "error" ? view.labelsError
-              : view.labelBusy !== "" ? "Saving " + view.labelBusy + "…"
-              : view.labelsState === "loading" ? "Loading labels…"
-              : view.labelsState !== "ready" ? ""
-              : view.addable.length > view.addableShown ? (view.addable.length - view.addableShown) + " more: filter to find them."
-              : view.addable.length === 0 ? (labelFilter.text.trim() !== "" ? "No label matches." : "No other labels to add.")
-              : ""
-            color: bad ? view.host.urgent : view.host.dim
-            font.pixelSize: Style.font.bodySmall
           }
         }
         BoardText {
