@@ -263,8 +263,10 @@ Item {
       visible: !!view.issue.url
       label: "Open in browser ↗"; clickable: true
       onClicked: view.host.openUrl(view.issue.url)
+      HoverHandler { id: openHover }
+      IconTip { host: view.host; shown: openHover.hovered; text: "Open in browser (o)" }
     }
-    GlyphButton { host: view.host; glyph: "\uf00d"; onClicked: view.host.back() }
+    GlyphButton { host: view.host; glyph: "\uf00d"; tip: "Back to the board (Esc)"; onClicked: view.host.back() }
   }
 
   Flickable {
@@ -345,7 +347,8 @@ Item {
             text: view.editing ? "\uf00c  Done editing" : "\uf040  Edit labels"
             color: view.host.accent
             font.pixelSize: Style.font.bodySmall
-            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: view.editing ? view.doneEditing() : view.editLabels() }
+            MouseArea { id: editMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: view.editing ? view.doneEditing() : view.editLabels() }
+            IconTip { host: view.host; shown: editMouse.containsMouse; text: view.editing ? "Done editing (Esc)" : "Edit labels (e)" }
           }
         }
         BoardText {
@@ -360,6 +363,7 @@ Item {
           color: stateMouse.containsMouse && enabled ? view.host.foreground : view.host.dim
           font.pixelSize: Style.font.bodySmall
           MouseArea { id: stateMouse; anchors.fill: parent; enabled: parent.enabled; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: view.toggleState() }
+          IconTip { host: view.host; shown: stateMouse.containsMouse; text: (view.issue.state === "closed" ? "Reopen issue" : "Close issue") + " (x)" }
         }
       }
 
