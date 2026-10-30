@@ -57,6 +57,9 @@ Panel {
   property string boardName: defaultBoardName
   // Saved preferences.
   property int refreshIntervalSec: Math.max(30, parseInt(String(saved("refreshIntervalSec", 60)), 10) || 60)
+  // The interval actually used: the setting, faster while cards move, slower
+  // while nothing changes (Logic.adaptiveInterval), from the shared pace.
+  readonly property var cadence: Logic.adaptiveInterval(refreshIntervalSec, feed.paces[fetchKey])
   property var defaultCollapsed: Logic.lowerList(saved("defaultCollapsed", ["closed", "research", "open"]))
   // Busy markers (settings.bots, keyed by project; none by default), from the board on screen.
   readonly property var botStates: Logic.botStates(Logic.botsConfig(saved("bots", null), project), columns)
@@ -234,7 +237,7 @@ Panel {
     if (project === "") { boardState = "loading"; runAux("projects", []); return }
     readCache()
     if (held) { refreshQueued = true; return }
-    var last = feed.request(project, boardId, ifDue === true, refreshIntervalSec * 1000 - 2000, moveFloor)
+    var last = feed.request(project, boardId, ifDue === true, cadence.sec * 1000 - 2000, moveFloor)
     if (last) apply(last.raw, false, last.ticket)
   }
 
@@ -472,6 +475,7 @@ Panel {
   }
   function copyInstall() { Quickshell.execDetached(["wl-copy", installCommand]) }
 
+  function cadenceText() { return "Refreshes every " + Logic.durationText(cadence.sec) + " while open · " + cadence.why }
   function statusText() {
     if (moveError !== "") return moveError
     if (move) return "Moving #" + move.iid + "…"
@@ -498,9 +502,10 @@ Panel {
 
   // Only while the popup is open; opening it refreshes if due (onOpenedChanged).
   // A copy on another screen that fetched meanwhile makes the tick a no-op.
+  // A new cadence restarts it (QML Timer), so the next tick counts from then.
   Timer {
     id: refreshTimer
-    interval: root.refreshIntervalSec * 1000
+    interval: root.cadence.sec * 1000
     repeat: true; running: root.opened && root.setup === ""
     onTriggered: root.refresh(true)
   }
@@ -677,6 +682,14 @@ Panel {
           text: root.statusText()
           color: root.moveError !== "" || (root.refreshError !== "" && root.boardState === "ready" && !root.refreshing) ? root.urgent : root.boardState === "ready" && root.message === "" && !root.move && !root.cached ? root.dim : root.accent
           font.pixelSize: Style.font.bodySmall
+          // Over the words only: how often the board refreshes now, and why.
+          MouseArea {
+            id: statusMouse
+            anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+            width: Math.min(parent.width, parent.paintedWidth); height: parent.height
+            enabled: root.boardState === "ready" && !root.cached; hoverEnabled: true
+          }
+          IconTip { host: root; shown: statusMouse.containsMouse; text: root.cadenceText() }
         }
         BoardText {
           id: refreshButton

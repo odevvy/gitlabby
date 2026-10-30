@@ -558,3 +558,47 @@ test("compact settings: Start collapsed and the busy columns are wrapping rows o
   assert.match(bots, /Flow \{\s*width: parent\.width\s*spacing: Style\.space\(6\)/)
   assert.match(bots, /implicitWidth: checkRow\.implicitWidth \+ Style\.space\(10\)/)
 })
+
+test("adaptive refresh: pace from answers, interval from pace", () => {
+  const col = (name, iids, labels) => ({ name, kind: "label", listId: name.length, issues: iids.map(i => ({ iid: i, labels: labels || [name] })) })
+  const ans = cols => ({ state: "ready", columns: cols })
+  const a = ans([col("todo", [1, 2]), col("review", [3])])
+  // The first answer: calm 2 (the setting). Same again: calm grows. A move or a label change: 0.
+  let p = L.nextPace(null, a)
+  assert.equal(p.calm, 2)
+  p = L.nextPace(p, ans([col("todo", [2, 1]), col("review", [3])]))
+  assert.equal(p.calm, 3, "order and updatedAt don't count")
+  assert.equal(L.nextPace(p, ans([col("todo", [1]), col("review", [3, 2])])).calm, 0, "a card moved")
+  assert.equal(L.nextPace(p, ans([col("todo", [1, 2], ["todo", "api"]), col("review", [3])])).calm, 0, "a label changed")
+  assert.equal(L.nextPace(p, ans([col("todo", [1, 2, 4]), col("review", [3])])).calm, 0, "a card came")
+  // Errors keep the pace.
+  assert.equal(L.nextPace(p, { state: "error" }), p)
+  assert.equal(L.nextPace(null, { state: "error" }), null)
+  // Active: a card in an in-progress or doing column.
+  assert.ok(L.boardActive(ans([col("In Progress", [5])])))
+  assert.ok(L.boardActive(ans([col("doing", [5])])))
+  assert.ok(!L.boardActive(ans([col("in progress", [])])))
+  assert.ok(!L.boardActive(ans([col("todo", [5]), col("review", [6])])), "other columns with cards are not in progress")
+  assert.ok(!L.boardActive({ columns: [{ name: "in progress", kind: "open", issues: [{ iid: 1 }] }] }))
+  // Intervals for a 60 s setting.
+  const at = (calm, active) => L.adaptiveInterval(60, { calm, active: !!active })
+  assert.deepEqual(L.adaptiveInterval(60, null), { sec: 60, why: "your setting" })
+  assert.deepEqual(at(0), { sec: 30, why: "cards moved recently" })
+  assert.deepEqual(at(1), { sec: 30, why: "cards moved recently" })
+  assert.deepEqual([2, 3, 4, 5, 6, 7, 8, 50].map(c => at(c).sec), [60, 60, 120, 120, 240, 240, 240, 240])
+  assert.equal(at(6).why, "nothing changed lately")
+  assert.deepEqual(at(6, true), { sec: 60, why: "cards in progress" })
+  assert.deepEqual(at(0, true).sec, 30)
+  // Never under 30 s, never over 4x the setting.
+  assert.equal(L.adaptiveInterval(30, { calm: 0 }).sec, 30)
+  assert.equal(L.adaptiveInterval(10, { calm: 0 }).sec, 30)
+  assert.equal(L.adaptiveInterval(900, { calm: 99 }).sec, 3600)
+  assert.equal(L.adaptiveInterval(900, { calm: 0 }).sec, 450)
+  assert.deepEqual([30, 60, 450, 3600].map(L.durationText), ["30 s", "1 min", "7 min 30 s", "60 min"])
+  // Board.qml paces its timer and the due check from the shared cadence.
+  const fs = require("node:fs"), path = require("node:path"), dir = path.join(__dirname, "..")
+  const board = fs.readFileSync(path.join(dir, "Board.qml"), "utf8")
+  assert.match(board, /interval: root\.cadence\.sec \* 1000/)
+  assert.match(board, /feed\.request\(project, boardId, ifDue === true, cadence\.sec \* 1000 - 2000, moveFloor\)/)
+  assert.match(board, /Logic\.adaptiveInterval\(refreshIntervalSec, feed\.paces\[fetchKey\]\)/)
+})

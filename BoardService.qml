@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell.Io
+import "Logic.js" as Logic
 
 // One board fetch for the whole shell. Omarchy draws a bar on every screen, so
 // the widget runs once per screen (Bar.qml: Variants over Quickshell.screens;
@@ -18,6 +19,9 @@ Item {
 
   // { key: { raw, ticket, startedAt (ms) } }: the last answer per board.
   property var answers: ({})
+  // { key: { sig, calm, active } }: how much each board has been changing
+  // (Logic.nextPace); every screen paces its refresh timer from it.
+  property var paces: ({})
   // Boards waiting while another one loads, next first: [{ key, args }].
   property var queue: []
   readonly property var queuedKeys: queue.map(function(q) { return q.key })
@@ -68,6 +72,15 @@ Item {
     for (var k in answers) stored[k] = answers[k]
     stored[fetch.key] = { raw: raw, ticket: fetch.ticket, startedAt: fetch.startedAt }
     answers = stored
+    var data = null
+    try { data = JSON.parse(String(raw || "")) } catch (error) {}
+    var pace = Logic.nextPace(paces[fetch.key], data)
+    if (pace) {
+      var p = {}
+      for (var q in paces) p[q] = paces[q]
+      p[fetch.key] = pace
+      paces = p
+    }
     answered(fetch.key, raw, fetch.ticket)
   }
 
@@ -75,6 +88,7 @@ Item {
   function forget() {
     generation++
     answers = ({})
+    paces = ({})
     queue = []
   }
 

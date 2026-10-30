@@ -425,6 +425,47 @@ function keyParts(key) {
   return out
 }
 
+// Adaptive refresh. A board's pace comes from its answers: sig (each card's
+// column and labels), calm (answers in a row without a change) and active
+// (cards in an "in progress" or "doing" column).
+function boardSig(data) {
+  return (data.columns || []).map(function(c) {
+    return columnKey(c) + "=" + (c.issues || []).map(function(i) {
+      return i.iid + "[" + (i.labels || []).slice().sort().join(",") + "]"
+    }).sort().join(" ")
+  }).join("|")
+}
+function boardActive(data) {
+  return (data.columns || []).some(function(c) {
+    return c.kind === "label" && /^(in[ -]?progress|doing)$/i.test(String(c.name || "").trim()) && (c.issues || []).length > 0
+  })
+}
+// The first answer counts as calm 2 (the user's interval); a change resets to 0.
+function nextPace(prev, data) {
+  if (!data || data.state !== "ready") return prev || null
+  var sig = boardSig(data)
+  return { sig: sig, calm: !prev ? 2 : sig === prev.sig ? prev.calm + 1 : 0, active: boardActive(data) }
+}
+// The interval to use, in seconds, and why. Something moved in the last two
+// answers: half the setting. Then the setting; after every two more calm
+// answers it doubles, up to 4x the setting, but not past the setting while
+// cards are in progress. Never under 30 s.
+var paceFloorSec = 30
+function adaptiveInterval(baseSec, pace) {
+  var base = Math.max(paceFloorSec, Number(baseSec) || 60)
+  if (!pace) return { sec: base, why: "your setting" }
+  if (pace.calm < 2) return { sec: Math.max(paceFloorSec, Math.round(base / 2)), why: "cards moved recently" }
+  var slow = Math.min(base * 4, base * Math.pow(2, Math.floor((pace.calm - 2) / 2)))
+  if (slow > base && pace.active) return { sec: base, why: "cards in progress" }
+  return { sec: slow, why: slow > base ? "nothing changed lately" : "your setting" }
+}
+function durationText(sec) {
+  sec = Math.round(Number(sec) || 0)
+  if (sec < 60) return sec + " s"
+  var m = Math.floor(sec / 60), r = sec % 60
+  return r === 0 ? m + " min" : m + " min " + r + " s"
+}
+
 // The popup's height cap for a view. Settings and Keys are short, fixed lists:
 // no cap, so they grow to the free screen height Omarchy's panel allows and
 // scroll only past it. The board and an issue keep the cap (long columns or
@@ -433,7 +474,7 @@ function heightCap(view, cap) { return view === "settings" || view === "keys" ? 
 
 if (typeof module !== "undefined") {
   module.exports = {
-    pipelineMark: pipelineMark, heightCap: heightCap,
+    pipelineMark: pipelineMark, heightCap: heightCap, boardSig: boardSig, boardActive: boardActive, nextPace: nextPace, adaptiveInterval: adaptiveInterval, durationText: durationText,
     lowerList: lowerList, has: has, toggled: toggled, escaped: escaped, countLabel: countLabel, labelStyle: labelStyle, age: age, savedNote: savedNote,
     columnKey: columnKey, listSpec: listSpec, movedColumns: movedColumns, byline: byline, people: people,
     workflowLabels: workflowLabels, statusLabels: statusLabels, addableLabels: addableLabels, withColors: withColors, statusOn: statusOn, botsConfig: botsConfig, botStates: botStates, dotColor: dotColor, inColumn: inColumn,
