@@ -63,6 +63,7 @@ Panel {
 
   // Board data from the last fetch.
   readonly property bool loading: fetchProcess.running
+  readonly property Item tipArea: keyCatcher  // IconTips stay inside the card
   // A refresh of a board already on screen (button, r or the timer); a saved
   // copy says "updating…" itself.
   readonly property bool refreshing: loading && boardState === "ready" && !cached
@@ -636,6 +637,7 @@ Panel {
           id: titleMouse
           x: title.x; width: chevron.x + chevron.width - title.x; height: parent.height
           hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.openPicker()
+          IconTip { host: root; shown: titleMouse.containsMouse; text: "Switch project or board (p)" }
         }
         BoardText {
           id: defaultMark
@@ -645,9 +647,10 @@ Panel {
           font.pixelSize: Style.font.bodySmall
           MouseArea {
             id: defaultMouse; anchors.fill: parent; anchors.margins: -Style.space(4)
-            enabled: !root.onDefault && root.project !== ""; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-            onClicked: root.openDefault()
+            enabled: root.project !== ""; hoverEnabled: true; cursorShape: root.onDefault ? Qt.ArrowCursor : Qt.PointingHandCursor
+            onClicked: if (!root.onDefault) root.openDefault()
           }
+          IconTip { host: root; shown: defaultMouse.containsMouse; text: root.onDefault ? "Your default board" : "Go to your default board" }
         }
         BoardText {
           id: status
@@ -668,6 +671,7 @@ Panel {
           // icon) and finishes the turn it is on, so it always stops upright.
           RotationAnimation on rotation { running: root.loading; alwaysRunToEnd: true; loops: Animation.Infinite; from: 0; to: 360; duration: 900 }
           MouseArea { id: refreshMouse; anchors.fill: parent; anchors.margins: -Style.space(4); hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.refresh() }
+          IconTip { host: root; shown: refreshMouse.containsMouse; text: "Refresh (r)" }
         }
         // The keyboard shortcuts (KeysView), like ? does.
         BoardText {
@@ -677,11 +681,7 @@ Panel {
           color: keysMouse.containsMouse || root.view === "keys" ? root.accent : root.dim
           font.pixelSize: Style.font.body
           MouseArea { id: keysMouse; anchors.fill: parent; anchors.margins: -Style.space(4); hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.toggleView("keys") }
-          PanelToolTip {
-            y: parent.height + Style.space(6); visible: keysMouse.containsMouse
-            text: "Keyboard shortcuts (?)"
-            onAboutToShow: x = parent.width - implicitWidth  // ends under the button, inside the card
-          }
+          IconTip { host: root; shown: keysMouse.containsMouse; text: "Keyboard shortcuts (?)" }
         }
         BoardText {
           id: gear
@@ -690,6 +690,7 @@ Panel {
           color: gearMouse.containsMouse || root.view === "settings" ? root.accent : root.dim
           font.pixelSize: Style.font.body
           MouseArea { id: gearMouse; anchors.fill: parent; anchors.margins: -Style.space(4); hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.toggleView("settings") }
+          IconTip { host: root; shown: gearMouse.containsMouse; text: "Settings (s)" }
         }
       }
 

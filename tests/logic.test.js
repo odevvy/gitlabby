@@ -426,6 +426,26 @@ test("bots editor: add, remove and busy toggles change only their part", () => {
   assert.deepEqual(L.withoutBot({ [P]: { bots: [{ name: "" }, { name: "A", label: "a" }] } }, P, 0), { [P]: { bots: [{ name: "A", label: "a" }] } })
 })
 
+test("icon buttons: every GlyphButton has a tip, and every key in a tip's brackets is a real key", () => {
+  const fs = require("node:fs"), path = require("node:path"), dir = path.join(__dirname, "..")
+  const keys = new Set(L.keyGroups.flatMap(g => g.keys.flatMap(([k]) => k.split(" or "))))
+  const tips = []
+  for (const f of fs.readdirSync(dir).filter(f => f.endsWith(".qml") && f !== "GlyphButton.qml")) {
+    const src = fs.readFileSync(path.join(dir, f), "utf8")
+    for (const m of src.matchAll(/GlyphButton \{/g)) {
+      let depth = 0, end = m.index
+      for (; end < src.length; end++) { if (src[end] === "{") depth++; else if (src[end] === "}" && --depth === 0) break }
+      assert.match(src.slice(m.index, end), /\btip: "/, f + ": a GlyphButton without a tip")
+      tips.push(src.slice(m.index, end))
+    }
+    for (const m of src.matchAll(/IconTip \{[^\n]*/g)) tips.push(m[0])
+  }
+  assert.ok(tips.length >= 17, "found " + tips.length)  // 6 GlyphButtons, 11 IconTips (v0.1.30)
+  const bracketed = tips.flatMap(t => [...t.matchAll(/\(([^()"]+)\)"/g)].map(m => m[1]))
+  for (const k of bracketed) assert.ok(keys.has(k), "'" + k + "' in a tip is not a shortcut")
+  assert.deepEqual([...new Set(bracketed)].sort(), ["?", "Esc", "e", "o", "p", "r", "s", "x"])
+})
+
 // v0.1.30 regression: his saved setting, exactly as in shell.json. Omarchy
 // hands settings over through Qt, so its lists arrive as sequences:
 // Array.isArray false, though JSON.stringify gives the array. Stand-in: an
