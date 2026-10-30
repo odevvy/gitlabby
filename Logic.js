@@ -13,6 +13,10 @@ function toggled(list, name) {
   return has(list, key) ? list.filter(function(v) { return v !== key }) : list.concat([key])
 }
 
+// A column's count: "20+" when board-fetch says there are more than it holds
+// (Closed, capped at the latest 20). Open and label columns are never capped.
+function countLabel(column) { return String((column.issues || []).length) + (column.capped ? "+" : "") }
+
 function escaped(text) { return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") }
 
 // A label's colors ({ color, textColor }, validated #rrggbb from board-fetch).
@@ -339,7 +343,7 @@ var keys = [
 
 if (typeof module !== "undefined") {
   module.exports = {
-    lowerList: lowerList, has: has, toggled: toggled, escaped: escaped, labelStyle: labelStyle, age: age, savedNote: savedNote,
+    lowerList: lowerList, has: has, toggled: toggled, escaped: escaped, countLabel: countLabel, labelStyle: labelStyle, age: age, savedNote: savedNote,
     columnKey: columnKey, listSpec: listSpec, movedColumns: movedColumns, byline: byline, people: people,
     workflowLabels: workflowLabels, statusLabels: statusLabels, addableLabels: addableLabels, withColors: withColors, statusOn: statusOn, botsConfig: botsConfig, botStates: botStates,
     botsEntry: botsEntry, botUsable: botUsable, botNameTaken: botNameTaken, withBot: withBot, withoutBot: withoutBot, withBusy: withBusy,

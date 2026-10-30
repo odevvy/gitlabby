@@ -48,7 +48,7 @@ Item {
       delegate: Pill {
         required property var modelData
         readonly property bool shown: !view.host.isHidden(modelData.name)
-        label: modelData.name + " " + (modelData.issues || []).length
+        label: modelData.name + " " + Logic.countLabel(modelData)
         textColor: shown ? view.host.foreground : view.host.dim
         color: shown ? view.host.faint : "transparent"
         opacity: shown ? 1 : 0.6
@@ -103,7 +103,7 @@ Item {
             visible: opacity > 0
             Behavior on opacity { NumberAnimation { duration: 140 } }
             implicitHeight: stripCount.implicitHeight + stripName.implicitWidth + Style.space(24)
-            Pill { id: stripCount; anchors.horizontalCenter: parent.horizontalCenter; y: Style.space(6); label: String(column.issues.length); textColor: view.host.foreground; border.color: column.tint }
+            Pill { id: stripCount; anchors.horizontalCenter: parent.horizontalCenter; y: Style.space(6); label: Logic.countLabel(column.modelData); textColor: view.host.foreground; border.color: column.tint }
             BoardText {
               id: stripName
               anchors.horizontalCenter: parent.horizontalCenter
@@ -142,7 +142,7 @@ Item {
                   text: column.modelData.name
                   font { bold: true; capitalization: Font.AllUppercase }
                 }
-                Pill { anchors.verticalCenter: parent.verticalCenter; label: String(column.issues.length); color: view.host.faint }
+                Pill { anchors.verticalCenter: parent.verticalCenter; label: Logic.countLabel(column.modelData); color: view.host.faint }
               }
               Rectangle {
                 anchors.bottom: parent.bottom; width: parent.width; height: Math.max(1, Style.space(2)); radius: height / 2
@@ -277,7 +277,7 @@ Item {
               }
             }
 
-            // A capped column (board-fetch: Closed holds the latest 20) says so
+            // A capped column (board-fetch: Closed holds the latest 20 when there are more) says so
             // and links to the rest on GitLab. Open and label columns are never capped.
             BoardText {
               visible: !!column.modelData.seeAll

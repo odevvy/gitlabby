@@ -18,6 +18,14 @@ test("escaped makes text safe for StyledText and RichText", () => {
   assert.equal(L.escaped("<b>a & b</b>"), "&lt;b&gt;a &amp; b&lt;/b&gt;")
 })
 
+test("column counts: 20+ only for a capped column", () => {
+  const n = k => Array.from({ length: k }, (_, i) => ({ iid: i + 1 }))
+  assert.equal(L.countLabel({ name: "Closed", issues: n(20), capped: true }), "20+")
+  assert.equal(L.countLabel({ name: "Closed", issues: n(20) }), "20")
+  assert.equal(L.countLabel({ name: "todo", issues: n(3), capped: false }), "3")
+  assert.equal(L.countLabel({ name: "Open" }), "0")
+})
+
 test("label colors: own text color wins, else dark on light and white on dark", () => {
   assert.equal(L.labelStyle(undefined), null)
   assert.equal(L.labelStyle({ color: null }), null)
