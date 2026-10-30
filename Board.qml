@@ -741,7 +741,7 @@ Panel {
             BoardText { id: badgeText; anchors.centerIn: parent; text: mrsButton.badge; color: root.background; font { pixelSize: Style.font.caption * 0.85; bold: true } }
           }
           MouseArea { id: mrsMouse; anchors.fill: parent; anchors.margins: -Style.space(4); hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.toggleView("mrs") }
-          IconTip { host: root; shown: mrsMouse.containsMouse; text: "Merge requests" }
+          IconTip { host: root; shown: mrsMouse.containsMouse; text: "Merge requests (m)" }
         }
         // The keyboard shortcuts (KeysView), like ? does.
         BoardText {

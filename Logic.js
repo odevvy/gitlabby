@@ -393,6 +393,7 @@ var keyGroups = [
   { title: "Anywhere", keys: [
     ["p", "Choose a project and board"],
     ["s", "Settings"],
+    ["m", "Merge requests waiting on your review, and yours"],
     ["?", "These shortcuts (or the keyboard button in the header)"],
     ["Tab or Shift+Tab", "Next or previous bar panel"],
     ["Esc", "Back to the board; on the board, close"]] },
@@ -401,6 +402,10 @@ var keyGroups = [
     ["c", "Write a comment"],
     ["e", "Edit labels"],
     ["x", "Close the issue, after a confirm, or reopen it"]] },
+  { title: "Merge requests", keys: [
+    ["j k or ↓ ↑", "Move between merge requests"],
+    ["Enter or o", "Open the selected one in the browser"],
+    ["r", "Refresh the lists"]] },
   { title: "Comment box", keys: [
     ["Ctrl+Enter", "Post the comment"],
     ["Esc", "Leave the box"]] },

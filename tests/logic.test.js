@@ -218,11 +218,13 @@ test("the README's Keyboard section lists exactly the keys the popup shows, grou
 test("the key groups: every view's keys, the setup panel's, no key twice in a group", () => {
   const group = title => (L.keyGroups.find(g => g.title === title) || { keys: [] }).keys
   const action = (title, key) => (group(title).find(([k]) => k === key) || [])[1] || ""
-  assert.deepEqual(L.keyGroups.map(g => g.title), ["Board", "Confirm a move or a close", "Anywhere", "Issue", "Comment box", "Pickers and filters", "Setup panel"])
+  assert.deepEqual(L.keyGroups.map(g => g.title), ["Board", "Confirm a move or a close", "Anywhere", "Issue", "Merge requests", "Comment box", "Pickers and filters", "Setup panel"])
   assert.match(action("Setup panel", "Enter or Space"), /main button/)
   assert.match(action("Setup panel", "r"), /Try again/)
   assert.match(action("Anywhere", "?"), /keyboard button in the header/)
   for (const k of ["o", "c", "e", "x"]) assert.ok(action("Issue", k), k)
+  assert.match(action("Anywhere", "m"), /Merge requests/)
+  for (const k of ["j k or ↓ ↑", "Enter or o", "r"]) assert.ok(action("Merge requests", k), k)
   for (const g of L.keyGroups) assert.equal(new Set(g.keys.map(([k]) => k)).size, g.keys.length, g.title)
 })
 
@@ -473,7 +475,7 @@ test("icon buttons: every GlyphButton has a tip, and every key in a tip's bracke
   assert.ok(tips.length >= 17, "found " + tips.length)  // 6 GlyphButtons, 11 IconTips (v0.1.30)
   const bracketed = tips.flatMap(t => [...t.matchAll(/\(([^()"]+)\)"/g)].map(m => m[1]))
   for (const k of bracketed) assert.ok(keys.has(k), "'" + k + "' in a tip is not a shortcut")
-  assert.deepEqual([...new Set(bracketed)].sort(), ["?", "Esc", "e", "o", "p", "r", "s", "x"])
+  assert.deepEqual([...new Set(bracketed)].sort(), ["?", "Esc", "e", "m", "o", "p", "r", "s", "x"])
 })
 
 // v0.1.30 regression: his saved setting, exactly as in shell.json. Omarchy
