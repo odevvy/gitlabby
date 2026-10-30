@@ -139,7 +139,7 @@ Column {
     property bool on: false
     readonly property bool clickable: true
     signal clicked()
-    implicitWidth: checkRow.implicitWidth; implicitHeight: Style.space(22)
+    implicitWidth: checkRow.implicitWidth + Style.space(10); implicitHeight: Style.space(22)
     Row {
       id: checkRow
       anchors.verticalCenter: parent.verticalCenter
@@ -205,7 +205,7 @@ Column {
     }
     Flow {
       width: parent.width
-      spacing: Style.space(16)
+      spacing: Style.space(6)
       topPadding: Style.space(2)
       Repeater {
         model: sec.labelColumns

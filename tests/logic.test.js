@@ -546,3 +546,15 @@ test("popup height: Settings and Keys have no cap (they grow to the free screen 
   const board = fs.readFileSync(path.join(__dirname, "..", "Board.qml"), "utf8")
   assert.match(board, /contentHeight: panel\.fittedContentHeight\(keyCatcher\.implicitHeight, Logic\.heightCap\(root\.view, Style\.space\(640\)\)\)/)
 })
+
+test("compact settings: Start collapsed and the busy columns are wrapping rows of check boxes with the same gaps", () => {
+  const fs = require("node:fs"), path = require("node:path"), dir = path.join(__dirname, "..")
+  const settings = fs.readFileSync(path.join(dir, "SettingsView.qml"), "utf8")
+  const bots = fs.readFileSync(path.join(dir, "BotsSection.qml"), "utf8")
+  // One Flow of check boxes for Start collapsed (no full-width row per column).
+  assert.match(settings, /Flow \{\s*width: parent\.width\s*spacing: Style\.space\(6\)\s*Repeater \{\s*model: view\.host\.availableColumns/)
+  assert.doesNotMatch(settings, /id: rows/)
+  // The busy row wraps with the same small gap; the room between boxes is the box's own padding.
+  assert.match(bots, /Flow \{\s*width: parent\.width\s*spacing: Style\.space\(6\)/)
+  assert.match(bots, /implicitWidth: checkRow\.implicitWidth \+ Style\.space\(10\)/)
+})
