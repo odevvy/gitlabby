@@ -175,6 +175,7 @@ Item {
                 readonly property bool keyed: view.host.cursor !== null && view.host.cursor.col === column.index && view.host.cursor.iid === modelData.iid
                 onKeyedChanged: if (keyed) Qt.callLater(view.reveal, card)
                 readonly property bool hovered: cardMouse.containsMouse || keyed
+                readonly property bool picked: view.host.picked.indexOf(Logic.pickKey(column.modelData, modelData.iid)) !== -1
                 readonly property bool movable: view.host.canDrop(column.modelData) && !view.host.move
                 readonly property bool lifted: ghost.Drag.active && view.dragRow !== null && view.dragRow.iid === modelData.iid
                   && Logic.columnKey(view.dragFrom) === Logic.columnKey(column.modelData)
@@ -185,8 +186,8 @@ Item {
                   + footer.implicitHeight + Style.space(22)
                 radius: Style.space(6)
                 opacity: lifted || (view.host.move !== null && view.host.move.iid === modelData.iid) ? 0.4 : column.modelData.kind === "closed" ? 0.65 : 1
-                color: Qt.rgba(fg.r, fg.g, fg.b, hovered ? 0.1 : 0.05)
-                border { width: 1; color: hovered ? column.tint : Qt.rgba(fg.r, fg.g, fg.b, 0.1) }
+                color: picked ? Qt.rgba(view.host.accent.r, view.host.accent.g, view.host.accent.b, 0.1) : Qt.rgba(fg.r, fg.g, fg.b, hovered ? 0.1 : 0.05)
+                border { width: picked ? 2 : 1; color: picked ? view.host.accent : hovered ? column.tint : Qt.rgba(fg.r, fg.g, fg.b, 0.1) }
                 // Hover: lift by a couple of pixels and brighten.
                 transform: Translate { y: card.hovered ? -Style.space(2) : 0; Behavior on y { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } } }
                 Behavior on color { ColorAnimation { duration: 120 } }
@@ -275,7 +276,20 @@ Item {
                   }
                   onReleased: { if (dragged && ghost.Drag.active) ghost.Drag.drop(); card.pressing = false; view.endDrag() }
                   onCanceled: { card.pressing = false; view.endDrag() }
-                  onClicked: if (!dragged) view.host.openIssue(card.modelData)
+                  // Ctrl+click picks the card for a bulk action (BulkBar.qml).
+                  onClicked: function(mouse) {
+                    if (dragged) return
+                    if (mouse.modifiers & Qt.ControlModifier) view.host.togglePick(column.modelData, card.modelData.iid)
+                    else view.host.openIssue(card.modelData)
+                  }
+                }
+                // A picked card: a check on its corner.
+                Rectangle {
+                  objectName: "pickMark"
+                  visible: card.picked; z: 5
+                  anchors { right: parent.right; top: parent.top; margins: -Style.space(5) }
+                  width: Style.space(16); height: width; radius: width / 2; color: view.host.accent
+                  BoardText { anchors.centerIn: parent; text: "\uf00c"; color: view.host.background; font.pixelSize: Style.space(9) }
                 }
                 // Review cards: their merge request's pipeline, left of the age; above
                 // cardMouse, so a click opens the pipeline, not the issue.
