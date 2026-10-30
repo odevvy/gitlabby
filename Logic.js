@@ -739,6 +739,52 @@ function bulkSummary(action, results) {
   return text + (tail.length ? " " + tail.join(", ") + "." : "")
 }
 
+// Write access per project (the view-only hint, AccessHint.qml). An entry
+// comes from board-fetch access ({ level, scopes }) or from a refused write.
+// GitLab roles: 0 none, 5 Minimal, 10 Guest, 15 Planner, 20 Reporter, 30
+// Developer; labels and closing need Planner or more.
+var plannerLevel = 15
+function accessEntry(raw) {
+  var d = null
+  try { d = JSON.parse(String(raw || "")) } catch (error) { d = null }
+  if (!d || d.state !== "ready" || typeof d.level !== "number") return { known: false, level: -1, scopes: null, refused: "" }
+  return { known: true, level: d.level, scopes: Array.isArray(d.scopes) ? d.scopes.map(String) : null, refused: "" }
+}
+// A write's error: "scope" (the token has no api scope), "forbidden" (403), or "".
+function writeRefusal(message) {
+  var m = String(message || "")
+  return /insufficient_scope/i.test(m) ? "scope" : /\b403\b|forbidden/i.test(m) ? "forbidden" : ""
+}
+function refusedEntry(entry, kind) { return Object.assign({ known: false, level: -1, scopes: null }, entry || {}, { refused: kind }) }
+// "" (writes on), "read-token" (glab's token can't write), "view-only" (below
+// Planner on this project, or GitLab refused a change with 403).
+function accessNote(entry) {
+  if (!entry) return ""
+  if (entry.refused === "scope" || (Array.isArray(entry.scopes) && entry.scopes.indexOf("api") === -1)) return "read-token"
+  if ((entry.known && entry.level < plannerLevel) || entry.refused === "forbidden") return "view-only"
+  return ""
+}
+// The hint's words: { title, body, link } (link: show the token page button).
+function accessHint(note, entry, project, host) {
+  var login = "glab auth login --hostname " + host
+  if (note === "read-token") return { link: false,
+    title: "Signed in with a read-only token, so moves, labels and close are off.",
+    body: "glab's token has no api scope. To change cards, run " + login + " in a terminal with a token that has api." }
+  var why = entry && entry.known && entry.level < plannerLevel
+    ? (entry.level <= 0 ? "you're not a member" : entry.level < 10 ? "you have Minimal access" : "you're a Guest")
+    : "GitLab refused a change (403)"
+  return { link: true,
+    title: "View-only on " + project + ": " + why + ", so moves, labels and close are off here.",
+    body: "Your glab sign-in can change anything your account can. If you only read boards, a token that can only read is safer: "
+      + "create one with just the read_api scope, then run " + login + " in a terminal and paste it there, never anywhere else. "
+      + "glab in your terminal becomes read-only too, for every project." }
+}
+// GitLab's own token page, prefilled (docs: Prefill personal access token
+// details): a name and the read_api scope. Never a token.
+function patUrl(host) {
+  return "https://" + host + "/-/user_settings/personal_access_tokens?name=GitLab+board&description=Read-only+token+for+the+Omarchy+GitLab+board&scopes=read_api"
+}
+
 // The popup's height cap for a view. Settings and Keys are short, fixed lists:
 // no cap, so they grow to the free screen height Omarchy's panel allows and
 // scroll only past it. The board and an issue keep the cap (long columns or
@@ -754,6 +800,7 @@ if (typeof module !== "undefined") {
     botsEntry: botsEntry, botUsable: botUsable, botNameTaken: botNameTaken, withBot: withBot, withoutBot: withoutBot, withBusy: withBusy,
     linkUrl: linkUrl, inline: inline, quickAction: quickAction, moveNote: moveNote, lineLimit: lineLimit, markdown: markdown, descriptionLimit: descriptionLimit, cursorMove: cursorMove, plainJson: plainJson, cursorFix: cursorFix, keyGroups: keyGroups, keyParts: keyParts,
     bulkCap: bulkCap, pickKey: pickKey, togglePick: togglePick, pickedCards: pickedCards, livePicks: livePicks, movable: movable, closeOrReopen: closeOrReopen,
-    bulkPlan: bulkPlan, bulkQuestion: bulkQuestion, bulkButton: bulkButton, bulkNote: bulkNote, bulkLines: bulkLines, bulkOutcome: bulkOutcome, bulkSummary: bulkSummary
+    bulkPlan: bulkPlan, bulkQuestion: bulkQuestion, bulkButton: bulkButton, bulkNote: bulkNote, bulkLines: bulkLines, bulkOutcome: bulkOutcome, bulkSummary: bulkSummary,
+    plannerLevel: plannerLevel, accessEntry: accessEntry, writeRefusal: writeRefusal, refusedEntry: refusedEntry, accessNote: accessNote, accessHint: accessHint, patUrl: patUrl
   }
 }
