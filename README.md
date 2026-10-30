@@ -564,6 +564,27 @@ your GitLab user settings if you need to. The saved boards in
 `~/.cache/odevvy.gitlab-board` are deleted with it, and the popup shows the
 sign-in panel.
 
+### View-only projects
+
+The first time a project's board loads in a session, the plugin asks GitLab
+once for your role there (`board-fetch access`: a `GET` of the project, and of
+`personal_access_tokens/self` for the token's scopes, never the token
+itself). Below Planner (Guest, Minimal or no membership), or once GitLab
+refuses a change with 403, the board is view-only: dragging, bulk actions,
+labels and close/reopen are off, the header says **View-only**, and a note
+under the header says why. Comments stay on (Guests may comment).
+
+The note suggests a token that can only read: **Open GitLab's token page**
+opens GitLab's own page over https with the name and the `read_api` scope
+filled in; you create the token there, then run
+`glab auth login --hostname gitlab.com` in a terminal and paste it into
+glab, never into this plugin or a chat. glab keeps one token per host, so
+glab in your terminal becomes read-only too. **Not now** hides the note for
+that project (saved in `accessHintDismissed`); writes stay off.
+
+If glab's token has no `api` scope, the note says so instead (no token page:
+you already have a read-only token), and writes are off on every project.
+
 ## board-fetch
 
 `board-fetch` is the helper the widget runs. It prints one JSON object whose
@@ -585,6 +606,7 @@ answers `401`).
                                                 # move an issue (a write)
 ./board-fetch comment --project P --iid N <file # post stdin as a comment (a write)
 ./board-fetch labels --project P                # the labels you may edit, and the status ones
+./board-fetch access --project P                # your role there (level) and the token's scopes
 ./board-fetch relabel --project P --iid N --add L    # add one label (a write)
 ./board-fetch relabel --project P --iid N --remove L # remove one label (a write)
 ./board-fetch close --project P --iid N         # close an issue (a write)
