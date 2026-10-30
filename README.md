@@ -312,6 +312,29 @@ omarchy bar set odevvy.gitlab-board bots '{"firelink21/phrase41":{"busyLists":["
 
 Remove it with `omarchy bar set odevvy.gitlab-board bots '{}' --json`.
 
+## Alerts
+
+Settings > Alerts has two check boxes for the project on screen, both off by
+default and saved per project (`alerts` in the widget's settings):
+
+- **A card enters review**: a card appears in the board's `review` column.
+  Several in one refresh make one notification (`3 cards entered review`).
+- **A bot stops working**: a bot of [Who's busy](#whos-busy) had a card in a
+  working column and now has none there.
+
+They come as Omarchy notifications under the app name `GitLab board`, low
+urgency, so Do Not Disturb holds them (they wait in the notification
+history). Clicking one opens the issue, or the board for several cards or a
+bot, in the browser. Your own moves aren't announced back to you. Nothing is
+announced on the first load after a shell start, after switching boards, or
+for the first good refresh after a failed one (changes in between are only
+compared from then on).
+
+While an alert is on, the board also refreshes with the popup closed, at its
+adaptive pace (see [Popup](#popup)): up to 4x your interval when nothing
+changes. With both off there is no background refresh. However many monitors,
+there is one refresh and one notification per event (the plugin's service).
+
 ## Cards and colors
 
 - Label chips use each label's GitLab colors. Column headers have a dot and

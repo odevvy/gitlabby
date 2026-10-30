@@ -63,6 +63,16 @@ Panel {
   property var defaultCollapsed: Logic.lowerList(saved("defaultCollapsed", ["closed", "research", "open"]))
   // Busy markers (settings.bots, keyed by project; none by default), from the board on screen.
   readonly property var botStates: Logic.botStates(Logic.botsConfig(saved("bots", null), project), columns)
+  // Desktop alerts for the project on screen (settings.alerts; off by default).
+  // While one is on, the shared service watches this board, refreshes it with
+  // the popup closed and notifies (BoardService.qml watch); one per event.
+  readonly property var alerts: Logic.alertsFor(saved("alerts", null), project)
+  readonly property string watchOwner: "w" + Math.floor(Math.random() * 1e9)
+  readonly property var watchCfg: project !== "" && setup === "" && (alerts.review || alerts.idle)
+    ? { key: fetchKey, project: project, boardId: boardId, review: alerts.review, idle: alerts.idle, bots: saved("bots", null), base: refreshIntervalSec } : null
+  onWatchCfgChanged: feed.watch(watchOwner, watchCfg)
+  Component.onDestruction: feed.watch(watchOwner, null)
+  function setAlert(kind, on) { persist(undefined, undefined, Logic.withAlert(saved("alerts", null), project, kind, on)) }
   // Projects whose card moves ask first (settings.confirmMoves; none by default).
   readonly property bool confirmMoves: Logic.has(Logic.lowerList(saved("confirmMoves", [])), project)
   property var boardStates: saved("boardStates", ({})) || ({})
@@ -203,8 +213,9 @@ Panel {
   // Same write path as built-in widgets: merge into the inline entry and hand
   // it to the shell facade. Without the facade the state stays in memory.
   // nextDefault ({ project, id, name }) replaces the saved default board.
-  // nextBots replaces settings.bots (Settings > Bots); otherwise it is kept as saved.
-  function persist(nextDefault, nextBots) {
+  // nextBots replaces settings.bots (Settings > Bots), nextAlerts settings.alerts
+  // (Settings > Alerts); otherwise they are kept as saved.
+  function persist(nextDefault, nextBots, nextAlerts) {
     if (!bar || !bar.shell || typeof bar.shell.updateEntryInline !== "function") return
     var d = nextDefault || { project: defaultProject, id: defaultBoardId, name: defaultBoardName }
     var entry = { id: moduleName }
@@ -218,6 +229,7 @@ Panel {
     entry.boardStates = boardStates
     entry.settingsRevision = settingsRevision
     if (nextBots !== undefined) entry.bots = nextBots
+    if (nextAlerts !== undefined) entry.alerts = nextAlerts
     bar.shell.updateEntryInline(moduleName, entry)
   }
   function saveBots(next) { persist(undefined, next) }
@@ -340,6 +352,7 @@ Panel {
     // Answers from fetches started before now may predate the write: the next
     // one must start after it (moveFloor), on every screen's behalf.
     if (data.state === "ready" || data.state === "stale") { refreshQueued = true; moveFloor = feed.tickets + 1 }
+    if (data.state === "ready") feed.noteOwnMove(fetchKey, move.iid)  // no alert for his own move
     move = null
   }
 
@@ -497,7 +510,7 @@ Panel {
   implicitWidth: button.implicitWidth
   implicitHeight: button.implicitHeight
 
-  Component.onCompleted: Qt.callLater(readCache)
+  Component.onCompleted: { Qt.callLater(readCache); feed.watch(watchOwner, watchCfg) }
   onOpenedChanged: if (opened) { view = "board"; cursor = null; refresh(true) } else { boardView.endDrag(); pendingMove = null }
 
   // Only while the popup is open; opening it refreshes if due (onOpenedChanged).
