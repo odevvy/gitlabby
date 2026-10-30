@@ -334,7 +334,7 @@ var keys = [
   ["s", "Settings"],
   ["?", "This list of keys"],
   ["Tab or Shift+Tab", "Next or previous bar panel"],
-  ["Escape", "Cancel a confirm; leave the comment box; close the label editor; otherwise back to the board; on the board, close"]
+  ["Escape", "Cancel a confirm; leave the comment box; close the label editor or the new-bot form; otherwise back to the board; on the board, close"]
 ]
 
 if (typeof module !== "undefined") {
