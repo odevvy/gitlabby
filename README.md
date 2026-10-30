@@ -218,16 +218,22 @@ project, and it reads only the board already on screen: no extra GitLab
 calls, no polling.
 
 **In Settings** (gear, or `s`), under Bots, for the project on screen: click
-**Show bot status for this board**, give the bot a name and say what makes it
-busy: cards with one of the project's labels (board columns and labels
-another bot has aren't offered), every card in a column, or cards no bot
-owns. The first bot turns on every label column under **Busy columns**;
-click a column to turn it off or on. ✕ removes a bot at once. Every change
-is saved right away to the same `bots` setting, and the row under the header
-follows at once. A bot whose label the project no longer has, or whose
-column isn't on this board, stays and is marked. If the setting isn't a JSON
-object (for example set without `--json`), Settings says so and adding a bot
-replaces it.
+**Show bot status for this board**. The new-bot form asks, one labelled row
+at a time, for the bot's **Name** and what it is **Busy with**: cards with
+one of the project's labels (pick it under **Label**; board columns and
+labels another bot has aren't offered), every card in a column (pick it
+under **Column**), or cards no bot owns (only one bot can have that; once
+one does, the choice is shown but off). While **Add** is dim, the line
+beside it says why: a name to give, a label or column to choose, or a name
+another bot already has. The first bot turns on every label column; the
+check boxes under **Count a bot as busy when its card is in**, above the
+list, turn a column off or on (Open and Closed never count). The list reads
+"cards labelled", "every card in" or "cards no other bot owns" per bot; ✕
+removes one at once. Every change is saved right away to the same `bots`
+setting, and the row under the header follows at once. A bot whose label the
+project no longer has, or whose column isn't on this board, stays and is
+marked. If the setting isn't a JSON object (for example set without
+`--json`), Settings says so and adding a bot replaces it.
 
 The setting itself, for a board where each builder has an owner label and a
 reviewer takes everything in review:
