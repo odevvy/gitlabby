@@ -250,7 +250,7 @@ The filter turns on once the labels have loaded. **Done** or **Done editing**
 closes it.
 
 - **Status labels are never edited here.** A label that is a list on any of
-  the project's boards, or one of the workflow labels (`research`, `todo`,
+  the project's boards or its groups' boards, or one of the workflow labels (`research`, `todo`,
   `approved`, `in progress`, `review`), in any case, is neither offered nor
   removable; it changes by dragging the card. board-fetch refuses it too.
 - Each click is one write to GitLab as you (`add_labels` or `remove_labels`,
@@ -630,8 +630,9 @@ one `POST /projects/:id/issues/:iid/notes`; the text never goes on a command
 line or into a log.
 
 `relabel` takes exactly one `--add` or `--remove`. It loads every board of
-the project and refuses a status label (a list label of any board, or a
-workflow label, in any case); `--add` also needs a label the project has. Only
+the project and, best effort, of its group and each parent group (group
+boards show the project's issues too), and refuses a status label (a list
+label of any of those boards, or a workflow label, in any case); `--add` also needs a label the project has. Only
 then does it send one `PUT /projects/:id/issues/:iid` with just `add_labels`
 or `remove_labels`, as JSON on stdin like `move`. `labels` returns the
 project's labels without the status ones, plus the status list.

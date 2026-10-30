@@ -14,7 +14,8 @@
 # The MR lists: scope=reviews_for_me answers mrs-review.json, scope=created_by_me
 # mrs-mine.json (any project prefix); .../merge_requests/M/reviewers reviewers-M.json.
 # Access: projects/P (one segment) answers project.json, personal_access_tokens/self
-# token-self.json.
+# token-self.json. Group boards: groups/G/boards answers group-boards-G.json
+# (G as sent, e.g. top%2Fsub).
 printf '%s\n' "$*" >>"$FAKE_LOG"
 if [[ -n ${FAKE_HANG:-} && " $* " == *"$FAKE_HANG"* ]]; then  # never answers
   [[ ${FAKE_HANG_TERM:-} == ignore ]] && trap '' TERM
@@ -59,6 +60,7 @@ if [[ " $* " != *" --method GET "* ]]; then
   echo "BAD-WRITE $*" >>"$FAKE_LOG"; exit 9
 fi
 case $endpoint in
+  groups/*/boards\?*) f=${endpoint#groups/}; f=group-boards-${f%%/boards\?*} ;;
   projects\?*) f=projects ;;
   */boards\?*) f=boards ;;
   */boards/[0-9]*) f=board ;;
