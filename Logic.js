@@ -350,22 +350,53 @@ function cursorAt(lanes, col, row) {
 }
 
 // The popup's keys, shown by ? and listed in the README's Keyboard section.
-var keys = [
-  ["h j k l or arrows", "Move between cards; up and down in the picker"],
-  ["Shift+H or Shift+L", "Move the selected card to the column on the left or right"],
-  ["Enter or Space", "Open the selected issue; pick the selected row; confirm a move or a close; the setup panel's main button"],
-  ["o", "Open the issue in the browser"],
-  ["c", "Write a comment (issue view)"],
-  ["Ctrl+Enter", "Post the comment"],
-  ["e", "Edit labels (issue view)"],
-  ["x", "Close the issue, after a confirm, or reopen it (issue view)"],
-  ["r", "Refresh the board; Try again on the setup panel"],
-  ["p", "Choose a project and board"],
-  ["s", "Settings"],
-  ["?", "This list of keys"],
-  ["Tab or Shift+Tab", "Next or previous bar panel"],
-  ["Escape", "Cancel a confirm; leave the comment box; close the label editor or the new-bot form; otherwise back to the board; on the board, close"]
+// The popup's keys, by where they work (KeysView, and the README's Keyboard
+// section, which tests/logic.test.js holds to this list). In a key, spaces
+// separate keys, "or" separates choices, and + joins a chord.
+var keyGroups = [
+  { title: "Board", keys: [
+    ["h j k l or ← ↓ ↑ →", "Move between cards"],
+    ["Enter or Space", "Open the selected issue"],
+    ["o", "Open the selected issue in the browser"],
+    ["Shift+H or Shift+L", "Move the selected card to the column on the left or right, after a confirm"],
+    ["r", "Refresh the board"]] },
+  { title: "Confirm a move or a close", keys: [
+    ["Enter or Space", "Yes"],
+    ["Esc", "Cancel"]] },
+  { title: "Anywhere", keys: [
+    ["p", "Choose a project and board"],
+    ["s", "Settings"],
+    ["?", "These shortcuts"],
+    ["Tab or Shift+Tab", "Next or previous bar panel"],
+    ["Esc", "Back to the board; on the board, close"]] },
+  { title: "Issue", keys: [
+    ["o", "Open the issue in the browser"],
+    ["c", "Write a comment"],
+    ["e", "Edit labels"],
+    ["x", "Close the issue, after a confirm, or reopen it"]] },
+  { title: "Comment box", keys: [
+    ["Ctrl+Enter", "Post the comment"],
+    ["Esc", "Leave the box"]] },
+  { title: "Pickers and filters", keys: [
+    ["↑ ↓", "Move in the list (j and k too, once you're choosing a board)"],
+    ["Enter", "Pick the selected row, or the first match"],
+    ["Esc", "Close the picker, the label editor or the new-bot form"]] },
+  { title: "Setup panel", keys: [
+    ["Enter or Space", "Its main button"],
+    ["r", "Try again"]] }
 ]
+// A key as keycaps and the words between them: "Shift+H or L" ->
+// [{cap:"Shift"},{text:"+"},{cap:"H"},{text:"or"},{cap:"L"}].
+function keyParts(key) {
+  var out = []
+  String(key).split(" ").forEach(function(word) {
+    if (word === "") return
+    if (word === "or") { out.push({ text: "or" }); return }
+    var parts = word.length > 1 ? word.split("+") : [word]
+    parts.forEach(function(p, i) { if (i > 0) out.push({ text: "+" }); out.push({ cap: p }) })
+  })
+  return out
+}
 
 if (typeof module !== "undefined") {
   module.exports = {
@@ -373,6 +404,6 @@ if (typeof module !== "undefined") {
     columnKey: columnKey, listSpec: listSpec, movedColumns: movedColumns, byline: byline, people: people,
     workflowLabels: workflowLabels, statusLabels: statusLabels, addableLabels: addableLabels, withColors: withColors, statusOn: statusOn, botsConfig: botsConfig, botStates: botStates, dotColor: dotColor, inColumn: inColumn,
     botsEntry: botsEntry, botUsable: botUsable, botNameTaken: botNameTaken, withBot: withBot, withoutBot: withoutBot, withBusy: withBusy,
-    linkUrl: linkUrl, inline: inline, quickAction: quickAction, moveNote: moveNote, lineLimit: lineLimit, markdown: markdown, descriptionLimit: descriptionLimit, cursorMove: cursorMove, cursorFix: cursorFix, keys: keys
+    linkUrl: linkUrl, inline: inline, quickAction: quickAction, moveNote: moveNote, lineLimit: lineLimit, markdown: markdown, descriptionLimit: descriptionLimit, cursorMove: cursorMove, cursorFix: cursorFix, keyGroups: keyGroups, keyParts: keyParts
   }
 }

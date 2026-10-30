@@ -307,22 +307,65 @@ o.bind("SUPER + CTRL + G", "GitLab board", "omarchy-shell shell toggle odevvy.gi
 Omarchy's own `SUPER + CTRL + 1`…`9` also open the right section's bar panels by
 position. In the popup the keyboard cursor shows after the first move.
 
+`?` shows these in the popup.
+
+**Board**
+
 | Key | Action |
 | --- | --- |
-| `h j k l` or arrows | Move between cards; up and down in the picker |
-| `Shift+H` or `Shift+L` | Move the selected card to the column on the left or right |
-| `Enter` or `Space` | Open the selected issue; pick the selected row; confirm a move or a close; the setup panel's main button |
-| `o` | Open the issue in the browser |
-| `c` | Write a comment (issue view) |
-| `Ctrl+Enter` | Post the comment |
-| `e` | Edit labels (issue view) |
-| `x` | Close the issue, after a confirm, or reopen it (issue view) |
-| `r` | Refresh the board; Try again on the setup panel |
+| `h` `j` `k` `l` or `←` `↓` `↑` `→` | Move between cards |
+| `Enter` or `Space` | Open the selected issue |
+| `o` | Open the selected issue in the browser |
+| `Shift+H` or `Shift+L` | Move the selected card to the column on the left or right, after a confirm |
+| `r` | Refresh the board |
+
+**Confirm a move or a close**
+
+| Key | Action |
+| --- | --- |
+| `Enter` or `Space` | Yes |
+| `Esc` | Cancel |
+
+**Anywhere**
+
+| Key | Action |
+| --- | --- |
 | `p` | Choose a project and board |
 | `s` | Settings |
-| `?` | This list of keys |
+| `?` | These shortcuts |
 | `Tab` or `Shift+Tab` | Next or previous bar panel |
-| `Escape` | Cancel a confirm; leave the comment box; close the label editor or the new-bot form; otherwise back to the board; on the board, close |
+| `Esc` | Back to the board; on the board, close |
+
+**Issue**
+
+| Key | Action |
+| --- | --- |
+| `o` | Open the issue in the browser |
+| `c` | Write a comment |
+| `e` | Edit labels |
+| `x` | Close the issue, after a confirm, or reopen it |
+
+**Comment box**
+
+| Key | Action |
+| --- | --- |
+| `Ctrl+Enter` | Post the comment |
+| `Esc` | Leave the box |
+
+**Pickers and filters**
+
+| Key | Action |
+| --- | --- |
+| `↑` `↓` | Move in the list (j and k too, once you're choosing a board) |
+| `Enter` | Pick the selected row, or the first match |
+| `Esc` | Close the picker, the label editor or the new-bot form |
+
+**Setup panel**
+
+| Key | Action |
+| --- | --- |
+| `Enter` or `Space` | Its main button |
+| `r` | Try again |
 
 Letters go to the comment box, the label filter or the picker's filter while
 you type in them. While the label editor waits for the labels, letters do

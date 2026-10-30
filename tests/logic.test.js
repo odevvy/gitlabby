@@ -203,17 +203,34 @@ test("keyboard cursor after a refresh: same issue if shown, else nearest card", 
   assert.equal(L.cursorFix([], { col: 0, row: 0 }), null)
 })
 
-test("the README's Keyboard section lists exactly the keys the popup shows", () => {
+test("the README's Keyboard section lists exactly the keys the popup shows, group by group", () => {
   const readme = require("node:fs").readFileSync(require("node:path").join(__dirname, "..", "README.md"), "utf8")
   const section = readme.split("\n## Keyboard\n")[1].split("\n## ")[0]
-  const rows = section.split("\n").filter(l => /^\| (?!Key |---)/.test(l)).map(l => l.replace(/`/g, ""))
-  assert.deepEqual(rows, L.keys.map(([k, a]) => "| " + k + " | " + a + " |"))
+  const groups = []
+  section.split("\n").forEach(l => {
+    const title = /^\*\*(.+)\*\*$/.exec(l)
+    if (title) groups.push({ title: title[1], rows: [] })
+    else if (/^\| (?!Key |---)/.test(l)) groups[groups.length - 1].rows.push(l.replace(/`/g, ""))
+  })
+  assert.deepEqual(groups, L.keyGroups.map(g => ({ title: g.title, rows: g.keys.map(([k, a]) => "| " + k + " | " + a + " |") })))
 })
 
-test("the key list names the setup panel's keys: Enter for the main button, r for Try again", () => {
-  const action = key => (L.keys.find(([k]) => k === key) || [])[1] || ""
-  assert.match(action("Enter or Space"), /setup panel's main button/)
-  assert.match(action("r"), /Try again on the setup panel/)
+test("the key groups: every view's keys, the setup panel's, no key twice in a group", () => {
+  const group = title => (L.keyGroups.find(g => g.title === title) || { keys: [] }).keys
+  const action = (title, key) => (group(title).find(([k]) => k === key) || [])[1] || ""
+  assert.deepEqual(L.keyGroups.map(g => g.title), ["Board", "Confirm a move or a close", "Anywhere", "Issue", "Comment box", "Pickers and filters", "Setup panel"])
+  assert.match(action("Setup panel", "Enter or Space"), /main button/)
+  assert.match(action("Setup panel", "r"), /Try again/)
+  assert.match(action("Anywhere", "?"), /These shortcuts/)
+  for (const k of ["o", "c", "e", "x"]) assert.ok(action("Issue", k), k)
+  for (const g of L.keyGroups) assert.equal(new Set(g.keys.map(([k]) => k)).size, g.keys.length, g.title)
+})
+
+test("keycaps: words are caps, or is said, + joins a chord", () => {
+  assert.deepEqual(L.keyParts("Shift+H or Shift+L"), [{ cap: "Shift" }, { text: "+" }, { cap: "H" }, { text: "or" }, { cap: "Shift" }, { text: "+" }, { cap: "L" }])
+  assert.deepEqual(L.keyParts("h j k l"), [{ cap: "h" }, { cap: "j" }, { cap: "k" }, { cap: "l" }])
+  assert.deepEqual(L.keyParts("?"), [{ cap: "?" }])
+  assert.deepEqual(L.keyParts("Ctrl+Enter"), [{ cap: "Ctrl" }, { text: "+" }, { cap: "Enter" }])
 })
 
 test("label editor: status labels are never editable or offered", () => {
