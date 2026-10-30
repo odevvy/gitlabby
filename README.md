@@ -187,6 +187,36 @@ To try moves safely, make a private throwaway project with a few labels and a
 board list for each, pick it in the picker, drag cards around, and check the
 issues on GitLab against the table. Click **Default** to go back.
 
+## Bulk actions
+
+Pick several cards, then change them all with one of the single-card
+actions: move to a column, add or remove a label, close or reopen.
+
+- **Pick**: `v` picks the card under the keyboard cursor, `Ctrl+click` picks
+  with the mouse; the same again unpicks. Picked cards get an accent border
+  and a check. Up to 20 at a time. A bar under the header lists them with
+  **Move to**, **Add label**, **Remove label**, **Close N** (or **Reopen N**)
+  and **Clear**.
+- **Arm**: a button, or `Shift+H`/`Shift+L` (the next column on that side of
+  the cursor's), `x` (close) or `e` (add a label). Nothing is written yet. The
+  bar says what will happen to which cards, grouped by where they are ("todo →
+  review #20 #21"), and which are skipped and why ("already in review").
+- **Confirm**: the main button, `Enter`, or the arming key again. `Esc` goes
+  back to picking.
+- **Run**: one card at a time, each with the same `board-fetch` write as a
+  single card, so the same checks apply (an out-of-date card is not moved).
+  The bar shows what is done and each failure with GitLab's reason. A failure
+  on one card doesn't stop the rest; being signed out, glab missing, or no
+  answer in time does (no answer means the write may have gone through).
+  `Esc` stops after the current card.
+- **Results**: "Moved 2 of 3 cards to review. 1 failed." with a line per card
+  that wasn't done. **Keep it selected** picks just those again; **Done** or
+  `Esc` closes the bar. The board reloads after the last write. Your own bulk
+  changes don't raise desktop alerts.
+
+Bulk actions always ask first, whatever `confirmMoves` says, and the board
+doesn't refresh under the question or during the run.
+
 ## Comments
 
 The issue view lists the comments under the description, oldest first, with
@@ -411,6 +441,7 @@ shows these in the popup.
 | `Enter` or `Space` | Open the selected issue |
 | `o` | Open the selected issue in the browser |
 | `Shift+H` or `Shift+L` | Move the selected card to the column on the left or right, after a confirm |
+| `v` | Pick the selected card for a bulk action (Ctrl+click picks with the mouse) |
 | `r` | Refresh the board |
 
 **Confirm a move or a close**
@@ -419,6 +450,16 @@ shows these in the popup.
 | --- | --- |
 | `Enter` or `Space` | Yes |
 | `Esc` | Cancel |
+
+**Picked cards**
+
+| Key | Action |
+| --- | --- |
+| `Shift+H` or `Shift+L` | Move them to the column on the left or right |
+| `x` | Close them, or reopen them when all are closed |
+| `e` | Add a label to them |
+| `Enter` or `Space` | Confirm the action shown (the same key again works too) |
+| `Esc` | Back one step; while it runs, stop after the current card; else clear the picks |
 
 **Anywhere**
 

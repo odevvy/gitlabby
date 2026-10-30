@@ -218,13 +218,15 @@ test("the README's Keyboard section lists exactly the keys the popup shows, grou
 test("the key groups: every view's keys, the setup panel's, no key twice in a group", () => {
   const group = title => (L.keyGroups.find(g => g.title === title) || { keys: [] }).keys
   const action = (title, key) => (group(title).find(([k]) => k === key) || [])[1] || ""
-  assert.deepEqual(L.keyGroups.map(g => g.title), ["Board", "Confirm a move or a close", "Anywhere", "Issue", "Merge requests", "Comment box", "Pickers and filters", "Setup panel"])
+  assert.deepEqual(L.keyGroups.map(g => g.title), ["Board", "Confirm a move or a close", "Picked cards", "Anywhere", "Issue", "Merge requests", "Comment box", "Pickers and filters", "Setup panel"])
   assert.match(action("Setup panel", "Enter or Space"), /main button/)
   assert.match(action("Setup panel", "r"), /Try again/)
   assert.match(action("Anywhere", "?"), /keyboard button in the header/)
   for (const k of ["o", "c", "e", "x"]) assert.ok(action("Issue", k), k)
   assert.match(action("Anywhere", "m"), /Merge requests/)
   for (const k of ["j k or ↓ ↑", "Enter or o", "r"]) assert.ok(action("Merge requests", k), k)
+  assert.match(action("Board", "v"), /bulk action/)
+  for (const k of ["Shift+H or Shift+L", "x", "e", "Enter or Space", "Esc"]) assert.ok(action("Picked cards", k), k)
   for (const g of L.keyGroups) assert.equal(new Set(g.keys.map(([k]) => k)).size, g.keys.length, g.title)
 })
 

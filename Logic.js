@@ -386,10 +386,17 @@ var keyGroups = [
     ["Enter or Space", "Open the selected issue"],
     ["o", "Open the selected issue in the browser"],
     ["Shift+H or Shift+L", "Move the selected card to the column on the left or right, after a confirm"],
+    ["v", "Pick the selected card for a bulk action (Ctrl+click picks with the mouse)"],
     ["r", "Refresh the board"]] },
   { title: "Confirm a move or a close", keys: [
     ["Enter or Space", "Yes"],
     ["Esc", "Cancel"]] },
+  { title: "Picked cards", keys: [
+    ["Shift+H or Shift+L", "Move them to the column on the left or right"],
+    ["x", "Close them, or reopen them when all are closed"],
+    ["e", "Add a label to them"],
+    ["Enter or Space", "Confirm the action shown (the same key again works too)"],
+    ["Esc", "Back one step; while it runs, stop after the current card; else clear the picks"]] },
   { title: "Anywhere", keys: [
     ["p", "Choose a project and board"],
     ["s", "Settings"],
