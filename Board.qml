@@ -532,7 +532,7 @@ Panel {
     open: root.opened; focusTarget: keyCatcher
     // fittedContentWidth caps at availableCardWidth (screen minus margins);
     // anything wider scrolls horizontally inside the board.
-    contentWidth: panel.fittedContentWidth(Math.max(Style.space(520), root.view !== "board" ? 0
+    contentWidth: panel.fittedContentWidth(Math.max(Style.space(520), root.view === "keys" ? Style.space(760) : root.view !== "board" ? 0
       : (root.setup !== "" || root.failed || root.boardState === "loading" ? skeleton.implicitWidth : root.boardWidth) + panel.padding * 2 + Style.space(4)))
     contentHeight: panel.fittedContentHeight(keyCatcher.implicitHeight, Style.space(640))
 
@@ -599,8 +599,8 @@ Panel {
         implicitHeight: Math.max(title.implicitHeight, status.implicitHeight)
         // The title gets all the room the rest of the row doesn't need; the
         // status gets at most 40% of it, and elides from the left.
-        readonly property real titleRoom: width - chevron.implicitWidth - defaultMark.implicitWidth - refreshButton.implicitWidth - gear.implicitWidth
-          - Style.space(8 + 12 + 8 + 10) - Math.min(status.implicitWidth, width * 0.4)
+        readonly property real titleRoom: width - chevron.implicitWidth - defaultMark.implicitWidth - refreshButton.implicitWidth - keysButton.implicitWidth - gear.implicitWidth
+          - Style.space(8 + 12 + 8 + 10 + 10) - Math.min(status.implicitWidth, width * 0.4)
 
         // Elides at the end, so the board name goes before the project.
         BoardText {
@@ -647,7 +647,7 @@ Panel {
         }
         BoardText {
           id: refreshButton
-          anchors { right: gear.left; rightMargin: Style.space(10); verticalCenter: parent.verticalCenter }
+          anchors { right: keysButton.left; rightMargin: Style.space(10); verticalCenter: parent.verticalCenter }
           text: "\uf021"
           color: refreshMouse.containsMouse ? root.accent : root.dim
           font.pixelSize: Style.font.body
@@ -655,6 +655,20 @@ Panel {
           // icon) and finishes the turn it is on, so it always stops upright.
           RotationAnimation on rotation { running: root.loading; alwaysRunToEnd: true; loops: Animation.Infinite; from: 0; to: 360; duration: 900 }
           MouseArea { id: refreshMouse; anchors.fill: parent; anchors.margins: -Style.space(4); hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.refresh() }
+        }
+        // The keyboard shortcuts (KeysView), like ? does.
+        BoardText {
+          id: keysButton
+          anchors { right: gear.left; rightMargin: Style.space(10); verticalCenter: parent.verticalCenter }
+          text: "\uf11c"
+          color: keysMouse.containsMouse || root.view === "keys" ? root.accent : root.dim
+          font.pixelSize: Style.font.body
+          MouseArea { id: keysMouse; anchors.fill: parent; anchors.margins: -Style.space(4); hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.toggleView("keys") }
+          PanelToolTip {
+            y: parent.height + Style.space(6); visible: keysMouse.containsMouse
+            text: "Keyboard shortcuts (?)"
+            onAboutToShow: x = parent.width - implicitWidth  // ends under the button, inside the card
+          }
         }
         BoardText {
           id: gear

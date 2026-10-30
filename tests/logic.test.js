@@ -203,17 +203,34 @@ test("keyboard cursor after a refresh: same issue if shown, else nearest card", 
   assert.equal(L.cursorFix([], { col: 0, row: 0 }), null)
 })
 
-test("the README's Keyboard section lists exactly the keys the popup shows", () => {
+test("the README's Keyboard section lists exactly the keys the popup shows, group by group", () => {
   const readme = require("node:fs").readFileSync(require("node:path").join(__dirname, "..", "README.md"), "utf8")
   const section = readme.split("\n## Keyboard\n")[1].split("\n## ")[0]
-  const rows = section.split("\n").filter(l => /^\| (?!Key |---)/.test(l)).map(l => l.replace(/`/g, ""))
-  assert.deepEqual(rows, L.keys.map(([k, a]) => "| " + k + " | " + a + " |"))
+  const groups = []
+  section.split("\n").forEach(l => {
+    const title = /^\*\*(.+)\*\*$/.exec(l)
+    if (title) groups.push({ title: title[1], rows: [] })
+    else if (/^\| (?!Key |---)/.test(l)) groups[groups.length - 1].rows.push(l.replace(/`/g, ""))
+  })
+  assert.deepEqual(groups, L.keyGroups.map(g => ({ title: g.title, rows: g.keys.map(([k, a]) => "| " + k + " | " + a + " |") })))
 })
 
-test("the key list names the setup panel's keys: Enter for the main button, r for Try again", () => {
-  const action = key => (L.keys.find(([k]) => k === key) || [])[1] || ""
-  assert.match(action("Enter or Space"), /setup panel's main button/)
-  assert.match(action("r"), /Try again on the setup panel/)
+test("the key groups: every view's keys, the setup panel's, no key twice in a group", () => {
+  const group = title => (L.keyGroups.find(g => g.title === title) || { keys: [] }).keys
+  const action = (title, key) => (group(title).find(([k]) => k === key) || [])[1] || ""
+  assert.deepEqual(L.keyGroups.map(g => g.title), ["Board", "Confirm a move or a close", "Anywhere", "Issue", "Comment box", "Pickers and filters", "Setup panel"])
+  assert.match(action("Setup panel", "Enter or Space"), /main button/)
+  assert.match(action("Setup panel", "r"), /Try again/)
+  assert.match(action("Anywhere", "?"), /keyboard button in the header/)
+  for (const k of ["o", "c", "e", "x"]) assert.ok(action("Issue", k), k)
+  for (const g of L.keyGroups) assert.equal(new Set(g.keys.map(([k]) => k)).size, g.keys.length, g.title)
+})
+
+test("keycaps: words are caps, or is said, + joins a chord", () => {
+  assert.deepEqual(L.keyParts("Shift+H or Shift+L"), [{ cap: "Shift" }, { text: "+" }, { cap: "H" }, { text: "or" }, { cap: "Shift" }, { text: "+" }, { cap: "L" }])
+  assert.deepEqual(L.keyParts("h j k l"), [{ cap: "h" }, { cap: "j" }, { cap: "k" }, { cap: "l" }])
+  assert.deepEqual(L.keyParts("?"), [{ cap: "?" }])
+  assert.deepEqual(L.keyParts("Ctrl+Enter"), [{ cap: "Ctrl" }, { text: "+" }, { cap: "Enter" }])
 })
 
 test("label editor: status labels are never editable or offered", () => {
@@ -284,6 +301,45 @@ test("bots: an issue in two busy lists counts once, as working if either is", ()
   const api = L.botStates(L.botsConfig(P41, "group/p41"), cols)[1]
   assert.equal(api.state, "working")
   assert.deepEqual(api.issues.map(i => [i.iid, i.list]), [[20, "in progress"]])
+})
+
+test("bots: the dot's column is the furthest along of the issues that set the state", () => {
+  const col = (name, color, issues) => ({ name, kind: "label", color, issues })
+  const cols = [col("todo", "#4f86d6", [card(30, ["todo", "auth-mail"])]), col("approved", "#d4473f", [card(31, ["approved", "auth-mail"])]),
+                col("in progress", "#e6cf17", [card(40, ["in progress", "api"]), card(41, ["in progress", "app-ui"])]),
+                col("review", "#86c29a", [card(50, ["review", "api"])])]
+  const cfg = L.botsConfig({ "a/b": { busyLists: ["todo", "approved", "in progress", "review"], bots: [
+    { name: "API Engineer", label: "api" }, { name: "Auth & Mail", label: "auth-mail" }, { name: "App UI", label: "app-ui" },
+    { name: "Spec QA", list: "review" }, { name: "Idle", label: "none" }] } }, "a/b")
+  const pick = s => [s.state, s.column, s.color, s.oneList]
+  const [api, auth, app, qa, idle] = L.botStates(cfg, cols)
+  // working in progress, waiting in review: the filled dot wears in progress, not review
+  assert.deepEqual(pick(api), ["working", "in progress", "#e6cf17", ""])
+  // only waiting: the furthest along of them (approved beats todo)
+  assert.deepEqual(pick(auth), ["waiting", "approved", "#d4473f", ""])
+  assert.deepEqual(pick(app), ["working", "in progress", "#e6cf17", "in progress"])
+  assert.deepEqual(pick(qa), ["working", "review", "#86c29a", "review"])
+  assert.deepEqual(pick(idle), ["idle", "", "", ""])
+  // a column without a color (no-board fallback without label colors): no color
+  assert.equal(L.botStates(cfg, [col("review", undefined, [card(50, ["review", "api"])])])[0].color, "")
+})
+
+test("the column said once: in research, in review, but in progress as it is", () => {
+  assert.equal(L.inColumn("research"), "in research")
+  assert.equal(L.inColumn("In Progress"), "In Progress")
+  assert.equal(L.inColumn("inbox"), "in inbox")
+})
+
+test("busy dot color: the column's own, unless it is too close to the background", () => {
+  const bg = "#132235"
+  assert.equal(L.dotColor("#e6cf17", bg), "#e6cf17")
+  assert.equal(L.dotColor("#e5e7eb", bg), "#e5e7eb")
+  assert.equal(L.dotColor("#1f2a44", bg), "")          // dark blue on dark blue: accent instead
+  assert.equal(L.dotColor("#e5e7eb", "#ffffff"), "")   // near-white on a light theme
+  assert.equal(L.dotColor("#e6cf17", "#ff132235"), "#e6cf17")  // #aarrggbb background
+  assert.equal(L.dotColor("", bg), "")
+  assert.equal(L.dotColor(undefined, bg), "")
+  assert.equal(L.dotColor("red", bg), "")
 })
 
 test("bots: no config, another project, or no usable bot shows nothing", () => {

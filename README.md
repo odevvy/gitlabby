@@ -218,16 +218,22 @@ project, and it reads only the board already on screen: no extra GitLab
 calls, no polling.
 
 **In Settings** (gear, or `s`), under Bots, for the project on screen: click
-**Show bot status for this board**, give the bot a name and say what makes it
-busy: cards with one of the project's labels (board columns and labels
-another bot has aren't offered), every card in a column, or cards no bot
-owns. The first bot turns on every label column under **Busy columns**;
-click a column to turn it off or on. ✕ removes a bot at once. Every change
-is saved right away to the same `bots` setting, and the row under the header
-follows at once. A bot whose label the project no longer has, or whose
-column isn't on this board, stays and is marked. If the setting isn't a JSON
-object (for example set without `--json`), Settings says so and adding a bot
-replaces it.
+**Show bot status for this board**. The new-bot form asks, one labelled row
+at a time, for the bot's **Name** and what it is **Busy with**: cards with
+one of the project's labels (pick it under **Label**; board columns and
+labels another bot has aren't offered), every card in a column (pick it
+under **Column**), or cards no bot owns (only one bot can have that; once
+one does, the choice is shown but off). While **Add** is dim, the line
+beside it says why: a name to give, a label or column to choose, or a name
+another bot already has. The first bot turns on every label column; the
+check boxes under **Count a bot as busy when its card is in**, above the
+list, turn a column off or on (Open and Closed never count). The list reads
+"cards labelled", "every card in" or "cards no other bot owns" per bot; ✕
+removes one at once. Every change is saved right away to the same `bots`
+setting, and the row under the header follows at once. A bot whose label the
+project no longer has, or whose column isn't on this board, stays and is
+marked. If the setting isn't a JSON object (for example set without
+`--json`), Settings says so and adding a bot replaces it.
 
 The setting itself, for a board where each builder has an owner label and a
 reviewer takes everything in review:
@@ -257,11 +263,14 @@ reviewer takes everything in review:
   its bot working rather than waiting.
 
 Each bot gets a filled dot when it has an issue in a working list (a `list`
-bot whenever its list has any), a hollow dot when it only has issues waiting
-in other busy lists (approved or review), and a dim dot with "idle" when it
-has none. Up to 5 issue numbers follow (hover one for its title, click it
-to open the issue), then `+N more` (hover for the rest). Labels and
-lists match in any case.
+bot whenever its list has any), a ring when it only has issues waiting in
+other busy lists (approved or review), and a dim ring with "idle" when it has
+none. A busy dot takes the color of its column: the furthest along (rightmost
+on the board) of the issues that set its state, so the working ones when any
+are working. If that color is hard to see on your theme, it uses the accent.
+Two issue numbers follow (hover one for its title, click it to open the
+issue), then `+N` (hover for the rest). When they are all in one column it is
+said once: `#8 · #9 +3 in research`, `#125 in progress`. Labels and lists match in any case.
 
 Settings keeps every other key and project as it is (including
 `workingLists`), so a hand-written value keeps working. Or set it from a
@@ -304,22 +313,66 @@ o.bind("SUPER + CTRL + G", "GitLab board", "omarchy-shell shell toggle odevvy.gi
 Omarchy's own `SUPER + CTRL + 1`…`9` also open the right section's bar panels by
 position. In the popup the keyboard cursor shows after the first move.
 
+The keyboard button in the header (between refresh and the gear), or `?`,
+shows these in the popup.
+
+**Board**
+
 | Key | Action |
 | --- | --- |
-| `h j k l` or arrows | Move between cards; up and down in the picker |
-| `Shift+H` or `Shift+L` | Move the selected card to the column on the left or right |
-| `Enter` or `Space` | Open the selected issue; pick the selected row; confirm a move or a close; the setup panel's main button |
-| `o` | Open the issue in the browser |
-| `c` | Write a comment (issue view) |
-| `Ctrl+Enter` | Post the comment |
-| `e` | Edit labels (issue view) |
-| `x` | Close the issue, after a confirm, or reopen it (issue view) |
-| `r` | Refresh the board; Try again on the setup panel |
+| `h` `j` `k` `l` or `←` `↓` `↑` `→` | Move between cards |
+| `Enter` or `Space` | Open the selected issue |
+| `o` | Open the selected issue in the browser |
+| `Shift+H` or `Shift+L` | Move the selected card to the column on the left or right, after a confirm |
+| `r` | Refresh the board |
+
+**Confirm a move or a close**
+
+| Key | Action |
+| --- | --- |
+| `Enter` or `Space` | Yes |
+| `Esc` | Cancel |
+
+**Anywhere**
+
+| Key | Action |
+| --- | --- |
 | `p` | Choose a project and board |
 | `s` | Settings |
-| `?` | This list of keys |
+| `?` | These shortcuts (or the keyboard button in the header) |
 | `Tab` or `Shift+Tab` | Next or previous bar panel |
-| `Escape` | Cancel a confirm; leave the comment box; close the label editor or the new-bot form; otherwise back to the board; on the board, close |
+| `Esc` | Back to the board; on the board, close |
+
+**Issue**
+
+| Key | Action |
+| --- | --- |
+| `o` | Open the issue in the browser |
+| `c` | Write a comment |
+| `e` | Edit labels |
+| `x` | Close the issue, after a confirm, or reopen it |
+
+**Comment box**
+
+| Key | Action |
+| --- | --- |
+| `Ctrl+Enter` | Post the comment |
+| `Esc` | Leave the box |
+
+**Pickers and filters**
+
+| Key | Action |
+| --- | --- |
+| `↑` `↓` | Move in the list (j and k too, once you're choosing a board) |
+| `Enter` | Pick the selected row, or the first match |
+| `Esc` | Close the picker, the label editor or the new-bot form |
+
+**Setup panel**
+
+| Key | Action |
+| --- | --- |
+| `Enter` or `Space` | Its main button |
+| `r` | Try again |
 
 Letters go to the comment box, the label filter or the picker's filter while
 you type in them. While the label editor waits for the labels, letters do
