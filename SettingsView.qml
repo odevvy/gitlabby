@@ -7,7 +7,7 @@ import "components"
 
 // In-popup settings, most used first: how often to refresh (one line), which
 // columns new boards start with folded (a wrapping row of check boxes), the bots of the project on screen (BotsSection),
-// and last the account (who is signed in, Sign out). Changes are saved to
+// desktop alerts for the project (two check boxes), and last the account (who is signed in, Sign out). Changes are saved to
 // shell.json right away. The gear, ✕ or Esc returns to the board.
 Item {
   id: view
@@ -184,6 +184,44 @@ Item {
         labelsState: mine ? view.labelsState : ""
         labelsError: view.labelsError
         onWantLabels: view.loadLabels()
+      }
+
+      Item { width: 1; height: Style.space(4) }
+      Heading { visible: view.host.project !== ""; text: "Alerts" }
+      BoardText {
+        visible: view.host.project !== ""
+        width: parent.width; wrapMode: Text.Wrap; color: view.host.dim; font.pixelSize: Style.font.caption
+        text: "A desktop notification for " + view.host.project + ". While one is on, the board also refreshes with the popup closed, at its usual pace."
+      }
+      Flow {
+        id: alertRow
+        visible: view.host.project !== ""
+        width: parent.width
+        spacing: Style.space(6)
+        Repeater {
+          model: [{ kind: "review", label: "A card enters review" }, { kind: "idle", label: "A bot stops working" }]
+          delegate: Item {
+            id: alertCheck
+            required property var modelData
+            readonly property bool on: view.host.alerts[modelData.kind] === true
+            readonly property bool clickable: true
+            implicitWidth: alertCheckRow.implicitWidth + Style.space(10); implicitHeight: Style.space(22)
+            Row {
+              id: alertCheckRow
+              anchors.verticalCenter: parent.verticalCenter
+              spacing: Style.space(6)
+              Rectangle {
+                anchors.verticalCenter: parent.verticalCenter
+                width: Style.space(16); height: width; radius: Style.space(4)
+                color: alertCheck.on ? view.host.accent : "transparent"
+                border { width: 1; color: alertCheck.on ? view.host.accent : alertMouse.containsMouse ? view.host.foreground : view.host.dim }
+                BoardText { anchors.centerIn: parent; visible: alertCheck.on; text: "\uf00c"; color: view.host.background; font.pixelSize: Style.font.caption }
+              }
+              BoardText { anchors.verticalCenter: parent.verticalCenter; text: alertCheck.modelData.label; font.pixelSize: Style.font.bodySmall }
+            }
+            MouseArea { id: alertMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: view.host.setAlert(alertCheck.modelData.kind, !alertCheck.on) }
+          }
+        }
       }
 
       Item { width: 1; height: Style.space(2) }

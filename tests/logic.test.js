@@ -652,3 +652,16 @@ test("alerts: settings per project, events between two good answers, the notify 
   assert.equal((svc.match(/execDetached\(/g) || []).length, 1)
   assert.match(svc, /Quickshell\.execDetached\(Logic\.notifyArgv\(ev\)\)/)
 })
+
+test("alerts wiring: Settings saves settings.alerts per project; each copy hands its board to the service", () => {
+  const fs = require("node:fs"), path = require("node:path"), dir = path.join(__dirname, "..")
+  const board = fs.readFileSync(path.join(dir, "Board.qml"), "utf8")
+  const settings = fs.readFileSync(path.join(dir, "SettingsView.qml"), "utf8")
+  assert.match(board, /readonly property var alerts: Logic\.alertsFor\(saved\("alerts", null\), project\)/)
+  assert.match(board, /onWatchCfgChanged: feed\.watch\(watchOwner, watchCfg\)/)
+  assert.match(board, /Component\.onDestruction: feed\.watch\(watchOwner, null\)/)
+  assert.match(board, /if \(nextAlerts !== undefined\) entry\.alerts = nextAlerts/)
+  // No notifier in the widget: one per event comes from the service only.
+  assert.doesNotMatch(board, /omarchy-notification-send|notifyArgv/)
+  assert.match(settings, /onClicked: view\.host\.setAlert\(alertCheck\.modelData\.kind, !alertCheck\.on\)/)
+})
