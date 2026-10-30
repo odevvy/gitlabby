@@ -63,7 +63,8 @@ the picker's board step. The header shows a star on the default board and a
 
 The board refreshes when the popup opens and every 60 seconds (configurable)
 while it's open; while it's closed, only a right- or middle-click refreshes.
-The refresh icon spins while it loads, and the board stays usable. A refresh
+The refresh icon spins and the header says `Refreshing…` (instead of
+`Updated 14:05`) while it loads, and the board stays usable. A refresh
 that comes due while you hold a card waits until you let go. After a shell
 start, the popup first shows the board as you last saw it ("Saved 3h ago ·
 updating…"; cards can't be dragged until the fresh board arrives), or a

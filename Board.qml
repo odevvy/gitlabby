@@ -55,6 +55,9 @@ Panel {
 
   // Board data from the last fetch.
   readonly property bool loading: fetchProcess.running
+  // A refresh of a board already on screen (button, r or the timer); a saved
+  // copy says "updating…" itself.
+  readonly property bool refreshing: loading && boardState === "ready" && !cached
   property string boardState: "loading"
   property string message: ""
   property string updatedAt: ""
@@ -450,6 +453,7 @@ Panel {
   function statusText() {
     if (moveError !== "") return moveError
     if (move) return "Moving #" + move.iid + "…"
+    if (refreshing) return message !== "" ? message + "  Refreshing…" : "Refreshing…"
     if (boardState === "ready" && refreshError !== "")
       return "Couldn't refresh · showing " + (updatedAt !== "" ? new Date(updatedAt).toLocaleTimeString(Qt.locale(), "HH:mm") : "the last board")
     if (boardState === "ready" && cached) return Logic.savedNote(updatedAt)
@@ -472,6 +476,7 @@ Panel {
 
   // Only while the popup is open; opening it refreshes (onOpenedChanged).
   Timer {
+    id: refreshTimer
     interval: root.refreshIntervalSec * 1000
     repeat: true; running: root.opened && root.setup === ""
     onTriggered: root.refresh()
@@ -642,7 +647,7 @@ Panel {
           horizontalAlignment: Text.AlignRight
           elide: Text.ElideLeft
           text: root.statusText()
-          color: root.moveError !== "" || (root.refreshError !== "" && root.boardState === "ready") ? root.urgent : root.boardState === "ready" && root.message === "" && !root.move && !root.cached ? root.dim : root.accent
+          color: root.moveError !== "" || (root.refreshError !== "" && root.boardState === "ready" && !root.refreshing) ? root.urgent : root.boardState === "ready" && root.message === "" && !root.move && !root.cached ? root.dim : root.accent
           font.pixelSize: Style.font.bodySmall
         }
         BoardText {
