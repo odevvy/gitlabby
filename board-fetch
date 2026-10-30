@@ -38,8 +38,8 @@
 #   board-fetch relabel --project P --iid N (--add L | --remove L)   (PUT, write_labels())
 #     One label at a time, through add_labels/remove_labels, so no other label is
 #     touched. Status labels are refused: every list label of every board in the
-#     project, plus the workflow labels (research, todo, approved, in progress,
-#     review), in any case. They change only by dragging a card. --add takes only
+#     project and, best effort, of its group and parent groups' boards, plus the
+#     workflow labels (research, todo, approved, in progress, review), in any case. They change only by dragging a card. --add takes only
 #     a label the project already has, so a typo never creates one.
 #   board-fetch close|reopen --project P --iid N   (PUT, write_state())
 #     One state_event (close or reopen) and nothing else: labels stay as they
@@ -240,6 +240,22 @@ mrs_list() {
      review: [$r[0] | map(select(.draft != true))[:10][] | row], mine: [$m[0][:10][] | row]}' 2>/dev/null ||
     emit error "GitLab returned an unreadable response."
 }
+# The boards whose list labels are status labels, into $tmp/b (one JSON array
+# per page): the project's, all pages, and, best effort, its group's and every
+# parent group's (group boards show this project's issues too). A group whose
+# boards can't be read adds nothing; a user namespace has none.
+guard_boards() {
+  get --paginate "$base/boards?per_page=100" >"$tmp/b" || emit error "Could not load boards for $project."
+  local group
+  peek "$base" >"$tmp/proj" || return 0
+  while IFS= read -r group; do
+    peek "groups/$(jq -rn --arg g "$group" '$g | @uri')/boards?per_page=100" >"$tmp/gb" &&
+      jq -e 'type == "array"' "$tmp/gb" >/dev/null 2>&1 && cat "$tmp/gb" >>"$tmp/b"
+  done < <(jq -r 'select(.namespace.kind == "group") | .namespace.full_path | strings | split("/") as $p
+    | range($p | length; 0; -1) as $n | $p[:$n] | join("/")' "$tmp/proj" 2>/dev/null)
+  return 0
+}
+
 case $cmd in
   projects)
     # Page by page, at most 5 pages (500 projects, most recently active first),
@@ -277,7 +293,7 @@ case $cmd in
       grep -v '^null$' | grep . || emit error "GitLab returned an unreadable response."
     exit 0 ;;
   labels)
-    get --paginate "$base/boards?per_page=100" >"$tmp/b" || emit error "Could not load boards for $project."
+    guard_boards
     get --paginate "$base/labels?per_page=100" >"$tmp/l" || emit error "Could not load labels for $project."
     jq -cn --slurpfile b "$tmp/b" --slurpfile l "$tmp/l" "$DEFS"' status($b) as $status
       | {state: "ready", message: "", status: $status,
@@ -287,7 +303,7 @@ case $cmd in
     exit 0 ;;
   relabel)
     label=$add$remove
-    get --paginate "$base/boards?per_page=100" >"$tmp/b" || emit error "Could not load boards for $project."
+    guard_boards
     kind=$(jq -rn --slurpfile b "$tmp/b" --arg l "$label" "$DEFS"' if $l | ascii_downcase | IN(status($b)[]) then "status" else "free" end' 2>/dev/null)
     [[ $kind == free ]] || emit error "$([[ $kind == status ]] && echo "\"$label\" is a board list label. Drag the card to change it." ||
       echo "GitLab returned an unreadable response.")"

@@ -592,6 +592,30 @@ fx boards <<<'{"not":"a list"}'
 check "L boards odd: refused, no write" '.state == "error" and (.message | test("unreadable"))' "$(rl --add api)"
 labels_out=$(rl --add api; "$fetch" labels --project a/b; FAKE_PUT=fail rl --remove api)
 
+# --- G: group boards' list labels are status labels too (the guard) ---------------
+reset
+fx boards <<<'[{"id":7,"name":"Dev","lists":[{"id":1,"label":{"name":"Doing"}}]}]'
+fx labels <<<'[{"name":"ux"},{"name":"Triage"},{"name":"Shipping"},{"name":"api"}]'
+fx put <<<'{"iid":3,"state":"opened","labels":["api"]}'
+fx project <<<'{"id":5,"namespace":{"kind":"group","full_path":"top/sub"}}'
+fx group-boards-top%2Fsub <<<'[{"id":20,"name":"Team","lists":[{"id":21,"label":{"name":"Triage"}}]}]'
+fx group-boards-top <<<'[{"id":30,"name":"Org","lists":[{"id":31,"label":{"name":"Shipping"}},{"id":32,"assignee":{"username":"a"}}]}]'
+: >"$FAKE_LOG"; out=$("$fetch" labels --project top/sub/app)
+check "G status: project, group and parent group list labels" '.status == (["approved","doing","in progress","research","review","shipping","todo","triage"]) and [.labels[].name] == ["api","ux"]' "$out"
+check "G GETs: the project, then its group and each parent's boards" '.' "$([[ $(grep -c NON-GET "$FAKE_LOG") == 0 && $(grep -c -- '--method GET projects/top%2Fsub%2Fapp$' "$FAKE_LOG") == 1 ]] && grep -qF -- '--method GET groups/top%2Fsub/boards?per_page=100' "$FAKE_LOG" && grep -qF -- '--method GET groups/top/boards?per_page=100' "$FAKE_LOG" && echo true || echo false)"
+for l in Triage shipping; do
+  out=$(: >"$FAKE_LOG"; "$fetch" relabel --project top/sub/app --iid 3 --add "$l")
+  check "G guard refuses a group board's list label '$l'" '.state == "error" and (.message | test("board list label"))' "$out"
+  check "G no write for '$l'" '.' "$(grep -q NON-GET "$FAKE_LOG" && echo false || echo true)"
+done
+check "G other labels still go through" '.state == "ready"' "$("$fetch" relabel --project top/sub/app --iid 3 --add ux)"
+rm "$FAKE_DIR/group-boards-top.json"; fx group-boards-top%2Fsub <<<'{"message":"404 Group Not Found"}'
+check "G unreadable group boards add nothing; the rest still guards" '.status == (["approved","doing","in progress","research","review","todo"])' "$("$fetch" labels --project top/sub/app)"
+fx project <<<'{"id":5,"namespace":{"kind":"user","full_path":"someone"}}'
+check "G a user namespace: no group calls" '.' "$(: >"$FAKE_LOG"; "$fetch" labels --project someone/app >/dev/null; grep -q 'groups/' "$FAKE_LOG" && echo false || echo true)"
+rm "$FAKE_DIR/project.json"
+check "G project unreadable: project boards only, still works" '.state == "ready"' "$("$fetch" labels --project top/sub/app)"
+
 # --- X: close and reopen: one state_event, labels untouched ---------------------
 reset
 fx put <<<'{"iid":3,"state":"closed","labels":["review","app-ui"]}'
