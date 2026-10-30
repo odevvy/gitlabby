@@ -70,7 +70,17 @@ The board refreshes when the popup opens and every 60 seconds (configurable)
 while it's open; while it's closed, only a right- or middle-click refreshes.
 The refresh icon spins and the header says `Refreshing…` (instead of
 `Updated 14:05`) while it loads, and the board stays usable. A refresh
-that comes due while you hold a card waits until you let go. After a shell
+that comes due while you hold a card waits until you let go.
+
+With several monitors, every bar has its own copy of the widget, but they
+share one refresh (the plugin's service, `BoardService.qml`, which the shell
+loads once). A board is fetched at most once at a time for the whole shell:
+every screen showing it says `Refreshing…` and gets the same answer. Opening
+the popup or the timer reuses the last answer when that board was fetched
+less than an interval ago on any screen; Refresh, `r` and a right-click
+always fetch, unless a fetch of that board is already running, which they
+join. Under a replacement bar (no plugin services), each copy fetches on its
+own as before. After a shell
 start, the popup first shows the board as you last saw it ("Saved 3h ago ·
 updating…"; cards can't be dragged until the fresh board arrives), or a
 pulsing placeholder when nothing is saved (as wide as that board, or the last
@@ -499,7 +509,8 @@ issues (paginated), and one for the last 20 closed issues (it asks for 21, to
 know whether there are more), skipped when the board hides Closed. Issues come
 with label details, so colors need no extra request.
 
-Cards in a Review column (at most 15) each add one
+One fetch serves every monitor (see above), so a second screen adds no
+requests. Cards in a Review column (at most 15) each add one
 `GET /projects/:id/issues/:iid/related_merge_requests`, four at a time; those
 MRs carry their `head_pipeline`. Only if GitLab leaves it out, one
 `GET /projects/:id/merge_requests/:iid` for that MR. These never fail the
