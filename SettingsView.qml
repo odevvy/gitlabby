@@ -1,10 +1,12 @@
 import QtQuick
 import QtQuick.Controls
+import Quickshell.Io
 import qs.Commons
 import qs.Ui
 
-// In-popup settings: the account (who is signed in, Sign out), which
-// columns new boards start with folded, and how often to refresh. Changes are
+// In-popup settings: the account (who is signed in, Sign out), the bots of
+// the project on screen (BotsSection), which columns new boards start with
+// folded, and how often to refresh. Changes are
 // saved to shell.json right away. The gear, ✕ or Esc returns to the board.
 Item {
   id: view
@@ -13,7 +15,43 @@ Item {
   readonly property color pane: Qt.rgba(fg.r, fg.g, fg.b, 0.035)
   readonly property color line: Qt.rgba(fg.r, fg.g, fg.b, 0.08)
   property bool confirming: false  // Sign out asks first, inline
-  onVisibleChanged: confirming = false
+  onVisibleChanged: {
+    confirming = false
+    botsSection.cancel()
+    if (visible && botsSection.bots.length > 0) loadLabels()  // to flag a bot label the project no longer has
+  }
+  readonly property bool typing: botsSection.typing
+  readonly property bool adding: botsSection.adding
+  function cancelAdd() { botsSection.cancel() }
+
+  // The project's labels for Settings > Bots (`board-fetch labels`, GET), once per project.
+  property string labelsFor: ""
+  property string labelsState: ""  // "", loading, ready, error
+  property string labelsError: ""
+  property var allLabels: []
+  property var fetchedStatus: []
+  function loadLabels() {
+    if (labelsProcess.running || (labelsFor === host.project && labelsState === "ready")) return
+    labelsFor = host.project
+    labelsState = "loading"
+    labelsProcess.command = [host.helperPath(), "labels", "--project", host.project]
+    labelsProcess.running = true
+  }
+  function labelsDone(raw) {
+    if (labelsFor !== host.project) {  // the project changed meanwhile
+      labelsState = ""
+      if (botsSection.adding) Qt.callLater(loadLabels)
+      return
+    }
+    var data = host.parse(raw)
+    labelsState = data.state === "ready" ? "ready" : "error"
+    labelsError = data.state === "ready" ? "" : String(data.message || "Could not load labels.")
+    if (data.state === "ready") { allLabels = data.labels || []; fetchedStatus = data.status || [] }
+  }
+  Process {
+    id: labelsProcess
+    stdout: StdioCollector { waitForEnd: true; onStreamFinished: view.labelsDone(text) }
+  }
 
   implicitHeight: top.implicitHeight + Style.space(6) + content.implicitHeight
 
@@ -91,6 +129,18 @@ Item {
             onClicked: view.confirming = false
           }
         }
+      }
+
+      Item { width: 1; height: Style.space(6) }
+      BotsSection {
+        id: botsSection
+        host: view.host
+        readonly property bool mine: view.labelsFor === view.host.project
+        labels: mine ? view.allLabels : []
+        fetchedStatus: mine ? view.fetchedStatus : []
+        labelsState: mine ? view.labelsState : ""
+        labelsError: view.labelsError
+        onWantLabels: view.loadLabels()
       }
 
       Item { width: 1; height: Style.space(6) }

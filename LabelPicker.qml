@@ -17,6 +17,8 @@ Column {
   property string error: ""        // shown in red; wins over the rest
   property string busyText: ""     // e.g. "Saving bug…", with the spinner
   property string busyName: ""     // the chip being saved; the others dim and wait
+  property bool choose: false      // pick one (a check on `selected`) rather than add ("+ ")
+  property string selected: ""
   property string emptyText: "No other labels to add."
   property alias filter: field.text
   readonly property alias field: field
@@ -55,7 +57,7 @@ Column {
       delegate: LabelChip {
         required property var modelData
         host: picker.host; colors: picker.colors; name: String(modelData.name)
-        label: "+ " + name
+        label: (!picker.choose ? "+ " : picker.selected === name ? "\uf00c  " : "") + name
         clickable: picker.busyName === ""
         opacity: picker.busyName === "" || picker.busyName === name ? 1 : 0.5
         onClicked: picker.picked(name)

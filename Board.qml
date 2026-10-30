@@ -179,7 +179,8 @@ Panel {
   // Same write path as built-in widgets: merge into the inline entry and hand
   // it to the shell facade. Without the facade the state stays in memory.
   // nextDefault ({ project, id, name }) replaces the saved default board.
-  function persist(nextDefault) {
+  // nextBots replaces settings.bots (Settings > Bots); otherwise it is kept as saved.
+  function persist(nextDefault, nextBots) {
     if (!bar || !bar.shell || typeof bar.shell.updateEntryInline !== "function") return
     var d = nextDefault || { project: defaultProject, id: defaultBoardId, name: defaultBoardName }
     var entry = { id: moduleName }
@@ -192,8 +193,10 @@ Panel {
     entry.defaultCollapsed = defaultCollapsed
     entry.boardStates = boardStates
     entry.settingsRevision = settingsRevision
+    if (nextBots !== undefined) entry.bots = nextBots
     bar.shell.updateEntryInline(moduleName, entry)
   }
+  function saveBots(next) { persist(undefined, next) }
 
   function helperPath() {
     return decodeURIComponent(Qt.resolvedUrl("board-fetch").toString().replace(/^file:\/\//, ""))
@@ -536,7 +539,7 @@ Panel {
     PanelKeyCatcher {
       id: keyCatcher
       anchors.fill: parent
-      blocked: issueView.typing || picker.typing  // text fields get every key (Omarchy PanelKeyCatcher.qml:26-29)
+      blocked: issueView.typing || picker.typing || settingsView.typing  // text fields get every key (Omarchy PanelKeyCatcher.qml:26-29)
       implicitHeight: header.implicitHeight + root.gap + (botsRow.visible ? botsRow.height + root.gap : 0) + (moveConfirm.visible ? moveConfirm.height + root.gap : 0) + (root.view === "board" ? (root.setup !== "" || root.failed ? Math.max(setupView.implicitHeight, skeleton.implicitHeight) : root.boardState === "loading" ? skeleton.implicitHeight : boardView.implicitHeight)
         : root.view === "issue" ? issueView.implicitHeight : root.view === "picker" ? picker.implicitHeight
         : root.view === "keys" ? keysView.implicitHeight : settingsView.implicitHeight)
@@ -544,6 +547,7 @@ Panel {
         if (root.pendingMove) root.cancelMove()
         else if (root.view === "issue" && issueView.confirming) issueView.confirming = false
         else if (root.view === "issue" && issueView.editing) issueView.doneEditing()  // labels still loading: the filter is off
+        else if (root.view === "settings" && settingsView.adding) settingsView.cancelAdd()
         else if (root.view !== "board") root.back()
         else root.close()
       }
