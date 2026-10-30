@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import Quickshell.Io
 import "Logic.js" as Logic
 
@@ -17,11 +18,21 @@ Item {
   property var manifest: null
   property string omarchyPath: ""
 
-  // { key: { raw, ticket, startedAt (ms) } }: the last answer per board.
+  // { key: { raw, ticket, startedAt (ms), state } }: the last answer per board.
   property var answers: ({})
   // { key: { sig, calm, active } }: how much each board has been changing
   // (Logic.nextPace); every screen paces its refresh timer from it.
   property var paces: ({})
+  // Desktop alerts. watchers: { key: { owner: { key, project, boardId, review,
+  // idle, bots, base } } }, one entry per widget copy whose board has an alert
+  // on. baselines: { key: the last good answer } while watched; the next good
+  // one is compared with it (Logic.alertEvents) here only, so one notification
+  // per event however many screens. ownMoves: { key: [{ iid, after }] } cards
+  // this user moved, not announced back to him.
+  property var watchers: ({})
+  property var baselines: ({})
+  property var ownMoves: ({})
+  readonly property var watchedKeys: Object.keys(watchers)
   // Boards waiting while another one loads, next first: [{ key, args }].
   property var queue: []
   readonly property var queuedKeys: queue.map(function(q) { return q.key })
@@ -70,10 +81,10 @@ Item {
     if (fetch.generation !== generation) return
     var stored = {}
     for (var k in answers) stored[k] = answers[k]
-    stored[fetch.key] = { raw: raw, ticket: fetch.ticket, startedAt: fetch.startedAt }
-    answers = stored
     var data = null
     try { data = JSON.parse(String(raw || "")) } catch (error) {}
+    stored[fetch.key] = { raw: raw, ticket: fetch.ticket, startedAt: fetch.startedAt, state: data ? String(data.state || "") : "" }
+    answers = stored
     var pace = Logic.nextPace(paces[fetch.key], data)
     if (pace) {
       var p = {}
@@ -81,7 +92,78 @@ Item {
       p[fetch.key] = pace
       paces = p
     }
+    watchAnswer(fetch.key, data, fetch.ticket)
     answered(fetch.key, raw, fetch.ticket)
+  }
+
+  // A widget copy's alerts for the board it shows (cfg.key), or null for none.
+  // A board that stops being watched loses its baseline, so when it is watched
+  // again its next answer is a first load, never announced.
+  function watch(owner, cfg) {
+    var next = {}, key
+    for (key in watchers) {
+      var owners = {}, any = false
+      for (var o in watchers[key]) if (o !== owner) { owners[o] = watchers[key][o]; any = true }
+      if (any) next[key] = owners
+    }
+    if (cfg && (cfg.review || cfg.idle)) {
+      if (!next[cfg.key]) next[cfg.key] = {}
+      next[cfg.key][owner] = cfg
+    }
+    for (key in baselines) if (!next[key]) dropBaseline(key)
+    watchers = next
+  }
+  function dropBaseline(key) {
+    var b = {}
+    for (var k in baselines) if (k !== key) b[k] = baselines[k]
+    baselines = b
+  }
+  function noteOwnMove(key, iid) {
+    var m = {}
+    for (var k in ownMoves) m[k] = ownMoves[k]
+    m[key] = (m[key] || []).concat([{ iid: Number(iid), after: tickets + 1 }])
+    ownMoves = m
+  }
+  function cfgOf(key) {
+    var owners = watchers[key]
+    for (var o in owners) return owners[o]
+    return null
+  }
+  // A good answer after a good one: notify. A failed one drops the baseline,
+  // so the answer after it is a fresh start, not announced either.
+  function watchAnswer(key, data, ticket) {
+    var cfg = cfgOf(key)
+    if (!cfg) return
+    if (!data || data.state !== "ready") { dropBaseline(key); return }
+    var moved = ownMoves[key] || []
+    var events = baselines[key] ? Logic.alertEvents(baselines[key], data, { review: cfg.review, idle: cfg.idle, bots: cfg.bots, ignore: moved.map(function(m) { return m.iid }) }) : []
+    events.forEach(function(ev) { Quickshell.execDetached(Logic.notifyArgv(ev)) })
+    var b = {}, k
+    for (k in baselines) b[k] = baselines[k]
+    b[key] = data
+    baselines = b
+    var m = {}
+    for (k in ownMoves) m[k] = ownMoves[k]
+    m[key] = moved.filter(function(x) { return ticket < x.after })
+    ownMoves = m
+  }
+
+  // With the popup closed nothing else refreshes: a watched board is fetched
+  // here when due at its pace (Logic.adaptiveInterval), as the timer would.
+  // Not while signed out or without glab: the popup's setup panel handles that.
+  function background() {
+    watchedKeys.forEach(function(key) {
+      var cfg = cfgOf(key), last = answers[key]
+      if (!cfg || (last && (last.state === "logged-out" || last.state === "no-glab"))) return
+      var cad = Logic.adaptiveInterval(cfg.base, paces[key])
+      request(cfg.project, cfg.boardId, true, cad.sec * 1000 - 2000, 0)
+    })
+  }
+  Timer {
+    id: backgroundTimer
+    interval: 15000; repeat: true
+    running: service.watchedKeys.length > 0
+    onTriggered: service.background()
   }
 
   // Sign out: forget every answer and drop the ones on their way.
@@ -89,6 +171,8 @@ Item {
     generation++
     answers = ({})
     paces = ({})
+    baselines = ({})
+    ownMoves = ({})
     queue = []
   }
 

@@ -602,3 +602,53 @@ test("adaptive refresh: pace from answers, interval from pace", () => {
   assert.match(board, /feed\.request\(project, boardId, ifDue === true, cadence\.sec \* 1000 - 2000, moveFloor\)/)
   assert.match(board, /Logic\.adaptiveInterval\(refreshIntervalSec, feed\.paces\[fetchKey\]\)/)
 })
+
+test("alerts: settings per project, events between two good answers, the notify command", () => {
+  // Settings: off by default; per project; other keys kept.
+  assert.deepEqual(L.alertsFor(null, "a/b"), { review: false, idle: false })
+  assert.deepEqual(L.alertsFor({ "a/b": { review: true } }, "a/b"), { review: true, idle: false })
+  assert.deepEqual(L.alertsFor({ "a/b": { review: "yes" } }, "a/b"), { review: false, idle: false }, "only true counts")
+  assert.deepEqual(L.withAlert({ "x/y": { idle: true } }, "a/b", "review", true), { "x/y": { idle: true }, "a/b": { review: true, idle: false } })
+  assert.deepEqual(L.withAlert("junk", "a/b", "idle", true), { "a/b": { review: false, idle: true } })
+  const row = (iid, labels, title) => ({ iid, title: title || "Card " + iid, labels, url: "https://gitlab.com/g/p/-/issues/" + iid })
+  const ans = (cols, extra) => Object.assign({ state: "ready", project: "g/p", board: { id: 7 }, columns: cols }, extra || {})
+  const col = (name, rows) => ({ name, kind: "label", listId: name.length, issues: rows })
+  const a = ans([col("todo", [row(1, ["todo"]), row(2, ["todo", "app-ui"])]), col("in progress", [row(3, ["in progress", "api"])]), col("Review", [row(4, ["review"])])])
+  const on = { review: true, idle: true, bots: { "g/p": { busyLists: ["in progress", "review"], bots: [{ name: "App UI", label: "app-ui" }, { name: "API", label: "api" }] } } }
+  // Nothing changed: nothing. Not two good answers: nothing.
+  assert.deepEqual(L.alertEvents(a, a, on), [])
+  assert.deepEqual(L.alertEvents(null, a, on), [])
+  assert.deepEqual(L.alertEvents({ state: "error" }, a, on), [])
+  // One card into review: its own link; a title with markup stays plain here.
+  const b = ans([col("todo", [row(1, ["todo"])]), col("in progress", [row(3, ["in progress", "api"])]), col("Review", [row(4, ["review"]), row(2, ["review", "app-ui"], "Fix <b> & co")])])
+  assert.deepEqual(L.alertEvents(a, b, { review: true }), [{ headline: "#2 is in review", body: "#2 Fix <b> & co · g/p", url: "https://gitlab.com/g/p/-/issues/2" }])
+  assert.deepEqual(L.alertEvents(a, b, { review: false }), [])
+  assert.deepEqual(L.alertEvents(a, Object.assign({}, b, { project: "other/p" }), on), [], "another project: a fresh start")
+  assert.deepEqual(L.alertEvents(a, b, { review: true, ignore: [2] }), [], "his own move")
+  // Several: one notification, the board's link, at most three named.
+  const many = ans([col("Review", [4, 5, 6, 7, 8].map(i => row(i, ["review"])))])
+  assert.deepEqual(L.alertEvents(ans([col("Review", [row(4, ["review"])])]), many, { review: true }),
+    [{ headline: "4 cards entered review", body: "#5 Card 5, #6 Card 6, #7 Card 7 +1 more · g/p", url: "https://gitlab.com/g/p/-/boards/7" }])
+  // A bot stops working (in progress -> not): one notification for the bots that stopped.
+  const c = ans([col("todo", [row(1, ["todo"]), row(2, ["todo", "app-ui"])]), col("in progress", []), col("Review", [row(4, ["review"]), row(3, ["review", "api"])])])
+  assert.deepEqual(L.alertEvents(a, c, { idle: true, bots: on.bots }), [{ headline: "Stopped working: API", body: "On g/p: API is waiting in Review", url: "https://gitlab.com/g/p/-/boards/7" }])
+  assert.deepEqual(L.alertEvents(a, c, { idle: false, bots: on.bots }), [])
+  // Only https links; a bad project path: no board link.
+  assert.equal(L.httpsUrl("http://x"), "")
+  assert.equal(L.httpsUrl("https://gitlab.com/a b"), "")
+  assert.equal(L.boardUrl({ project: "g/p;rm", board: { id: 7 } }), "")
+  assert.equal(L.boardUrl({ project: "g/sub/p", board: { id: "x" } }), "https://gitlab.com/g/sub/p/-/boards")
+  // The command (Omarchy bin/omarchy-notification-send): our app name, low urgency, the
+  // body escaped for StyledText, --exec last with separate words, https only.
+  assert.deepEqual(L.notifyArgv({ headline: "#2 is in review", body: "#2 Fix <b> & co · g/p", url: "https://gitlab.com/g/p/-/issues/2" }),
+    ["omarchy-notification-send", "--app-name", "GitLab board", "-u", "low", "-g", "\uf296", "#2 is in review", "#2 Fix &lt;b&gt; &amp; co · g/p", "--exec", "xdg-open", "https://gitlab.com/g/p/-/issues/2"])
+  assert.equal(L.notifyArgv({ headline: "h", body: "b", url: "javascript:x" }).indexOf("--exec"), -1)
+  // Headlines and bodies start with our own text, never "-": not read as options.
+  for (const ev of [...L.alertEvents(a, b, on), ...L.alertEvents(a, c, on)]) {
+    assert.ok(!ev.headline.startsWith("-") && !ev.body.startsWith("-"))
+  }
+  const svc = require("node:fs").readFileSync(require("node:path").join(__dirname, "..", "BoardService.qml"), "utf8")
+  // The only notifier, in the shared service.
+  assert.equal((svc.match(/execDetached\(/g) || []).length, 1)
+  assert.match(svc, /Quickshell\.execDetached\(Logic\.notifyArgv\(ev\)\)/)
+})
