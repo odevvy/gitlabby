@@ -731,6 +731,55 @@ check "PL four at a time, not one by one" '.' "$(rm -rf "$work/slow"*; FAKE_MR_P
   m=$(sort -n "$work/slow.n" | tail -1); ((m >= 2 && m <= 4)) && echo true || echo false)"
 check "PL no token in output" '.' "$(grep -qiE 'glpat|bearer' <<<"$pl_out$out" && echo false || echo true)"
 
+# --- MR: the Merge requests view's lists (reads only) ----------------------------
+reset
+mrl() { # iid project_id path draft status reviewers-json -> one list row
+  jq -cn --argjson i "$1" --argjson p "$2" --arg path "$3" --argjson d "$4" --arg st "$5" --argjson rv "${6:-[]}" \
+    '{iid: $i, project_id: $p, title: "MR \($i) <b>", web_url: "https://gitlab.com/\($path)/-/merge_requests/\($i)", draft: $d,
+      references: {full: "\($path)!\($i)"}, source_branch: "b\($i)", updated_at: "2026-10-30T12:00:00Z", detailed_merge_status: $st,
+      author: {username: "bot\($i)", name: "Bot \($i)", avatar_url: "https://x/a.png"}, reviewers: $rv}'
+}
+printf '[%s,%s,%s]' "$(mrl 88 5 g/p41 false ci_still_running)" "$(mrl 87 5 g/p41 true draft_status)" "$(mrl 86 5 g/p41 false mergeable '[{"username":"me","name":"Me"}]')" | fx mrs-review
+printf '[%s,%s]' "$(mrl 35 6 o/board false checking)" "$(mrl 12 7 o/dots true draft_status '[{"username":"r1","name":"R One","avatar_url":"http://x/a.png"}]')" | fx mrs-mine
+jq -cn '{project_id: 5, iid: 88, detailed_merge_status: "ci_still_running", head_pipeline: {status: "running", web_url: "https://gitlab.com/g/p41/-/pipelines/1"}}' | fx mr-88
+jq -cn '{project_id: 6, iid: 35, detailed_merge_status: "mergeable", head_pipeline: null}' | fx mr-35
+echo '[{"user":{"username":"me","name":"Me"},"state":"requested_changes"},{"user":{"username":"x","name":"X"},"state":"approved"}]' | fx reviewers-88
+echo '[{"user":{"username":"r1","name":"R One"},"state":"bogus"}]' | fx reviewers-12
+: >"$FAKE_LOG"; mr_out=$("$fetch" mrs)
+check "MR ready, all projects" '.state == "ready" and .scope == "all"' "$mr_out"
+check "MR review: drafts hidden, newest first kept" '[.review[].iid] == [88, 86]' "$mr_out"
+check "MR mine: drafts kept" '[.mine[].iid] == [35, 12] and .mine[1].draft == true' "$mr_out"
+check "MR row fields" '.review[0] | .project == "g/p41" and .branch == "b88" and .url == "https://gitlab.com/g/p41/-/merge_requests/88" and .author == {"username":"bot88","name":"Bot 88","avatar":"https://x/a.png"} and .title == "MR 88 <b>"' "$mr_out"
+check "MR pipeline from the MR GET" '.review[0].pipeline == {"status":"running","url":"https://gitlab.com/g/p41/-/pipelines/1"} and .mine[0].pipeline == null' "$mr_out"
+check "MR fresh merge status from the MR GET" '.mine[0].status == "mergeable" and .review[1].status == "mergeable"' "$mr_out"
+check "MR reviewer state from the reviewers GET" '.review[0].reviewers == [{"username":"me","name":"Me","avatar":"","state":"requested_changes"},{"username":"x","name":"X","avatar":"","state":"approved"}]' "$mr_out"
+check "MR unknown state: none; no reviewers GET: the list's, no state; http avatar dropped" '.mine[1].reviewers == [{"username":"r1","name":"R One","avatar":"","state":null}] and .review[1].reviewers == [{"username":"me","name":"Me","avatar":"","state":null}]' "$mr_out"
+check "MR two list GETs, then MR + reviewers GETs per row (not the hidden draft)" '.' "$(
+  grep -q '^api --hostname gitlab.com --method GET merge_requests?scope=reviews_for_me&draft=false&state=opened&order_by=updated_at&sort=desc&per_page=20$' "$FAKE_LOG" &&
+  grep -q '^api --hostname gitlab.com --method GET merge_requests?scope=created_by_me&state=opened&order_by=updated_at&sort=desc&per_page=20$' "$FAKE_LOG" &&
+  [[ $(grep -cE 'merge_requests/[0-9]+$' "$FAKE_LOG") == 4 && $(grep -c '/reviewers$' "$FAKE_LOG") == 4 ]] && ! grep -q 'merge_requests/87' "$FAKE_LOG" &&
+  ! grep -q NON-GET "$FAKE_LOG" && echo true || echo false)"
+: >"$FAKE_LOG"; out=$("$fetch" mrs --project g/p41)
+check "MR this project: the project's lists" '.state == "ready" and .scope == "g/p41"' "$out"
+check "MR this project: log" '.' "$(grep -q '^api --hostname gitlab.com --method GET projects/g%2Fp41/merge_requests?scope=reviews_for_me&' "$FAKE_LOG" && grep -q 'GET projects/g%2Fp41/merge_requests?scope=created_by_me&' "$FAKE_LOG" && echo true || echo false)"
+check "MR bad project refused" '.state == "error" and (.message | test("Invalid project"))' "$("$fetch" mrs --project 'a/../b')"
+check "MR signed out" '.state == "logged-out"' "$(FAKE_AUTH=no "$fetch" mrs)"
+rm -f "$FAKE_DIR/mrs-mine.json"
+check "MR a failed list fails the answer" '.state == "error" and .message == "Could not load merge requests."' "$("$fetch" mrs)"
+printf '[%s]' "$(mrl 35 6 o/board false checking)" | fx mrs-mine
+echo '{"message":"x"}' | fx mrs-review
+check "MR a non-list answer" '.state == "error"' "$("$fetch" mrs)"
+printf '[%s]' "$(mrl 88 5 g/p41 false ci_still_running)" | fx mrs-review
+out=$(FAKE_HANG=merge_requests/88/reviewers "$fetch" mrs)
+check "MR a hung reviewers GET costs only its states" '.state == "ready" and .review[0].reviewers == [] and .review[0].pipeline.status == "running"' "$out"
+jq -cn '[range(1; 16) | {iid: ., project_id: 9, title: "t", draft: false, references: {full: "a/b!\(.)"}}]' | fx mrs-review
+jq -cn '[range(21; 36) | {iid: ., project_id: 9, title: "t", draft: false, references: {full: "a/b!\(.)"}, web_url: "http://gitlab.com/a/b/-/merge_requests/\(.)"}]' | fx mrs-mine
+: >"$FAKE_LOG"; out=$("$fetch" mrs)
+check "MR at most 10 per list" '(.review | length) == 10 and (.mine | length) == 10' "$out"
+check "MR at most 10 rows asked about per list" '.' "$([[ $(grep -c '/reviewers$' "$FAKE_LOG") == 20 ]] && echo true || echo false)"
+check "MR links only over https" '[.mine[].url] | unique == [""]' "$out"
+check "MR no token in output" '.' "$(grep -qiE 'glpat|bearer' <<<"$mr_out$out" && echo false || echo true)"
+
 # --- safety: no token in any output --------------------------------------------
 fx board <<<'{"id":7,"name":"Dev","lists":[{"id":11,"label":{"name":"todo"}},{"id":12,"label":{"name":"approved"}}]}'
 fx put <<<'{"iid":3,"state":"opened","labels":["approved"]}'

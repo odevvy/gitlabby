@@ -14,6 +14,11 @@
 #   board-fetch issue --project P --iid N           one issue with its description
 #   board-fetch notes --project P --iid N           its comments (newest 100), oldest first
 #   board-fetch whoami                              your GitLab username (never saved)
+#   board-fetch mrs [--project P]                   open merge requests waiting on your
+#                                                   review (no drafts) and your own, 10
+#                                                   each, newest change first, with each
+#                                                   one's pipeline and reviewers' state;
+#                                                   all projects, or only P
 #   board-fetch labels --project P                  the project's labels a person may edit:
 #                                                   every label but the status ones (below)
 # The four writes, each in its own function and branch:
@@ -38,13 +43,13 @@
 #     forgets the token, GitLab is not called), then deletes the saved boards.
 #
 # P is a project path (group/name) or numeric id; every command but projects,
-# whoami and logout needs one. --hostname defaults to gitlab.com.
+# whoami, mrs and logout needs one. --hostname defaults to gitlab.com.
 # Before any GitLab call: state "no-glab" if glab is missing, "logged-out" if
 # glab has no login for the host (or GitLab refuses it).
 set -uo pipefail
 
 cmd=board project="" board_id="" iid="" from="" to="" add="" remove="" hostname="gitlab.com"
-case "${1:-}" in board|cached|projects|boards|issue|notes|move|comment|whoami|logout|labels|relabel|close|reopen) cmd=$1; shift ;; esac
+case "${1:-}" in board|cached|projects|boards|issue|notes|move|comment|whoami|mrs|logout|labels|relabel|close|reopen) cmd=$1; shift ;; esac
 while (($#)); do
   case "$1" in
     --project) project=${2:-} ;;
@@ -66,7 +71,7 @@ emit() { # state message
 }
 command -v jq >/dev/null 2>&1 || { printf '%s\n' '{"state":"error","message":"jq is required."}'; exit 0; }
 
-if [[ ! $cmd =~ ^(projects|whoami|logout)$ ]]; then
+if [[ ! $cmd =~ ^(projects|whoami|logout)$ && ($cmd != mrs || -n $project) ]]; then
   [[ -n $project ]] || emit error "No project given: pass --project group/name."
   [[ $project =~ ^[0-9]+$ || ($project =~ ^[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)+$ && $project != *..*) ]] ||
     emit error "Invalid project: $project"
@@ -146,6 +151,9 @@ get() {
   return $rc
 }
 base="projects/$(jq -rn --arg p "$project" '$p | @uri')"
+# peek() is GET by construction like get(), but never emits: for best-effort
+# extras (pipelines, reviewers) whose failure must not fail the answer.
+peek() { bounded api --hostname "$hostname" --method GET "$@"; }
 
 # jq helpers shared by the programs below.
 read -r -d '' DEFS <<'JQ'
@@ -175,6 +183,58 @@ def reason: (.message // .error // empty) | (if type == "string" then . else toj
   | gsub("\\p{Cc}"; "") | gsub("(gl[a-z]{2,6}-|[Bb]earer +)[A-Za-z0-9_.=-]+"; "[redacted]") | .[0:120];
 JQ
 
+# --- merge requests (the Merge requests view) ----------------------------------
+# Two GETs of the merge request list (all projects, or $base's), then for each
+# row, four at a time and best effort like the Review pipelines below: one GET
+# of the merge request (its head_pipeline and a fresh merge status) and one of
+# its reviewers (each one's review state). A failed or slow one leaves that row
+# as the list had it: no pipeline, reviewers without a state.
+mrs_list() {
+  local prefix="" kind pid miid
+  [[ -z $project ]] || prefix="$base/"
+  local q="state=opened&order_by=updated_at&sort=desc&per_page=20"
+  get "${prefix}merge_requests?scope=reviews_for_me&draft=false&$q" >"$tmp/mrs-review" || emit error "Could not load merge requests."
+  get "${prefix}merge_requests?scope=created_by_me&$q" >"$tmp/mrs-mine" || emit error "Could not load merge requests."
+  jq -se 'length == 2 and all(type == "array")' "$tmp/mrs-review" "$tmp/mrs-mine" >/dev/null 2>&1 ||
+    emit error "GitLab returned an unreadable response."
+  mr_detail() { # project_id iid
+    peek "projects/$1/merge_requests/$2" >"$tmp/mrd-$1-$2" || rm -f "$tmp/mrd-$1-$2"
+    peek "projects/$1/merge_requests/$2/reviewers" >"$tmp/mrr-$1-$2" || rm -f "$tmp/mrr-$1-$2"
+    return 0
+  }
+  while read -r pid miid; do
+    [[ $pid =~ ^[1-9][0-9]*$ && $miid =~ ^[1-9][0-9]*$ ]] || continue
+    while (($(jobs -rp | wc -l) >= 4)); do wait -n; done
+    mr_detail "$pid" "$miid" &
+  done < <(jq -rn --slurpfile r "$tmp/mrs-review" --slurpfile m "$tmp/mrs-mine" \
+    '[($r[0] | map(select(.draft != true)) | .[:10][]), ($m[0][:10][])] | unique_by([.project_id, .iid])[] | "\(.project_id) \(.iid)"' 2>/dev/null)
+  wait
+  jq -cs 'map(objects | select(.project_id and .iid) | {("\(.project_id)/\(.iid)"): .}) | add // {}' "$tmp"/mrd-* </dev/null >"$tmp/mrd" 2>/dev/null || echo '{}' >"$tmp/mrd"
+  : >"$tmp/mrr"
+  for f in "$tmp"/mrr-*; do
+    [[ -e $f ]] || continue
+    kind=${f##*/mrr-}
+    jq -c --arg k "${kind/-//}" 'select(type == "array") | {($k): .}' "$f" >>"$tmp/mrr" 2>/dev/null
+  done
+  jq -cs 'add // {}' "$tmp/mrr" >"$tmp/mrr.all" 2>/dev/null || echo '{}' >"$tmp/mrr.all"
+  jq -cn --slurpfile r "$tmp/mrs-review" --slurpfile m "$tmp/mrs-mine" --slurpfile d "$tmp/mrd" --slurpfile v "$tmp/mrr.all" \
+    --arg scope "${project:-all}" "$DEFS"'
+    def person: {username: (.username // ""), name: (.name // .username // ""), avatar: (.avatar_url | https)};
+    def states: ["unreviewed", "review_started", "reviewed", "requested_changes", "approved", "unapproved"];
+    def row: ("\(.project_id)/\(.iid)") as $k | ($d[0][$k] // {}) as $one | ($v[0][$k]) as $revs
+      | (.references.full // "" | strings) as $full
+      | {iid, title: (.title // ""), url: (.web_url | https), draft: (.draft == true),
+         project: ($full | capture("^(?<p>.+)!\\d+$").p // ""),
+         branch: (.source_branch // ""), updatedAt: .updated_at,
+         status: (($one.detailed_merge_status // .detailed_merge_status) | strings // ""),
+         author: (.author // {} | person),
+         pipeline: ($one.head_pipeline | pipeline),
+         reviewers: (if $revs then [$revs[] | objects | (.user // {} | person) + {state: (.state | select(IN(states[])) // null)}]
+                     else [(.reviewers // [])[] | person + {state: null}] end)};
+    {state: "ready", message: "", scope: $scope, updatedAt: (now | todateiso8601),
+     review: [$r[0] | map(select(.draft != true))[:10][] | row], mine: [$m[0][:10][] | row]}' 2>/dev/null ||
+    emit error "GitLab returned an unreadable response."
+}
 case $cmd in
   projects)
     # Page by page, at most 5 pages (500 projects, most recently active first),
@@ -192,6 +252,9 @@ case $cmd in
     get user >"$tmp/u" || emit error "Could not load your GitLab account."
     jq -ce 'if (.username | type) == "string" then {state: "ready", message: "", user: .username} else null end' "$tmp/u" 2>/dev/null ||
       emit error "GitLab returned an unreadable response."
+    exit 0 ;;
+  mrs)
+    mrs_list
     exit 0 ;;
   labels)
     get --paginate "$base/boards?per_page=100" >"$tmp/b" || emit error "Could not load boards for $project."
@@ -441,9 +504,8 @@ jq -cn --slurpfile b "$tmp/board" --slurpfile all "$tmp/boards" --slurpfile o "$
 # whose MRs carry head_pipeline. The open MR wins, else the latest merged one;
 # closed MRs don't count. Only if GitLab left head_pipeline out, one GET of that
 # MR. Best effort, four at a time: no MR, no pipeline, no access or a timeout
-# leaves the card without one, and never fails the board. peek() is GET by
-# construction like get(), but never emits: these run in the background.
-peek() { bounded api --hostname "$hostname" --method GET "$@"; }
+# leaves the card without one, and never fails the board. peek() (above) is
+# GET only and never emits: these run in the background.
 pipeline_of() { # iid; writes $tmp/pipe-<iid> with {"<iid>": {status, url, mr}} or nothing
   local iid=$1 pid miid
   peek "$base/issues/$iid/related_merge_requests" >"$tmp/rel-$iid" || return 0
