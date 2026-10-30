@@ -8,7 +8,9 @@ import "Logic.js" as Logic
 import "components"
 
 // GitLab issue board in the Omarchy bar. Left click opens the popup, right or
-// middle click refreshes. Data comes from ./board-fetch through glab: reads are
+// middle click refreshes. The board comes from BoardService.qml, shared by the
+// copies of this widget on every screen (one fetch for all of them); the rest
+// from ./board-fetch through glab directly: reads are
 // GET only; the writes are `board-fetch move` (a card dropped on another column,
 // or Shift+H/L; asks first for projects in settings.confirmMoves), and from the
 // issue view `comment`, `relabel`, `close` and `reopen`; Sign out runs `logout`.
@@ -62,8 +64,14 @@ Panel {
   readonly property bool confirmMoves: Logic.has(Logic.lowerList(saved("confirmMoves", [])), project)
   property var boardStates: saved("boardStates", ({})) || ({})
 
-  // Board data from the last fetch.
-  readonly property bool loading: fetchProcess.running
+  // The shared board fetch (BoardService.qml): the shell's one service when the
+  // built-in bar hosts this widget (PluginShellApi.serviceFor), else a private one.
+  readonly property var sharedFeed: bar && bar.shell && typeof bar.shell.serviceFor === "function" ? bar.shell.serviceFor(moduleName) : null
+  readonly property var feed: sharedFeed || localFeed
+  readonly property string fetchKey: feed.keyOf(project, boardId)
+  // Board data from the last fetch. loading: this board is being fetched,
+  // whichever screen asked.
+  readonly property bool loading: project !== "" && (feed.runningKey === fetchKey || feed.queuedKeys.indexOf(fetchKey) !== -1)
   readonly property Item tipArea: keyCatcher  // IconTips stay inside the card
   // A refresh of a board already on screen (button, r or the timer); a saved
   // copy says "updating…" itself.
@@ -119,11 +127,11 @@ Panel {
 
   // Drag-to-move: one move at a time, { iid, snapshot, key } while on its way.
   // The card moves at once (optimistic); the snapshot brings it back if GitLab
-  // refuses. moveSeq/fetchSeq drop any board answer requested before the latest move.
+  // refuses. moveFloor: board answers from fetches started before the latest
+  // move (feed tickets below it) are dropped, and the board is fetched again.
   property var move: null
   property string moveError: ""
-  property int moveSeq: 0
-  property int fetchSeq: 0
+  property int moveFloor: 0
   readonly property bool canMove: boardState === "ready" && !cached && !fallback && resolvedBoardId !== ""
 
   // New board data would replace the card being moved or held under the
@@ -134,7 +142,7 @@ Panel {
   property bool refreshQueued: false
   // callLater: a drop starts its move (also callLater) before this runs.
   onBusyChanged: if (!busy && refreshQueued) Qt.callLater(runQueued)
-  function runQueued() { if (refreshQueued) { refreshQueued = false; refresh() } }
+  function runQueued() { if (refreshQueued) { refreshQueued = false; refresh(true) } }
 
   function columnAccent(column) {
     if (column.color) return Qt.color(column.color)
@@ -215,17 +223,19 @@ Panel {
     return decodeURIComponent(Qt.resolvedUrl("board-fetch").toString().replace(/^file:\/\//, ""))
   }
 
-  function refresh() {
+  // ifDue (the timer, opening the popup): skipped when this board was fetched
+  // less than an interval ago, on any screen; that answer is shown instead.
+  // Otherwise (Refresh, r, a click on the icon) it is fetched, unless a fetch
+  // is already on its way, which every screen then shows.
+  function refresh(ifDue) {
     if (signingOut) return
     // No project yet: the project list doubles as the sign-in check, and
     // landing in the picker is the next step.
     if (project === "") { boardState = "loading"; runAux("projects", []); return }
     readCache()
-    if (busy) { refreshQueued = true; return }
-    fetchSeq = moveSeq
-    fetchProcess.session = session
-    fetchProcess.command = [helperPath(), "board", "--project", project, "--board", boardId]
-    fetchProcess.running = true
+    if (held) { refreshQueued = true; return }
+    var last = feed.request(project, boardId, ifDue === true, refreshIntervalSec * 1000 - 2000, moveFloor)
+    if (last) apply(last.raw, false, last.ticket)
   }
 
   function parse(raw) {
@@ -244,10 +254,10 @@ Panel {
     if (boardState === "loading" && key === project + "#" + boardId && parse(raw).cached === true) apply(raw, true)
   }
 
-  function apply(raw, fromCache) {
+  function apply(raw, fromCache, ticket) {
     var data = parse(raw)
     if (data.project && data.project !== project) return  // answer for a project we already left
-    if (held || fetchSeq !== moveSeq) { refreshQueued = true; return }  // mid-drag or mid-move, or older than the latest move
+    if (held || (!fromCache && ticket < moveFloor)) { refreshQueued = true; return }  // mid-drag or mid-move, or older than the latest move
     // A failed refresh keeps the board on screen (sign-in problems still show
     // the sign-in panel); only with nothing loaded does the error take its place.
     if (data.state === "error" && boardState === "ready" && columns.length > 0) { refreshError = String(data.message || "Could not load issues."); return }
@@ -304,7 +314,6 @@ Panel {
     if (move || moveProcess.running || !row || !canDrop(from) || !canDrop(to) || Logic.columnKey(from) === Logic.columnKey(to)) return false
     move = { iid: row.iid, snapshot: columns, key: stateKey }
     moveError = ""
-    moveSeq++
     columns = Logic.movedColumns(columns, row, from, to)
     moveProcess.command = [helperPath(), "move", "--project", project, "--board", resolvedBoardId,
       "--iid", String(row.iid), "--from", Logic.listSpec(from), "--to", Logic.listSpec(to)]
@@ -325,7 +334,9 @@ Panel {
     // Success, or a card that was out of date ("stale": board-fetch wrote
     // nothing): load the board as GitLab now has it. Other failures: only if a
     // refresh was due. It runs once the move is cleared (onBusyChanged).
-    if (data.state === "ready" || data.state === "stale") refreshQueued = true
+    // Answers from fetches started before now may predate the write: the next
+    // one must start after it (moveFloor), on every screen's behalf.
+    if (data.state === "ready" || data.state === "stale") { refreshQueued = true; moveFloor = feed.tickets + 1 }
     move = null
   }
 
@@ -445,6 +456,7 @@ Panel {
     signingOut = false
     if (data.state !== "logged-out") { accountError = String(data.message || "Could not sign out."); return }
     session++
+    feed.forget()
     columns = []; projects = []; pickerBoards = []; cached = false; account = ""; refreshError = ""; pendingMove = null
     message = String(data.message || ""); boardState = "logged-out"
     showView("board")
@@ -482,20 +494,22 @@ Panel {
   implicitHeight: button.implicitHeight
 
   Component.onCompleted: Qt.callLater(readCache)
-  onOpenedChanged: if (opened) { view = "board"; cursor = null; refresh() } else { boardView.endDrag(); pendingMove = null }
+  onOpenedChanged: if (opened) { view = "board"; cursor = null; refresh(true) } else { boardView.endDrag(); pendingMove = null }
 
-  // Only while the popup is open; opening it refreshes (onOpenedChanged).
+  // Only while the popup is open; opening it refreshes if due (onOpenedChanged).
+  // A copy on another screen that fetched meanwhile makes the tick a no-op.
   Timer {
     id: refreshTimer
     interval: root.refreshIntervalSec * 1000
     repeat: true; running: root.opened && root.setup === ""
-    onTriggered: root.refresh()
+    onTriggered: root.refresh(true)
   }
 
-  Process {
-    id: fetchProcess
-    property int session: 0  // root.session it was started in
-    stdout: StdioCollector { waitForEnd: true; onStreamFinished: if (fetchProcess.session === root.session) root.apply(text) }
+  BoardService { id: localFeed }
+  // Every answer for the board on screen, whichever screen asked for it.
+  Connections {
+    target: root.feed
+    function onAnswered(key, raw, ticket) { if (key === root.fetchKey) root.apply(raw, false, ticket) }
   }
 
   Process {
@@ -515,7 +529,7 @@ Panel {
   // reload, since the move may or may not have reached GitLab.
   Timer {
     id: moveWatchdog; interval: 30000
-    onTriggered: { root.refreshQueued = true; root.moveDone(JSON.stringify({ state: "error", message: "No answer from glab; reloading the board." })) }
+    onTriggered: { root.refreshQueued = true; root.moveFloor = root.feed.tickets + 1; root.moveDone(JSON.stringify({ state: "error", message: "No answer from glab; reloading the board." })) }
   }
 
   Process {

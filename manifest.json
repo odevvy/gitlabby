@@ -7,10 +7,12 @@
   "license": "MIT",
   "description": "A GitLab issue board in a bar popup: your project's real boards in their label colors, assignees, issue details with comments, labels and close, a board picker, and drag-to-move.",
   "kinds": [
-    "bar-widget"
+    "bar-widget",
+    "service"
   ],
   "entryPoints": {
-    "barWidget": "Board.qml"
+    "barWidget": "Board.qml",
+    "service": "BoardService.qml"
   },
   "barWidget": {
     "displayName": "GitLab Board",

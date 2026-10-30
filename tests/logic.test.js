@@ -519,3 +519,21 @@ test("pipeline marks: five statuses, https links only, nothing otherwise", () =>
   assert.equal(L.pipelineMark({ status: "pending", mr: "<b>x</b>" }).tip, "Pipeline pending")
   for (const p of [null, undefined, {}, { status: "success" }, { status: "manual" }, { status: "toString" }, "passed"]) assert.equal(L.pipelineMark(p), null)
 })
+
+test("shared refresh: one BoardService for every screen; Board.qml fetches boards only through it", () => {
+  const fs = require("node:fs"), path = require("node:path"), dir = path.join(__dirname, "..")
+  const manifest = JSON.parse(fs.readFileSync(path.join(dir, "manifest.json"), "utf8"))
+  assert.deepEqual(manifest.kinds, ["bar-widget", "service"])
+  assert.deepEqual(manifest.entryPoints, { barWidget: "Board.qml", service: "BoardService.qml" })
+  const board = fs.readFileSync(path.join(dir, "Board.qml"), "utf8")
+  const service = fs.readFileSync(path.join(dir, "BoardService.qml"), "utf8")
+  // The widget asks the shell for its own service, else keeps a private one of the same kind.
+  assert.match(board, /bar\.shell\.serviceFor\(moduleName\)/)
+  assert.match(board, /readonly property var feed: sharedFeed \|\| localFeed/)
+  assert.match(board, /BoardService \{ id: localFeed \}/)
+  // No board fetch of its own: "board" appears in no command the widget builds.
+  assert.doesNotMatch(board, /helperPath\(\), "board"/)
+  assert.match(service, /args: \["board", "--project", project, "--board", boardId\]/)
+  // Exactly one Process in the service: one board-fetch at a time for the whole shell.
+  assert.equal((service.match(/^\s*Process \{/gm) || []).length, 1)
+})
