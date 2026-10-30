@@ -721,3 +721,25 @@ test("merge requests: the answer checked, status pills, reviewer marks, sublines
   assert.match(svc, /Date\.now\(\) - last\.startedAt < 60000/)
 })
 
+test("merge requests view wiring: m and the header button open it; it loads on open, scope or r only", () => {
+  const fs = require("node:fs"), path = require("node:path"), dir = path.join(__dirname, "..")
+  const board = fs.readFileSync(path.join(dir, "Board.qml"), "utf8")
+  const view = fs.readFileSync(path.join(dir, "MrsView.qml"), "utf8")
+  assert.match(board, /MrsView \{ id: mrsView; host: root; anchors\.fill: parent; visible: root\.view === "mrs" \}/)
+  assert.match(board, /if \(name === "mrs" && view !== "mrs"\) mrsView\.open\(\)/)
+  assert.match(board, /else if \(key === "m"\) root\.toggleView\("mrs"\)/)
+  assert.match(board, /key === "r" && root\.view === "mrs"\) mrsView\.refresh\(\)/)
+  assert.match(board, /root\.view === "mrs" && dy !== 0\) mrsView\.moveCursor\(dy\)/)
+  assert.match(board, /else if \(root\.view === "mrs"\) mrsView\.activate\(\)/)
+  assert.match(board, /Logic\.mrBadge\(\(root\.feed\.mrAnswers\[mrsView\.scope\] \|\| \{\}\)\.data\)/)
+  // Only the view asks for the lists, and only these three ways.
+  assert.deepEqual([...board.matchAll(/requestMrs\(/g)].length, 0)
+  assert.deepEqual([...view.matchAll(/host\.feed\.requestMrs\(([^)]*)\)/g)].map(m => m[1]), ["scope, false", "scope, true", "scope, false"])
+  // Read-only: a row opens its link and nothing else runs.
+  assert.doesNotMatch(view, /execDetached|Process \{|helperPath/)
+  assert.match(view, /host\.openUrl\(rows\[cursor\]\.url\)/)
+  // Titles and messages from GitLab are plain text: every text is a BoardText
+  // (PlainText), and none switches to rich text.
+  assert.match(fs.readFileSync(path.join(dir, "components", "BoardText.qml"), "utf8"), /textFormat: Text\.PlainText/)
+  assert.doesNotMatch(view, /textFormat|\bText \{|\bLabel \{/)
+})
