@@ -619,8 +619,8 @@ check "X logged out: no write" '.state == "logged-out"' "$(FAKE_AUTH=no cl close
 check "X logged out: no PUT" '.' "$(grep -q NON-GET "$FAKE_LOG" && echo false || echo true)"
 close_out=$(fx put <<<'{"iid":3,"state":"closed"}'; cl close --project a/b --iid 3; FAKE_PUT=fail cl reopen --project a/b --iid 3)
 
-# --- CL: Closed shows the latest 20; a full column links to GitLab for the rest -
-# Open and label columns read every open issue (--paginate): no cap, no link.
+# --- CL: Closed shows the latest 20; with more, it is capped (20+) and links to the rest
+# It asks for 21 to know. Open and label columns read every open issue (--paginate): no cap, no link.
 closed_n() { # n web-url-prefix
   jq -cn --argjson n "$1" --arg u "$2" '[range($n) | {iid: (100 + .), title: "c", state: "closed", labels: [], web_url: "\($u)\(100 + .)"}]'; }
 reset
@@ -630,29 +630,33 @@ fx boards <<'J'
   "milestone":{"title":"v1.0"},"assignee":{"id":42,"username":"alice"},"weight":3,"lists":[]}]
 J
 fx open <<<'[]'
-closed_n 20 https://gitlab.com/group/app/-/issues/ | fx closed
+closed_n 21 https://gitlab.com/group/app/-/issues/ | fx closed
 out=$("$fetch" --project group/app)
-check "CL closed asks for the latest 20 only" '.' "$(grep -q 'state=closed&scope=all&order_by=updated_at&sort=desc&per_page=20&' "$FAKE_LOG" && echo true || echo false)"
+check "CL closed asks for the latest 20 and one more" '.' "$(grep -q 'state=closed&scope=all&order_by=updated_at&sort=desc&per_page=21&' "$FAKE_LOG" && echo true || echo false)"
 check "CL open issues are read in full (--paginate)" '.' "$(grep -q -- '--paginate projects/group%2Fapp/issues?state=opened' "$FAKE_LOG" && echo true || echo false)"
-check "CL 20 closed: a link to all closed issues" '(.columns[] | select(.kind == "closed") | .seeAll) == "https://gitlab.com/group/app/-/issues?state=closed"
-  and ([.columns[] | select(.kind != "closed") | has("seeAll")] | any | not)' "$out"
+check "CL more than 20 closed: the latest 20, capped, a link to all closed issues" '(.columns[] | select(.kind == "closed") | (.issues | length) == 20 and .issues[0].iid == 100 and .issues[-1].iid == 119 and .capped == true
+    and .seeAll == "https://gitlab.com/group/app/-/issues?state=closed")
+  and ([.columns[] | select(.kind != "closed") | has("seeAll") or has("capped")] | any | not)' "$out"
 out=$("$fetch" --project group/app --board 8)
 check "CL scoped board: the link keeps its label, milestone, assignee and weight filters" '(.columns[] | select(.kind == "closed") | .seeAll)
   == "https://gitlab.com/group/app/-/issues?state=closed&label_name%5B%5D=team-a&label_name%5B%5D=a%20b&milestone_title=v1.0&assignee_username=alice&weight=3"' "$out"
-closed_n 20 https://gitlab.com/group/app/-/work_items/ | fx closed
+closed_n 21 https://gitlab.com/group/app/-/work_items/ | fx closed
 out=$("$fetch" --project group/app)
 check "CL work-item issue URLs (GitLab.com today) give the same link" '(.columns[] | select(.kind == "closed") | .seeAll) == "https://gitlab.com/group/app/-/issues?state=closed"' "$out"
 closed_n 19 https://gitlab.com/group/app/-/issues/ | fx closed
 out=$("$fetch" --project group/app)
-check "CL 19 closed: all of them, no link" '.columns[] | select(.kind == "closed") | (.issues | length) == 19 and (has("seeAll") | not)' "$out"
-closed_n 20 http://gitlab.com/group/app/-/issues/ | fx closed
+check "CL 19 closed: all of them, no cap, no link" '.columns[] | select(.kind == "closed") | (.issues | length) == 19 and (has("seeAll") or has("capped") | not)' "$out"
+closed_n 20 https://gitlab.com/group/app/-/issues/ | fx closed
 out=$("$fetch" --project group/app)
-check "CL a non-https issue URL gives no link" '.columns[] | select(.kind == "closed") | has("seeAll") | not' "$out"
-closed_n 20 'https://gitlab.com/group/app/-/merge_requests/' | fx closed
+check "CL exactly 20 closed: all of them, no cap, no link" '.columns[] | select(.kind == "closed") | (.issues | length) == 20 and (has("seeAll") or has("capped") | not)' "$out"
+closed_n 21 http://gitlab.com/group/app/-/issues/ | fx closed
+out=$("$fetch" --project group/app)
+check "CL a non-https issue URL gives no link, but still the cap" '.columns[] | select(.kind == "closed") | (has("seeAll") | not) and .capped == true' "$out"
+closed_n 21 'https://gitlab.com/group/app/-/merge_requests/' | fx closed
 out=$("$fetch" --project group/app)
 check "CL an unexpected URL shape gives no link" '.columns[] | select(.kind == "closed") | has("seeAll") | not' "$out"
 fx boards <<<'[]'
-closed_n 20 https://gitlab.example.org/sub/group/app/-/issues/ | fx closed
+closed_n 21 https://gitlab.example.org/sub/group/app/-/issues/ | fx closed
 out=$("$fetch" --project sub/group/app)
 check "CL no board (workflow columns): the link too, unscoped" '(.columns[] | select(.kind == "closed") | .seeAll) == "https://gitlab.example.org/sub/group/app/-/issues?state=closed"' "$out"
 

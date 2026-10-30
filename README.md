@@ -91,11 +91,12 @@ The columns are the lists on the selected GitLab board, in its order:
 - **Open**: open issues in none of the board's label lists.
 - **One column per label list**: open issues with that label. An issue with
   two list labels appears in both, as on GitLab.
-- **Closed**: the 20 most recently updated closed issues. When it holds all
-  20, a quiet line at its bottom says "Showing the latest 20 · See all on
-  GitLab ↗" and opens the project's closed issues on GitLab, with the
+- **Closed**: the 20 most recently updated closed issues. When there are
+  more, its count reads `20+` (on the column and in the summary row) and a
+  quiet line at its bottom says "Showing the latest 20 · See all on
+  GitLab ↗", which opens the project's closed issues on GitLab, with the
   board's label, milestone, assignee and weight filters. Open and the label
-  lists are not capped: they read every open issue.
+  lists are not capped: they read every open issue, so their counts are exact.
 - **Assignee, milestone, and iteration lists**: a "not supported yet" note.
 
 Open and Closed are left out when the board hides them, and a board's scope
@@ -427,9 +428,9 @@ project's labels without the status ones, plus the status list.
 that issue in the new state.
 
 A board refresh makes one request for the boards (with their lists), the open
-issues (paginated), and one for the last 20 closed issues, skipped when the
-board hides Closed. Issues come with label details, so colors need no extra
-request.
+issues (paginated), and one for the last 20 closed issues (it asks for 21, to
+know whether there are more), skipped when the board hides Closed. Issues come
+with label details, so colors need no extra request.
 
 ## Tests and debugging
 
