@@ -146,7 +146,16 @@ Panel {
   property var move: null
   property string moveError: ""
   property int moveFloor: 0
-  readonly property bool canMove: boardState === "ready" && !cached && !fallback && resolvedBoardId !== ""
+  readonly property bool canMove: boardState === "ready" && !cached && !fallback && resolvedBoardId !== "" && writable
+  // Write access on this project (BoardService access, asked once per project
+  // when its board loads): accessNote "" (writes on), "view-only" or
+  // "read-token" turns moves, bulk actions, labels and close off, and
+  // AccessHint.qml says why until Not now (saved per project).
+  readonly property var accessEntry: project !== "" ? feed.access[project] || null : null
+  readonly property string accessNote: Logic.accessNote(accessEntry)
+  readonly property bool writable: accessNote === ""
+  readonly property bool hintDismissed: Logic.has(Logic.lowerList(saved("accessHintDismissed", [])), project)
+  function dismissHint() { if (!hintDismissed) persist(undefined, undefined, undefined, { accessHintDismissed: Logic.lowerList(saved("accessHintDismissed", [])).concat([project.toLowerCase()]) }) }
 
   // New board data would replace the card being moved or held under the
   // pointer, so while held, board answers are dropped and refetched after.
@@ -215,8 +224,8 @@ Panel {
   // it to the shell facade. Without the facade the state stays in memory.
   // nextDefault ({ project, id, name }) replaces the saved default board.
   // nextBots replaces settings.bots (Settings > Bots), nextAlerts settings.alerts
-  // (Settings > Alerts); otherwise they are kept as saved.
-  function persist(nextDefault, nextBots, nextAlerts) {
+  // (Settings > Alerts); otherwise they are kept as saved. more: other keys to set.
+  function persist(nextDefault, nextBots, nextAlerts, more) {
     if (!bar || !bar.shell || typeof bar.shell.updateEntryInline !== "function") return
     var d = nextDefault || { project: defaultProject, id: defaultBoardId, name: defaultBoardName }
     var entry = { id: moduleName }
@@ -231,6 +240,7 @@ Panel {
     entry.settingsRevision = settingsRevision
     if (nextBots !== undefined) entry.bots = nextBots
     if (nextAlerts !== undefined) entry.alerts = nextAlerts
+    for (var k in more || {}) entry[k] = more[k]
     bar.shell.updateEntryInline(moduleName, entry)
   }
   function saveBots(next) { persist(undefined, next) }
@@ -295,6 +305,7 @@ Panel {
       boardWidths = widths
       lastBoardWidth = boardWidth
     }
+    if (boardState === "ready" && !cached) feed.requestAccess(project)  // once per project (the service keeps it)
   }
 
   // Columns a card can be dropped on: Open, Closed and label lists of a real
@@ -324,7 +335,7 @@ Panel {
   property var picked: []
   onColumnsChanged: if (!bulkBar.busy && !bulkBar.armed) picked = Logic.livePicks(columns, picked)
   function togglePick(column, iid) {
-    if (bulkBar.busy || bulkBar.armed || bulkBar.mode === "results" || !column) return
+    if (bulkBar.busy || bulkBar.armed || bulkBar.mode === "results" || !column || !writable) return
     var t = Logic.togglePick(picked, Logic.pickKey(column, iid))
     picked = t.picked
     bulkBar.pickNote(t.full)
@@ -362,6 +373,7 @@ Panel {
     if (data.state !== "ready") {
       if (move.key === stateKey) columns = move.snapshot
       moveError = String(data.message || "Move failed.")
+      feed.noteRefused(project, data.message)  // a 403: view-only here
       moveErrorTimer.restart()
     }
     // Success, or a card that was out of date ("stale": board-fetch wrote
@@ -518,6 +530,7 @@ Panel {
     if (boardState === "ready" && cached) return Logic.savedNote(updatedAt)
     if (boardState === "ready") {
       var time = updatedAt !== "" ? "Updated " + new Date(updatedAt).toLocaleTimeString(Qt.locale(), "HH:mm") : ""
+      if (!writable) time = "View-only  " + time
       return message !== "" ? message + "  " + time : time
     }
     if (view === "board" && (setup !== "" || failed || boardState === "loading")) return ""  // the board body says it
@@ -609,7 +622,7 @@ Panel {
       id: keyCatcher
       anchors.fill: parent
       blocked: issueView.typing || picker.typing || settingsView.typing || bulkBar.typing  // text fields get every key (Omarchy PanelKeyCatcher.qml:26-29)
-      implicitHeight: header.implicitHeight + root.gap + (botsRow.visible ? botsRow.height + root.gap : 0) + (moveConfirm.visible ? moveConfirm.height + root.gap : 0) + (bulkBar.visible ? bulkBar.height + root.gap : 0) + (root.view === "board" ? (root.setup !== "" || root.failed ? Math.max(setupView.implicitHeight, skeleton.implicitHeight) : root.boardState === "loading" ? skeleton.implicitHeight : boardView.implicitHeight)
+      implicitHeight: header.implicitHeight + root.gap + (botsRow.visible ? botsRow.height + root.gap : 0) + (accessHint.visible ? accessHint.height + root.gap : 0) + (moveConfirm.visible ? moveConfirm.height + root.gap : 0) + (bulkBar.visible ? bulkBar.height + root.gap : 0) + (root.view === "board" ? (root.setup !== "" || root.failed ? Math.max(setupView.implicitHeight, skeleton.implicitHeight) : root.boardState === "loading" ? skeleton.implicitHeight : boardView.implicitHeight)
         : root.view === "issue" ? issueView.implicitHeight : root.view === "picker" ? picker.implicitHeight
         : root.view === "keys" ? keysView.implicitHeight : root.view === "mrs" ? mrsView.implicitHeight : settingsView.implicitHeight)
       onCloseRequested: {
@@ -806,12 +819,19 @@ Panel {
         height: visible ? implicitHeight : 0
       }
 
+      AccessHint {
+        id: accessHint
+        host: root
+        anchors { top: botsRow.bottom; topMargin: visible ? root.gap : 0; left: parent.left; right: parent.right }
+        height: visible ? implicitHeight : 0
+      }
+
       MoveConfirm {
         id: moveConfirm
         host: root
         pending: root.pendingMove
         visible: root.view === "board" && root.pendingMove !== null
-        anchors { top: botsRow.bottom; topMargin: visible ? root.gap : 0; left: parent.left; right: parent.right }
+        anchors { top: accessHint.bottom; topMargin: visible ? root.gap : 0; left: parent.left; right: parent.right }
         height: visible ? implicitHeight : 0
       }
 

@@ -893,3 +893,16 @@ test("access in the service: asked once per project, its own process, forgotten 
   assert.match(svc, /function forget\(\) \{(?:(?!\n  \})[\s\S])*\n    access = \(\{\}\)/)
   assert.doesNotMatch(svc, /Timer \{[^}]*requestAccess/)
 })
+
+test("view-only wiring: the hint opens only GitLab's token page; writes off while view-only", () => {
+  const fs = require("node:fs"), path = require("node:path"), dir = path.join(__dirname, "..")
+  const hint = fs.readFileSync(path.join(dir, "AccessHint.qml"), "utf8")
+  const board = fs.readFileSync(path.join(dir, "Board.qml"), "utf8")
+  // No process, no text field, no clipboard: one link, through openUrl (https only).
+  assert.doesNotMatch(hint, /Process|execDetached|TextField|TextInput|wl-copy|helperPath/)
+  assert.deepEqual([...hint.matchAll(/openUrl\(([^)]*\))\)/g)].map(m => m[1]), ["Logic.patUrl(\"gitlab.com\")"])
+  assert.match(board, /readonly property bool canMove: .* && writable$/m)
+  assert.match(board, /if \(boardState === "ready" && !cached\) feed\.requestAccess\(project\)/)
+  assert.match(board, /feed\.noteRefused\(project, data\.message\)/)
+  assert.match(board, /\|\| !column \|\| !writable\) return/)
+})
