@@ -286,6 +286,45 @@ test("bots: an issue in two busy lists counts once, as working if either is", ()
   assert.deepEqual(api.issues.map(i => [i.iid, i.list]), [[20, "in progress"]])
 })
 
+test("bots: the dot's column is the furthest along of the issues that set the state", () => {
+  const col = (name, color, issues) => ({ name, kind: "label", color, issues })
+  const cols = [col("todo", "#4f86d6", [card(30, ["todo", "auth-mail"])]), col("approved", "#d4473f", [card(31, ["approved", "auth-mail"])]),
+                col("in progress", "#e6cf17", [card(40, ["in progress", "api"]), card(41, ["in progress", "app-ui"])]),
+                col("review", "#86c29a", [card(50, ["review", "api"])])]
+  const cfg = L.botsConfig({ "a/b": { busyLists: ["todo", "approved", "in progress", "review"], bots: [
+    { name: "API Engineer", label: "api" }, { name: "Auth & Mail", label: "auth-mail" }, { name: "App UI", label: "app-ui" },
+    { name: "Spec QA", list: "review" }, { name: "Idle", label: "none" }] } }, "a/b")
+  const pick = s => [s.state, s.column, s.color, s.oneList]
+  const [api, auth, app, qa, idle] = L.botStates(cfg, cols)
+  // working in progress, waiting in review: the filled dot wears in progress, not review
+  assert.deepEqual(pick(api), ["working", "in progress", "#e6cf17", ""])
+  // only waiting: the furthest along of them (approved beats todo)
+  assert.deepEqual(pick(auth), ["waiting", "approved", "#d4473f", ""])
+  assert.deepEqual(pick(app), ["working", "in progress", "#e6cf17", "in progress"])
+  assert.deepEqual(pick(qa), ["working", "review", "#86c29a", "review"])
+  assert.deepEqual(pick(idle), ["idle", "", "", ""])
+  // a column without a color (no-board fallback without label colors): no color
+  assert.equal(L.botStates(cfg, [col("review", undefined, [card(50, ["review", "api"])])])[0].color, "")
+})
+
+test("the column said once: in research, in review, but in progress as it is", () => {
+  assert.equal(L.inColumn("research"), "in research")
+  assert.equal(L.inColumn("In Progress"), "In Progress")
+  assert.equal(L.inColumn("inbox"), "in inbox")
+})
+
+test("busy dot color: the column's own, unless it is too close to the background", () => {
+  const bg = "#132235"
+  assert.equal(L.dotColor("#e6cf17", bg), "#e6cf17")
+  assert.equal(L.dotColor("#e5e7eb", bg), "#e5e7eb")
+  assert.equal(L.dotColor("#1f2a44", bg), "")          // dark blue on dark blue: accent instead
+  assert.equal(L.dotColor("#e5e7eb", "#ffffff"), "")   // near-white on a light theme
+  assert.equal(L.dotColor("#e6cf17", "#ff132235"), "#e6cf17")  // #aarrggbb background
+  assert.equal(L.dotColor("", bg), "")
+  assert.equal(L.dotColor(undefined, bg), "")
+  assert.equal(L.dotColor("red", bg), "")
+})
+
 test("bots: no config, another project, or no usable bot shows nothing", () => {
   assert.equal(L.botsConfig(undefined, "group/p41"), null)
   assert.equal(L.botsConfig({}, "group/p41"), null)

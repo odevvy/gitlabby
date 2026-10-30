@@ -67,6 +67,10 @@ function withColors(colors, labels) {
 // working: an owned issue in a working list (default "in progress"), or any
 // for a list bot; waiting: only other busy lists; idle: none. Names match in
 // any case. Returns null (no row) unless the config has at least one bot.
+// Each state also names the column its dot takes its color from: the furthest
+// along (rightmost on the board) of the issues that set the state, so the
+// working ones when any are working (a filled dot never wears a column the bot
+// only waits in). oneList is that column's name when every issue is in it.
 function botsConfig(all, project) {
   var c = all && typeof all === "object" ? all[project] : null
   if (!c || typeof c !== "object" || !Array.isArray(c.bots)) return null
@@ -83,7 +87,7 @@ function botStates(config, columns) {
   var owners = config.bots.filter(function(b) { return b.label }).map(function(b) { return b.label })
   return config.bots.map(function(bot) {
     var found = {}, order = []
-    ;(columns || []).forEach(function(c) {
+    ;(columns || []).forEach(function(c, at) {
       if (c.kind !== "label") return
       var list = String(c.name).toLowerCase()
       if (bot.list !== undefined ? list !== bot.list : config.busyLists.indexOf(list) === -1) return
@@ -93,14 +97,36 @@ function botStates(config, columns) {
           : !labels.some(function(l) { return owners.indexOf(l) !== -1 }))
         if (!mine) return
         var working = bot.list !== undefined || config.workingLists.indexOf(list) !== -1
-        if (!found[row.iid]) { found[row.iid] = { iid: row.iid, list: c.name, working: working, row: row }; order.push(row.iid) }
-        else if (working && !found[row.iid].working) { found[row.iid].list = c.name; found[row.iid].working = true }
+        if (!found[row.iid]) { found[row.iid] = { iid: row.iid, list: c.name, color: c.color || "", at: at, working: working, row: row }; order.push(row.iid) }
+        else if (working && !found[row.iid].working) Object.assign(found[row.iid], { list: c.name, color: c.color || "", at: at, working: true })
       })
     })
     var issues = order.map(function(iid) { return found[iid] })
+    var working = issues.filter(function(i) { return i.working })
+    var lead = (working.length > 0 ? working : issues).reduce(function(best, i) { return !best || i.at > best.at ? i : best }, null)
+    var oneList = issues.length > 0 && issues.every(function(i) { return i.list === issues[0].list }) ? issues[0].list : ""
     return { name: bot.name, byList: bot.list !== undefined, issues: issues,
-             state: issues.some(function(i) { return i.working }) ? "working" : issues.length > 0 ? "waiting" : "idle" }
+             state: working.length > 0 ? "working" : issues.length > 0 ? "waiting" : "idle",
+             column: lead ? lead.list : "", color: lead ? lead.color : "", oneList: oneList }
   })
+}
+
+// "in research", but "in progress" as it is (no "in in progress").
+function inColumn(name) { var n = String(name || ""); return /^in\s/i.test(n) ? n : "in " + n }
+
+// A busy dot's color: the column's own (#rrggbb), unless it is hard to see on
+// the popup's background (WCAG contrast under 2:1) or unknown; then "" and the
+// dot keeps the theme accent. background may be #rrggbb or #aarrggbb.
+function luminance(hex) {
+  var n = parseInt(String(hex).slice(-6), 16)
+  return [n >> 16 & 255, n >> 8 & 255, n & 255].map(function(v) {
+    v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)
+  }).reduce(function(sum, v, i) { return sum + v * [0.2126, 0.7152, 0.0722][i] }, 0)
+}
+function dotColor(color, background) {
+  if (!/^#[0-9a-fA-F]{6}$/.test(String(color || "")) || !/^#([0-9a-fA-F]{2})?[0-9a-fA-F]{6}$/.test(String(background || ""))) return ""
+  var a = luminance(color), b = luminance(background)
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05) >= 2 ? color : ""
 }
 
 // Settings > Bots edits settings.bots as saved (not botsConfig's cleaned
@@ -345,7 +371,7 @@ if (typeof module !== "undefined") {
   module.exports = {
     lowerList: lowerList, has: has, toggled: toggled, escaped: escaped, countLabel: countLabel, labelStyle: labelStyle, age: age, savedNote: savedNote,
     columnKey: columnKey, listSpec: listSpec, movedColumns: movedColumns, byline: byline, people: people,
-    workflowLabels: workflowLabels, statusLabels: statusLabels, addableLabels: addableLabels, withColors: withColors, statusOn: statusOn, botsConfig: botsConfig, botStates: botStates,
+    workflowLabels: workflowLabels, statusLabels: statusLabels, addableLabels: addableLabels, withColors: withColors, statusOn: statusOn, botsConfig: botsConfig, botStates: botStates, dotColor: dotColor, inColumn: inColumn,
     botsEntry: botsEntry, botUsable: botUsable, botNameTaken: botNameTaken, withBot: withBot, withoutBot: withoutBot, withBusy: withBusy,
     linkUrl: linkUrl, inline: inline, quickAction: quickAction, moveNote: moveNote, lineLimit: lineLimit, markdown: markdown, descriptionLimit: descriptionLimit, cursorMove: cursorMove, cursorFix: cursorFix, keys: keys
   }

@@ -1,18 +1,21 @@
 import QtQuick
 import qs.Commons
 import qs.Ui
+import "Logic.js" as Logic
 
 // Who is busy, per bot, from the board on screen (Logic.botStates; no GitLab
-// call). Filled dot: working; hollow accent dot: waiting (only approved or
-// review); dim: idle. The first few issue numbers follow (hover: the title;
-// click: open the issue), then "+N more" (hover: the rest). Shown only when
+// call). Filled dot: working; ring: waiting (only approved or review); dim
+// ring: idle. A busy dot wears its column's color (the furthest along of the
+// issues that set the state), or the accent when that color is hard to see.
+// Two issue numbers follow (hover: the title; click: open the issue), then
+// "+N" (hover: the rest); the column is said once when they all share it. Shown only when
 // settings.bots has an entry for this project. The height follows the Flow
 // live (wrapping, refreshes, config edits); Board.qml makes it 0 when hidden.
 Item {
   id: row
   required property var host
   property var states: []
-  readonly property int shown: 5  // issue numbers per bot before "+N more"
+  readonly property int shown: 2  // issue numbers per bot before "+N"
   implicitHeight: flow.implicitHeight + Style.space(10)
   // A tooltip's x under item, kept inside the row (so inside the popup card).
   function tipX(item, width) {
@@ -31,13 +34,17 @@ Item {
         required property var modelData
         readonly property bool busy: modelData.state !== "idle"
         readonly property var rest: modelData.issues.slice(row.shown)
+        readonly property string oneList: modelData.oneList || ""
+        readonly property color tint: Logic.dotColor(modelData.color, String(row.host.background)) || row.host.accent
         spacing: Style.space(6)
         rightPadding: Style.space(12)
         Rectangle {
+          id: dot
+          objectName: "busyDot"
           y: (bot.height - height) / 2
           width: Style.space(8); height: width; radius: width / 2
-          color: bot.modelData.state === "working" ? row.host.accent : "transparent"
-          border { width: 1; color: bot.busy ? row.host.accent : row.host.dim }
+          color: bot.modelData.state === "working" ? bot.tint : "transparent"
+          border { width: bot.modelData.state === "waiting" ? Math.max(1, Style.space(2)) : 1; color: bot.busy ? bot.tint : row.host.dim }
         }
         BoardText {
           text: bot.modelData.name
@@ -56,7 +63,7 @@ Item {
             id: ref
             required property var modelData
             required property int index
-            text: (index > 0 ? "· " : "") + "#" + modelData.iid + (bot.modelData.byList ? "" : " " + modelData.list)
+            text: (index > 0 ? "· " : "") + "#" + modelData.iid + (bot.oneList !== "" ? "" : " " + modelData.list)
             color: refMouse.containsMouse ? row.host.accent : row.host.dim
             font.pixelSize: Style.font.bodySmall
             MouseArea { id: refMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: row.host.openIssue(ref.modelData.row) }
@@ -70,7 +77,7 @@ Item {
         BoardText {
           id: more
           visible: bot.rest.length > 0
-          text: "+" + bot.rest.length + " more"
+          text: "+" + bot.rest.length
           color: moreMouse.containsMouse ? row.host.accent : row.host.dim
           font { pixelSize: Style.font.bodySmall; underline: moreMouse.containsMouse }
           MouseArea { id: moreMouse; anchors.fill: parent; hoverEnabled: true }
@@ -78,8 +85,14 @@ Item {
             y: parent.height + Style.space(4)  // below: the row sits at the top of the popup
             onAboutToShow: x = row.tipX(parent, implicitWidth)
             visible: moreMouse.containsMouse
-            text: bot.rest.map(function(i) { return "#" + i.iid + (bot.modelData.byList ? "" : " " + i.list) + "  " + String(i.row.title || "") }).join("\n")
+            text: bot.rest.map(function(i) { return "#" + i.iid + (bot.oneList !== "" ? "" : " " + i.list) + "  " + String(i.row.title || "") }).join("\n")
           }
+        }
+        BoardText {
+          visible: bot.oneList !== ""
+          text: Logic.inColumn(bot.oneList)
+          color: row.host.dim
+          font.pixelSize: Style.font.bodySmall
         }
       }
     }

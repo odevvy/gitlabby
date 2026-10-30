@@ -257,11 +257,14 @@ reviewer takes everything in review:
   its bot working rather than waiting.
 
 Each bot gets a filled dot when it has an issue in a working list (a `list`
-bot whenever its list has any), a hollow dot when it only has issues waiting
-in other busy lists (approved or review), and a dim dot with "idle" when it
-has none. Up to 5 issue numbers follow (hover one for its title, click it
-to open the issue), then `+N more` (hover for the rest). Labels and
-lists match in any case.
+bot whenever its list has any), a ring when it only has issues waiting in
+other busy lists (approved or review), and a dim ring with "idle" when it has
+none. A busy dot takes the color of its column: the furthest along (rightmost
+on the board) of the issues that set its state, so the working ones when any
+are working. If that color is hard to see on your theme, it uses the accent.
+Two issue numbers follow (hover one for its title, click it to open the
+issue), then `+N` (hover for the rest). When they are all in one column it is
+said once: `#8 · #9 +3 in research`, `#125 in progress`. Labels and lists match in any case.
 
 Settings keeps every other key and project as it is (including
 `workingLists`), so a hand-written value keeps working. Or set it from a
