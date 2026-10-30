@@ -342,7 +342,8 @@ check "W board-fetch and Logic.js list the same workflow labels" '.' "$(
 
 # --- R: reads are GET only ---------------------------------------------------
 # Runtime: every read command, including a refresh with a board, issues only
-# GETs. Structure: board-fetch has exactly four non-GET requests: the PUTs in
+# GETs. Structure: board-fetch reads only through get() and peek() (both
+# --method GET), and has exactly four non-GET requests: the PUTs in
 # write_issue() (move only), write_labels() (relabel only) and write_state()
 # (close and reopen only), and the POST in write_note() (comment only).
 reset
@@ -359,11 +360,13 @@ check "R reads ran" '.' "$(grep -c '^api ' "$FAKE_LOG" | grep -qxE '[0-9]{2,}' &
 check "R reads are GET only" '.' "$(grep -q 'NON-GET' "$FAKE_LOG" && echo false || echo true)"
 check "R every api call says --method GET" '.' "$(grep '^api ' "$FAKE_LOG" | grep -qv -- '--method GET ' && echo false || echo true)"
 src=$(grep -v '^ *#' "$fetch")
-check "R non-GETs in the script: three PUTs, one POST" '.' "$(grep -oE -- '--method [A-Z]+' <<<"$src" | sort | tr '\n' ' ' | grep -qx -- '--method GET --method POST --method PUT --method PUT --method PUT ' && echo true || echo false)"
+check "R non-GETs in the script: three PUTs, one POST" '.' "$(grep -oE -- '--method [A-Z]+' <<<"$src" | sort | tr '\n' ' ' | grep -qx -- '--method GET --method GET --method POST --method PUT --method PUT --method PUT ' && echo true || echo false)"
+# shellcheck disable=SC2016  # the pattern is literal board-fetch source
+check "R peek() is GET" '.' "$(grep -qxF 'peek() { bounded api --hostname "$hostname" --method GET "$@"; }' <<<"$src" && echo true || echo false)"
 # shellcheck disable=SC2016  # the pattern is literal board-fetch source
 check "R glab runs only in bounded(), under timeout" '.' "$(grep -E '(^|[^-])\<glab "' <<<"$src" | grep -qvF '  { timeout -k 5 30 glab "$@"; } 2>"${errors:-/dev/null}"' && echo false ||
   grep -c 'timeout -k 5 30 glab' <<<"$src" | grep -qx 1 && echo true || echo false)"
-check "R glab api only in get(), write_issue(), write_labels(), write_state() and write_note()" '.' "$(grep -c 'bounded api' <<<"$src" | grep -qx 5 && echo true || echo false)"
+check "R glab api only in get(), peek(), write_issue(), write_labels(), write_state() and write_note()" '.' "$(grep -c 'bounded api' <<<"$src" | grep -qx 6 && echo true || echo false)"
 check "R write_issue only inside move" '.' "$(awk '/^  move\)/{m=1} /^    exit 0 ;;/{if(m)m=2} /write_issue/{if(m!=1)bad=1} END{print bad?"false":"true"}' <<<"$src")"
 check "R move: issue read, then stale exit, then the PUT" '.' "$(awk '/^  move\)/{m=1} /^    exit 0 ;;/{if(m==1)m=2}
   m==1 && /get "\$base\/issues\/\$iid"/{g=NR} m==1 && /emit stale/{st=NR} m==1 && /\| write_issue/{w=NR}
@@ -659,6 +662,74 @@ fx boards <<<'[]'
 closed_n 21 https://gitlab.example.org/sub/group/app/-/issues/ | fx closed
 out=$("$fetch" --project sub/group/app)
 check "CL no board (workflow columns): the link too, unscoped" '(.columns[] | select(.kind == "closed") | .seeAll) == "https://gitlab.example.org/sub/group/app/-/issues?state=closed"' "$out"
+
+# --- PL: pipeline status of Review cards (reads only) -----------------------------
+reset
+fx boards <<'J'
+[{"id":7,"name":"Dev","lists":[{"id":1,"position":0,"label":{"name":"Doing"}},{"id":2,"position":1,"label":{"name":"Review"}}]}]
+J
+fx open <<'J'
+[{"iid":3,"title":"a","state":"opened","labels":["Review","Doing"],"web_url":"u"},{"iid":4,"title":"b","state":"opened","labels":["Review"],"web_url":"u"},
+ {"iid":5,"title":"c","state":"opened","labels":["Review"],"web_url":"u"},{"iid":6,"title":"d","state":"opened","labels":["Review"],"web_url":"u"},
+ {"iid":7,"title":"e","state":"opened","labels":["Review"],"web_url":"u"},{"iid":8,"title":"f","state":"opened","labels":["Review"],"web_url":"u"},
+ {"iid":9,"title":"g","state":"opened","labels":["Review"],"web_url":"u"},{"iid":10,"title":"h","state":"opened","labels":["Review"],"web_url":"u"},
+ {"iid":11,"title":"i","state":"opened","labels":["Doing"],"web_url":"u"}]
+J
+fx closed <<<'[]'
+mr() { # iid state updated status url [project_id]
+  jq -cn --argjson i "$1" --arg s "$2" --arg u "$3" --arg st "$4" --arg w "$5" --argjson p "${6:-1}" \
+    '{iid: $i, project_id: $p, state: $s, updated_at: $u, reference: "!\($i)", head_pipeline: (if $st == "" then null else {status: $st, web_url: $w} end)}'
+}
+# 3: an open MR wins over a newer merged one. 4: merged beats closed. 5: no MR.
+# 6: no access (no fixture). 7: GitLab left head_pipeline out: one GET of MR 77.
+# 8: MR without a pipeline. 9: a manual pipeline. 10: a non-https link.
+printf '[%s,%s]' "$(mr 31 opened 2026-01-01 success https://gitlab.com/g/a/-/pipelines/31)" "$(mr 32 merged 2026-06-01 failed https://gitlab.com/g/a/-/pipelines/32)" | fx related-3
+printf '[%s,%s]' "$(mr 41 closed 2026-06-01 success https://gitlab.com/x)" "$(mr 42 merged 2026-01-01 failed https://gitlab.com/g/a/-/pipelines/42)" | fx related-4
+fx related-5 <<<'[]'
+mr 77 opened 2026-01-01 "" "" 55 | jq -c '[del(.head_pipeline)]' | fx related-7
+mr 77 opened 2026-01-01 running https://gitlab.com/g/a/-/pipelines/77 55 | fx mr-77
+printf '[%s]' "$(mr 81 opened 2026-01-01 "" "")" | fx related-8
+printf '[%s]' "$(mr 91 opened 2026-01-01 manual https://gitlab.com/g/a/-/pipelines/91)" | fx related-9
+printf '[%s]' "$(mr 101 opened 2026-01-01 canceled http://gitlab.com/g/a/-/pipelines/101)" | fx related-10
+: >"$FAKE_LOG"
+out=$("$fetch" --project group/app)
+pipes='[.columns[] | select(.name == "Review") | .issues[] | {(.iid | tostring): .pipeline}] | add'
+check "PL board still ready" '.state == "ready" and ([.columns[].name] == ["Open","Doing","Review","Closed"])' "$out"
+check "PL statuses" "$pipes"' == {"3": {"status":"passed","url":"https://gitlab.com/g/a/-/pipelines/31","mr":"!31"},
+  "4": {"status":"failed","url":"https://gitlab.com/g/a/-/pipelines/42","mr":"!42"}, "5": null, "6": null,
+  "7": {"status":"running","url":"https://gitlab.com/g/a/-/pipelines/77","mr":"!77"}, "8": null, "9": null,
+  "10": {"status":"canceled","url":"","mr":"!101"}}' "$out"
+check "PL only the Review column" '[.columns[] | select(.name != "Review") | .issues[] | select(has("pipeline"))] == []' "$out"
+check "PL one related_merge_requests GET per Review card" '.' "$([[ $(grep -c '/related_merge_requests$' "$FAKE_LOG") == 8 ]] && ! grep -q 'issues/11/related' "$FAKE_LOG" && echo true || echo false)"
+check "PL one MR GET, only where head_pipeline was left out" '.' "$([[ $(grep -c 'merge_requests/[0-9]' "$FAKE_LOG") == 1 ]] && grep -q '^api --hostname gitlab.com --method GET projects/55/merge_requests/77$' "$FAKE_LOG" && echo true || echo false)"
+check "PL reads only" '.' "$(grep -qE 'NON-GET|BAD-WRITE' "$FAKE_LOG" && echo false || echo true)"
+check "PL saved copy has them too" "$pipes"' | .["3"].status == "passed"' "$("$fetch" cached --project group/app)"
+pl_out=$out
+# Each status word GitLab uses.
+for st in success:passed failed:failed running:running canceling:running pending:pending created:pending waiting_for_resource:pending preparing:pending scheduled:pending canceled:canceled skipped:null manual:null; do
+  printf '[%s]' "$(mr 31 opened 2026-01-01 "${st%%:*}" https://gitlab.com/p/31)" | fx related-3
+  check "PL ${st%%:*} -> ${st##*:}" '[.columns[] | select(.name == "Review") | .issues[] | select(.iid == 3) | .pipeline.status // null][0] == '"$(jq -n --arg s "${st##*:}" 'if $s == "null" then null else $s end')" "$("$fetch" --project group/app)"
+done
+# A hung call: the board still loads, without that pipeline.
+printf '[%s]' "$(mr 31 opened 2026-01-01 success https://gitlab.com/p/31)" | fx related-3
+out=$(FAKE_HANG=issues/4/related_merge_requests "$fetch" --project group/app)
+check "PL a hung call costs only its card" '.state == "ready" and ('"$pipes"' | .["4"] == null and .["3"] != null)' "$out"
+check "PL a hung call: still one JSON object" '. == 1' "$(jq -s length <<<"$out")"
+# No Review column: no MR calls at all.
+fx boards <<<'[{"id":7,"name":"Dev","lists":[{"id":1,"position":0,"label":{"name":"Doing"}}]}]'
+: >"$FAKE_LOG"; out=$("$fetch" --project group/app)
+check "PL no Review column, no MR calls" '.state == "ready"' "$out"
+check "PL no Review column: log" '.' "$(grep -q 'merge_requests' "$FAKE_LOG" && echo false || echo true)"
+# Workflow-label fallback (no boards): its review column counts; at most 15 cards.
+fx boards <<<'[]'
+jq -cn '[range(1; 21) | {iid: ., title: "r", state: "opened", labels: ["review"], web_url: "u"}]' | fx open
+printf '[%s]' "$(mr 31 opened 2026-01-01 failed https://gitlab.com/p/31)" | fx related-3
+: >"$FAKE_LOG"; out=$("$fetch" --project group/app)
+check "PL workflow review column" '(.columns[] | select(.name == "review") | .issues[] | select(.iid == 3) | .pipeline.status) == "failed"' "$out"
+check "PL at most 15 Review cards asked" '.' "$([[ $(grep -c '/related_merge_requests$' "$FAKE_LOG") == 15 ]] && echo true || echo false)"
+check "PL four at a time, not one by one" '.' "$(rm -rf "$work/slow"*; FAKE_MR_PROBE=$work/slow "$fetch" --project group/app >/dev/null
+  m=$(sort -n "$work/slow.n" | tail -1); ((m >= 2 && m <= 4)) && echo true || echo false)"
+check "PL no token in output" '.' "$(grep -qiE 'glpat|bearer' <<<"$pl_out$out" && echo false || echo true)"
 
 # --- safety: no token in any output --------------------------------------------
 fx board <<<'{"id":7,"name":"Dev","lists":[{"id":11,"label":{"name":"todo"}},{"id":12,"label":{"name":"approved"}}]}'

@@ -297,6 +297,14 @@ Remove it with `omarchy bar set odevvy.gitlab-board bots '{}' --json`.
   and the age (`45m`, `3h`, `4d`, `2w`, `6mo`, `1y`). Avatars show initials
   until the image loads from GitLab's `https` URL, or if it doesn't.
 - Columns slide when they collapse, and cards lift slightly on hover.
+- Cards in a column named Review (any case) show the pipeline of their merge
+  request beside the age: ✓ passed (green), ✕ failed (red), ◉ running (blue),
+  a clock for pending (amber), ⊘ canceled (grey). Hovering says which and on
+  which MR (`Pipeline failed on !42: open it on GitLab`); clicking opens the
+  pipeline in the browser, not the issue. The MR is the issue's open related
+  merge request, else its latest merged one. No MR, no pipeline, a skipped or
+  manual one, or one you can't see: no mark. It comes with each refresh, never
+  on its own timer.
 
 The popup card is Omarchy's, in your theme's `popups.background`. To make
 every popup see-through, set an alpha in `~/.config/omarchy/shell.toml` (it
@@ -490,6 +498,12 @@ A board refresh makes one request for the boards (with their lists), the open
 issues (paginated), and one for the last 20 closed issues (it asks for 21, to
 know whether there are more), skipped when the board hides Closed. Issues come
 with label details, so colors need no extra request.
+
+Cards in a Review column (at most 15) each add one
+`GET /projects/:id/issues/:iid/related_merge_requests`, four at a time; those
+MRs carry their `head_pipeline`. Only if GitLab leaves it out, one
+`GET /projects/:id/merge_requests/:iid` for that MR. These never fail the
+board: a refusal, a timeout or no MR just leaves the card without a mark.
 
 ## Tests and debugging
 

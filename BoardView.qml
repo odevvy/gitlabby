@@ -277,6 +277,15 @@ Item {
                   onCanceled: { card.pressing = false; view.endDrag() }
                   onClicked: if (!dragged) view.host.openIssue(card.modelData)
                 }
+                // Review cards: their merge request's pipeline, left of the age; above
+                // cardMouse, so a click opens the pipeline, not the issue.
+                PipelineMark {
+                  id: pipelineMark
+                  host: view.host
+                  pipeline: card.modelData.pipeline || null
+                  x: footer.x + meta.x - width - Style.space(8)
+                  y: footer.y + (footer.height - height) / 2
+                }
               }
             }
 

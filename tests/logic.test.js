@@ -506,3 +506,16 @@ test("settings from Qt: lists as sequences are read once they pass plainJson", (
   const loop = {}; loop.self = loop
   assert.deepEqual(L.plainJson(loop), {})
 })
+
+test("pipeline marks: five statuses, https links only, nothing otherwise", () => {
+  const m = L.pipelineMark({ status: "passed", url: "https://gitlab.com/g/a/-/pipelines/31", mr: "!31" })
+  assert.deepEqual(m, { glyph: "\uf058", color: "#2da160", url: "https://gitlab.com/g/a/-/pipelines/31", tip: "Pipeline passed on !31: open it on GitLab" })
+  const glyphs = ["passed", "failed", "running", "pending", "canceled"].map(s => L.pipelineMark({ status: s }).glyph)
+  assert.equal(new Set(glyphs).size, 5)
+  assert.equal(L.pipelineMark({ status: "failed" }).tip, "Pipeline failed")
+  assert.equal(L.pipelineMark({ status: "canceled", url: "http://x/p/1", mr: "!4" }).url, "")
+  assert.equal(L.pipelineMark({ status: "canceled", url: "http://x/p/1", mr: "!4" }).tip, "Pipeline canceled on !4")
+  assert.equal(L.pipelineMark({ status: "running", url: "javascript:alert(1)" }).url, "")
+  assert.equal(L.pipelineMark({ status: "pending", mr: "<b>x</b>" }).tip, "Pipeline pending")
+  for (const p of [null, undefined, {}, { status: "success" }, { status: "manual" }, { status: "toString" }, "passed"]) assert.equal(L.pipelineMark(p), null)
+})

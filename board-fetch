@@ -5,7 +5,9 @@
 #
 # Reads (GET only, through get()):
 #   board-fetch [board] --project P [--board ID]    columns of a board (default),
-#                                                   also saved to the cache below
+#                                                   also saved to the cache below; cards
+#                                                   in a Review column carry the head
+#                                                   pipeline of their merge request
 #   board-fetch cached --project P [--board ID]     that saved copy; no glab call
 #   board-fetch projects                            projects you are a member of (up to 500)
 #   board-fetch boards --project P                  boards of a project
@@ -161,6 +163,14 @@ def workflow: ["review", "in progress", "approved", "todo", "research"];
 # plus the workflow labels, lowercased.
 def status($boards): [($boards | add // [])[] | (.lists // [])[] | .label.name // empty
   | strings] + workflow | map(ascii_downcase) | unique;
+# A head_pipeline object as {status, url}: GitLab's status in five words, the
+# link only if https. Anything else (skipped, manual, no pipeline) is null.
+def pipeline: if type == "object" then
+    ({success: "passed", failed: "failed", running: "running", canceling: "running",
+      pending: "pending", created: "pending", waiting_for_resource: "pending", preparing: "pending",
+      scheduled: "pending", canceled: "canceled"}[.status | strings] // null) as $s
+    | if $s then {status: $s, url: (.web_url | https)} else null end
+  else null end;
 def reason: (.message // .error // empty) | (if type == "string" then . else tojson end)
   | gsub("\\p{Cc}"; "") | gsub("(gl[a-z]{2,6}-|[Bb]earer +)[A-Za-z0-9_.=-]+"; "[redacted]") | .[0:120];
 JQ
@@ -425,6 +435,43 @@ $b[0] as $board | ($o | add // []) as $rawOpen | ($c | add // []) as $fetchedClo
 JQ
 jq -cn --slurpfile b "$tmp/board" --slurpfile all "$tmp/boards" --slurpfile o "$tmp/open" --slurpfile c "$tmp/closed" \
   --arg want "$board_id" --arg project "$project" --argjson cap "$closed_cap" "$DEFS $MAP" >"$tmp/out" 2>/dev/null || emit error "GitLab returned an unreadable response."
+# --- pipelines of Review cards -----------------------------------------------
+# Each card in a column named Review (any case; at most 15 cards) gets the head
+# pipeline of its merge request: one GET of issues/:iid/related_merge_requests,
+# whose MRs carry head_pipeline. The open MR wins, else the latest merged one;
+# closed MRs don't count. Only if GitLab left head_pipeline out, one GET of that
+# MR. Best effort, four at a time: no MR, no pipeline, no access or a timeout
+# leaves the card without one, and never fails the board. peek() is GET by
+# construction like get(), but never emits: these run in the background.
+peek() { bounded api --hostname "$hostname" --method GET "$@"; }
+pipeline_of() { # iid; writes $tmp/pipe-<iid> with {"<iid>": {status, url, mr}} or nothing
+  local iid=$1 pid miid
+  peek "$base/issues/$iid/related_merge_requests" >"$tmp/rel-$iid" || return 0
+  jq -c 'select(type == "array") | [.[] | objects | select(.state == "opened" or .state == "merged")]
+    | sort_by([(.state == "opened"), (.updated_at // "")]) | last // empty' "$tmp/rel-$iid" >"$tmp/mr-$iid" 2>/dev/null
+  [[ -s $tmp/mr-$iid ]] || return 0
+  if ! jq -e 'has("head_pipeline")' "$tmp/mr-$iid" >/dev/null 2>&1; then
+    pid=$(jq -r '.project_id' "$tmp/mr-$iid") miid=$(jq -r '.iid' "$tmp/mr-$iid")
+    [[ $pid =~ ^[1-9][0-9]*$ && $miid =~ ^[1-9][0-9]*$ ]] || return 0
+    peek "projects/$pid/merge_requests/$miid" >"$tmp/mr-$iid" || return 0
+  fi
+  jq -c --arg iid "$iid" "$DEFS"' select(type == "object") | (.head_pipeline | pipeline) as $p | select($p)
+    | {($iid): ($p + {mr: (.reference // "!\(.iid)" | tostring)})}' "$tmp/mr-$iid" >"$tmp/pipe-$iid" 2>/dev/null
+  return 0
+}
+while read -r riid; do
+  [[ $riid =~ ^[1-9][0-9]*$ ]] || continue
+  while (($(jobs -rp | wc -l) >= 4)); do wait -n; done
+  pipeline_of "$riid" &
+done < <(jq -r '[.columns[] | select(.kind == "label" and (.name | ascii_downcase) == "review") | .issues[].iid] | unique | .[:15][]' "$tmp/out" 2>/dev/null)
+wait
+if compgen -G "$tmp/pipe-*" >/dev/null; then
+  jq -cs 'add // {}' "$tmp"/pipe-* >"$tmp/pipes" 2>/dev/null &&
+    jq -c --slurpfile p "$tmp/pipes" '$p[0] as $p | .columns |= map(if .kind == "label" and (.name | ascii_downcase) == "review"
+      then .issues |= map(if $p[.iid | tostring] then . + {pipeline: $p[.iid | tostring]} else . end) else . end)' "$tmp/out" >"$tmp/out2" 2>/dev/null &&
+    mv -f "$tmp/out2" "$tmp/out"
+fi
+
 # Best effort: write a temp file in the cache dir, then rename it over the old
 # copy, so a reader never sees half a file. A failed write changes nothing.
 if [[ -n $cache_root ]] && mkdir -p "$cache_dir" 2>/dev/null && chmod 700 "$cache_dir" 2>/dev/null &&
