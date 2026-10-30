@@ -1,5 +1,6 @@
 import QtQuick
 import qs.Commons
+import "components"
 
 // First run, in place of the board and at the placeholder board's size (so the
 // popup doesn't jump when the board arrives): install glab, sign in, or pick a

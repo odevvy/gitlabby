@@ -5,6 +5,7 @@ import qs.Commons
 import qs.Commons as Commons
 import qs.Ui
 import "Logic.js" as Logic
+import "components"
 
 // GitLab issue board in the Omarchy bar. Left click opens the popup, right or
 // middle click refreshes. Data comes from ./board-fetch through glab: reads are

@@ -3,6 +3,7 @@ import QtQuick.Controls
 import qs.Commons
 import qs.Ui
 import "Logic.js" as Logic
+import "components"
 
 // Settings > Bots, for the project on screen: the bots behind the busy row
 // under the header (BotsRow), what makes each one busy, and the busy columns.

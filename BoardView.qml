@@ -3,6 +3,7 @@ import QtQuick.Controls
 import qs.Commons
 import qs.Ui
 import "Logic.js" as Logic
+import "components"
 
 // The board: chips to show or hide columns, then the columns. A column header
 // collapses its column to a strip; clicking a card opens the issue view.

@@ -1,5 +1,5 @@
 import QtQuick
-import "Logic.js" as Logic
+import "../Logic.js" as Logic
 
 // A label as a Pill in its GitLab color; plain theme pill if the color is unknown.
 Pill {
