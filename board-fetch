@@ -357,14 +357,16 @@ scope=$(jq -r 'if . == null then "" else [
     (if (.weight | type) == "number" and .weight >= 0 then "weight=\(.weight)" else empty end)
   ] | map("&" + .) | join("") end' "$tmp/board")
 hide_closed=$(jq -r '.hide_closed_list // false' "$tmp/board")
-closed_cap=20  # Closed shows the latest 20; a full column links to GitLab for the rest (seeAll)
+# Closed shows the latest 20. One more is asked for, so "capped" means there
+# really are more (shown as 20+), and a capped column links to the rest (seeAll).
+closed_cap=20
 
 get --paginate "$base/issues?state=opened&scope=all&order_by=relative_position&sort=asc&per_page=100&with_labels_details=true$scope" >"$tmp/open" ||
   emit error "Could not load open issues for $project."
 if [[ $hide_closed == true ]]; then
   echo '[]' >"$tmp/closed"
 else
-  get "$base/issues?state=closed&scope=all&order_by=updated_at&sort=desc&per_page=$closed_cap&with_labels_details=true$scope" >"$tmp/closed" ||
+  get "$base/issues?state=closed&scope=all&order_by=updated_at&sort=desc&per_page=$((closed_cap + 1))&with_labels_details=true$scope" >"$tmp/closed" ||
     emit error "Could not load closed issues for $project."
 fi
 
@@ -378,22 +380,24 @@ read -r -d '' MAP <<'JQ'
 def row: {iid, title, labels: names, url: (.web_url | https), createdAt: .created_at, notes: (.user_notes_count // 0),
   assignees: [(.assignees // [])[] | {username, name: (.name // .username), avatar: (.avatar_url | https)}]};
 def has_any($names): [.labels[] | select(IN($names[]))] | length > 0;
-$b[0] as $board | ($o | add // []) as $rawOpen | ($c | add // []) as $rawClosed
+$b[0] as $board | ($o | add // []) as $rawOpen | ($c | add // []) as $fetchedClosed
+| ($fetchedClosed | length > $cap) as $capped | $fetchedClosed[:$cap] as $rawClosed
 | ([($rawOpen + $rawClosed)[] | (.labels // [])[] | objects] + [($board.lists // [])[] | .label | objects]
    | map(select((.name | type) == "string" and (.color | hex)) | {(.name): {color: (.color | hex), textColor: (.text_color | hex)}})
    | add // {}) as $colors
 | ($rawOpen | map(select(.state == "opened") | .labels = names)) as $open | ($rawClosed | map(.labels = names)) as $closed
-# A full Closed column (the cap) links to the project's closed issues on GitLab,
+# A capped Closed column links to the project's closed issues on GitLab,
 # with the board's label, milestone, assignee and weight filters when it has them.
 # GitLab.com now gives issues /-/work_items/<iid> web URLs; older hosts /-/issues/<iid>.
-| (if ($rawClosed | length) >= $cap
+| (if $capped
    then [$rawClosed[0].web_url | https | capture("^(?<p>https://[^?#]+)/-/(?:issues|work_items)/[0-9]+$") | .p] | first else null end) as $proj
 | (if $board == null then "" else
      [(($board.labels // [])[] | .name | strings | "&label_name%5B%5D=" + @uri),
       ($board.milestone.title | strings | "&milestone_title=" + @uri),
       ($board.assignee.username | strings | "&assignee_username=" + @uri),
       (if ($board.weight | type) == "number" and $board.weight >= 0 then "&weight=\($board.weight)" else empty end)] | join("") end) as $webScope
-| ({name: "Closed", kind: "closed", issues: [$closed[] | row]} + (if $proj then {seeAll: ($proj + "/-/issues?state=closed" + $webScope)} else {} end))
+| ({name: "Closed", kind: "closed", issues: [$closed[] | row]} + (if $capped then {capped: true} else {} end)
+   + (if $proj then {seeAll: ($proj + "/-/issues?state=closed" + $webScope)} else {} end))
   as $closedColumn
 | {state: "ready", updatedAt: (now | todateiso8601), project: $project, labelColors: $colors,
    boards: ($all | add // [] | map({id, name})),
