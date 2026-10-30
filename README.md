@@ -73,6 +73,14 @@ the picker's board step. The header shows a star on the default board and a
 
 The board refreshes when the popup opens and every 60 seconds (configurable)
 while it's open; while it's closed, only a right- or middle-click refreshes.
+The pace adapts to the board: after a card moves, comes, goes or changes
+labels, it refreshes twice as often (never under 30 s); once two refreshes in
+a row bring no change it is back at your setting, and after every two more
+quiet ones it waits twice as long, up to 4x your setting. While cards sit in
+an `in progress` (or `doing`) column it never slows past your setting.
+Pointing at `Updated 14:05` says the current pace and why, e.g.
+`Refreshes every 30 s while open · cards moved recently`. Refresh, `r` and a
+right-click always fetch at once.
 The refresh icon spins and the header says `Refreshing…` (instead of
 `Updated 14:05`) while it loads, and the board stays usable. A refresh
 that comes due while you hold a card waits until you let go.
