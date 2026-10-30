@@ -538,10 +538,11 @@ test("shared refresh: one BoardService for every screen; Board.qml fetches board
   // No board fetch of its own: "board" appears in no command the widget builds.
   assert.doesNotMatch(board, /helperPath\(\), "board"/)
   assert.match(service, /args: \["board", "--project", project, "--board", boardId\]/)
-  // Two Processes in the service: one board fetch at a time for the whole shell
-  // (fetch), and one merge-request list (mrFetch, which never runs "board").
-  assert.equal((service.match(/^\s*Process \{/gm) || []).length, 2)
-  assert.deepEqual([...service.matchAll(/^\s*Process \{\s*\n\s*id: (\w+)/gm)].map(m => m[1]), ["fetch", "mrFetch"])
+  // Three Processes in the service: one board fetch at a time for the whole shell
+  // (fetch), one merge-request list (mrFetch) and one access check (accessFetch);
+  // only fetch runs "board".
+  assert.equal((service.match(/^\s*Process \{/gm) || []).length, 3)
+  assert.deepEqual([...service.matchAll(/^\s*Process \{\s*\n\s*id: (\w+)/gm)].map(m => m[1]), ["fetch", "mrFetch", "accessFetch"])
 })
 
 test("popup height: Settings and Keys have no cap (they grow to the free screen height); board and issue keep it", () => {
@@ -838,4 +839,81 @@ test("bulk bar wiring: only the single-card writes, one at a time, picks from v 
   assert.match(board, /readonly property bool held: .*\|\| bulkBar\.busy \|\| bulkBar\.armed/)
   assert.match(board, /if \(text\.toLowerCase\(\) === "v" && root\.view === "board"\) \{ root\.pickAtCursor\(\); return \}/)
   assert.match(view, /if \(mouse\.modifiers & Qt\.ControlModifier\) view\.host\.togglePick\(column\.modelData, card\.modelData\.iid\)/)
+})
+
+// --- 0.1.39 view-only hint ----------------------------------------------------------
+test("access: level and scopes from board-fetch access, refusals, and the note", () => {
+  assert.equal(L.plannerLevel, 15)
+  const e = L.accessEntry(JSON.stringify({ state: "ready", level: 10, scopes: ["api", "read_api"] }))
+  assert.deepEqual(e, { known: true, level: 10, scopes: ["api", "read_api"], refused: "" })
+  assert.deepEqual(L.accessEntry('{"state":"error","message":"x"}'), { known: false, level: -1, scopes: null, refused: "" })
+  assert.deepEqual(L.accessEntry("nope"), { known: false, level: -1, scopes: null, refused: "" })
+  assert.equal(L.accessEntry('{"state":"ready","level":30,"scopes":null}').scopes, null)
+  assert.equal(L.writeRefusal("Move failed: 403 Forbidden"), "forbidden")
+  assert.equal(L.writeRefusal("Label change failed: insufficient_scope"), "scope")
+  assert.equal(L.writeRefusal("Move failed: 500 Internal Server Error"), "")
+  assert.equal(L.writeRefusal(undefined), "")
+  const note = x => L.accessNote(x)
+  assert.equal(note(null), "")
+  assert.equal(note({ known: true, level: 15, scopes: null }), "", "Planner can write")
+  assert.equal(note({ known: true, level: 14, scopes: null }), "view-only")
+  assert.equal(note({ known: true, level: 10, scopes: ["api"] }), "view-only")
+  assert.equal(note({ known: true, level: 0, scopes: null }), "view-only")
+  assert.equal(note({ known: true, level: 30, scopes: ["read_api"] }), "read-token")
+  assert.equal(note({ known: true, level: 10, scopes: ["read_api"] }), "read-token", "a read token: suggesting one is moot")
+  assert.equal(note({ known: false, level: -1, scopes: null, refused: "" }), "", "unknown: writes stay on")
+  assert.equal(note(L.refusedEntry(null, "forbidden")), "view-only")
+  assert.equal(note(L.refusedEntry({ known: true, level: 30, scopes: null, refused: "" }, "scope")), "read-token")
+  assert.deepEqual(L.refusedEntry({ known: true, level: 30, scopes: null, refused: "" }, "forbidden"), { known: true, level: 30, scopes: null, refused: "forbidden" })
+})
+
+test("access hint: the words, glab login only, the token page over https with read_api", () => {
+  const g = L.accessHint("view-only", { known: true, level: 10 }, "group/app", "gitlab.com")
+  assert.equal(g.title, "View-only on group/app: you're a Guest, so moves, labels and close are off here.")
+  assert.equal(g.link, true)
+  assert.match(g.body, /read_api scope, then run glab auth login --hostname gitlab\.com in a terminal and paste it there, never anywhere else\./)
+  assert.match(g.body, /glab in your terminal becomes read-only too, for every project\./)
+  assert.match(L.accessHint("view-only", { known: true, level: 0 }, "g/a", "gitlab.com").title, /you're not a member/)
+  assert.match(L.accessHint("view-only", { known: true, level: 5 }, "g/a", "gitlab.com").title, /Minimal access/)
+  assert.match(L.accessHint("view-only", L.refusedEntry(null, "forbidden"), "g/a", "gitlab.com").title, /GitLab refused a change \(403\)/)
+  const r = L.accessHint("read-token", null, "g/a", "gitlab.com")
+  assert.equal(r.link, false)
+  assert.match(r.body, /no api scope/)
+  for (const h of [g, r]) assert.doesNotMatch(h.title + h.body, /paste .* here|token:|glpat/i)
+  const url = L.patUrl("gitlab.com")
+  assert.equal(url, "https://gitlab.com/-/user_settings/personal_access_tokens?name=GitLab+board&description=Read-only+token+for+the+Omarchy+GitLab+board&scopes=read_api")
+  assert.doesNotMatch(url, /scopes=[^&]*\bapi\b(?!_)/, "never the write scope")
+})
+
+test("access in the service: asked once per project, its own process, forgotten on sign out", () => {
+  const fs = require("node:fs"), path = require("node:path")
+  const svc = fs.readFileSync(path.join(__dirname, "..", "BoardService.qml"), "utf8")
+  assert.match(svc, /accessFetch\.command = \[helperPath\(\), "access", "--project", project\]/)
+  assert.match(svc, /if \(project === "" \|\| access\[project\] !== undefined \|\| accessWaiting\.indexOf\(project\) !== -1\) return/)
+  assert.match(svc, /function forget\(\) \{(?:(?!\n  \})[\s\S])*\n    access = \(\{\}\)/)
+  assert.doesNotMatch(svc, /Timer \{[^}]*requestAccess/)
+})
+
+test("view-only wiring: the hint opens only GitLab's token page; writes off while view-only", () => {
+  const fs = require("node:fs"), path = require("node:path"), dir = path.join(__dirname, "..")
+  const hint = fs.readFileSync(path.join(dir, "AccessHint.qml"), "utf8")
+  const board = fs.readFileSync(path.join(dir, "Board.qml"), "utf8")
+  // No process, no text field, no clipboard: one link, through openUrl (https only).
+  assert.doesNotMatch(hint, /Process|execDetached|TextField|TextInput|wl-copy|helperPath/)
+  assert.deepEqual([...hint.matchAll(/openUrl\(([^)]*\))\)/g)].map(m => m[1]), ["Logic.patUrl(\"gitlab.com\")"])
+  assert.match(board, /readonly property bool canMove: .* && writable$/m)
+  assert.match(board, /if \(boardState === "ready" && !cached\) feed\.requestAccess\(project\)/)
+  assert.match(board, /feed\.noteRefused\(project, data\.message\)/)
+  assert.match(board, /\|\| !column \|\| !writable\) return/)
+})
+
+test("view-only in the issue view and bulk runs: actions hidden, refused writes noted", () => {
+  const fs = require("node:fs"), path = require("node:path"), dir = path.join(__dirname, "..")
+  const issue = fs.readFileSync(path.join(dir, "IssueView.qml"), "utf8")
+  const bar = fs.readFileSync(path.join(dir, "BulkBar.qml"), "utf8")
+  assert.equal((issue.match(/visible: view\.issueReady && view\.issueError === "" && view\.host\.writable/g) || []).length, 2)
+  assert.match(issue, /function editLabels\(\) \{\n    if \(!issueReady \|\| issueError !== "" \|\| !host\.writable\) return/)
+  assert.match(issue, /function toggleState\(\) \{\n    if \(!host\.writable\) return/)
+  assert.equal((issue.match(/host\.feed\.noteRefused\(host\.project, data\.message\)/g) || []).length, 2)
+  assert.match(bar, /if \(!out\.ok\) host\.feed\.noteRefused\(host\.project, data\.message\)/)
 })

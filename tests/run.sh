@@ -780,6 +780,27 @@ check "MR at most 10 rows asked about per list" '.' "$([[ $(grep -c '/reviewers$
 check "MR links only over https" '[.mine[].url] | unique == [""]' "$out"
 check "MR no token in output" '.' "$(grep -qiE 'glpat|bearer' <<<"$mr_out$out" && echo false || echo true)"
 
+# --- AC: access level and token scopes (reads only) -------------------------------
+reset
+fx project <<<'{"id":5,"path_with_namespace":"group/app","permissions":{"project_access":{"access_level":10},"group_access":null}}'
+fx token-self <<<'{"id":1,"name":"glab","scopes":["read_api","api","Bad Scope"],"token":"glpat-SECRET"}'
+: >"$FAKE_LOG"; out=$("$fetch" access --project group/app)
+check "AC guest: level 10, scopes kept (valid names only)" '. == {state: "ready", message: "", project: "group/app", level: 10, scopes: ["read_api", "api"]}' "$out"
+check "AC GETs only: the project (full, not simple) and the token record" '.' "$([[ $(grep -c 'NON-GET' "$FAKE_LOG") == 0 && $(grep -c -- '--method GET projects/group%2Fapp$' "$FAKE_LOG") == 1 && $(grep -c -- '--method GET personal_access_tokens/self$' "$FAKE_LOG") == 1 ]] && echo true || echo false)"
+check "AC no token in output" '.' "$(grep -qiE 'glpat|bearer|SECRET' <<<"$out" && echo false || echo true)"
+fx project <<<'{"id":5,"permissions":{"project_access":{"access_level":20},"group_access":{"access_level":40}}}'
+rm -f "$FAKE_DIR/token-self.json"
+out=$("$fetch" access --project group/app)
+check "AC the higher of project and group; no token record: scopes null" '.level == 40 and .scopes == null' "$out"
+fx project <<<'{"id":5,"permissions":{"project_access":null,"group_access":null}}'
+check "AC not a member: level 0" '.level == 0' "$("$fetch" access --project group/app)"
+fx project <<<'{"message":"404 Project Not Found"}'
+check "AC unreadable project: error" '.state == "error"' "$("$fetch" access --project group/app)"
+rm -f "$FAKE_DIR/project.json"
+check "AC refused: error, no level" '.state == "error" and (.level | not)' "$("$fetch" access --project group/app)"
+check "AC needs a project" '.state == "error" and (.message | test("No project"))' "$("$fetch" access)"
+check "AC signed out" '.state == "logged-out"' "$(FAKE_AUTH=no "$fetch" access --project group/app)"
+
 # --- safety: no token in any output --------------------------------------------
 fx board <<<'{"id":7,"name":"Dev","lists":[{"id":11,"label":{"name":"todo"}},{"id":12,"label":{"name":"approved"}}]}'
 fx put <<<'{"iid":3,"state":"opened","labels":["approved"]}'

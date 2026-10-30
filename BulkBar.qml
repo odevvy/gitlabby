@@ -141,7 +141,9 @@ Rectangle {
   function stepDone(raw) {
     if (!running) return  // a late answer after the watchdog gave up
     watchdog.stop()
-    var out = Logic.bulkOutcome(host.parse(raw), action)
+    var data = host.parse(raw)
+    var out = Logic.bulkOutcome(data, action)
+    if (!out.ok) host.feed.noteRefused(host.project, data.message)  // a 403: view-only here
     setResult(step, out.ok ? "done" : "failed", out.text)
     if (out.ok) host.feed.noteOwnMove(host.fetchKey, plan[step].iid)  // no alert for his own change
     if (out.stop) stopping = true

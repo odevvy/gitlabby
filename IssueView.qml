@@ -122,7 +122,7 @@ Item {
   }
 
   function editLabels() {
-    if (!issueReady || issueError !== "") return
+    if (!issueReady || issueError !== "" || !host.writable) return
     editing = true
     labelError = ""
     loadLabels()
@@ -161,7 +161,7 @@ Item {
     labelBusy = ""
     if (relabelFor !== key) return
     var data = host.parse(raw)
-    if (data.state !== "ready") { labelError = String(data.message || "Label change failed."); loadIssue(); return }
+    if (data.state !== "ready") { labelError = String(data.message || "Label change failed."); host.feed.noteRefused(host.project, data.message); loadIssue(); return }
     var next = Object.assign({}, issue)
     next.labels = data.labels || []
     issue = next
@@ -187,7 +187,7 @@ Item {
     stateBusy = ""
     if (stateFor !== key) return
     var data = host.parse(raw)
-    if (data.state !== "ready") { stateError = String(data.message || "Request failed."); loadIssue(); return }
+    if (data.state !== "ready") { stateError = String(data.message || "Request failed."); host.feed.noteRefused(host.project, data.message); loadIssue(); return }
     var next = Object.assign({}, issue)
     next.state = data.issueState
     if (Array.isArray(data.labels)) next.labels = data.labels
@@ -198,6 +198,7 @@ Item {
   function focusBox() { box.forceActiveFocus() }  // no-op while the box is disabled
   // Keys (Board.qml): x closes after the confirm, or reopens; Enter and Escape answer the confirm.
   function toggleState() {
+    if (!host.writable) return  // view-only here (AccessHint.qml)
     if (issue.state === "closed") setState("reopen")
     else askClose()
   }
@@ -340,7 +341,7 @@ Item {
           }
           BoardText {
             id: editAction
-            visible: view.issueReady && view.issueError === ""
+            visible: view.issueReady && view.issueError === "" && view.host.writable
             height: Math.max(implicitHeight, statePill.height)
             verticalAlignment: Text.AlignVCenter
             leftPadding: Style.space(4)
@@ -357,7 +358,7 @@ Item {
           anchors.right: parent.right
           height: Math.max(implicitHeight, statePill.height)
           verticalAlignment: Text.AlignVCenter
-          visible: view.issueReady && view.issueError === ""
+          visible: view.issueReady && view.issueError === "" && view.host.writable
           enabled: view.stateBusy === ""
           text: view.stateBusy === "close" ? "Closing…" : view.stateBusy === "reopen" ? "Reopening…"
             : view.issue.state === "closed" ? "Reopen issue" : "Close issue"

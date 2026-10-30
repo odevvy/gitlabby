@@ -52,6 +52,33 @@ Item {
   property var mrPending: null  // { scope, force }: asked for while another scope loads
   signal mrsAnswered(string scope)
 
+  // Write access per project: { project: Logic.accessEntry }. Asked once per
+  // project per session (board-fetch access, GETs only), when its board first
+  // loads; a write GitLab refuses (403, or a token without api) marks it too.
+  // Never on a timer. Board.qml turns writes off and shows AccessHint.qml.
+  property var access: ({})
+  property var accessWaiting: []  // projects asked for while another one loads
+  function requestAccess(project) {
+    if (project === "" || access[project] !== undefined || accessWaiting.indexOf(project) !== -1) return
+    if (accessFetch.running) { if (accessFetch.project !== project) accessWaiting = accessWaiting.concat([project]); return }
+    accessFetch.project = project
+    accessFetch.generation = generation
+    accessFetch.command = [helperPath(), "access", "--project", project]
+    accessFetch.running = true
+  }
+  function accessDone(raw) { if (accessFetch.generation === generation) setAccess(accessFetch.project, Logic.accessEntry(raw)) }
+  function accessNext() { var w = accessWaiting; if (w.length > 0) { accessWaiting = w.slice(1); requestAccess(w[0]) } }
+  function setAccess(project, entry) {
+    var a = {}
+    for (var k in access) a[k] = access[k]
+    a[project] = entry
+    access = a
+  }
+  function noteRefused(project, message) {
+    var kind = Logic.writeRefusal(message)
+    if (kind !== "" && project !== "") setAccess(project, Logic.refusedEntry(access[project], kind))
+  }
+
   function keyOf(project, boardId) { return project + "#" + boardId }
   function busy(key) { return runningKey === key || queuedKeys.indexOf(key) !== -1 }
 
@@ -212,6 +239,8 @@ Item {
     queue = []
     mrAnswers = ({})
     mrPending = null
+    access = ({})
+    accessWaiting = []
   }
 
   function helperPath() {
@@ -234,5 +263,12 @@ Item {
     property real startedAt: 0
     onRunningChanged: if (!running) Qt.callLater(service.mrsNext)
     stdout: StdioCollector { waitForEnd: true; onStreamFinished: service.mrsDone(text) }
+  }
+  Process {
+    id: accessFetch
+    property string project: ""
+    property int generation: 0
+    onRunningChanged: if (!running) Qt.callLater(service.accessNext)
+    stdout: StdioCollector { waitForEnd: true; onStreamFinished: service.accessDone(text) }
   }
 }
