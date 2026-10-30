@@ -820,3 +820,20 @@ test("bulk summary counts done of the cards it tried to change", () => {
   assert.equal(L.bulkSummary({ kind: "close" }, r(["done", "skipped"])), "Closed 1 of 1 card.")
   assert.equal(L.bulkSummary({ kind: "add", label: "bug" }, r(["done", "failed", "untried", "untried"])), "Added bug to 1 of 4 cards. 1 failed, 2 not tried.")
 })
+
+test("bulk bar wiring: only the single-card writes, one at a time, picks from v and Ctrl+click", () => {
+  const fs = require("node:fs"), path = require("node:path"), dir = path.join(__dirname, "..")
+  const bar = fs.readFileSync(path.join(dir, "BulkBar.qml"), "utf8")
+  const board = fs.readFileSync(path.join(dir, "Board.qml"), "utf8")
+  const view = fs.readFileSync(path.join(dir, "BoardView.qml"), "utf8")
+  // Writes: Logic.bulkPlan's arguments (move, relabel, close, reopen) and nothing else.
+  assert.deepEqual([...bar.matchAll(/\.command = (.*)/g)].map(m => m[1]),
+    ["[host.helperPath(), \"labels\", \"--project\", host.project]", "[host.helperPath()].concat(plan[i].args)"])
+  assert.doesNotMatch(bar, /execDetached/)
+  // One at a time: the next card starts only after this one's process ended.
+  assert.match(bar, /function maybeNext\(\) \{ if \(advance && !runProcess\.running && running\)/)
+  assert.match(bar, /if \(out\.ok\) host\.feed\.noteOwnMove\(host\.fetchKey, plan\[step\]\.iid\)/)
+  assert.match(board, /readonly property bool held: .*\|\| bulkBar\.busy \|\| bulkBar\.armed/)
+  assert.match(board, /if \(text\.toLowerCase\(\) === "v" && root\.view === "board"\) \{ root\.pickAtCursor\(\); return \}/)
+  assert.match(view, /if \(mouse\.modifiers & Qt\.ControlModifier\) view\.host\.togglePick\(column\.modelData, card\.modelData\.iid\)/)
+})

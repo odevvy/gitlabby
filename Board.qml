@@ -14,6 +14,7 @@ import "components"
 // GET only; the writes are `board-fetch move` (a card dropped on another column,
 // or Shift+H/L; asks first for projects in settings.confirmMoves), and from the
 // issue view `comment`, `relabel`, `close` and `reopen`; Sign out runs `logout`.
+// Picked cards (v, Ctrl+click) take the same writes in bulk (BulkBar.qml).
 // Views: the board, one issue, the board picker, settings and the key list.
 // Until the first answer, the board shows its saved copy (`board-fetch
 // cached`, read at shell start and on switching boards), else a placeholder.
@@ -149,7 +150,7 @@ Panel {
 
   // New board data would replace the card being moved or held under the
   // pointer, so while held, board answers are dropped and refetched after.
-  readonly property bool held: move !== null || pendingMove !== null || boardView.holding
+  readonly property bool held: move !== null || pendingMove !== null || boardView.holding || bulkBar.busy || bulkBar.armed
   // A refresh asked for while busy waits here and runs once nothing is busy.
   readonly property bool busy: loading || held
   property bool refreshQueued: false
@@ -305,7 +306,7 @@ Panel {
   // in pendingMove for Move or Enter (MoveConfirm.qml); Cancel or Escape drops it.
   property var pendingMove: null
   function requestMove(row, from, to) {
-    if (move || pendingMove || !row || !canDrop(from) || !canDrop(to) || Logic.columnKey(from) === Logic.columnKey(to)) return false
+    if (move || pendingMove || bulkBar.busy || !row || !canDrop(from) || !canDrop(to) || Logic.columnKey(from) === Logic.columnKey(to)) return false
     if (!confirmMoves) return moveIssue(row, from, to)
     pendingMove = { row: row, from: from, to: to, key: stateKey }
     return true
@@ -316,6 +317,23 @@ Panel {
     if (p && p.key === stateKey) moveIssue(p.row, p.from, p.to)
   }
   function cancelMove() { pendingMove = null }
+
+  // Picked cards for bulk actions: Logic.pickKey per card, at most
+  // Logic.bulkCap; cards that leave the board drop out. Fixed while armed or
+  // running, and until the results are closed.
+  property var picked: []
+  onColumnsChanged: if (!bulkBar.busy && !bulkBar.armed) picked = Logic.livePicks(columns, picked)
+  function togglePick(column, iid) {
+    if (bulkBar.busy || bulkBar.armed || bulkBar.mode === "results" || !column) return
+    var t = Logic.togglePick(picked, Logic.pickKey(column, iid))
+    picked = t.picked
+    bulkBar.pickNote(t.full)
+  }
+  function pickAtCursor() { var row = cursorIssue(); if (row) togglePick(shownColumns[cursor.col], row.iid) }
+  function dropPicks() { if (bulkBar.busy) bulkBar.stopping = true; else bulkBar.reset(); picked = [] }
+  // A run ended: load the board as GitLab now has it, after every write.
+  function bulkFinished() { refreshQueued = true; moveFloor = feed.tickets + 1 }
+  function focusBoard() { Qt.callLater(function() { keyCatcher.forceActiveFocus() }) }
   // Shift+H/L: the selected card to the nearest column it can go to on that side.
   function moveCursorCard(dx) {
     var row = cursorIssue()
@@ -429,6 +447,7 @@ Panel {
     moveError = ""
     refreshError = ""
     pendingMove = null
+    dropPicks()
     boardState = "loading"
     if (defaultProject === "") persist({ project: path, id: id, name: name })  // first board: the default
     back()
@@ -474,7 +493,7 @@ Panel {
     if (data.state !== "logged-out") { accountError = String(data.message || "Could not sign out."); return }
     session++
     feed.forget()
-    columns = []; projects = []; pickerBoards = []; cached = false; account = ""; refreshError = ""; pendingMove = null
+    columns = []; projects = []; pickerBoards = []; cached = false; account = ""; refreshError = ""; pendingMove = null; dropPicks()
     message = String(data.message || ""); boardState = "logged-out"
     showView("board")
   }
@@ -512,7 +531,7 @@ Panel {
   implicitHeight: button.implicitHeight
 
   Component.onCompleted: { Qt.callLater(readCache); feed.watch(watchOwner, watchCfg) }
-  onOpenedChanged: if (opened) { view = "board"; cursor = null; refresh(true) } else { boardView.endDrag(); pendingMove = null }
+  onOpenedChanged: if (opened) { view = "board"; cursor = null; refresh(true) } else { boardView.endDrag(); pendingMove = null; if (!bulkBar.busy && bulkBar.mode !== "results") dropPicks() }
 
   // Only while the popup is open; opening it refreshes if due (onOpenedChanged).
   // A copy on another screen that fetched meanwhile makes the tick a no-op.
@@ -589,19 +608,24 @@ Panel {
     PanelKeyCatcher {
       id: keyCatcher
       anchors.fill: parent
-      blocked: issueView.typing || picker.typing || settingsView.typing  // text fields get every key (Omarchy PanelKeyCatcher.qml:26-29)
-      implicitHeight: header.implicitHeight + root.gap + (botsRow.visible ? botsRow.height + root.gap : 0) + (moveConfirm.visible ? moveConfirm.height + root.gap : 0) + (root.view === "board" ? (root.setup !== "" || root.failed ? Math.max(setupView.implicitHeight, skeleton.implicitHeight) : root.boardState === "loading" ? skeleton.implicitHeight : boardView.implicitHeight)
+      blocked: issueView.typing || picker.typing || settingsView.typing || bulkBar.typing  // text fields get every key (Omarchy PanelKeyCatcher.qml:26-29)
+      implicitHeight: header.implicitHeight + root.gap + (botsRow.visible ? botsRow.height + root.gap : 0) + (moveConfirm.visible ? moveConfirm.height + root.gap : 0) + (bulkBar.visible ? bulkBar.height + root.gap : 0) + (root.view === "board" ? (root.setup !== "" || root.failed ? Math.max(setupView.implicitHeight, skeleton.implicitHeight) : root.boardState === "loading" ? skeleton.implicitHeight : boardView.implicitHeight)
         : root.view === "issue" ? issueView.implicitHeight : root.view === "picker" ? picker.implicitHeight
         : root.view === "keys" ? keysView.implicitHeight : root.view === "mrs" ? mrsView.implicitHeight : settingsView.implicitHeight)
       onCloseRequested: {
         if (root.pendingMove) root.cancelMove()
+        else if (root.view === "board" && bulkBar.stepBack()) {}
         else if (root.view === "issue" && issueView.confirming) issueView.confirming = false
         else if (root.view === "issue" && issueView.editing) issueView.doneEditing()  // labels still loading: the filter is off
         else if (root.view === "settings" && settingsView.adding) settingsView.cancelAdd()
         else if (root.view !== "board") root.back()
         else root.close()
       }
-      onDeleteRequested: if (root.view === "issue" && !issueView.editing) issueView.toggleState()  // x; not while labels load
+      onDeleteRequested: {  // x
+        if (root.view === "issue" && !issueView.editing) issueView.toggleState()  // not while labels load
+        else if (root.view === "board" && !root.pendingMove && bulkBar.armed && bulkBar.armKey === "x") bulkBar.confirm()
+        else if (root.view === "board" && !root.pendingMove && bulkBar.mode === "" && root.picked.length > 0) bulkBar.armClose("x")
+      }
       onTabRequested: function(direction) { root.switchPanel(direction) }
       onMoveRequested: function(dx, dy) {
         if (root.view === "board") root.moveCursor(dx, dy)
@@ -610,6 +634,8 @@ Panel {
       }
       onActivateRequested: {
         if (root.pendingMove) root.confirmMove()
+        else if (root.view === "board" && bulkBar.armed) bulkBar.confirm()
+        else if (root.view === "board" && bulkBar.mode === "results") bulkBar.done()
         else if (root.view === "issue" && issueView.confirming) issueView.setState("close")
         else if (root.view === "board" && root.cursorIssue()) root.openIssue(root.cursorIssue())
         else if (root.view === "picker") picker.activate()
@@ -619,6 +645,13 @@ Panel {
       onTextKey: function(text) {
         if (root.pendingMove) return  // Enter or Escape first
         if (root.view === "issue" && issueView.editing) return  // typed for the filter while labels load
+        if (root.view === "board" && bulkBar.visible && bulkBar.mode !== "") {
+          if (bulkBar.armed && text === bulkBar.armKey) bulkBar.confirm()  // the arming key again
+          return  // choosing, armed, running or results: Enter, Esc or the bar's buttons
+        }
+        if (root.view === "board" && root.picked.length > 0 && (text === "H" || text === "L")) { bulkBar.armSide(text === "H" ? -1 : 1, text); return }
+        if (root.view === "board" && root.picked.length > 0 && text.toLowerCase() === "e") { bulkBar.chooseLabel("add"); return }
+        if (text.toLowerCase() === "v" && root.view === "board") { root.pickAtCursor(); return }
         if ((text === "H" || text === "L") && root.view === "board") { root.moveCursorCard(text === "H" ? -1 : 1); return }
         var key = text.toLowerCase()
         if (key === "r" && root.view === "board") root.refresh()
@@ -782,8 +815,15 @@ Panel {
         height: visible ? implicitHeight : 0
       }
 
+      BulkBar {
+        id: bulkBar
+        host: root
+        anchors { top: moveConfirm.bottom; topMargin: visible ? root.gap : 0; left: parent.left; right: parent.right }
+        height: visible ? implicitHeight : 0
+      }
+
       Item {
-        anchors { top: moveConfirm.bottom; topMargin: root.gap; left: parent.left; right: parent.right; bottom: parent.bottom }
+        anchors { top: bulkBar.bottom; topMargin: root.gap; left: parent.left; right: parent.right; bottom: parent.bottom }
         SetupView { id: setupView; host: root; anchors.fill: parent; visible: root.view === "board" && (root.setup !== "" || root.failed) }
         Skeleton { id: skeleton; host: root; anchors.fill: parent; visible: root.view === "board" && root.setup === "" && root.boardState === "loading" }
         BoardView { id: boardView; host: root; anchors.fill: parent; visible: root.view === "board" && root.setup === "" && root.boardState === "ready" }
