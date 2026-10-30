@@ -4,6 +4,7 @@ import Quickshell.Io
 import qs.Commons
 import qs.Ui
 import "Logic.js" as Logic
+import "components"
 
 // One issue: title, state, labels, a one-line byline, the description as
 // Markdown, then its comments and a box to add one. ✕ (or Esc) returns to the

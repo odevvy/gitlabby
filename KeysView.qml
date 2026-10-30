@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import qs.Commons
 import "Logic.js" as Logic
+import "components"
 
 // The popup's keys (Logic.keyGroups, also in the README), grouped by where
 // they work, as keycaps. ? toggles it; ✕ or Esc returns to the board. Two

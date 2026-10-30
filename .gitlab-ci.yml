@@ -26,4 +26,5 @@ check:
     - bash /tmp/validate .
     # Omarchy and Quickshell imports can't resolve outside the shell, so those
     # categories are off. Syntax errors and any other warning still fail.
-    - /usr/lib/qt6/bin/qmllint --import disable --unqualified disable --missing-property disable --unresolved-type disable --max-warnings 0 *.qml
+    # Every QML file in the plugin, at the top and in components/.
+    - /usr/lib/qt6/bin/qmllint --import disable --unqualified disable --missing-property disable --unresolved-type disable --max-warnings 0 $(find . -name "*.qml" -not -path "./tests/*" | sort)

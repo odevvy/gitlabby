@@ -2,6 +2,7 @@ import QtQuick
 import qs.Commons
 import qs.Ui
 import "Logic.js" as Logic
+import "components"
 
 // Who is busy, per bot, from the board on screen (Logic.botStates; no GitLab
 // call). Filled dot: working; ring: waiting (only approved or review); dim

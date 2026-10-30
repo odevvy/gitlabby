@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import qs.Commons
 import qs.Ui
+import "components"
 
 // Board switcher. Step 1: pick a project (filterable). Step 2: pick one of its
 // boards, or its workflow labels when it has none. ‹ steps back to the

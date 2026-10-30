@@ -3,6 +3,7 @@ import QtQuick.Controls
 import Quickshell.Io
 import qs.Commons
 import qs.Ui
+import "components"
 
 // In-popup settings, most used first: how often to refresh, which columns new
 // boards start with folded, the bots of the project on screen (BotsSection),

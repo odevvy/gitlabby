@@ -1,6 +1,7 @@
 import QtQuick
 import qs.Commons
 import "Logic.js" as Logic
+import "components"
 
 // Asks before a card move on a project in settings.confirmMoves: which issue,
 // from which list to which, what it changes on GitLab. Move (or Enter) goes

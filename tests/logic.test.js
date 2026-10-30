@@ -426,11 +426,41 @@ test("bots editor: add, remove and busy toggles change only their part", () => {
   assert.deepEqual(L.withoutBot({ [P]: { bots: [{ name: "" }, { name: "A", label: "a" }] } }, P, 0), { [P]: { bots: [{ name: "A", label: "a" }] } })
 })
 
+// The plugin's QML files, relative to the plugin dir: the top level and components/.
+function qmlFiles() {
+  const fs = require("node:fs"), path = require("node:path"), dir = path.join(__dirname, "..")
+  const top = fs.readdirSync(dir).filter(f => f.endsWith(".qml"))
+  const sub = fs.existsSync(path.join(dir, "components")) ? fs.readdirSync(path.join(dir, "components")).filter(f => f.endsWith(".qml")).map(f => "components/" + f) : []
+  return top.concat(sub)
+}
+
+test("layout: every plugin type a QML file uses resolves from its own folder or an imported one", () => {
+  const fs = require("node:fs"), path = require("node:path"), dir = path.join(__dirname, "..")
+  const files = qmlFiles()
+  const ours = new Map(files.map(f => [path.basename(f, ".qml"), f]))  // type name -> its file
+  assert.ok(ours.has("Board") && ours.has("BoardText") && ours.has("IconTip"), [...ours.keys()].join(" "))
+  assert.ok(fs.existsSync(path.join(dir, "Board.qml")), "the manifest's barWidget stays at the top")
+  const problems = []
+  for (const f of files) {
+    const src = fs.readFileSync(path.join(dir, f), "utf8"), here = path.dirname(f)
+    const folders = [here].concat([...src.matchAll(/^import "([^"]+)"\s*$/gm)].map(m => path.normalize(path.join(here, m[1]))))
+    const inline = new Set([...src.matchAll(/^\s*component (\w+):/gm)].map(m => m[1]))
+    for (const m of src.matchAll(/^import "([^"]+\.js)" as \w+/gm))
+      if (!fs.existsSync(path.join(dir, here, m[1]))) problems.push(f + ": " + m[1] + " not found")
+    for (const m of src.matchAll(/(?:^|[\s:;{])([A-Z]\w*) \{/g)) {
+      const name = m[1]
+      if (inline.has(name) || !ours.has(name)) continue  // Qt, Quickshell, Omarchy, or this file's own component
+      if (!folders.includes(path.dirname(ours.get(name)))) problems.push(f + ": " + name + " (in " + ours.get(name) + ") isn't in its folder or imports")
+    }
+  }
+  assert.deepEqual(problems, [])
+})
+
 test("icon buttons: every GlyphButton has a tip, and every key in a tip's brackets is a real key", () => {
   const fs = require("node:fs"), path = require("node:path"), dir = path.join(__dirname, "..")
   const keys = new Set(L.keyGroups.flatMap(g => g.keys.flatMap(([k]) => k.split(" or "))))
   const tips = []
-  for (const f of fs.readdirSync(dir).filter(f => f.endsWith(".qml") && f !== "GlyphButton.qml")) {
+  for (const f of qmlFiles().filter(f => path.basename(f) !== "GlyphButton.qml")) {
     const src = fs.readFileSync(path.join(dir, f), "utf8")
     for (const m of src.matchAll(/GlyphButton \{/g)) {
       let depth = 0, end = m.index
