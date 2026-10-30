@@ -736,7 +736,9 @@ test("merge requests view wiring: m and the header button open it; it loads on o
   assert.match(board, /key === "r" && root\.view === "mrs"\) mrsView\.refresh\(\)/)
   assert.match(board, /root\.view === "mrs" && dy !== 0\) mrsView\.moveCursor\(dy\)/)
   assert.match(board, /else if \(root\.view === "mrs"\) mrsView\.activate\(\)/)
-  assert.match(board, /Logic\.mrBadge\(\(root\.feed\.mrAnswers\[mrsView\.scope\] \|\| \{\}\)\.data\)/)
+  const header = fs.readFileSync(path.join(dir, "BoardHeader.qml"), "utf8")
+  assert.match(board, /BoardHeader \{\s*id: header\s*host: root\s*mrsScope: mrsView\.scope/)
+  assert.match(header, /Logic\.mrBadge\(\(host\.feed\.mrAnswers\[mrsScope\] \|\| \{\}\)\.data\)/)
   // Only the view asks for the lists, and only these three ways.
   assert.deepEqual([...board.matchAll(/requestMrs\(/g)].length, 0)
   assert.deepEqual([...view.matchAll(/host\.feed\.requestMrs\(([^)]*)\)/g)].map(m => m[1]), ["scope, false", "scope, true", "scope, false"])
