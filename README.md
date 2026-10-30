@@ -49,8 +49,13 @@ the picker's board step. The header shows a star on the default board and a
   milestone, the description, the comments and a box to add one, and an
   "Open in browser" link. A thin bar slides under the title while it loads.
 - The gear opens the settings, in this order: the refresh interval, which
-  columns start collapsed, the bots of the project on screen (see
-  [Who's busy](#whos-busy)), and who is signed in.
+  columns start collapsed (a row of check boxes), the bots of the project on
+  screen (see [Who's busy](#whos-busy)), and who is signed in.
+- The popup is as tall as the board needs, up to 640 points (at your Omarchy
+  scale). Settings and the keyboard shortcuts aren't held to that: they grow
+  to their full height when the screen has room under the bar, and scroll
+  only when it doesn't, as on a short laptop screen. Going back to the board
+  returns the popup to the board's height.
 - Every icon button says what it does when you point at it, with its key in
   brackets when it has one: `Refresh (r)`, `Settings (s)`,
   `Keyboard shortcuts (?)`, `Switch project or board (p)`,

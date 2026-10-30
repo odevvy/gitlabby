@@ -5,8 +5,8 @@ import qs.Commons
 import qs.Ui
 import "components"
 
-// In-popup settings, most used first: how often to refresh, which columns new
-// boards start with folded, the bots of the project on screen (BotsSection),
+// In-popup settings, most used first: how often to refresh (one line), which
+// columns new boards start with folded (a wrapping row of check boxes), the bots of the project on screen (BotsSection),
 // and last the account (who is signed in, Sign out). Changes are saved to
 // shell.json right away. The gear, ✕ or Esc returns to the board.
 Item {
@@ -81,121 +81,100 @@ Item {
       width: parent.width - Style.space(8)
       spacing: Style.space(6)
 
-      Item { width: 1; height: Style.space(4) }
-      Heading { text: "Refresh every" }
-
-      // Segmented control: the current interval is filled in the accent.
-      Rectangle {
-        implicitWidth: segments.implicitWidth + Style.space(4)
-        implicitHeight: segments.implicitHeight + Style.space(4)
-        radius: Style.space(8)
-        color: view.pane
-        border { width: 1; color: view.line }
-
-        Row {
-          id: segments
-          anchors.centerIn: parent
-          spacing: Style.space(2)
-          Repeater {
-            model: [30, 60, 120, 300, 900]
-            delegate: Rectangle {
-              id: segment
-              required property int modelData
-              readonly property int seconds: modelData
-              readonly property bool current: view.host.refreshIntervalSec === modelData
-              implicitWidth: segText.implicitWidth + Style.space(16)
-              implicitHeight: segText.implicitHeight + Style.space(8)
-              radius: Style.space(6)
-              color: current ? view.host.accent : segMouse.containsMouse ? Qt.rgba(view.fg.r, view.fg.g, view.fg.b, 0.06) : "transparent"
-              Behavior on color { ColorAnimation { duration: 100 } }
-              BoardText {
-                id: segText
-                anchors.centerIn: parent
-                text: segment.modelData < 60 ? segment.modelData + "s" : (segment.modelData / 60) + " min"
-                color: segment.current ? view.host.background : segMouse.containsMouse ? view.host.foreground : view.host.dim
-                font { pixelSize: Style.font.bodySmall; bold: segment.current }
-              }
-              MouseArea {
-                id: segMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                onClicked: view.host.setRefreshInterval(segment.modelData)
-              }
-            }
-          }
-        }
-      }
-      Item { width: 1; height: Style.space(6) }
-      Heading { text: "Start collapsed" }
-      BoardText {
-        width: parent.width; wrapMode: Text.Wrap; color: view.host.dim
-        text: "New boards open with these columns folded. Your per-board choices win."
-      }
-
-      // One row per column: its board color, its name, a check box. The whole
-      // row toggles.
-      Rectangle {
+      Item { width: 1; height: Style.space(2) }
+      // Refresh every: the heading and the segments on one line, or the
+      // segments under it when the popup is too narrow for both.
+      Item {
+        id: refreshRow
         width: parent.width
-        implicitHeight: rows.implicitHeight
-        radius: Style.space(8)
-        color: view.pane
-        border { width: 1; color: view.line }
-        clip: true
+        readonly property bool oneLine: refreshHeading.implicitWidth + Style.space(12) + segPane.implicitWidth <= width
+        implicitHeight: oneLine ? segPane.implicitHeight : refreshHeading.implicitHeight + Style.space(6) + segPane.implicitHeight
+        Heading { id: refreshHeading; y: refreshRow.oneLine ? (segPane.implicitHeight - implicitHeight) / 2 : 0; text: "Refresh every" }
+        // Segmented control: the current interval is filled in the accent.
+        Rectangle {
+          id: segPane
+          x: refreshRow.oneLine ? refreshRow.width - width : 0
+          y: refreshRow.oneLine ? 0 : refreshHeading.implicitHeight + Style.space(6)
+          implicitWidth: segments.implicitWidth + Style.space(4)
+          implicitHeight: segments.implicitHeight + Style.space(4)
+          radius: Style.space(8)
+          color: view.pane
+          border { width: 1; color: view.line }
 
-        Column {
-          id: rows
-          width: parent.width
-          Repeater {
-            model: view.host.availableColumns
-            delegate: Rectangle {
-              id: row
-              required property var modelData
-              required property int index
-              readonly property string columnName: modelData.name
-              readonly property bool on: view.host.isDefaultCollapsed(modelData.name)
-              width: rows.width
-              implicitHeight: name.implicitHeight + Style.space(14)
-              color: rowMouse.containsMouse ? Qt.rgba(view.fg.r, view.fg.g, view.fg.b, 0.06) : "transparent"
-              Behavior on color { ColorAnimation { duration: 100 } }
-
-              Rectangle { visible: row.index > 0; width: parent.width; height: 1; color: view.line }
-              Rectangle {
-                id: dot
-                x: Style.space(12); anchors.verticalCenter: parent.verticalCenter
-                width: Style.space(8); height: width; radius: width / 2
-                color: view.host.columnAccent(row.modelData)
-              }
-              BoardText {
-                id: name
-                anchors { left: dot.right; leftMargin: Style.space(8); right: box.left; rightMargin: Style.space(8); verticalCenter: parent.verticalCenter }
-                elide: Text.ElideRight
-                text: row.modelData.name
-                font.pixelSize: Style.font.bodySmall
-              }
-              // On: filled in the theme accent with a check. Off: an empty outline.
-              Rectangle {
-                id: box
-                anchors { right: parent.right; rightMargin: Style.space(12); verticalCenter: parent.verticalCenter }
-                width: Style.space(16); height: width; radius: Style.space(4)
-                color: row.on ? view.host.accent : "transparent"
-                border { width: 1; color: row.on ? view.host.accent : rowMouse.containsMouse ? view.host.foreground : view.host.dim }
+          Row {
+            id: segments
+            anchors.centerIn: parent
+            spacing: Style.space(2)
+            Repeater {
+              model: [30, 60, 120, 300, 900]
+              delegate: Rectangle {
+                id: segment
+                required property int modelData
+                readonly property int seconds: modelData
+                readonly property bool current: view.host.refreshIntervalSec === modelData
+                implicitWidth: segText.implicitWidth + Style.space(16)
+                implicitHeight: segText.implicitHeight + Style.space(8)
+                radius: Style.space(6)
+                color: current ? view.host.accent : segMouse.containsMouse ? Qt.rgba(view.fg.r, view.fg.g, view.fg.b, 0.06) : "transparent"
                 Behavior on color { ColorAnimation { duration: 100 } }
                 BoardText {
+                  id: segText
                   anchors.centerIn: parent
-                  visible: row.on
-                  text: "\uf00c"
-                  color: view.host.background
-                  font.pixelSize: Style.font.caption
+                  text: segment.modelData < 60 ? segment.modelData + "s" : (segment.modelData / 60) + " min"
+                  color: segment.current ? view.host.background : segMouse.containsMouse ? view.host.foreground : view.host.dim
+                  font { pixelSize: Style.font.bodySmall; bold: segment.current }
                 }
-              }
-              MouseArea {
-                id: rowMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                onClicked: view.host.toggleDefaultCollapsed(row.modelData.name)
+                MouseArea {
+                  id: segMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                  onClicked: view.host.setRefreshInterval(segment.modelData)
+                }
               }
             }
           }
         }
       }
+      Item { width: 1; height: Style.space(4) }
+      Heading { text: "Start collapsed" }
+      BoardText {
+        width: parent.width; wrapMode: Text.Wrap; color: view.host.dim; font.pixelSize: Style.font.caption
+        text: "New boards open with these columns folded. Your per-board choices win."
+      }
+      // The same check boxes as the busy columns, wrapping.
+      Flow {
+        width: parent.width
+        spacing: Style.space(6)
+        Repeater {
+          model: view.host.availableColumns
+          delegate: Item {
+            id: chk
+            required property var modelData
+            readonly property bool on: view.host.isDefaultCollapsed(modelData.name)
+            readonly property bool clickable: true
+            implicitWidth: chkRow.implicitWidth + Style.space(10); implicitHeight: Style.space(22)
+            Row {
+              id: chkRow
+              anchors.verticalCenter: parent.verticalCenter
+              spacing: Style.space(6)
+              Rectangle {
+                anchors.verticalCenter: parent.verticalCenter
+                width: Style.space(16); height: width; radius: Style.space(4)
+                color: chk.on ? view.host.accent : "transparent"
+                border { width: 1; color: chk.on ? view.host.accent : chkMouse.containsMouse ? view.host.foreground : view.host.dim }
+                BoardText { anchors.centerIn: parent; visible: chk.on; text: "\uf00c"; color: view.host.background; font.pixelSize: Style.font.caption }
+              }
+              Rectangle {
+                anchors.verticalCenter: parent.verticalCenter
+                width: Style.space(8); height: width; radius: width / 2
+                color: view.host.columnAccent(chk.modelData)
+              }
+              BoardText { anchors.verticalCenter: parent.verticalCenter; text: chk.modelData.name; font.pixelSize: Style.font.bodySmall }
+            }
+            MouseArea { id: chkMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: view.host.toggleDefaultCollapsed(chk.modelData.name) }
+          }
+        }
+      }
 
-      Item { width: 1; height: Style.space(6) }
+      Item { width: 1; height: Style.space(4) }
       BotsSection {
         id: botsSection
         host: view.host
@@ -207,7 +186,7 @@ Item {
         onWantLabels: view.loadLabels()
       }
 
-      Item { width: 1; height: Style.space(6) }
+      Item { width: 1; height: Style.space(2) }
       Heading { text: "Account" }
       // One row, no frame: who is signed in on the left, Sign out as a text
       // action on the right (like Edit labels). Sign out asks first in the same
