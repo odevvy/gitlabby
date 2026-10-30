@@ -307,7 +307,8 @@ o.bind("SUPER + CTRL + G", "GitLab board", "omarchy-shell shell toggle odevvy.gi
 Omarchy's own `SUPER + CTRL + 1`…`9` also open the right section's bar panels by
 position. In the popup the keyboard cursor shows after the first move.
 
-`?` shows these in the popup.
+The keyboard button in the header (between refresh and the gear), or `?`,
+shows these in the popup.
 
 **Board**
 
@@ -332,7 +333,7 @@ position. In the popup the keyboard cursor shows after the first move.
 | --- | --- |
 | `p` | Choose a project and board |
 | `s` | Settings |
-| `?` | These shortcuts |
+| `?` | These shortcuts (or the keyboard button in the header) |
 | `Tab` or `Shift+Tab` | Next or previous bar panel |
 | `Esc` | Back to the board; on the board, close |
 

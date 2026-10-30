@@ -366,7 +366,7 @@ var keyGroups = [
   { title: "Anywhere", keys: [
     ["p", "Choose a project and board"],
     ["s", "Settings"],
-    ["?", "These shortcuts"],
+    ["?", "These shortcuts (or the keyboard button in the header)"],
     ["Tab or Shift+Tab", "Next or previous bar panel"],
     ["Esc", "Back to the board; on the board, close"]] },
   { title: "Issue", keys: [

@@ -221,7 +221,7 @@ test("the key groups: every view's keys, the setup panel's, no key twice in a gr
   assert.deepEqual(L.keyGroups.map(g => g.title), ["Board", "Confirm a move or a close", "Anywhere", "Issue", "Comment box", "Pickers and filters", "Setup panel"])
   assert.match(action("Setup panel", "Enter or Space"), /main button/)
   assert.match(action("Setup panel", "r"), /Try again/)
-  assert.match(action("Anywhere", "?"), /These shortcuts/)
+  assert.match(action("Anywhere", "?"), /keyboard button in the header/)
   for (const k of ["o", "c", "e", "x"]) assert.ok(action("Issue", k), k)
   for (const g of L.keyGroups) assert.equal(new Set(g.keys.map(([k]) => k)).size, g.keys.length, g.title)
 })
