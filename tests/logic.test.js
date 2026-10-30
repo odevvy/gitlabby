@@ -425,3 +425,54 @@ test("bots editor: add, remove and busy toggles change only their part", () => {
   // Malformed bot rows can be removed like any other.
   assert.deepEqual(L.withoutBot({ [P]: { bots: [{ name: "" }, { name: "A", label: "a" }] } }, P, 0), { [P]: { bots: [{ name: "A", label: "a" }] } })
 })
+
+test("icon buttons: every GlyphButton has a tip, and every key in a tip's brackets is a real key", () => {
+  const fs = require("node:fs"), path = require("node:path"), dir = path.join(__dirname, "..")
+  const keys = new Set(L.keyGroups.flatMap(g => g.keys.flatMap(([k]) => k.split(" or "))))
+  const tips = []
+  for (const f of fs.readdirSync(dir).filter(f => f.endsWith(".qml") && f !== "GlyphButton.qml")) {
+    const src = fs.readFileSync(path.join(dir, f), "utf8")
+    for (const m of src.matchAll(/GlyphButton \{/g)) {
+      let depth = 0, end = m.index
+      for (; end < src.length; end++) { if (src[end] === "{") depth++; else if (src[end] === "}" && --depth === 0) break }
+      assert.match(src.slice(m.index, end), /\btip: "/, f + ": a GlyphButton without a tip")
+      tips.push(src.slice(m.index, end))
+    }
+    for (const m of src.matchAll(/IconTip \{[^\n]*/g)) tips.push(m[0])
+  }
+  assert.ok(tips.length >= 17, "found " + tips.length)  // 6 GlyphButtons, 11 IconTips (v0.1.30)
+  const bracketed = tips.flatMap(t => [...t.matchAll(/\(([^()"]+)\)"/g)].map(m => m[1]))
+  for (const k of bracketed) assert.ok(keys.has(k), "'" + k + "' in a tip is not a shortcut")
+  assert.deepEqual([...new Set(bracketed)].sort(), ["?", "Esc", "e", "o", "p", "r", "s", "x"])
+})
+
+// v0.1.30 regression: his saved setting, exactly as in shell.json. Omarchy
+// hands settings over through Qt, so its lists arrive as sequences:
+// Array.isArray false, though JSON.stringify gives the array. Stand-in: an
+// object whose toJSON is the array.
+const PHRASE41 = '{"firelink21/phrase41":{"bots":[{"label":"app-ui","name":"App UI"},{"label":"api","name":"API Engineer"},{"label":"auth-mail","name":"Auth & Mail"},{"name":"Product Lead","label":""}],"busyLists":["approved","in progress","review"]}}'
+const sequence = list => Object.assign(Object.create(null), { length: list.length, toJSON: () => list.slice() })
+test("his saved bots setting: Settings and the board read the same four bots", () => {
+  const raw = JSON.parse(PHRASE41), P = "firelink21/phrase41"
+  assert.deepEqual(L.botsEntry(raw, P), { problem: "", entry: raw[P] })
+  const c = L.botsConfig(raw, P)
+  assert.deepEqual(c.bots, [{ name: "App UI", label: "app-ui" }, { name: "API Engineer", label: "api" }, { name: "Auth & Mail", label: "auth-mail" }, { name: "Product Lead", label: "" }])
+  assert.deepEqual(c.busyLists, ["approved", "in progress", "review"])
+  assert.ok(raw[P].bots.every(L.botUsable))
+})
+test("settings from Qt: lists as sequences are read once they pass plainJson", () => {
+  const P = "firelink21/phrase41", fromQt = JSON.parse(PHRASE41)
+  fromQt[P].bots = sequence(fromQt[P].bots); fromQt[P].busyLists = sequence(fromQt[P].busyLists)
+  assert.equal(L.botsEntry(fromQt, P).problem, "entry")  // the 0.1.29 bug, when read as is
+  assert.equal(L.botsConfig(fromQt, P), null)
+  const settings = L.plainJson({ bots: fromQt, defaultCollapsed: sequence(["closed", "research", "open"]), refreshIntervalSec: 120 })
+  assert.deepEqual(L.botsEntry(settings.bots, P), { problem: "", entry: JSON.parse(PHRASE41)[P] })
+  assert.equal(L.botsConfig(settings.bots, P).bots.length, 4)
+  assert.deepEqual(L.lowerList(settings.defaultCollapsed), ["closed", "research", "open"])
+  assert.deepEqual(L.withBusy(settings.bots, P, "todo", true)[P].busyLists, ["approved", "in progress", "review", "todo"])
+  assert.deepEqual(L.plainJson(null), {})
+  assert.deepEqual(L.plainJson(undefined), {})
+  assert.deepEqual(L.plainJson("x"), {})
+  const loop = {}; loop.self = loop
+  assert.deepEqual(L.plainJson(loop), {})
+})

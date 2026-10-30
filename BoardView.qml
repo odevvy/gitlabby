@@ -117,6 +117,7 @@ Item {
               id: stripMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
               onClicked: view.host.toggleCollapsed(column.modelData.name)
             }
+            IconTip { host: view.host; shown: stripMouse.containsMouse; text: "Expand " + column.modelData.name }
           }
 
           // Expanded: header in the column's color, then cards. Fixed width so
@@ -153,6 +154,7 @@ Item {
                 id: headerMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                 onClicked: view.host.toggleCollapsed(column.modelData.name)
               }
+              IconTip { host: view.host; shown: headerMouse.containsMouse; text: "Collapse " + column.modelData.name }
             }
 
             BoardText {

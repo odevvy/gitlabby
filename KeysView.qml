@@ -20,7 +20,7 @@ Item {
     width: parent.width
     implicitHeight: close.implicitHeight
     BoardText { anchors.verticalCenter: parent.verticalCenter; text: "Keyboard shortcuts"; font { pixelSize: Style.font.bodySmall; bold: true } }
-    GlyphButton { id: close; anchors.right: parent.right; host: view.host; glyph: "\uf00d"; onClicked: view.host.back() }
+    GlyphButton { id: close; anchors.right: parent.right; host: view.host; glyph: "\uf00d"; tip: "Back to the board (Esc)"; onClicked: view.host.back() }
   }
 
   Flickable {

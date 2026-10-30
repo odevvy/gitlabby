@@ -29,7 +29,7 @@ Column {
   property bool menuOpen: false  // the Column dropdown's list
   readonly property bool typing: nameField.activeFocus || picker.field.activeFocus
 
-  readonly property var raw: host.setting("bots", null)
+  readonly property var raw: host.saved("bots", null)
   readonly property var found: Logic.botsEntry(raw, host.project)
   readonly property var bots: found.entry ? found.entry.bots : []
   readonly property var busy: found.entry ? Logic.lowerList(found.entry.busyLists || []) : []
@@ -270,7 +270,7 @@ Column {
           GlyphButton {
             id: remove
             anchors { right: parent.right; rightMargin: Style.space(6); verticalCenter: parent.verticalCenter }
-            host: sec.host; glyph: "\uf00d"
+            host: sec.host; glyph: "\uf00d"; tip: "Remove " + botName.text
             onClicked: sec.remove(bot.index)
           }
         }

@@ -48,9 +48,14 @@ the picker's board step. The header shows a star on the default board and a
 - Click an issue for its details: state, labels, author, ages, assignees,
   milestone, the description, the comments and a box to add one, and an
   "Open in browser" link. A thin bar slides under the title while it loads.
-- The gear opens the settings: who is signed in, the bots of the project on
-  screen (see [Who's busy](#whos-busy)), which columns start collapsed, and
-  the refresh interval.
+- The gear opens the settings, in this order: the refresh interval, which
+  columns start collapsed, the bots of the project on screen (see
+  [Who's busy](#whos-busy)), and who is signed in.
+- Every icon button says what it does when you point at it, with its key in
+  brackets when it has one: `Refresh (r)`, `Settings (s)`,
+  `Keyboard shortcuts (?)`, `Switch project or board (p)`,
+  `Back to the board (Esc)`; in an issue `Open in browser (o)`,
+  `Edit labels (e)` and `Close issue (x)`.
 - The issue view, the picker and the settings have a ✕ at the top right that
   goes back to the board, like `Escape`; it stays put while the view scrolls.
   In the picker's board step, ‹ goes back to the project list.
@@ -63,7 +68,8 @@ the picker's board step. The header shows a star on the default board and a
 
 The board refreshes when the popup opens and every 60 seconds (configurable)
 while it's open; while it's closed, only a right- or middle-click refreshes.
-The refresh icon spins while it loads, and the board stays usable. A refresh
+The refresh icon spins and the header says `Refreshing…` (instead of
+`Updated 14:05`) while it loads, and the board stays usable. A refresh
 that comes due while you hold a card waits until you let go. After a shell
 start, the popup first shows the board as you last saw it ("Saved 3h ago ·
 updating…"; cards can't be dragged until the fresh board arrives), or a
