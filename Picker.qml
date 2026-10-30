@@ -38,7 +38,7 @@ Item {
       Row {
         anchors { left: parent.left; right: close.left; rightMargin: Style.space(8); verticalCenter: parent.verticalCenter }
         spacing: Style.space(4)
-        GlyphButton { id: stepBack; visible: !view.onProjects; host: view.host; glyph: "\uf053"; onClicked: view.host.pickProjectStep() }
+        GlyphButton { id: stepBack; visible: !view.onProjects; host: view.host; glyph: "\uf053"; tip: "Back to projects"; onClicked: view.host.pickProjectStep() }
         BoardText {
           anchors.verticalCenter: parent.verticalCenter
           width: parent.width - (stepBack.visible ? stepBack.width + parent.spacing : 0)
@@ -47,7 +47,7 @@ Item {
           font { pixelSize: Style.font.bodySmall; bold: true }
         }
       }
-      GlyphButton { id: close; anchors.right: parent.right; host: view.host; glyph: "\uf00d"; onClicked: view.host.back() }
+      GlyphButton { id: close; anchors.right: parent.right; host: view.host; glyph: "\uf00d"; tip: "Back to the board (Esc)"; onClicked: view.host.back() }
     }
 
     TextField {
@@ -121,6 +121,7 @@ Item {
           hoverEnabled: true; cursorShape: Qt.PointingHandCursor
           onClicked: view.host.setDefault(item.modelData)
         }
+        IconTip { host: view.host; shown: starMouse.containsMouse; text: star.on ? "Your default board" : "Make this your default board" }
       }
     }
   }

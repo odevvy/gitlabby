@@ -4,10 +4,10 @@ import Quickshell.Io
 import qs.Commons
 import qs.Ui
 
-// In-popup settings: the account (who is signed in, Sign out), the bots of
-// the project on screen (BotsSection), which columns new boards start with
-// folded, and how often to refresh. Changes are
-// saved to shell.json right away. The gear, ✕ or Esc returns to the board.
+// In-popup settings, most used first: how often to refresh, which columns new
+// boards start with folded, the bots of the project on screen (BotsSection),
+// and last the account (who is signed in, Sign out). Changes are saved to
+// shell.json right away. The gear, ✕ or Esc returns to the board.
 Item {
   id: view
   required property var host
@@ -66,7 +66,7 @@ Item {
     width: parent.width
     implicitHeight: close.implicitHeight
     BoardText { anchors.verticalCenter: parent.verticalCenter; text: "Settings"; font { pixelSize: Style.font.bodySmall; bold: true } }
-    GlyphButton { id: close; anchors.right: parent.right; host: view.host; glyph: "\uf00d"; onClicked: view.host.back() }
+    GlyphButton { id: close; anchors.right: parent.right; host: view.host; glyph: "\uf00d"; tip: "Back to the board (Esc)"; onClicked: view.host.back() }
   }
 
   Flickable {
@@ -81,68 +81,47 @@ Item {
       spacing: Style.space(6)
 
       Item { width: 1; height: Style.space(4) }
-      Heading { text: "Account" }
-      // One row, no frame: who is signed in on the left, Sign out as a text
-      // action on the right (like Edit labels). Sign out asks first in the same
-      // row: the question on the left, Yes / Cancel on the right.
-      Item {
-        id: accountRow
-        width: parent.width
-        implicitHeight: Math.max(accountText.implicitHeight, Style.space(28))
-        BoardText {
-          id: accountText
-          anchors.verticalCenter: parent.verticalCenter
-          width: parent.width - Style.space(12) - (signOutLink.visible ? signOutLink.implicitWidth : confirmRow.visible ? confirmRow.implicitWidth : 0)
-          wrapMode: Text.Wrap
-          color: view.host.accountError !== "" && !view.confirming ? view.host.urgent : view.host.foreground
-          text: view.host.signingOut ? "Signing out…"
-            : view.confirming ? "Sign out of gitlab.com?"
-            : view.host.accountError !== "" ? view.host.accountError
-            : view.host.account !== "" ? "Signed in as " + view.host.account + " on gitlab.com" : "Checking your GitLab account…"
-        }
-        BoardText {
-          id: signOutLink
-          anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-          visible: !view.host.signingOut && !view.confirming && (view.host.account !== "" || view.host.accountError !== "")
-          text: "Sign out"
-          color: view.host.accent
-          font.pixelSize: Style.font.bodySmall
-          MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: view.confirming = true }
-        }
+      Heading { text: "Refresh every" }
+
+      // Segmented control: the current interval is filled in the accent.
+      Rectangle {
+        implicitWidth: segments.implicitWidth + Style.space(4)
+        implicitHeight: segments.implicitHeight + Style.space(4)
+        radius: Style.space(8)
+        color: view.pane
+        border { width: 1; color: view.line }
+
         Row {
-          id: confirmRow
-          anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-          spacing: Style.space(8)
-          visible: view.confirming && !view.host.signingOut
-          ActionButton {
-            id: yesButton
-            host: view.host; small: true; danger: true; label: "Yes, sign out"
-            onClicked: { view.confirming = false; view.host.signOut() }
-            PanelToolTip {
-              y: parent.height + Style.space(4); visible: yesButton.hovered
-              text: "Signs out glab in your terminal too\nand deletes the saved boards."
-              onAboutToShow: x = parent.width - implicitWidth  // keep it inside the popup
+          id: segments
+          anchors.centerIn: parent
+          spacing: Style.space(2)
+          Repeater {
+            model: [30, 60, 120, 300, 900]
+            delegate: Rectangle {
+              id: segment
+              required property int modelData
+              readonly property int seconds: modelData
+              readonly property bool current: view.host.refreshIntervalSec === modelData
+              implicitWidth: segText.implicitWidth + Style.space(16)
+              implicitHeight: segText.implicitHeight + Style.space(8)
+              radius: Style.space(6)
+              color: current ? view.host.accent : segMouse.containsMouse ? Qt.rgba(view.fg.r, view.fg.g, view.fg.b, 0.06) : "transparent"
+              Behavior on color { ColorAnimation { duration: 100 } }
+              BoardText {
+                id: segText
+                anchors.centerIn: parent
+                text: segment.modelData < 60 ? segment.modelData + "s" : (segment.modelData / 60) + " min"
+                color: segment.current ? view.host.background : segMouse.containsMouse ? view.host.foreground : view.host.dim
+                font { pixelSize: Style.font.bodySmall; bold: segment.current }
+              }
+              MouseArea {
+                id: segMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                onClicked: view.host.setRefreshInterval(segment.modelData)
+              }
             }
           }
-          ActionButton {
-            host: view.host; small: true; label: "Cancel"
-            onClicked: view.confirming = false
-          }
         }
       }
-
-      Item { width: 1; height: Style.space(6) }
-      BotsSection {
-        id: botsSection
-        host: view.host
-        readonly property bool mine: view.labelsFor === view.host.project
-        labels: mine ? view.allLabels : []
-        fetchedStatus: mine ? view.fetchedStatus : []
-        labelsState: mine ? view.labelsState : ""
-        labelsError: view.labelsError
-        onWantLabels: view.loadLabels()
-      }
-
       Item { width: 1; height: Style.space(6) }
       Heading { text: "Start collapsed" }
       BoardText {
@@ -216,44 +195,64 @@ Item {
       }
 
       Item { width: 1; height: Style.space(6) }
-      Heading { text: "Refresh every" }
+      BotsSection {
+        id: botsSection
+        host: view.host
+        readonly property bool mine: view.labelsFor === view.host.project
+        labels: mine ? view.allLabels : []
+        fetchedStatus: mine ? view.fetchedStatus : []
+        labelsState: mine ? view.labelsState : ""
+        labelsError: view.labelsError
+        onWantLabels: view.loadLabels()
+      }
 
-      // Segmented control: the current interval is filled in the accent.
-      Rectangle {
-        implicitWidth: segments.implicitWidth + Style.space(4)
-        implicitHeight: segments.implicitHeight + Style.space(4)
-        radius: Style.space(8)
-        color: view.pane
-        border { width: 1; color: view.line }
-
+      Item { width: 1; height: Style.space(6) }
+      Heading { text: "Account" }
+      // One row, no frame: who is signed in on the left, Sign out as a text
+      // action on the right (like Edit labels). Sign out asks first in the same
+      // row: the question on the left, Yes / Cancel on the right.
+      Item {
+        id: accountRow
+        width: parent.width
+        implicitHeight: Math.max(accountText.implicitHeight, Style.space(28))
+        BoardText {
+          id: accountText
+          anchors.verticalCenter: parent.verticalCenter
+          width: parent.width - Style.space(12) - (signOutLink.visible ? signOutLink.implicitWidth : confirmRow.visible ? confirmRow.implicitWidth : 0)
+          wrapMode: Text.Wrap
+          color: view.host.accountError !== "" && !view.confirming ? view.host.urgent : view.host.foreground
+          text: view.host.signingOut ? "Signing out…"
+            : view.confirming ? "Sign out of gitlab.com?"
+            : view.host.accountError !== "" ? view.host.accountError
+            : view.host.account !== "" ? "Signed in as " + view.host.account + " on gitlab.com" : "Checking your GitLab account…"
+        }
+        BoardText {
+          id: signOutLink
+          anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+          visible: !view.host.signingOut && !view.confirming && (view.host.account !== "" || view.host.accountError !== "")
+          text: "Sign out"
+          color: view.host.accent
+          font.pixelSize: Style.font.bodySmall
+          MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: view.confirming = true }
+        }
         Row {
-          id: segments
-          anchors.centerIn: parent
-          spacing: Style.space(2)
-          Repeater {
-            model: [30, 60, 120, 300, 900]
-            delegate: Rectangle {
-              id: segment
-              required property int modelData
-              readonly property int seconds: modelData
-              readonly property bool current: view.host.refreshIntervalSec === modelData
-              implicitWidth: segText.implicitWidth + Style.space(16)
-              implicitHeight: segText.implicitHeight + Style.space(8)
-              radius: Style.space(6)
-              color: current ? view.host.accent : segMouse.containsMouse ? Qt.rgba(view.fg.r, view.fg.g, view.fg.b, 0.06) : "transparent"
-              Behavior on color { ColorAnimation { duration: 100 } }
-              BoardText {
-                id: segText
-                anchors.centerIn: parent
-                text: segment.modelData < 60 ? segment.modelData + "s" : (segment.modelData / 60) + " min"
-                color: segment.current ? view.host.background : segMouse.containsMouse ? view.host.foreground : view.host.dim
-                font { pixelSize: Style.font.bodySmall; bold: segment.current }
-              }
-              MouseArea {
-                id: segMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                onClicked: view.host.setRefreshInterval(segment.modelData)
-              }
+          id: confirmRow
+          anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+          spacing: Style.space(8)
+          visible: view.confirming && !view.host.signingOut
+          ActionButton {
+            id: yesButton
+            host: view.host; small: true; danger: true; label: "Yes, sign out"
+            onClicked: { view.confirming = false; view.host.signOut() }
+            PanelToolTip {
+              y: parent.height + Style.space(4); visible: yesButton.hovered
+              text: "Signs out glab in your terminal too\nand deletes the saved boards."
+              onAboutToShow: x = parent.width - implicitWidth  // keep it inside the popup
             }
+          }
+          ActionButton {
+            host: view.host; small: true; label: "Cancel"
+            onClicked: view.confirming = false
           }
         }
       }

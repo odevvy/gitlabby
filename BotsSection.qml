@@ -270,7 +270,7 @@ Column {
           GlyphButton {
             id: remove
             anchors { right: parent.right; rightMargin: Style.space(6); verticalCenter: parent.verticalCenter }
-            host: sec.host; glyph: "\uf00d"
+            host: sec.host; glyph: "\uf00d"; tip: "Remove " + botName.text
             onClicked: sec.remove(bot.index)
           }
         }
