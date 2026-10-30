@@ -172,8 +172,11 @@ Column {
           visible: sec.adding
           x: Style.space(12); y: Style.space(10); width: parent.width - Style.space(24)
           spacing: Style.space(8)
-          Row {
-            spacing: Style.space(8)
+          // Wraps at the popup's width, so every choice stays in view with a long name.
+          // Items in a Flow can't anchor, so each sits centered in a box as tall as the field.
+          Flow {
+            id: choiceRow
+            width: parent.width; spacing: Style.space(8)
             TextField {
               id: nameField
               width: Style.space(180); verticalPadding: Style.space(3)
@@ -182,10 +185,23 @@ Column {
               onAccepted: sec.add()
               Keys.onEscapePressed: sec.cancel()
             }
-            BoardText { anchors.verticalCenter: parent.verticalCenter; text: "is busy with"; color: sec.host.dim; font.pixelSize: Style.font.bodySmall }
-            Toggle { anchors.verticalCenter: parent.verticalCenter; label: "cards with a label"; on: sec.kind === "label"; onClicked: sec.choose("label") }
-            Toggle { anchors.verticalCenter: parent.verticalCenter; label: "every card in a column"; enabled: sec.labelColumns.length > 0; on: sec.kind === "list"; onClicked: sec.choose("list") }
-            Toggle { anchors.verticalCenter: parent.verticalCenter; visible: !sec.hasNoOwner; label: "cards no bot owns"; on: sec.kind === "none"; onClicked: sec.choose("none") }
+            Item {
+              width: busyWith.implicitWidth; height: nameField.height
+              BoardText { id: busyWith; anchors.verticalCenter: parent.verticalCenter; text: "is busy with"; color: sec.host.dim; font.pixelSize: Style.font.bodySmall }
+            }
+            Item {
+              width: byLabel.width; height: nameField.height
+              Toggle { id: byLabel; anchors.verticalCenter: parent.verticalCenter; label: "cards with a label"; on: sec.kind === "label"; onClicked: sec.choose("label") }
+            }
+            Item {
+              width: byList.width; height: nameField.height
+              Toggle { id: byList; anchors.verticalCenter: parent.verticalCenter; label: "every card in a column"; enabled: sec.labelColumns.length > 0; on: sec.kind === "list"; onClicked: sec.choose("list") }
+            }
+            Item {
+              visible: !sec.hasNoOwner
+              width: noOwner.width; height: nameField.height
+              Toggle { id: noOwner; anchors.verticalCenter: parent.verticalCenter; label: "cards no bot owns"; on: sec.kind === "none"; onClicked: sec.choose("none") }
+            }
           }
           LabelPicker {
             id: picker
