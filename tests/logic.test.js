@@ -745,3 +745,78 @@ test("merge requests view wiring: m and the header button open it; it loads on o
   assert.match(fs.readFileSync(path.join(dir, "components", "BoardText.qml"), "utf8"), /textFormat: Text\.PlainText/)
   assert.doesNotMatch(view, /textFormat|\bText \{|\bLabel \{/)
 })
+
+// --- 0.1.38 bulk actions ---------------------------------------------------------
+const bcol = (name, kind, listId, iids, labels) => ({ name, kind, listId, issues: iids.map(i => ({ iid: i, title: "T" + i, labels: labels || (kind === "label" ? [name] : []) })) })
+const BCOLS = [bcol("Open", "open", undefined, [10]), bcol("todo", "label", 3, [20, 21]), bcol("review", "label", 5, [50]), bcol("Closed", "closed", undefined, [9]), bcol("ann", "assignee", 8, [60])]
+
+test("bulk picks: a card in its list, toggled, capped at 20, dropped once off the board", () => {
+  assert.equal(L.bulkCap, 20)
+  assert.equal(L.pickKey(BCOLS[1], 20), "label:3|20")
+  let t = L.togglePick([], "label:3|20")
+  assert.deepEqual(t, { picked: ["label:3|20"], full: false })
+  assert.deepEqual(L.togglePick(t.picked, "label:3|20"), { picked: [], full: false })
+  const twenty = Array.from({ length: 20 }, (_, i) => "label:3|" + (100 + i))
+  assert.deepEqual(L.togglePick(twenty, "label:3|20"), { picked: twenty, full: true })
+  assert.equal(L.togglePick(twenty, "label:3|100").picked.length, 19, "removing works at the cap")
+  assert.deepEqual(L.livePicks(BCOLS, ["label:5|50", "label:3|99", "label:3|20"]), ["label:5|50", "label:3|20"])
+  assert.deepEqual(L.pickedCards(BCOLS, ["label:3|21"]).map(p => [p.row.iid, p.column.name]), [[21, "todo"]])
+})
+
+test("bulk plan: each card's own --from, skips said out loud", () => {
+  const cards = L.pickedCards(BCOLS, ["label:3|20", "label:5|50", "closed:Closed|9", "assignee:8|60"])
+  const move = L.bulkPlan(cards, { kind: "move", to: BCOLS[2] }, "g/p", "7")
+  assert.deepEqual(move.map(s => s.args), [
+    ["move", "--project", "g/p", "--board", "7", "--iid", "20", "--from", "3", "--to", "5"], null,
+    ["move", "--project", "g/p", "--board", "7", "--iid", "9", "--from", "closed", "--to", "5"], null])
+  assert.deepEqual(move.map(s => s.skip), ["", "Already in review", "", "Can't move cards out of ann"])
+  const add = L.bulkPlan(cards.slice(0, 2), { kind: "add", label: "todo" }, "g/p", "7")
+  assert.deepEqual(add.map(s => s.args), [null, ["relabel", "--project", "g/p", "--iid", "50", "--add", "todo"]])
+  const rm = L.bulkPlan(cards.slice(0, 2), { kind: "remove", label: "todo" }, "g/p", "7")
+  assert.deepEqual(rm.map(s => s.skip), ["", "Doesn't have todo"])
+  assert.deepEqual(rm[0].args, ["relabel", "--project", "g/p", "--iid", "20", "--remove", "todo"])
+  assert.equal(L.closeOrReopen(cards), "close")
+  assert.equal(L.closeOrReopen(cards.slice(2, 3)), "reopen")
+  const close = L.bulkPlan(cards.slice(0, 3), { kind: "close" }, "g/p", "7")
+  assert.deepEqual(close.map(s => s.args && s.args.slice(0, 1)), [["close"], ["close"], null])
+  assert.equal(close[2].skip, "Already closed")
+  assert.equal(L.bulkPlan(cards.slice(0, 1), { kind: "reopen" }, "g/p", "7")[0].skip, "Already open")
+})
+
+test("bulk wording: question, button, note and grouped lines", () => {
+  const to = BCOLS[2]
+  assert.equal(L.bulkQuestion({ kind: "move", to }, 3), "Move 3 cards to review?")
+  assert.equal(L.bulkQuestion({ kind: "add", label: "bug" }, 1), "Add bug to 1 card?")
+  assert.equal(L.bulkQuestion({ kind: "remove", label: "bug" }, 2), "Remove bug from 2 cards?")
+  assert.equal(L.bulkQuestion({ kind: "reopen" }, 2), "Reopen 2 cards?")
+  assert.equal(L.bulkButton({ kind: "move", to }, 3), "Move 3 cards")
+  assert.equal(L.bulkButton({ kind: "close" }, 1), "Close 1 card")
+  assert.match(L.bulkNote({ kind: "move", to: BCOLS[3] }), /closes on GitLab and keeps its labels/)
+  assert.match(L.bulkNote({ kind: "add", label: "bug" }), /^Only the label bug changes\. One card at a time/)
+  const cards = L.pickedCards(BCOLS, ["label:3|20", "label:5|50", "label:3|21", "closed:Closed|9"])
+  const lines = L.bulkLines(L.bulkPlan(cards, { kind: "move", to }, "g/p", "7"), { kind: "move", to })
+  assert.deepEqual(lines, [{ text: "todo \u2192 review", skip: false, iids: "#20 #21" }, { text: "Closed \u2192 review", skip: false, iids: "#9" },
+    { text: "Skipped, already in review", skip: true, iids: "#50" }])
+})
+
+test("bulk outcome: done, ordinary failures go on, sign-in and timeouts stop", () => {
+  const mv = { kind: "move", to: BCOLS[2] }
+  assert.deepEqual(L.bulkOutcome({ state: "ready" }, mv), { ok: true, stop: false, text: "Moved to review" })
+  assert.deepEqual(L.bulkOutcome({ state: "ready" }, { kind: "add", label: "bug" }).text, "Added bug")
+  assert.deepEqual(L.bulkOutcome({ state: "stale", message: "#4 changed" }, mv), { ok: false, stop: false, text: "Not moved: it changed on GitLab after the board loaded. Nothing was written." })
+  assert.deepEqual(L.bulkOutcome({ state: "error", message: "Move failed: 403 Forbidden" }, mv), { ok: false, stop: false, text: "Move failed: 403 Forbidden" })
+  assert.equal(L.bulkOutcome({ state: "logged-out", message: "Not signed in to gitlab.com. Run: glab auth login" }, mv).stop, true)
+  assert.equal(L.bulkOutcome({ state: "no-glab", message: "x" }, mv).stop, true)
+  const t = L.bulkOutcome({ state: "error", message: "GitLab did not answer within 30 seconds. The move may have gone through." }, mv)
+  assert.deepEqual(t, { ok: false, stop: true, text: "GitLab did not answer within 30 seconds. The move may have gone through." })
+  assert.equal(L.bulkOutcome({ state: "error", message: "GitLab did not answer within 30 seconds." }, mv).text, "GitLab did not answer within 30 seconds. It may have gone through.")
+  assert.equal(L.bulkOutcome({ state: "timeout", message: "" }, mv).text, "No answer from glab. It may have gone through.")
+  assert.equal(L.bulkOutcome(null, mv).text, "Failed.")
+})
+
+test("bulk summary counts done of the cards it tried to change", () => {
+  const r = st => st.map(s => ({ status: s }))
+  assert.equal(L.bulkSummary({ kind: "move", to: BCOLS[2] }, r(["done", "done", "failed"])), "Moved 2 of 3 cards to review. 1 failed.")
+  assert.equal(L.bulkSummary({ kind: "close" }, r(["done", "skipped"])), "Closed 1 of 1 card.")
+  assert.equal(L.bulkSummary({ kind: "add", label: "bug" }, r(["done", "failed", "untried", "untried"])), "Added bug to 1 of 4 cards. 1 failed, 2 not tried.")
+})
