@@ -205,6 +205,24 @@ function savedNote(iso, now) {
   return (a === "" || a === "0m" ? "Saved just now" : "Saved " + a + " ago") + " · updating…"
 }
 
+// A Review card's pipeline (board-fetch: {status, url, mr}) as its mark:
+// a glyph per status in GitLab's own status colors (dark theme), and the tooltip.
+// Anything else, or no pipeline, is null: nothing is drawn.
+var pipelineMarks = {
+  passed: { glyph: "\uf058", color: "#2da160" },
+  failed: { glyph: "\uf057", color: "#ec5941" },
+  running: { glyph: "\uf192", color: "#428fdc" },
+  pending: { glyph: "\uf017", color: "#c17d10" },
+  canceled: { glyph: "\uf05e", color: "#89888d" }
+}
+function pipelineMark(p) {
+  var status = p && typeof p === "object" ? String(p.status || "") : ""
+  if (!Object.prototype.hasOwnProperty.call(pipelineMarks, status)) return null
+  var url = /^https:\/\//.test(String(p.url || "")) ? String(p.url) : ""
+  var on = /^[!#A-Za-z0-9_.\/-]+$/.test(String(p.mr || "")) ? " on " + p.mr : ""
+  return { glyph: pipelineMarks[status].glyph, color: pipelineMarks[status].color, url: url,
+    tip: "Pipeline " + status + on + (url ? ": open it on GitLab" : "") }
+}
 function columnKey(column) { return column.kind + ":" + (column.listId || column.name) }
 // The list argument board-fetch move takes: open, closed, or a label list id.
 function listSpec(column) { return column.kind === "label" ? String(column.listId) : column.kind }
@@ -409,6 +427,7 @@ function keyParts(key) {
 
 if (typeof module !== "undefined") {
   module.exports = {
+    pipelineMark: pipelineMark,
     lowerList: lowerList, has: has, toggled: toggled, escaped: escaped, countLabel: countLabel, labelStyle: labelStyle, age: age, savedNote: savedNote,
     columnKey: columnKey, listSpec: listSpec, movedColumns: movedColumns, byline: byline, people: people,
     workflowLabels: workflowLabels, statusLabels: statusLabels, addableLabels: addableLabels, withColors: withColors, statusOn: statusOn, botsConfig: botsConfig, botStates: botStates, dotColor: dotColor, inColumn: inColumn,
