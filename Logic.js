@@ -2,6 +2,15 @@
 // runs it under node; QML passes in font metrics and Style.space (same pattern
 // as Omarchy's panels/clock/Model.js).
 
+// The widget's settings as plain JSON. Omarchy hands them over through Qt
+// (QVariantMap), so their lists arrive as Qt sequences, not JS arrays:
+// Array.isArray says false. A JSON round trip makes them real arrays (as
+// Omarchy's own Indicators widget does); anything that can't be copied is {}.
+function plainJson(value) {
+  if (value === undefined || value === null) return {}
+  try { var v = JSON.parse(JSON.stringify(value)); return v && typeof v === "object" ? v : {} } catch (e) { return {} }
+}
+
 // Settings lists: lowercase names, from an array or a comma-separated string.
 function lowerList(value) {
   var list = Array.isArray(value) ? value : String(value || "").split(",")
@@ -71,12 +80,12 @@ function withColors(colors, labels) {
 // along (rightmost on the board) of the issues that set the state, so the
 // working ones when any are working (a filled dot never wears a column the bot
 // only waits in). oneList is that column's name when every issue is in it.
+// The board's bots for project, read with the same rules as Settings > Bots
+// (botsEntry, botUsable), so the row and the editor never disagree.
 function botsConfig(all, project) {
-  var c = all && typeof all === "object" ? all[project] : null
-  if (!c || typeof c !== "object" || !Array.isArray(c.bots)) return null
-  var bots = c.bots.filter(function(b) {
-    return b && typeof b.name === "string" && b.name.trim() !== "" && (typeof b.label === "string" || (typeof b.list === "string" && b.list.trim() !== ""))
-  }).map(function(b) {
+  var c = botsEntry(all, project).entry
+  if (!c) return null
+  var bots = c.bots.filter(botUsable).map(function(b) {
     return typeof b.list === "string" && b.list.trim() !== "" ? { name: b.name.trim(), list: b.list.trim().toLowerCase() } : { name: b.name.trim(), label: b.label.trim().toLowerCase() }
   })
   if (bots.length === 0) return null
@@ -404,6 +413,6 @@ if (typeof module !== "undefined") {
     columnKey: columnKey, listSpec: listSpec, movedColumns: movedColumns, byline: byline, people: people,
     workflowLabels: workflowLabels, statusLabels: statusLabels, addableLabels: addableLabels, withColors: withColors, statusOn: statusOn, botsConfig: botsConfig, botStates: botStates, dotColor: dotColor, inColumn: inColumn,
     botsEntry: botsEntry, botUsable: botUsable, botNameTaken: botNameTaken, withBot: withBot, withoutBot: withoutBot, withBusy: withBusy,
-    linkUrl: linkUrl, inline: inline, quickAction: quickAction, moveNote: moveNote, lineLimit: lineLimit, markdown: markdown, descriptionLimit: descriptionLimit, cursorMove: cursorMove, cursorFix: cursorFix, keyGroups: keyGroups, keyParts: keyParts
+    linkUrl: linkUrl, inline: inline, quickAction: quickAction, moveNote: moveNote, lineLimit: lineLimit, markdown: markdown, descriptionLimit: descriptionLimit, cursorMove: cursorMove, plainJson: plainJson, cursorFix: cursorFix, keyGroups: keyGroups, keyParts: keyParts
   }
 }

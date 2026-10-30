@@ -33,25 +33,33 @@ Panel {
   readonly property int stripWidth: Style.space(34)
   readonly property int gap: Style.space(10)
 
+  // settings as plain JSON (Logic.plainJson: Qt hands lists over as sequences,
+  // which Array.isArray rejects). Read every setting through saved().
+  readonly property var savedSettings: Logic.plainJson(settings)
+  function saved(name, fallback) {
+    var value = savedSettings[name]
+    return value === undefined || value === null ? fallback : value
+  }
+
   // Saved default board (empty id = the project's first board). The only
   // place the default project is set: none, so a new install starts in the
   // picker, and the first board opened there becomes the default.
-  readonly property string defaultProject: String(setting("defaultProject", "")).trim()
-  readonly property string defaultBoardId: String(setting("defaultBoardId", ""))
-  readonly property string defaultBoardName: String(setting("defaultBoardName", ""))
+  readonly property string defaultProject: String(saved("defaultProject", "")).trim()
+  readonly property string defaultBoardId: String(saved("defaultBoardId", ""))
+  readonly property string defaultBoardName: String(saved("defaultBoardName", ""))
   // Board on screen: starts as the default on every shell start; browsing
   // assigns these (breaking the binding) and is never saved.
   property string project: defaultProject
   property string boardId: defaultBoardId
   property string boardName: defaultBoardName
   // Saved preferences.
-  property int refreshIntervalSec: Math.max(30, parseInt(String(setting("refreshIntervalSec", 60)), 10) || 60)
-  property var defaultCollapsed: Logic.lowerList(setting("defaultCollapsed", ["closed", "research", "open"]))
+  property int refreshIntervalSec: Math.max(30, parseInt(String(saved("refreshIntervalSec", 60)), 10) || 60)
+  property var defaultCollapsed: Logic.lowerList(saved("defaultCollapsed", ["closed", "research", "open"]))
   // Busy markers (settings.bots, keyed by project; none by default), from the board on screen.
-  readonly property var botStates: Logic.botStates(Logic.botsConfig(setting("bots", null), project), columns)
+  readonly property var botStates: Logic.botStates(Logic.botsConfig(saved("bots", null), project), columns)
   // Projects whose card moves ask first (settings.confirmMoves; none by default).
-  readonly property bool confirmMoves: Logic.has(Logic.lowerList(setting("confirmMoves", [])), project)
-  property var boardStates: setting("boardStates", ({})) || ({})
+  readonly property bool confirmMoves: Logic.has(Logic.lowerList(saved("confirmMoves", [])), project)
+  property var boardStates: saved("boardStates", ({})) || ({})
 
   // Board data from the last fetch.
   readonly property bool loading: fetchProcess.running
@@ -159,15 +167,15 @@ Panel {
   // only if it could not be saved.
   readonly property int settingsRevision: 2
   function migrateSettings() {
-    if ((parseInt(String(setting("settingsRevision", 1)), 10) || 1) >= settingsRevision) return
+    if ((parseInt(String(saved("settingsRevision", 1)), 10) || 1) >= settingsRevision) return
     if (!bar || !bar.shell || typeof bar.shell.updateEntryInline !== "function") return
-    if (setting("defaultCollapsed", null) === null && setting("boardStates", null) === null) return  // nothing saved yet
+    if (saved("defaultCollapsed", null) === null && saved("boardStates", null) === null) return  // nothing saved yet
     // Read the saved values directly: the property bindings may not have caught up.
-    var collapsed = Logic.lowerList(setting("defaultCollapsed", ["closed", "research"]))
-    var saved = setting("boardStates", ({})) || ({})
+    var collapsed = Logic.lowerList(saved("defaultCollapsed", ["closed", "research"]))
+    var states = saved("boardStates", ({})) || ({})
     var next = {}
-    for (var key in saved) {
-      var entry = saved[key] || {}
+    for (var key in states) {
+      var entry = states[key] || {}
       next[key] = Array.isArray(entry.collapsed) && !Logic.has(entry.collapsed, "open")
         ? { collapsed: entry.collapsed.concat(["open"]), hidden: entry.hidden || [] } : entry
     }
@@ -188,7 +196,7 @@ Panel {
     var d = nextDefault || { project: defaultProject, id: defaultBoardId, name: defaultBoardName }
     var entry = { id: moduleName }
     var dropped = ["id", "collapsedColumns", "hiddenColumns", "project", "boardId", "boardName"]
-    for (var key in settings) if (dropped.indexOf(key) === -1) entry[key] = settings[key]
+    for (var key in savedSettings) if (dropped.indexOf(key) === -1) entry[key] = savedSettings[key]
     entry.defaultProject = d.project
     entry.defaultBoardId = d.id
     entry.defaultBoardName = d.name

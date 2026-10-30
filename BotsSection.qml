@@ -29,7 +29,7 @@ Column {
   property bool menuOpen: false  // the Column dropdown's list
   readonly property bool typing: nameField.activeFocus || picker.field.activeFocus
 
-  readonly property var raw: host.setting("bots", null)
+  readonly property var raw: host.saved("bots", null)
   readonly property var found: Logic.botsEntry(raw, host.project)
   readonly property var bots: found.entry ? found.entry.bots : []
   readonly property var busy: found.entry ? Logic.lowerList(found.entry.busyLists || []) : []
