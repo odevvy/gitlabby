@@ -13,6 +13,8 @@
 # projects/P/merge_requests/M answers mr-M.json; a missing file is a refusal.
 # The MR lists: scope=reviews_for_me answers mrs-review.json, scope=created_by_me
 # mrs-mine.json (any project prefix); .../merge_requests/M/reviewers reviewers-M.json.
+# Access: projects/P (one segment) answers project.json, personal_access_tokens/self
+# token-self.json.
 printf '%s\n' "$*" >>"$FAKE_LOG"
 if [[ -n ${FAKE_HANG:-} && " $* " == *"$FAKE_HANG"* ]]; then  # never answers
   [[ ${FAKE_HANG_TERM:-} == ignore ]] && trap '' TERM
@@ -71,6 +73,9 @@ case $endpoint in
   projects/*/merge_requests/[0-9]*) f=mr-${endpoint##*/} ;;
   */issues/*) f=issue ;;
   user) f=user ;;
+  personal_access_tokens/self) f=token-self ;;
+  projects/*/*) exit 1 ;;
+  projects/*) f=project ;;
   *) exit 1 ;;
 esac
 [[ -f $FAKE_DIR/$f.json ]] || exit 1

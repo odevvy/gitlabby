@@ -21,6 +21,11 @@
 #                                                   all projects, or only P
 #   board-fetch labels --project P                  the project's labels a person may edit:
 #                                                   every label but the status ones (below)
+#   board-fetch access --project P                  your access level on P (the higher of
+#                                                   project and group membership, 0 for
+#                                                   none) and, when GitLab says, the scopes
+#                                                   of the token glab signs in with (never
+#                                                   the token itself)
 # The four writes, each in its own function and branch:
 #   board-fetch move --project P --board ID --iid N --from L --to L   (PUT, write_issue())
 #     L is open, closed, or the numeric id of a label list on that board. Label
@@ -49,7 +54,7 @@
 set -uo pipefail
 
 cmd=board project="" board_id="" iid="" from="" to="" add="" remove="" hostname="gitlab.com"
-case "${1:-}" in board|cached|projects|boards|issue|notes|move|comment|whoami|mrs|logout|labels|relabel|close|reopen) cmd=$1; shift ;; esac
+case "${1:-}" in board|cached|projects|boards|issue|notes|move|comment|whoami|mrs|logout|labels|relabel|close|reopen|access) cmd=$1; shift ;; esac
 while (($#)); do
   case "$1" in
     --project) project=${2:-} ;;
@@ -255,6 +260,21 @@ case $cmd in
     exit 0 ;;
   mrs)
     mrs_list
+    exit 0 ;;
+  access)
+    # The project (GET, not simple: only the full answer has permissions) and,
+    # best effort, the token's own record: only its scopes are kept. OAuth
+    # sign-ins have no such record (404), so scopes is then null.
+    get "$base" >"$tmp/a" || emit error "Could not load $project."
+    peek personal_access_tokens/self >"$tmp/t" 2>/dev/null || : >"$tmp/t"
+    jq -cn --slurpfile a "$tmp/a" --slurpfile t "$tmp/t" --arg p "$project" '
+      ($a[0] // null) as $proj | ($t[0] // null) as $tok
+      | if ($proj | type) != "object" or ($proj.id | type) != "number" then null else
+        {state: "ready", message: "", project: $p,
+         level: ([$proj.permissions.project_access.access_level?, $proj.permissions.group_access.access_level?] | map(numbers) | max // 0),
+         scopes: (if ($tok | type) == "object" and ($tok.scopes | type) == "array"
+           then [$tok.scopes[] | strings | select(test("^[a-z_]{1,40}$"))] else null end)} end' 2>/dev/null |
+      grep -v '^null$' | grep . || emit error "GitLab returned an unreadable response."
     exit 0 ;;
   labels)
     get --paginate "$base/boards?per_page=100" >"$tmp/b" || emit error "Could not load boards for $project."
