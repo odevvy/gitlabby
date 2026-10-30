@@ -425,9 +425,15 @@ function keyParts(key) {
   return out
 }
 
+// The popup's height cap for a view. Settings and Keys are short, fixed lists:
+// no cap, so they grow to the free screen height Omarchy's panel allows and
+// scroll only past it. The board and an issue keep the cap (long columns or
+// descriptions would otherwise make the popup jump to full height).
+function heightCap(view, cap) { return view === "settings" || view === "keys" ? 0 : cap }
+
 if (typeof module !== "undefined") {
   module.exports = {
-    pipelineMark: pipelineMark,
+    pipelineMark: pipelineMark, heightCap: heightCap,
     lowerList: lowerList, has: has, toggled: toggled, escaped: escaped, countLabel: countLabel, labelStyle: labelStyle, age: age, savedNote: savedNote,
     columnKey: columnKey, listSpec: listSpec, movedColumns: movedColumns, byline: byline, people: people,
     workflowLabels: workflowLabels, statusLabels: statusLabels, addableLabels: addableLabels, withColors: withColors, statusOn: statusOn, botsConfig: botsConfig, botStates: botStates, dotColor: dotColor, inColumn: inColumn,

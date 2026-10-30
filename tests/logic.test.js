@@ -537,3 +537,12 @@ test("shared refresh: one BoardService for every screen; Board.qml fetches board
   // Exactly one Process in the service: one board-fetch at a time for the whole shell.
   assert.equal((service.match(/^\s*Process \{/gm) || []).length, 1)
 })
+
+test("popup height: Settings and Keys have no cap (they grow to the free screen height); board and issue keep it", () => {
+  assert.equal(L.heightCap("settings", 960), 0)
+  assert.equal(L.heightCap("keys", 960), 0)
+  for (const v of ["board", "issue", "picker", ""]) assert.equal(L.heightCap(v, 960), 960)
+  const fs = require("node:fs"), path = require("node:path")
+  const board = fs.readFileSync(path.join(__dirname, "..", "Board.qml"), "utf8")
+  assert.match(board, /contentHeight: panel\.fittedContentHeight\(keyCatcher\.implicitHeight, Logic\.heightCap\(root\.view, Style\.space\(640\)\)\)/)
+})

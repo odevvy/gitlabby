@@ -563,7 +563,9 @@ Panel {
     // anything wider scrolls horizontally inside the board.
     contentWidth: panel.fittedContentWidth(Math.max(Style.space(520), root.view === "keys" ? Style.space(760) : root.view !== "board" ? 0
       : (root.setup !== "" || root.failed || root.boardState === "loading" ? skeleton.implicitWidth : root.boardWidth) + panel.padding * 2 + Style.space(4)))
-    contentHeight: panel.fittedContentHeight(keyCatcher.implicitHeight, Style.space(640))
+    // fittedContentHeight caps at the free screen height (availableCardHeight)
+    // and at heightCap: none for Settings and Keys, 640 for the board and an issue.
+    contentHeight: panel.fittedContentHeight(keyCatcher.implicitHeight, Logic.heightCap(root.view, Style.space(640)))
 
     PanelKeyCatcher {
       id: keyCatcher
