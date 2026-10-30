@@ -317,3 +317,47 @@ test("move confirm: says what the move does on GitLab", () => {
   assert.equal(L.moveNote(closed, a), "This reopens it on GitLab and changes its status label.")
   assert.equal(L.moveNote(closed, open), "This reopens it on GitLab.")
 })
+
+// --- Settings > Bots: edits keep the saved JSON as it was apart from the edit ---
+const P41RAW = { "firelink21/phrase41": { busyLists: ["approved", "in progress", "review"], bots: [
+  { name: "App UI", label: "app-ui" }, { name: "API Engineer", label: "api" }, { name: "Auth & Mail", label: "auth-mail" },
+  { name: "Product Lead", label: "" }, { name: "Spec QA", list: "review" }] }, "other/proj": { bots: [{ name: "X", label: "x" }], workingLists: ["Doing"], note: 1 } }
+const P = "firelink21/phrase41"
+
+test("bots editor: reads the saved entry, or says what is wrong with it", () => {
+  assert.deepEqual(L.botsEntry(undefined, P), { problem: "", entry: null })
+  assert.deepEqual(L.botsEntry({}, P), { problem: "", entry: null })
+  assert.equal(L.botsEntry(P41RAW, P).entry, P41RAW[P])
+  assert.equal(L.botsEntry(JSON.stringify(P41RAW), P).problem, "setting")  // bar set without --json
+  assert.equal(L.botsEntry([P41RAW], P).problem, "setting")
+  assert.equal(L.botsEntry(3, P).problem, "setting")
+  assert.equal(L.botsEntry({ [P]: "x" }, P).problem, "entry")
+  assert.equal(L.botsEntry({ [P]: { bots: "x" } }, P).problem, "entry")
+  assert.ok(L.botUsable({ name: "Product Lead", label: "" }) && L.botUsable({ name: "Q", list: "review" }))
+  assert.ok(!L.botUsable({ name: " ", label: "x" }) && !L.botUsable({ name: "N" }) && !L.botUsable({ name: "Q", list: " " }) && !L.botUsable(null))
+  assert.ok(L.botNameTaken(P41RAW[P], " auth & mail ") && !L.botNameTaken(P41RAW[P], "Auth") && !L.botNameTaken(null, "x"))
+})
+
+test("bots editor: add, remove and busy toggles change only their part", () => {
+  const before = JSON.stringify(P41RAW)
+  const added = L.withBot(P41RAW, P, { name: "Decider", label: "needs-decision" }, ["todo"])
+  assert.equal(JSON.stringify(added), before.replace('{"name":"Spec QA","list":"review"}]', '{"name":"Spec QA","list":"review"},{"name":"Decider","label":"needs-decision"}]'))
+  assert.equal(JSON.stringify(P41RAW), before)  // never in place
+  assert.equal(JSON.stringify(L.withoutBot(added, P, 5)), before)
+  assert.equal(JSON.stringify(L.withoutBot(P41RAW, P, 2)), before.replace('{"name":"Auth & Mail","label":"auth-mail"},', ""))
+  assert.equal(JSON.stringify(L.withBusy(L.withBusy(P41RAW, P, "todo", true), P, "Todo", false)), before)
+  assert.deepEqual(L.withBusy(P41RAW, P, "Review", false)[P].busyLists, ["approved", "in progress"])
+  assert.deepEqual(L.withBusy({ [P]: { bots: [] } }, P, "review", true)[P].busyLists, ["review"])
+  // The first bot: a new entry with every label column busy; the last one out takes the entry.
+  const first = L.withBot({ "other/proj": P41RAW["other/proj"] }, P, { name: "Spec QA", list: "review" }, ["research", "todo", "review"])
+  assert.deepEqual(first[P], { busyLists: ["research", "todo", "review"], bots: [{ name: "Spec QA", list: "review" }] })
+  assert.deepEqual(L.withoutBot(first, P, 0), { "other/proj": P41RAW["other/proj"] })
+  assert.deepEqual(L.withBot(undefined, P, { name: "A", label: "a" }, []), { [P]: { busyLists: [], bots: [{ name: "A", label: "a" }] } })
+  // A malformed setting or entry is replaced only by an add; remove and toggles leave it.
+  assert.deepEqual(L.withBot("{oops", P, { name: "A", label: "" }, ["review"]), { [P]: { busyLists: ["review"], bots: [{ name: "A", label: "" }] } })
+  assert.deepEqual(L.withBot({ [P]: { bots: "x" }, k: 1 }, P, { name: "A", label: "" }, []), { [P]: { busyLists: [], bots: [{ name: "A", label: "" }] }, k: 1 })
+  assert.deepEqual(L.withoutBot({ [P]: { bots: "x" } }, P, 0), { [P]: { bots: "x" } })
+  assert.deepEqual(L.withBusy({ [P]: "x" }, P, "review", true), { [P]: "x" })
+  // Malformed bot rows can be removed like any other.
+  assert.deepEqual(L.withoutBot({ [P]: { bots: [{ name: "" }, { name: "A", label: "a" }] } }, P, 0), { [P]: { bots: [{ name: "A", label: "a" }] } })
+})

@@ -48,8 +48,9 @@ the picker's board step. The header shows a star on the default board and a
 - Click an issue for its details: state, labels, author, ages, assignees,
   milestone, the description, the comments and a box to add one, and an
   "Open in browser" link. A thin bar slides under the title while it loads.
-- The gear opens the settings: who is signed in, which columns start
-  collapsed, and the refresh interval.
+- The gear opens the settings: who is signed in, the bots of the project on
+  screen (see [Who's busy](#whos-busy)), which columns start collapsed, and
+  the refresh interval.
 - The issue view, the picker and the settings have a ✕ at the top right that
   goes back to the board, like `Escape`; it stays put while the view scrolls.
   In the picker's board step, ‹ goes back to the project list.
@@ -211,10 +212,24 @@ automations that watch the project see the close like any other.
 ## Who's busy
 
 If a team of bots (or people) works the board through owner labels, a row
-under the header can show who is busy. It's off until you add a `bots` entry
-for the project in settings, and it reads only the board already on screen:
-no extra GitLab calls, no polling. Example for a board where each builder has
-an owner label and a reviewer takes everything in review:
+under the header can show who is busy. It's off until you add a bot for the
+project, and it reads only the board already on screen: no extra GitLab
+calls, no polling.
+
+**In Settings** (gear, or `s`), under Bots, for the project on screen: click
+**Show bot status for this board**, give the bot a name and say what makes it
+busy: cards with one of the project's labels (board columns and labels
+another bot has aren't offered), every card in a column, or cards no bot
+owns. The first bot turns on every label column under **Busy columns**;
+click a column to turn it off or on. ✕ removes a bot at once. Every change
+is saved right away to the same `bots` setting, and the row under the header
+follows at once. A bot whose label the project no longer has, or whose
+column isn't on this board, stays and is marked. If the setting isn't a JSON
+object (for example set without `--json`), Settings says so and adding a bot
+replaces it.
+
+The setting itself, for a board where each builder has an owner label and a
+reviewer takes everything in review:
 
 ```json
 "bots": {
@@ -247,8 +262,10 @@ has none. Up to 5 issue numbers follow (hover one for its title, click it
 to open the issue), then `+N more` (hover for the rest). Labels and
 lists match in any case.
 
-Set it from a terminal (this replaces the whole `bots` value, so include every
-project you use it for):
+Settings keeps every other key and project as it is (including
+`workingLists`), so a hand-written value keeps working. Or set it from a
+terminal (this replaces the whole `bots` value, so include every project you
+use it for):
 
 ```bash
 omarchy bar set odevvy.gitlab-board bots '{"firelink21/phrase41":{"busyLists":["approved","in progress","review"],"bots":[{"name":"App UI","label":"app-ui"},{"name":"API Engineer","label":"api"},{"name":"Auth & Mail","label":"auth-mail"},{"name":"Product Lead","label":""},{"name":"Spec QA","list":"review"}]}}' --json
@@ -301,7 +318,7 @@ position. In the popup the keyboard cursor shows after the first move.
 | `s` | Settings |
 | `?` | This list of keys |
 | `Tab` or `Shift+Tab` | Next or previous bar panel |
-| `Escape` | Cancel a confirm; leave the comment box; close the label editor; otherwise back to the board; on the board, close |
+| `Escape` | Cancel a confirm; leave the comment box; close the label editor or the new-bot form; otherwise back to the board; on the board, close |
 
 Letters go to the comment box, the label filter or the picker's filter while
 you type in them. While the label editor waits for the labels, letters do

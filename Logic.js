@@ -99,6 +99,58 @@ function botStates(config, columns) {
   })
 }
 
+// Settings > Bots edits settings.bots as saved (not botsConfig's cleaned
+// copy), so unknown keys, workingLists and other projects survive. Each edit
+// returns the whole new map for Board.saveBots.
+function plain(v) { return !!v && typeof v === "object" && !Array.isArray(v) }
+// { problem, entry }: problem "setting" (bots isn't an object, e.g. set
+// without --json) or "entry" (this project's entry or its bots list is
+// malformed); entry is the project's saved entry, or null.
+function botsEntry(raw, project) {
+  if (raw === undefined || raw === null) return { problem: "", entry: null }
+  if (!plain(raw)) return { problem: "setting", entry: null }
+  var e = raw[project]
+  if (e === undefined) return { problem: "", entry: null }
+  if (!plain(e) || !Array.isArray(e.bots)) return { problem: "entry", entry: null }
+  return { problem: "", entry: e }
+}
+// A bot botsConfig would show: a name, and a label (may be "") or a list.
+function botUsable(b) {
+  return plain(b) && typeof b.name === "string" && b.name.trim() !== ""
+    && (typeof b.label === "string" || (typeof b.list === "string" && b.list.trim() !== ""))
+}
+function botNameTaken(entry, name) {
+  var key = String(name).trim().toLowerCase()
+  return !!entry && (entry.bots || []).some(function(b) { return plain(b) && String(b.name || "").trim().toLowerCase() === key })
+}
+function copied(raw) { return plain(raw) ? JSON.parse(JSON.stringify(raw)) : {} }
+// Adds bot ({ name, label } or { name, list }). A new (or replaced, malformed)
+// entry starts with every label column busy.
+function withBot(raw, project, bot, labelColumns) {
+  var next = copied(raw), found = botsEntry(next, project)
+  if (!found.entry) next[project] = { busyLists: (labelColumns || []).slice(), bots: [] }
+  next[project].bots.push(bot)
+  return next
+}
+// Removes the bot at index; the last one takes the project's entry with it.
+function withoutBot(raw, project, index) {
+  var next = copied(raw), found = botsEntry(next, project)
+  if (!found.entry) return next
+  found.entry.bots.splice(index, 1)
+  if (found.entry.bots.length === 0) delete next[project]
+  return next
+}
+// Turns a busy column on or off (any case); other names stay as saved.
+function withBusy(raw, project, column, on) {
+  var next = copied(raw), found = botsEntry(next, project)
+  if (!found.entry) return next
+  var key = String(column).toLowerCase()
+  var lists = (Array.isArray(found.entry.busyLists) ? found.entry.busyLists : []).filter(function(n) { return String(n).toLowerCase() !== key })
+  if (on) lists.push(column)
+  found.entry.busyLists = lists
+  return next
+}
+
 // "5m", "3h", "4d", "2w", "6mo", "1y" from iso to since (default: now).
 function age(iso, since) {
   var ms = new Date(since || Date.now()) - new Date(iso)
@@ -282,7 +334,7 @@ var keys = [
   ["s", "Settings"],
   ["?", "This list of keys"],
   ["Tab or Shift+Tab", "Next or previous bar panel"],
-  ["Escape", "Cancel a confirm; leave the comment box; close the label editor; otherwise back to the board; on the board, close"]
+  ["Escape", "Cancel a confirm; leave the comment box; close the label editor or the new-bot form; otherwise back to the board; on the board, close"]
 ]
 
 if (typeof module !== "undefined") {
@@ -290,6 +342,7 @@ if (typeof module !== "undefined") {
     lowerList: lowerList, has: has, toggled: toggled, escaped: escaped, labelStyle: labelStyle, age: age, savedNote: savedNote,
     columnKey: columnKey, listSpec: listSpec, movedColumns: movedColumns, byline: byline, people: people,
     workflowLabels: workflowLabels, statusLabels: statusLabels, addableLabels: addableLabels, withColors: withColors, statusOn: statusOn, botsConfig: botsConfig, botStates: botStates,
+    botsEntry: botsEntry, botUsable: botUsable, botNameTaken: botNameTaken, withBot: withBot, withoutBot: withoutBot, withBusy: withBusy,
     linkUrl: linkUrl, inline: inline, quickAction: quickAction, moveNote: moveNote, lineLimit: lineLimit, markdown: markdown, descriptionLimit: descriptionLimit, cursorMove: cursorMove, cursorFix: cursorFix, keys: keys
   }
 }
