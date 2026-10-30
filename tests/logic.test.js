@@ -218,11 +218,13 @@ test("the README's Keyboard section lists exactly the keys the popup shows, grou
 test("the key groups: every view's keys, the setup panel's, no key twice in a group", () => {
   const group = title => (L.keyGroups.find(g => g.title === title) || { keys: [] }).keys
   const action = (title, key) => (group(title).find(([k]) => k === key) || [])[1] || ""
-  assert.deepEqual(L.keyGroups.map(g => g.title), ["Board", "Confirm a move or a close", "Anywhere", "Issue", "Comment box", "Pickers and filters", "Setup panel"])
+  assert.deepEqual(L.keyGroups.map(g => g.title), ["Board", "Confirm a move or a close", "Anywhere", "Issue", "Merge requests", "Comment box", "Pickers and filters", "Setup panel"])
   assert.match(action("Setup panel", "Enter or Space"), /main button/)
   assert.match(action("Setup panel", "r"), /Try again/)
   assert.match(action("Anywhere", "?"), /keyboard button in the header/)
   for (const k of ["o", "c", "e", "x"]) assert.ok(action("Issue", k), k)
+  assert.match(action("Anywhere", "m"), /Merge requests/)
+  for (const k of ["j k or ↓ ↑", "Enter or o", "r"]) assert.ok(action("Merge requests", k), k)
   for (const g of L.keyGroups) assert.equal(new Set(g.keys.map(([k]) => k)).size, g.keys.length, g.title)
 })
 
@@ -473,7 +475,7 @@ test("icon buttons: every GlyphButton has a tip, and every key in a tip's bracke
   assert.ok(tips.length >= 17, "found " + tips.length)  // 6 GlyphButtons, 11 IconTips (v0.1.30)
   const bracketed = tips.flatMap(t => [...t.matchAll(/\(([^()"]+)\)"/g)].map(m => m[1]))
   for (const k of bracketed) assert.ok(keys.has(k), "'" + k + "' in a tip is not a shortcut")
-  assert.deepEqual([...new Set(bracketed)].sort(), ["?", "Esc", "e", "o", "p", "r", "s", "x"])
+  assert.deepEqual([...new Set(bracketed)].sort(), ["?", "Esc", "e", "m", "o", "p", "r", "s", "x"])
 })
 
 // v0.1.30 regression: his saved setting, exactly as in shell.json. Omarchy
@@ -534,8 +536,10 @@ test("shared refresh: one BoardService for every screen; Board.qml fetches board
   // No board fetch of its own: "board" appears in no command the widget builds.
   assert.doesNotMatch(board, /helperPath\(\), "board"/)
   assert.match(service, /args: \["board", "--project", project, "--board", boardId\]/)
-  // Exactly one Process in the service: one board-fetch at a time for the whole shell.
-  assert.equal((service.match(/^\s*Process \{/gm) || []).length, 1)
+  // Two Processes in the service: one board fetch at a time for the whole shell
+  // (fetch), and one merge-request list (mrFetch, which never runs "board").
+  assert.equal((service.match(/^\s*Process \{/gm) || []).length, 2)
+  assert.deepEqual([...service.matchAll(/^\s*Process \{\s*\n\s*id: (\w+)/gm)].map(m => m[1]), ["fetch", "mrFetch"])
 })
 
 test("popup height: Settings and Keys have no cap (they grow to the free screen height); board and issue keep it", () => {
@@ -664,4 +668,80 @@ test("alerts wiring: Settings saves settings.alerts per project; each copy hands
   // No notifier in the widget: one per event comes from the service only.
   assert.doesNotMatch(board, /omarchy-notification-send|notifyArgv/)
   assert.match(settings, /onClicked: view\.host\.setAlert\(alertCheck\.modelData\.kind, !alertCheck\.on\)/)
+})
+
+test("merge requests: the answer checked, status pills, reviewer marks, sublines, the badge, the scope", () => {
+  const row = { iid: 88, title: "Fix <b>", url: "https://gitlab.com/g/p/-/merge_requests/88", draft: false, project: "g/p", branch: "b", updatedAt: "2026-10-30T12:00:00Z",
+    status: "conflict", author: { username: "bot", name: "Bot", avatar: "http://x/a.png" }, pipeline: { status: "running", url: "https://gitlab.com/p/1" },
+    reviewers: [{ username: "me", name: "Me", avatar: "", state: "approved" }, { username: "x", name: "X", state: "bogus" }, "junk"] }
+  const a = L.mrsAnswer(JSON.stringify({ state: "ready", scope: "all", review: [row, { iid: 0 }, null], mine: "junk" }))
+  assert.equal(a.state, "ready")
+  assert.deepEqual(a.mine, [])
+  assert.equal(a.review.length, 1, "rows without an iid dropped")
+  const r = a.review[0]
+  assert.deepEqual(r.author, { username: "bot", name: "Bot", avatar: "" }, "http avatar dropped")
+  assert.deepEqual(r.pipeline, { status: "running", url: "https://gitlab.com/p/1", mr: "!88" })
+  assert.deepEqual(r.reviewers.map(p => p.state), ["approved", ""])
+  assert.equal(L.mrsAnswer(JSON.stringify(Object.assign({}, row, { url: "javascript:x" }))).state, "error", "not an answer object: no state ready")
+  assert.equal(L.mrsAnswer(JSON.stringify({ state: "ready", review: [Object.assign({}, row, { url: "http://x" })] })).review[0].url, "")
+  assert.deepEqual(L.mrsAnswer("nope"), { state: "error", message: "board-fetch gave an unreadable answer.", review: [], mine: [] })
+  assert.deepEqual(L.mrsAnswer('{"state":"logged-out","message":"Not signed in."}'), { state: "logged-out", message: "Not signed in.", review: [], mine: [] })
+  // Pills: GitLab's status, draft first; "still checking" shows nothing.
+  assert.deepEqual(L.mrStatus({ status: "mergeable" }), { text: "Ready", color: "#2da160" })
+  assert.deepEqual(L.mrStatus({ status: "conflict" }), { text: "Conflicts", color: "#ec5941" })
+  assert.deepEqual(L.mrStatus({ status: "requested_changes" }), { text: "Changes requested", color: "#c17d10" })
+  assert.deepEqual(L.mrStatus({ status: "mergeable", draft: true }), { text: "Draft", color: "" })
+  assert.deepEqual(L.mrStatus({ status: "checking" }), { text: "", color: "" })
+  assert.deepEqual(L.mrStatus({ status: "toString" }), { text: "", color: "" })
+  // Reviewer marks.
+  assert.equal(L.reviewerMark({ name: "Me", state: "approved" }).tip, "Me approved")
+  assert.equal(L.reviewerMark({ name: "Me", state: "requested_changes" }).color, "#c17d10")
+  assert.deepEqual(L.reviewerMark({ name: "Me", state: "unreviewed" }), { glyph: "", color: "", tip: "Me hasn't reviewed yet" })
+  assert.deepEqual(L.reviewerMark({ username: "me", state: "" }), { glyph: "", color: "", tip: "me" })
+  assert.notEqual(L.reviewerMark({ state: "reviewed" }).glyph, "")
+  // Second line.
+  assert.equal(L.mrSubline(r, "review"), "g/p  \u00b7  b  \u00b7  by Bot")
+  assert.equal(L.mrSubline(r, "mine"), "g/p  \u00b7  b  \u00b7  2 reviewers")
+  assert.equal(L.mrSubline(Object.assign({}, r, { reviewers: [] }), "mine"), "g/p  \u00b7  b  \u00b7  no reviewer yet")
+  assert.equal(L.mrSubline(Object.assign({}, r, { reviewers: [{}] }), "mine"), "g/p  \u00b7  b  \u00b7  1 reviewer")
+  // Badge: waiting on his review only; unknown or none: no badge.
+  assert.equal(L.mrBadge(a), "1")
+  assert.equal(L.mrBadge({ state: "ready", review: new Array(12).fill(r) }), "9+")
+  assert.equal(L.mrBadge({ state: "ready", review: [] }), "")
+  assert.equal(L.mrBadge(undefined), "")
+  assert.equal(L.mrBadge({ state: "error", review: [r] }), "")
+  // Scope: all, or one project path; anything else falls back to all.
+  assert.deepEqual(L.mrsArgs("all"), ["mrs"])
+  assert.deepEqual(L.mrsArgs("g/sub/p"), ["mrs", "--project", "g/sub/p"])
+  assert.deepEqual(L.mrsArgs("g/../p"), ["mrs"])
+  assert.deepEqual(L.mrsArgs("--project"), ["mrs"])
+  // The service: fetched only on request (no timer calls it), its own process.
+  const fs = require("node:fs"), path = require("node:path")
+  const svc = fs.readFileSync(path.join(__dirname, "..", "BoardService.qml"), "utf8")
+  assert.equal((svc.match(/requestMrs\(/g) || []).length, 2, "defined once, called once (the pending one)")
+  assert.match(svc, /mrFetch\.command = \[helperPath\(\)\]\.concat\(Logic\.mrsArgs\(scope\)\)/)
+  assert.match(svc, /Date\.now\(\) - last\.startedAt < 60000/)
+})
+
+test("merge requests view wiring: m and the header button open it; it loads on open, scope or r only", () => {
+  const fs = require("node:fs"), path = require("node:path"), dir = path.join(__dirname, "..")
+  const board = fs.readFileSync(path.join(dir, "Board.qml"), "utf8")
+  const view = fs.readFileSync(path.join(dir, "MrsView.qml"), "utf8")
+  assert.match(board, /MrsView \{ id: mrsView; host: root; anchors\.fill: parent; visible: root\.view === "mrs" \}/)
+  assert.match(board, /if \(name === "mrs" && view !== "mrs"\) mrsView\.open\(\)/)
+  assert.match(board, /else if \(key === "m"\) root\.toggleView\("mrs"\)/)
+  assert.match(board, /key === "r" && root\.view === "mrs"\) mrsView\.refresh\(\)/)
+  assert.match(board, /root\.view === "mrs" && dy !== 0\) mrsView\.moveCursor\(dy\)/)
+  assert.match(board, /else if \(root\.view === "mrs"\) mrsView\.activate\(\)/)
+  assert.match(board, /Logic\.mrBadge\(\(root\.feed\.mrAnswers\[mrsView\.scope\] \|\| \{\}\)\.data\)/)
+  // Only the view asks for the lists, and only these three ways.
+  assert.deepEqual([...board.matchAll(/requestMrs\(/g)].length, 0)
+  assert.deepEqual([...view.matchAll(/host\.feed\.requestMrs\(([^)]*)\)/g)].map(m => m[1]), ["scope, false", "scope, true", "scope, false"])
+  // Read-only: a row opens its link and nothing else runs.
+  assert.doesNotMatch(view, /execDetached|Process \{|helperPath/)
+  assert.match(view, /host\.openUrl\(rows\[cursor\]\.url\)/)
+  // Titles and messages from GitLab are plain text: every text is a BoardText
+  // (PlainText), and none switches to rich text.
+  assert.match(fs.readFileSync(path.join(dir, "components", "BoardText.qml"), "utf8"), /textFormat: Text\.PlainText/)
+  assert.doesNotMatch(view, /textFormat|\bText \{|\bLabel \{/)
 })

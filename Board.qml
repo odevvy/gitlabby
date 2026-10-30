@@ -389,6 +389,7 @@ Panel {
 
   function showView(name) {
     if (name === "settings" && view !== "settings") checkAccount()
+    if (name === "mrs" && view !== "mrs") mrsView.open()
     view = name
     Qt.callLater(function() {
       if (name === "picker" && picker.filterField.visible) picker.filterField.forceActiveFocus()
@@ -579,7 +580,7 @@ Panel {
     open: root.opened; focusTarget: keyCatcher
     // fittedContentWidth caps at availableCardWidth (screen minus margins);
     // anything wider scrolls horizontally inside the board.
-    contentWidth: panel.fittedContentWidth(Math.max(Style.space(520), root.view === "keys" ? Style.space(760) : root.view !== "board" ? 0
+    contentWidth: panel.fittedContentWidth(Math.max(Style.space(520), (root.view === "keys" || root.view === "mrs") ? Style.space(760) : root.view !== "board" ? 0
       : (root.setup !== "" || root.failed || root.boardState === "loading" ? skeleton.implicitWidth : root.boardWidth) + panel.padding * 2 + Style.space(4)))
     // fittedContentHeight caps at the free screen height (availableCardHeight)
     // and at heightCap: none for Settings and Keys, 640 for the board and an issue.
@@ -591,7 +592,7 @@ Panel {
       blocked: issueView.typing || picker.typing || settingsView.typing  // text fields get every key (Omarchy PanelKeyCatcher.qml:26-29)
       implicitHeight: header.implicitHeight + root.gap + (botsRow.visible ? botsRow.height + root.gap : 0) + (moveConfirm.visible ? moveConfirm.height + root.gap : 0) + (root.view === "board" ? (root.setup !== "" || root.failed ? Math.max(setupView.implicitHeight, skeleton.implicitHeight) : root.boardState === "loading" ? skeleton.implicitHeight : boardView.implicitHeight)
         : root.view === "issue" ? issueView.implicitHeight : root.view === "picker" ? picker.implicitHeight
-        : root.view === "keys" ? keysView.implicitHeight : settingsView.implicitHeight)
+        : root.view === "keys" ? keysView.implicitHeight : root.view === "mrs" ? mrsView.implicitHeight : settingsView.implicitHeight)
       onCloseRequested: {
         if (root.pendingMove) root.cancelMove()
         else if (root.view === "issue" && issueView.confirming) issueView.confirming = false
@@ -605,12 +606,14 @@ Panel {
       onMoveRequested: function(dx, dy) {
         if (root.view === "board") root.moveCursor(dx, dy)
         else if (root.view === "picker" && dy !== 0) picker.moveCursor(dy)
+        else if (root.view === "mrs" && dy !== 0) mrsView.moveCursor(dy)
       }
       onActivateRequested: {
         if (root.pendingMove) root.confirmMove()
         else if (root.view === "issue" && issueView.confirming) issueView.setState("close")
         else if (root.view === "board" && root.cursorIssue()) root.openIssue(root.cursorIssue())
         else if (root.view === "picker") picker.activate()
+        else if (root.view === "mrs") mrsView.activate()
         else if (root.view === "board" && (root.setup !== "" || root.failed)) setupView.primary()
       }
       onTextKey: function(text) {
@@ -619,6 +622,8 @@ Panel {
         if ((text === "H" || text === "L") && root.view === "board") { root.moveCursorCard(text === "H" ? -1 : 1); return }
         var key = text.toLowerCase()
         if (key === "r" && root.view === "board") root.refresh()
+        else if (key === "r" && root.view === "mrs") mrsView.refresh()
+        else if (key === "o" && root.view === "mrs") mrsView.activate()
         else if (key === "o") {
           var row = root.view === "issue" ? issueView.issue : root.view === "board" ? root.cursorIssue() : null
           if (row) root.openUrl(row.url)
@@ -628,6 +633,7 @@ Panel {
         else if (key === "p") root.openPicker()
         else if (key === "s") root.toggleView("settings")
         else if (key === "?") root.toggleView("keys")
+        else if (key === "m") root.toggleView("mrs")
       }
 
       // Glass wash: a soft light from the top of the card (the card itself is
@@ -648,7 +654,7 @@ Panel {
         implicitHeight: Math.max(title.implicitHeight, status.implicitHeight)
         // The title gets all the room the rest of the row doesn't need; the
         // status gets at most 40% of it, and elides from the left.
-        readonly property real titleRoom: width - chevron.implicitWidth - defaultMark.implicitWidth - refreshButton.implicitWidth - keysButton.implicitWidth - gear.implicitWidth
+        readonly property real titleRoom: width - mrsButton.implicitWidth - Style.space(10) - chevron.implicitWidth - defaultMark.implicitWidth - refreshButton.implicitWidth - keysButton.implicitWidth - gear.implicitWidth
           - Style.space(8 + 12 + 8 + 10 + 10) - Math.min(status.implicitWidth, width * 0.4)
 
         // Elides at the end, so the board name goes before the project.
@@ -706,7 +712,7 @@ Panel {
         }
         BoardText {
           id: refreshButton
-          anchors { right: keysButton.left; rightMargin: Style.space(10); verticalCenter: parent.verticalCenter }
+          anchors { right: mrsButton.left; rightMargin: Style.space(10); verticalCenter: parent.verticalCenter }
           text: "\uf021"
           color: refreshMouse.containsMouse ? root.accent : root.dim
           font.pixelSize: Style.font.body
@@ -715,6 +721,27 @@ Panel {
           RotationAnimation on rotation { running: root.loading; alwaysRunToEnd: true; loops: Animation.Infinite; from: 0; to: 360; duration: 900 }
           MouseArea { id: refreshMouse; anchors.fill: parent; anchors.margins: -Style.space(4); hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.refresh() }
           IconTip { host: root; shown: refreshMouse.containsMouse; text: "Refresh (r)" }
+        }
+        // Merge requests (MrsView), like m does. The badge: how many waited on his
+        // review at the last look (no fetch for it; it shows what the view loaded).
+        BoardText {
+          id: mrsButton
+          anchors { right: keysButton.left; rightMargin: Style.space(10); verticalCenter: parent.verticalCenter }
+          text: "\uf407"
+          color: mrsMouse.containsMouse || root.view === "mrs" ? root.accent : root.dim
+          font.pixelSize: Style.font.body
+          readonly property string badge: Logic.mrBadge((root.feed.mrAnswers[mrsView.scope] || {}).data)
+          Rectangle {
+            objectName: "mrsBadge"
+            visible: mrsButton.badge !== "" && root.view !== "mrs"
+            anchors { right: parent.right; top: parent.top; rightMargin: -Style.space(7); topMargin: -Style.space(4) }
+            width: Math.max(height, badgeText.implicitWidth + Style.space(6)); height: badgeText.implicitHeight + Style.space(1)
+            radius: height / 2
+            color: root.accent
+            BoardText { id: badgeText; anchors.centerIn: parent; text: mrsButton.badge; color: root.background; font { pixelSize: Style.font.caption * 0.85; bold: true } }
+          }
+          MouseArea { id: mrsMouse; anchors.fill: parent; anchors.margins: -Style.space(4); hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.toggleView("mrs") }
+          IconTip { host: root; shown: mrsMouse.containsMouse; text: "Merge requests (m)" }
         }
         // The keyboard shortcuts (KeysView), like ? does.
         BoardText {
@@ -764,6 +791,7 @@ Panel {
         Picker { id: picker; host: root; anchors.fill: parent; visible: root.view === "picker" }
         SettingsView { id: settingsView; host: root; anchors.fill: parent; visible: root.view === "settings" }
         KeysView { id: keysView; host: root; anchors.fill: parent; visible: root.view === "keys" }
+        MrsView { id: mrsView; host: root; anchors.fill: parent; visible: root.view === "mrs" }
       }
     }
   }

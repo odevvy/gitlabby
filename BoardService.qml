@@ -43,6 +43,15 @@ Item {
   property int generation: 0
   signal answered(string key, string raw, int ticket)
 
+  // The Merge requests view: { scope: { data (Logic.mrsAnswer), startedAt } },
+  // scope "all" or a project path. Fetched only when a widget copy asks (the
+  // view opens, its scope changes, or r there); never on a timer. Its own
+  // Process, so it never waits behind a board, and one answer for every screen.
+  property var mrAnswers: ({})
+  readonly property string mrRunning: mrFetch.running ? mrFetch.scope : ""
+  property var mrPending: null  // { scope, force }: asked for while another scope loads
+  signal mrsAnswered(string scope)
+
   function keyOf(project, boardId) { return project + "#" + boardId }
   function busy(key) { return runningKey === key || queuedKeys.indexOf(key) !== -1 }
 
@@ -166,6 +175,33 @@ Item {
     onTriggered: service.background()
   }
 
+  // An answer under a minute old is shown again (a second screen opening the
+  // view, or flipping the scope back), unless force (r).
+  function requestMrs(scope, force) {
+    if (mrRunning === scope) return
+    var last = mrAnswers[scope]
+    if (!force && last && Date.now() - last.startedAt < 60000) return
+    if (mrFetch.running) { mrPending = { scope: scope, force: force === true }; return }
+    mrFetch.scope = scope
+    mrFetch.generation = generation
+    mrFetch.startedAt = Date.now()
+    mrFetch.command = [helperPath()].concat(Logic.mrsArgs(scope))
+    mrFetch.running = true
+  }
+  function mrsDone(raw) {
+    if (mrFetch.generation !== generation) return
+    var a = {}
+    for (var k in mrAnswers) a[k] = mrAnswers[k]
+    a[mrFetch.scope] = { data: Logic.mrsAnswer(raw), startedAt: mrFetch.startedAt }
+    mrAnswers = a
+    mrsAnswered(mrFetch.scope)
+  }
+  function mrsNext() {
+    var p = mrPending
+    mrPending = null
+    if (p) requestMrs(p.scope, p.force)
+  }
+
   // Sign out: forget every answer and drop the ones on their way.
   function forget() {
     generation++
@@ -174,6 +210,8 @@ Item {
     baselines = ({})
     ownMoves = ({})
     queue = []
+    mrAnswers = ({})
+    mrPending = null
   }
 
   function helperPath() {
@@ -188,5 +226,13 @@ Item {
     property real startedAt: 0
     onRunningChanged: if (!running) Qt.callLater(service.next)
     stdout: StdioCollector { waitForEnd: true; onStreamFinished: service.done(text) }
+  }
+  Process {
+    id: mrFetch
+    property string scope: ""
+    property int generation: 0
+    property real startedAt: 0
+    onRunningChanged: if (!running) Qt.callLater(service.mrsNext)
+    stdout: StdioCollector { waitForEnd: true; onStreamFinished: service.mrsDone(text) }
   }
 }

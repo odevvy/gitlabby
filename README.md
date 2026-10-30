@@ -335,6 +335,33 @@ adaptive pace (see [Popup](#popup)): up to 4x your interval when nothing
 changes. With both off there is no background refresh. However many monitors,
 there is one refresh and one notification per event (the plugin's service).
 
+## Merge requests
+
+The merge-request button in the header (left of the keyboard button), or `m`,
+shows your open merge requests in two lists, newest change first, up to 10
+each:
+
+- **Waiting on your review**: merge requests where you are a reviewer.
+  Drafts are left out.
+- **Yours**: the ones you opened, drafts included.
+
+Each row shows the pipeline (the same mark as on Review cards), `!number` and
+title, GitLab's merge status (`Ready`, `Pipeline running`, `Changes
+requested`, `Conflicts`, `Needs approval`, `Draft`, ...), every reviewer's
+avatar with their review state (a check for approved, `!` for changes
+requested, a speech bubble for reviewed, a pencil while reviewing; hover for
+the words), and how long ago it changed. The second line has the project, the
+branch, and the author (or how many reviewers yours have). `All projects` (the
+default) or `This project` (the board's) picks the scope.
+
+It is read-only: `Enter`, `o` or a click opens the merge request in the
+browser. The lists load when you open the view, switch its scope, or press
+`r`; nothing loads them in the background. An answer under a minute old is
+reused, so a second monitor shows the same lists without asking GitLab again.
+The badge on the button is how many waited on your review at the last look.
+A load costs two list GETs plus, per row, one GET of the merge request
+(pipeline and status) and one of its reviewers (their states).
+
 ## Cards and colors
 
 - Label chips use each label's GitLab colors. Column headers have a dot and
@@ -399,6 +426,7 @@ shows these in the popup.
 | --- | --- |
 | `p` | Choose a project and board |
 | `s` | Settings |
+| `m` | Merge requests waiting on your review, and yours |
 | `?` | These shortcuts (or the keyboard button in the header) |
 | `Tab` or `Shift+Tab` | Next or previous bar panel |
 | `Esc` | Back to the board; on the board, close |
@@ -411,6 +439,14 @@ shows these in the popup.
 | `c` | Write a comment |
 | `e` | Edit labels |
 | `x` | Close the issue, after a confirm, or reopen it |
+
+**Merge requests**
+
+| Key | Action |
+| --- | --- |
+| `j` `k` or `↓` `↑` | Move between merge requests |
+| `Enter` or `o` | Open the selected one in the browser |
+| `r` | Refresh the lists |
 
 **Comment box**
 
@@ -499,6 +535,7 @@ answers `401`).
 ./board-fetch cached --project P [--board ID]    # that saved copy, no GitLab call
 ./board-fetch projects                          # projects you are a member of (up to 500)
 ./board-fetch whoami                            # your username (not saved)
+./board-fetch mrs [--project P]                 # open MRs for your review and yours, with reviewer state
 ./board-fetch logout                            # glab auth logout, then delete the saved boards
 ./board-fetch boards --project P                # boards of a project
 ./board-fetch issue --project P --iid N         # one issue with its description
