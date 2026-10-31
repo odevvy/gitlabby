@@ -81,8 +81,10 @@ an `in progress` (or `doing`) column it never slows past your setting.
 Pointing at `Updated 14:05` says the current pace and why, e.g.
 `Refreshes every 30 s while open · cards moved recently`. Refresh, `r` and a
 right-click always fetch at once.
-The refresh icon spins and the header says `Refreshing…` (instead of
-`Updated 14:05`) while it loads, and the board stays usable. A refresh
+While any refresh runs (yours or the timer's, or the merge-request list
+loading in its view), a thin bar slides along under the header and the
+refresh icon spins, in every view; the header says `Refreshing…` (instead
+of `Updated 14:05`) and the board stays usable. A refresh
 that comes due while you hold a card waits until you let go.
 
 With several monitors, every bar has its own copy of the widget, but they
