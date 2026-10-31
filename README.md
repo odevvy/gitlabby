@@ -236,7 +236,11 @@ doesn't refresh under the question or during the run.
 
 The issue view lists the comments under the description, oldest first, with
 avatar, name, age and plain text; system notes ("added ~approved label") are
-left out. They reload each time you open the issue.
+left out. They reload each time you open the issue. The last 10 issues you
+opened stay in memory: reopening one shows its description and comments at
+once (the card's own title, labels and state win), while the fresh copies load;
+editing, commenting and moving wait for those. Nothing is written to disk, and
+signing out forgets them.
 
 Under the thread is a box for a new comment: **Post** or `Ctrl+Enter` sends
 it, `Enter` or `Shift+Enter` adds a line, and `Escape` leaves the box.
@@ -430,6 +434,8 @@ rows are the same.
 - Cards show the title first, then one quiet line: the issue number, up to
   three assignee avatars (two plus `+N`), the comment count, and the age (`45m`, `3h`, `4d`, `2w`, `6mo`, `1y`). Avatars show initials
   until the image loads from GitLab's `https` URL, or if it doesn't.
+  Every avatar is cut round by one shared mask, so a full board keeps a
+  single mask texture instead of one per avatar.
 - Collapsing or hiding a column animates in 150 ms: the column, the popup's
   edge and its height move together, the cards fade out before the strip
   fades in (and the other way round), and a refresh that lands meanwhile
