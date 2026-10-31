@@ -68,7 +68,7 @@ Item {
     horizontalAlignment: Text.AlignRight
     elide: Text.ElideLeft
     text: host.statusText()
-    color: host.moveError !== "" || (host.refreshError !== "" && host.boardState === "ready" && !host.refreshing) ? host.urgent : host.boardState === "ready" && host.message === "" && !host.move && !host.cached ? host.dim : host.accent
+    color: host.moveError !== "" || (host.refreshError !== "" && host.boardState === "ready" && !host.refreshing) ? host.urgent : host.boardState === "ready" && host.message === "" && !host.move && !host.cached ? host.quiet : host.accent
     font.pixelSize: Style.font.bodySmall
     // Over the words only: how often the board refreshes now, and why.
     MouseArea {

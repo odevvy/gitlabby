@@ -46,6 +46,8 @@ h.ev("root.toggleHidden('todo')"); h.spin(150)
 h.ev("root.showView('settings')"); h.spin(100)
 ok("H9 not on other views", h.ev("header.columnsButton.visible") is False)
 h.ev("root.back()"); h.spin(100)
+# --- stage 3: status
+ok("S1 'Updated' is quiet, not dim", same(h.ev("header.status.color"), col("quiet")) and str(h.ev("header.status.text")).startswith("Updated"), h.ev("header.status.text"))
 shot("board")
 print("passed %d failed %d" % (sum(ALL), len(ALL) - sum(ALL)))
 h.finish()
