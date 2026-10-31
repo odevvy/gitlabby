@@ -13,8 +13,10 @@ function copied(raw) { return Core.copied(raw) }
 //   { busyLists: ["approved", "in progress", "review"], workingLists: ["in progress"],
 //     bots: [{ name, label }, { name, label: "" }, { name, list }] }
 // A label bot owns open issues with its label in a busy list; label "" owns
-// those with none of the bots' labels; a list bot owns every issue in its list.
-// An issue with two owner labels counts for both. Closed and Open never count.
+// those with none of the bots' labels; a list bot owns every issue in its list,
+// and only it: label bots (and the "" bot) skip a list bot's column, so a card
+// in review counts for the reviewer alone. An issue with two owner labels
+// counts for both. Closed and Open never count.
 // working: an owned issue in a working list (default "in progress"), or any
 // for a list bot; waiting: only other busy lists; idle: none. Names match in
 // any case. Returns null (no row) unless the config has at least one bot.
@@ -36,12 +38,13 @@ function botsConfig(all, project) {
 function botStates(config, columns) {
   if (!config) return []
   var owners = config.bots.filter(function(b) { return b.label }).map(function(b) { return b.label })
+  var listed = config.bots.filter(function(b) { return b.list !== undefined }).map(function(b) { return b.list })
   return config.bots.map(function(bot) {
     var found = {}, order = []
     ;(columns || []).forEach(function(c, at) {
       if (c.kind !== "label") return
       var list = String(c.name).toLowerCase()
-      if (bot.list !== undefined ? list !== bot.list : config.busyLists.indexOf(list) === -1) return
+      if (bot.list !== undefined ? list !== bot.list : config.busyLists.indexOf(list) === -1 || listed.indexOf(list) !== -1) return
       ;(c.issues || []).forEach(function(row) {
         var labels = lowerList(row.labels || [])
         var mine = bot.list !== undefined || (bot.label ? labels.indexOf(bot.label) !== -1

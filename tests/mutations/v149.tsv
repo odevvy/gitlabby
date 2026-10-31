@@ -1,0 +1,6 @@
+# v0.1.49: a list bot's column is that bot's alone. node rows: logic.test.js; qml rows: tests/harness/tests/run122.py
+review-shared	logic/bots.js	 || listed.indexOf(list) !== -1) return	) return	node
+review-shared-qml	logic/bots.js	 || listed.indexOf(list) !== -1) return	) return	qml
+list-bot-skips-own	logic/bots.js	bot.list !== undefined ? list !== bot.list : 	bot.list !== undefined ? list !== bot.list || listed.indexOf(list) !== -1 : 	node
+listed-from-labels	logic/bots.js	var listed = config.bots.filter(function(b) { return b.list !== undefined }).map(function(b) { return b.list })	var listed = config.bots.filter(function(b) { return b.list !== undefined }).map(function(b) { return b.name })	node
+listed-every-column	logic/bots.js	listed.indexOf(list) !== -1) return	listed.length > 0) return	node

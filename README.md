@@ -321,7 +321,9 @@ reviewer takes everything in review:
 - `{ "label": "app-ui" }`: issues in a busy list with that label. An issue
   with two owner labels counts for both bots.
 - `{ "label": "" }`: issues in a busy list with none of the bots' labels.
-- `{ "list": "review" }`: every issue in that list, owner or not.
+- `{ "list": "review" }`: every issue in that list, owner or not, and only
+  for this bot: an issue in review with `auth-mail` counts for Spec QA, not
+  for Auth & Mail.
 - `workingLists` (optional, default `["in progress"]`): where an issue makes
   its bot working rather than waiting.
 
