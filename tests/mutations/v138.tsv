@@ -24,14 +24,14 @@ bar-late-answer	BulkBar.qml	    if (!running) return  // a late answer	    /* m 
 board-held-armed	Board.qml	|| bulkBar.busy || bulkBar.armed	|| bulkBar.busy	qml
 board-held-busy	Board.qml	|| bulkBar.busy || bulkBar.armed	|| bulkBar.armed	qml
 board-drag-during-run	Board.qml	if (move || pendingMove || bulkBar.busy || !row ||	if (move || pendingMove || !row ||	qml
-board-no-v	Board.qml	if (text.toLowerCase() === "v" && root.view === "board") { root.pickAtCursor(); return }	/* m */	qml
-board-same-key	Board.qml	if (bulkBar.armed && text === bulkBar.armKey) bulkBar.confirm()	/* m */	qml
-board-keys-leak	Board.qml	          return  // choosing, armed, running or results	          /* m */  // choosing, armed, running or results	qml
-board-enter	Board.qml	else if (root.view === "board" && bulkBar.armed) bulkBar.confirm()	else if (false) bulkBar.confirm()	qml
-board-esc	Board.qml	else if (root.view === "board" && bulkBar.stepBack()) {}	else if (false) {}	qml
-board-x	Board.qml	bulkBar.mode === "" && root.picked.length > 0) bulkBar.armClose("x")	bulkBar.mode === "" && root.picked.length > 0) {}	qml
-board-hl	Board.qml	{ bulkBar.armSide(text === "H" ? -1 : 1, text); return }	{ return }	qml
-board-live-picks	Board.qml	onColumnsChanged: if (!bulkBar.busy && !bulkBar.armed) picked = Logic.livePicks(columns, picked)	onColumnsChanged: {}	qml
+board-no-v	BoardKeys.qml	if (text.toLowerCase() === "v" && host.view === "board") { host.pickAtCursor(); return }	/* m */	qml
+board-same-key	BoardKeys.qml	if (bulkBar.armed && text === bulkBar.armKey) bulkBar.confirm()	/* m */	qml
+board-keys-leak	BoardKeys.qml	      return  // choosing, armed, running or results	      /* m */  // choosing, armed, running or results	qml
+board-enter	BoardKeys.qml	else if (host.view === "board" && bulkBar.armed) bulkBar.confirm()	else if (false) bulkBar.confirm()	qml
+board-esc	BoardKeys.qml	else if (host.view === "board" && bulkBar.stepBack()) {}	else if (false) {}	qml
+board-x	BoardKeys.qml	bulkBar.mode === "" && host.picked.length > 0) bulkBar.armClose("x")	bulkBar.mode === "" && host.picked.length > 0) {}	qml
+board-hl	BoardKeys.qml	{ bulkBar.armSide(text === "H" ? -1 : 1, text); return }	{ return }	qml
+board-live-picks	Board.qml	onColumnsChanged: if (!bulkBar.running && !bulkBar.armed) picked = Logic.livePicks(columns, picked)	onColumnsChanged: {}	qml
 board-close-keeps	Board.qml	if (!bulkBar.busy && bulkBar.mode !== "results") dropPicks() }	}	qml
 board-cap-note	Board.qml	    bulkBar.pickNote(t.full)	    /* m */	qml
 view-ctrl-opens	BoardView.qml	if (mouse.modifiers & Qt.ControlModifier) view.host.togglePick	if (false) view.host.togglePick	qml
