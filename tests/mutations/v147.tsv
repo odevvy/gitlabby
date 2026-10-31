@@ -1,0 +1,7 @@
+keys-no-host	Board.qml	      host: root\n      views: ({ issue	      views: ({ issue	qml
+keys-drops-issue	Board.qml	views: ({ issue: issueView, picker	views: ({ picker	qml
+keys-swaps-settings	Board.qml	settings: settingsView, bulk: bulkBar	settings: picker, bulk: bulkBar	qml
+keys-drops-mrs	Board.qml	mrs: mrsView, setup: setupView })	setup: setupView })	qml
+keys-prop-wrong	BoardKeys.qml	readonly property Item setupView: views.setup || null	readonly property Item setupView: views.picker || null	qml
+keys-plain-catcher	Board.qml	    BoardKeys {  // the key routing (BoardKeys.qml)	    PanelKeyCatcher {  // the key routing (BoardKeys.qml)	qml
+keys-escape-dead	BoardKeys.qml	    else if (host.view !== "board") host.back()	    else if (false) host.back()	qml

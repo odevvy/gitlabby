@@ -631,70 +631,15 @@ Panel {
     // and at heightCap: none for Settings and Keys, 640 for the board and an issue.
     contentHeight: panel.fittedContentHeight(keyCatcher.implicitHeight, Logic.heightCap(root.view, Style.space(640)))
 
-    PanelKeyCatcher {
+    BoardKeys {  // the key routing (BoardKeys.qml)
       id: keyCatcher
+      host: root
+      views: ({ issue: issueView, picker: picker, settings: settingsView, bulk: bulkBar, mrs: mrsView, setup: setupView })
       anchors.fill: parent
       blocked: issueView.typing || picker.typing || settingsView.typing || bulkBar.typing  // text fields get every key (Omarchy PanelKeyCatcher.qml:26-29)
       implicitHeight: header.implicitHeight + root.gap + (botsRow.visible ? botsRow.height + root.gap : 0) + (accessHint.visible ? accessHint.height + root.gap : 0) + (moveConfirm.visible ? moveConfirm.height + root.gap : 0) + (bulkBar.visible ? bulkBar.height + root.gap : 0) + (root.view === "board" ? (root.setup !== "" || root.failed ? Math.max(setupView.implicitHeight, skeleton.implicitHeight) : root.boardState === "loading" ? skeleton.implicitHeight : boardView.implicitHeight)
         : root.view === "issue" ? issueView.implicitHeight : root.view === "picker" ? picker.implicitHeight
         : root.view === "keys" ? keysView.implicitHeight : root.view === "mrs" ? mrsView.implicitHeight : settingsView.implicitHeight)
-      onCloseRequested: {
-        if (root.pendingMove) root.cancelMove()
-        else if (root.view === "board" && bulkBar.stepBack()) {}
-        else if (root.view === "issue" && issueView.confirming) issueView.confirming = false
-        else if (root.view === "issue" && issueView.editing) issueView.doneEditing()  // labels still loading: the filter is off
-        else if (root.view === "settings" && settingsView.adding) settingsView.cancelAdd()
-        else if (root.view !== "board") root.back()
-        else root.close()
-      }
-      onDeleteRequested: {  // x
-        if (root.view === "issue" && !issueView.editing) issueView.toggleState()  // not while labels load
-        else if (root.view === "board" && !root.pendingMove && bulkBar.armed && bulkBar.armKey === "x") bulkBar.confirm()
-        else if (root.view === "board" && !root.pendingMove && bulkBar.mode === "" && root.picked.length > 0) bulkBar.armClose("x")
-      }
-      onTabRequested: function(direction) { root.switchPanel(direction) }
-      onMoveRequested: function(dx, dy) {
-        if (root.view === "board") root.moveCursor(dx, dy)
-        else if (root.view === "picker" && dy !== 0) picker.moveCursor(dy)
-        else if (root.view === "mrs" && dy !== 0) mrsView.moveCursor(dy)
-      }
-      onActivateRequested: {
-        if (root.pendingMove) root.confirmMove()
-        else if (root.view === "board" && bulkBar.armed) bulkBar.confirm()
-        else if (root.view === "board" && bulkBar.mode === "results") bulkBar.done()
-        else if (root.view === "issue" && issueView.confirming) issueView.setState("close")
-        else if (root.view === "board" && root.cursorIssue()) root.openIssue(root.cursorIssue())
-        else if (root.view === "picker") picker.activate()
-        else if (root.view === "mrs") mrsView.activate()
-        else if (root.view === "board" && (root.setup !== "" || root.failed)) setupView.primary()
-      }
-      onTextKey: function(text) {
-        if (root.pendingMove) return  // Enter or Escape first
-        if (root.view === "issue" && issueView.editing) return  // typed for the filter while labels load
-        if (root.view === "board" && bulkBar.visible && bulkBar.mode !== "") {
-          if (bulkBar.armed && text === bulkBar.armKey) bulkBar.confirm()  // the arming key again
-          return  // choosing, armed, running or results: Enter, Esc or the bar's buttons
-        }
-        if (root.view === "board" && root.picked.length > 0 && (text === "H" || text === "L")) { bulkBar.armSide(text === "H" ? -1 : 1, text); return }
-        if (root.view === "board" && root.picked.length > 0 && text.toLowerCase() === "e") { bulkBar.chooseLabel("add"); return }
-        if (text.toLowerCase() === "v" && root.view === "board") { root.pickAtCursor(); return }
-        if ((text === "H" || text === "L") && root.view === "board") { root.moveCursorCard(text === "H" ? -1 : 1); return }
-        var key = text.toLowerCase()
-        if (key === "r" && root.view === "board") root.refresh()
-        else if (key === "r" && root.view === "mrs") mrsView.refresh()
-        else if (key === "o" && root.view === "mrs") mrsView.activate()
-        else if (key === "o") {
-          var row = root.view === "issue" ? issueView.issue : root.view === "board" ? root.cursorIssue() : null
-          if (row) root.openUrl(row.url)
-        }
-        else if (key === "c" && root.view === "issue") issueView.focusBox()
-        else if (key === "e" && root.view === "issue") issueView.editLabels()
-        else if (key === "p") root.openPicker()
-        else if (key === "s") root.toggleView("settings")
-        else if (key === "?") root.toggleView("keys")
-        else if (key === "m") root.toggleView("mrs")
-      }
-
       // Glass wash: a soft light from the top of the card (the card itself is
       // KeyboardPanel's, drawn in the theme's popups.background).
       Rectangle {

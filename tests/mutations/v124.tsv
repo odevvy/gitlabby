@@ -17,9 +17,9 @@ labels-under-close	IssueView.qml	width: parent.width - (stateAction.visible ? st
 filter-always-on	components/LabelPicker.qml	enabled: picker.labelsState === "ready"	enabled: true	qml
 no-focus-after-load	IssueView.qml	if (labelsState === "ready" && editing) labelFilter.forceActiveFocus()	if (false) labelFilter.forceActiveFocus()	qml
 filter-big	components/LabelPicker.qml	verticalPadding: Style.space(3)	verticalPadding: Style.space(7)	qml
-keys-while-loading	Board.qml	if (root.view === "issue" && issueView.editing) return	if (false) return	qml
-x-while-loading	Board.qml	root.view === "issue" && !issueView.editing) issueView.toggleState()	root.view === "issue") issueView.toggleState()	qml
-esc-while-loading	Board.qml	else if (root.view === "issue" && issueView.editing) issueView.doneEditing()	else if (false) issueView.doneEditing()	qml
+keys-while-loading	BoardKeys.qml	if (host.view === "issue" && issueView.editing) return	if (false) return	qml
+x-while-loading	BoardKeys.qml	host.view === "issue" && !issueView.editing) issueView.toggleState()	host.view === "issue") issueView.toggleState()	qml
+esc-while-loading	BoardKeys.qml	else if (host.view === "issue" && issueView.editing) issueView.doneEditing()	else if (false) issueView.doneEditing()	qml
 done-editing-dead	IssueView.qml	onClicked: view.editing ? view.doneEditing() : view.editLabels()	onClicked: view.editLabels()	qml
 close-link-loud	IssueView.qml	color: stateMouse.containsMouse && enabled ? view.host.foreground : view.host.dim	color: view.host.foreground	qml
 close-link-dead	IssueView.qml	onClicked: view.toggleState() }	onClicked: {} }	qml
