@@ -1,0 +1,38 @@
+cap-21	Logic.js	if (list.length >= bulkCap)	if (list.length > bulkCap)	node
+pick-no-col	Logic.js	function pickKey(column, iid) { return columnKey(column) + "|" + iid }	function pickKey(column, iid) { return "|" + iid }	node
+plan-from-target	Logic.js	"--from", listSpec(from), "--to"	"--from", listSpec(action.to), "--to"	node
+plan-no-skip-there	Logic.js	else if (columnKey(from) === columnKey(action.to)) skip = "Already in " + action.to.name	else if (false) skip = ""	node
+plan-add-dup	Logic.js	if (labels.indexOf(action.label) !== -1) skip = "Already has "	if (false) skip = "Already has "	node
+summary-skips	Logic.js	todo = results.length - count("skipped")	todo = results.length	node
+outcome-timeout-goes-on	Logic.js	if (state === "timeout" || /within 30 seconds/.test(message)) return { ok: false, stop: true,	if (state === "timeout" || /within 30 seconds/.test(message)) return { ok: false, stop: false,	qml
+outcome-403-stops	Logic.js	return { ok: false, stop: false, text: message || "Failed." }	return { ok: false, stop: true, text: message || "Failed." }	qml
+outcome-loggedout-goes-on	Logic.js	if (state === "logged-out" || state === "no-glab") return { ok: false, stop: true,	if (state === "no-glab") return { ok: false, stop: true,	qml
+bar-parallel	BulkBar.qml	write(bar.pendingLine)	write(bar.plan.filter(function(s){ return s.args }).map(function(s){ return JSON.stringify(s.args) + String.fromCharCode(10) }).join(""))	qml
+bar-no-own-move	BulkBar.qml	if (out.ok) host.feed.noteOwnMove(host.fetchKey, plan[step].iid)	if (false) host.feed.noteOwnMove(host.fetchKey, plan[step].iid)	qml
+bar-no-refresh	BulkBar.qml	    host.bulkFinished()  // before busy ends	    /* m */  // before busy ends	qml
+bar-refresh-late	BulkBar.qml	    host.bulkFinished()  // before busy ends, so the queued refresh runs then\n    mode = "results"	    mode = "results"\n    host.bulkFinished()	qml
+bar-esc-run-ignored	BulkBar.qml	if (running) { stopping = true; return true }	if (running) { return true }	qml
+bar-stop-ignored	BulkBar.qml	    if (stopping) { finish(); return }	    /* m */	qml
+bar-arm-writes	BulkBar.qml	    mode = "armed"\n	    mode = "armed"; Qt.callLater(confirm)\n	qml
+bar-no-focus-back	BulkBar.qml	    host.focusBoard()  // keys back to the panel (from the label filter)	    /* m */	qml
+bar-back-while-running	BulkBar.qml	function backToPicking() { if (busy || mode === "results") return;	function backToPicking() {	qml
+bar-remove-all-labels	BulkBar.qml	(labelOp === "add" || on[l.name] === true)	(true)	qml
+bar-status-labels	BulkBar.qml	return !Logic.has(status, l.name) &&	return true &&	qml
+bar-watchdog-off	BulkBar.qml	    watchdog.restart()	    /* m */	qml
+bar-keep-all	BulkBar.qml	return r.status === "failed" || r.status === "untried" }).map(function(r) { return r.key })	return true }).map(function(r) { return r.key })	qml
+bar-late-answer	BulkBar.qml	    if (!running) return  // a late answer	    /* m */  // a late answer	qml
+board-held-armed	Board.qml	|| bulkBar.busy || bulkBar.armed	|| bulkBar.busy	qml
+board-held-busy	Board.qml	|| bulkBar.busy || bulkBar.armed	|| bulkBar.armed	qml
+board-drag-during-run	Board.qml	if (move || pendingMove || bulkBar.busy || !row ||	if (move || pendingMove || !row ||	qml
+board-no-v	Board.qml	if (text.toLowerCase() === "v" && root.view === "board") { root.pickAtCursor(); return }	/* m */	qml
+board-same-key	Board.qml	if (bulkBar.armed && text === bulkBar.armKey) bulkBar.confirm()	/* m */	qml
+board-keys-leak	Board.qml	          return  // choosing, armed, running or results	          /* m */  // choosing, armed, running or results	qml
+board-enter	Board.qml	else if (root.view === "board" && bulkBar.armed) bulkBar.confirm()	else if (false) bulkBar.confirm()	qml
+board-esc	Board.qml	else if (root.view === "board" && bulkBar.stepBack()) {}	else if (false) {}	qml
+board-x	Board.qml	bulkBar.mode === "" && root.picked.length > 0) bulkBar.armClose("x")	bulkBar.mode === "" && root.picked.length > 0) {}	qml
+board-hl	Board.qml	{ bulkBar.armSide(text === "H" ? -1 : 1, text); return }	{ return }	qml
+board-live-picks	Board.qml	onColumnsChanged: if (!bulkBar.busy && !bulkBar.armed) picked = Logic.livePicks(columns, picked)	onColumnsChanged: {}	qml
+board-close-keeps	Board.qml	if (!bulkBar.busy && bulkBar.mode !== "results") dropPicks() }	}	qml
+board-cap-note	Board.qml	    bulkBar.pickNote(t.full)	    /* m */	qml
+view-ctrl-opens	BoardView.qml	if (mouse.modifiers & Qt.ControlModifier) view.host.togglePick	if (false) view.host.togglePick	qml
+view-no-mark	BoardView.qml	visible: card.picked; z: 5	visible: false; z: 5	qml
