@@ -41,10 +41,12 @@ the picker's board step. The header shows a star on the default board and a
 
 ## Popup
 
-- The title, `group/project · Board ▾`, opens the picker: pick a project (type
+- The title, `group/project / Board ▾`, opens the picker: pick a project (type
   to filter your projects, up to 500, most recently active first), then one of its boards.
-- Click a column header to collapse it to a narrow strip; click a chip under
-  the header to hide or show that column.
+- Click a column header to collapse it to a narrow strip (count, colour dot,
+  name). The columns button in the header (the columns icon left of refresh, with
+  a number when columns are hidden) opens a row of chips under the bots: click one to hide or show
+  that column. The row stays closed until you open it.
 - Click an issue for its details: state, labels, author, ages, assignees,
   milestone, the description, the comments and a box to add one, and an
   "Open in browser" link. A thin bar slides under the title while it loads.
@@ -410,10 +412,13 @@ rows are the same.
 
 ## Cards and colors
 
-- Label chips use each label's GitLab colors. Column headers have a dot and
-  underline in the label's color (the accent for Open, muted for Closed).
-- Cards show up to three assignee avatars (two plus `+N`), the comment count,
-  and the age (`45m`, `3h`, `4d`, `2w`, `6mo`, `1y`). Avatars show initials
+- Label chips use each label's GitLab colors. Column headers have a dot in the
+  label's color (the accent for Open, muted for Closed), the name as GitLab
+  writes it, and the count as a quiet number; columns and cards have no outline
+  at rest. Secondary text ("Updated", counts, ages, "No issues") is quieter
+  than the titles.
+- Cards show the title first, then one quiet line: the issue number, up to
+  three assignee avatars (two plus `+N`), the comment count, and the age (`45m`, `3h`, `4d`, `2w`, `6mo`, `1y`). Avatars show initials
   until the image loads from GitLab's `https` URL, or if it doesn't.
 - Columns slide when they collapse, and cards lift slightly on hover.
 - Cards in a column named Review (any case) show the pipeline of their merge
