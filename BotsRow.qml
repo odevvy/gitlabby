@@ -100,5 +100,5 @@ Item {
       }
     }
   }
-  Rectangle { anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom; height: 1; color: row.host.faint }
+  // (0.1.52: no rule under the row; the gap to the board separates it.)
 }

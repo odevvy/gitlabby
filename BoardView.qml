@@ -163,7 +163,8 @@ Item {
               visible: column.issues.length === 0
               width: parent.width; wrapMode: Text.Wrap
               text: column.modelData.note || "No issues"
-              color: view.host.dim; opacity: 0.7; font.italic: true
+              leftPadding: Style.space(2)
+              color: view.host.quiet
             }
 
             Repeater {
@@ -188,7 +189,7 @@ Item {
                 radius: Style.space(6)
                 opacity: lifted || (view.host.move !== null && view.host.move.iid === modelData.iid) ? 0.4 : column.modelData.kind === "closed" ? 0.65 : 1
                 color: picked ? Qt.rgba(view.host.accent.r, view.host.accent.g, view.host.accent.b, 0.1) : Qt.rgba(fg.r, fg.g, fg.b, hovered ? 0.1 : 0.05)
-                border { width: picked ? 2 : 1; color: picked ? view.host.accent : hovered ? column.tint : Qt.rgba(fg.r, fg.g, fg.b, 0.1) }
+                border { width: picked ? 2 : 1; color: picked ? view.host.accent : hovered ? column.tint : "transparent" }
                 // Hover: lift by a couple of pixels and brighten.
                 transform: Translate { y: card.hovered ? -Style.space(2) : 0; Behavior on y { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } } }
                 Behavior on color { ColorAnimation { duration: 120 } }
@@ -198,16 +199,10 @@ Item {
                 Component.onDestruction: if (pressing) view.endDrag()
 
                 CursorSurface { anchors.fill: parent; radius: card.radius; visible: card.keyed; hasCursor: true; foreground: card.fg; accent: view.host.accent }
-                // Glass sheen along the top edge.
-                Rectangle {
-                  x: card.radius; y: 1; width: parent.width - card.radius * 2; height: 1
-                  color: Qt.rgba(card.fg.r, card.fg.g, card.fg.b, card.hovered ? 0.22 : 0.12)
-                }
                 BoardText {
                   id: cardText
                   x: Style.space(8); y: Style.space(8); width: parent.width - Style.space(16)
-                  textFormat: Text.StyledText
-                  text: "<font color='" + view.host.dim + "'>#" + card.modelData.iid + "</font>&nbsp; " + Logic.escaped(card.modelData.title)
+                  text: card.modelData.title
                   font.pixelSize: Style.font.bodySmall
                   wrapMode: Text.Wrap
                 }
@@ -221,15 +216,23 @@ Item {
                     delegate: LabelChip { required property var modelData; host: view.host; name: String(modelData); pixelSize: Math.max(8, Style.font.caption - 1) }
                   }
                 }
-                // Footer: up to three avatars (+N), then comment count and age.
+                // Footer, quiet: #iid, up to three avatars (+N), then comment count and age.
                 Item {
                   id: footer
                   x: Style.space(8); width: parent.width - Style.space(16)
                   anchors { top: chipFlow.visible ? chipFlow.bottom : cardText.bottom; topMargin: Style.space(6) }
-                  implicitHeight: Math.max(people.implicitHeight, meta.implicitHeight)
+                  implicitHeight: Math.max(people.implicitHeight, meta.implicitHeight, iidText.implicitHeight)
+                  BoardText {
+                    id: iidText
+                    objectName: "cardIid"
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "#" + card.modelData.iid
+                    color: view.host.quiet
+                    font.pixelSize: Math.max(8, Style.font.caption - 1)
+                  }
                   Row {
                     id: people
-                    anchors.verticalCenter: parent.verticalCenter
+                    anchors { left: iidText.right; leftMargin: Style.space(8); verticalCenter: parent.verticalCenter }
                     spacing: -Style.space(4)
                     Repeater {
                       model: card.assignees.slice(0, card.assignees.length > 3 ? 2 : 3)
@@ -247,7 +250,7 @@ Item {
                     id: meta
                     anchors { right: parent.right; verticalCenter: parent.verticalCenter }
                     text: (card.modelData.notes > 0 ? "\uf075 " + card.modelData.notes + "   " : "") + Logic.age(card.modelData.createdAt, view.host.updatedAt)
-                    color: view.host.dim
+                    color: view.host.quiet
                     font.pixelSize: Math.max(8, Style.font.caption - 1)
                   }
                 }

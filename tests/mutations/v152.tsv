@@ -19,3 +19,9 @@ k-name-always-bright	BoardView.qml	color: headerMouse.containsMouse || column.is
 k-strip-count-bright	BoardView.qml	text: Logic.countLabel(column.modelData); color: view.host.dim; font.pixelSize	text: Logic.countLabel(column.modelData); color: view.host.foreground; font.pixelSize	qml
 k-strip-name-caps	BoardView.qml	color: stripMouse.containsMouse ? view.host.foreground : view.host.quiet\n	color: stripMouse.containsMouse ? view.host.foreground : view.host.quiet; font.capitalization: Font.AllUppercase\n	qml
 k-rule-back	BoardView.qml	              // Dot in the column's colour, the name, the count as a quiet number.\n	              Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: Math.max(1, Style.space(2)); color: column.tint }\n	qml
+d-iid-in-title	BoardView.qml	text: card.modelData.title\n	text: "#" + card.modelData.iid + "  " + card.modelData.title\n	qml
+d-iid-dim	BoardView.qml	text: "#" + card.modelData.iid\n                    color: view.host.quiet	text: "#" + card.modelData.iid\n                    color: view.host.dim	qml
+d-meta-dim	BoardView.qml	Logic.age(card.modelData.createdAt, view.host.updatedAt)\n                    color: view.host.quiet	Logic.age(card.modelData.createdAt, view.host.updatedAt)\n                    color: view.host.dim	qml
+d-card-outline	BoardView.qml	hovered ? column.tint : "transparent" }	hovered ? column.tint : Qt.rgba(fg.r, fg.g, fg.b, 0.1) }	qml
+d-empty-italic	BoardView.qml	              leftPadding: Style.space(2)\n              color: view.host.quiet	              leftPadding: Style.space(2)\n              color: view.host.dim; font.italic: true	qml
+d-bots-rule	BotsRow.qml	  // (0.1.52: no rule under the row; the gap to the board separates it.)	  Rectangle { anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom; height: 1; color: row.host.faint }	qml
