@@ -6,7 +6,7 @@ import "components"
 
 // Who is busy, per bot, from the board on screen (Logic.botStates; no GitLab
 // call). Filled dot: working; ring: waiting (only approved or review); dim
-// ring: idle. A busy dot wears its column's color (the furthest along of the
+// hollow dot and dim name: idle (no word; hovering the name says it). A busy dot wears its column's color (the furthest along of the
 // issues that set the state), or the accent when that color is hard to see.
 // Two issue numbers follow (hover: the title; click: open the issue), then
 // "+N" (hover: the rest); the column is said once when they all share it. Shown only when
@@ -48,15 +48,17 @@ Item {
           border { width: bot.modelData.state === "waiting" ? Math.max(1, Style.space(2)) : 1; color: bot.busy ? bot.tint : row.host.dim }
         }
         BoardText {
+          id: botName
           text: bot.modelData.name
           color: bot.busy ? row.host.foreground : row.host.dim
           font { pixelSize: Style.font.bodySmall; bold: bot.busy }
-        }
-        BoardText {
-          visible: !bot.busy
-          text: "idle"
-          color: row.host.dim
-          font { pixelSize: Style.font.bodySmall; italic: true }
+          // Idle: the dot and the name, hovered, say why it is quiet.
+          MouseArea { id: idleMouse; anchors.fill: parent; anchors.leftMargin: -(dot.width + bot.spacing); enabled: !bot.busy; hoverEnabled: true }
+          PanelToolTip {
+            y: parent.height + Style.space(4); visible: idleMouse.containsMouse && !bot.busy
+            text: bot.modelData.name + " · idle, nothing in a busy column"
+            onAboutToShow: x = row.tipX(parent, implicitWidth)
+          }
         }
         Repeater {
           model: bot.modelData.issues.slice(0, row.shown)
