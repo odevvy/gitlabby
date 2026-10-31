@@ -173,10 +173,10 @@ Column {
   Heading { text: "Bots" }
   BoardText {
     id: intro
-    width: parent.width; wrapMode: Text.Wrap; color: sec.host.dim
+    width: parent.width; wrapMode: Text.Wrap; color: sec.host.quiet; font.pixelSize: Style.font.caption
     text: sec.bots.length === 0 && !sec.adding
       ? "Show who is busy on " + sec.host.project + ": a dot per bot under the header, read from the cards already on the board."
-      : "A dot per bot under the board header shows who is working, read from the cards on this board."
+      : "Dots under the header show who is working, read from the cards."
   }
   BoardText {
     id: problem
@@ -197,8 +197,12 @@ Column {
     spacing: Style.space(4)
     topPadding: Style.space(4)
     bottomPadding: Style.space(6)
-    Caption { text: "Count a bot as busy when its card is in" }
-    Hint { width: parent.width; text: "Open and Closed never count." }
+    // The name, and on the same line its help.
+    Row {
+      spacing: Style.space(8)
+      Caption { id: busyCaption; text: "Busy when its card is in" }
+      Hint { anchors.baseline: busyCaption.baseline; wrapMode: Text.NoWrap; text: "Open and Closed never count." }
+    }
     BoardText {
       visible: sec.labelColumns.length === 0
       text: "Open the board to pick columns."; color: sec.host.dim; font { pixelSize: Style.font.bodySmall; italic: true }
@@ -234,7 +238,7 @@ Column {
           readonly property bool ok: Logic.botUsable(modelData)
           readonly property bool byList: ok && sec.isList(modelData)
           readonly property string label: ok && !byList ? modelData.label.trim() : ""
-          width: rows.width; implicitHeight: Style.space(34)
+          width: rows.width; implicitHeight: Style.space(30)
           opacity: ok ? 1 : 0.6
           Rectangle { visible: bot.index > 0; width: parent.width; height: 1; color: pane.border.color }
           Rectangle {
