@@ -145,6 +145,10 @@ Panel {
   // move (feed tickets below it) are dropped, and the board is fetched again.
   property var move: null
   property string moveError: ""
+  // A write the watchdog gave up on that board-fetch hasn't ended yet.
+  readonly property string stillFinishing: "The last change is still finishing on GitLab. Try again in a moment."
+  readonly property bool moveStillRunning: move === null && moveProcess.running
+  function noteStillFinishing() { moveError = stillFinishing; moveErrorTimer.restart(); return false }
   property int moveFloor: 0
   readonly property bool canMove: boardState === "ready" && !cached && !fallback && resolvedBoardId !== "" && writable
   // Write access on this project (BoardService access, asked once per project
@@ -317,6 +321,7 @@ Panel {
   // in pendingMove for Move or Enter (MoveConfirm.qml); Cancel or Escape drops it.
   property var pendingMove: null
   function requestMove(row, from, to) {
+    if (moveStillRunning || (!bulkBar.running && bulkBar.busy)) return noteStillFinishing()
     if (move || pendingMove || bulkBar.busy || !row || !canDrop(from) || !canDrop(to) || Logic.columnKey(from) === Logic.columnKey(to)) return false
     if (!confirmMoves) return moveIssue(row, from, to)
     pendingMove = { row: row, from: from, to: to, key: stateKey }
@@ -333,9 +338,11 @@ Panel {
   // Logic.bulkCap; cards that leave the board drop out. Fixed while armed or
   // running, and until the results are closed.
   property var picked: []
-  onColumnsChanged: if (!bulkBar.busy && !bulkBar.armed) picked = Logic.livePicks(columns, picked)
+  // Picking stays open when only a card the watchdog gave up on still runs;
+  // arming then says it is still finishing.
+  onColumnsChanged: if (!bulkBar.running && !bulkBar.armed) picked = Logic.livePicks(columns, picked)
   function togglePick(column, iid) {
-    if (bulkBar.busy || bulkBar.armed || bulkBar.mode === "results" || !column || !writable) return
+    if (bulkBar.running || bulkBar.armed || bulkBar.mode === "results" || !column || !writable) return
     var t = Logic.togglePick(picked, Logic.pickKey(column, iid))
     picked = t.picked
     bulkBar.pickNote(t.full)
@@ -354,7 +361,8 @@ Panel {
       if (canDrop(shownColumns[i])) { requestMove(row, from, shownColumns[i]); return }
   }
   function moveIssue(row, from, to) {
-    // moveProcess can outlive move: the watchdog gives up on it, board-fetch's own timeouts end it.
+    // moveProcess can outlive move: the watchdog gave up on it, board-fetch's deadline ends it.
+    if (moveStillRunning) return noteStillFinishing()
     if (move || moveProcess.running || !row || !canDrop(from) || !canDrop(to) || Logic.columnKey(from) === Logic.columnKey(to)) return false
     move = { iid: row.iid, snapshot: columns, key: stateKey }
     moveError = ""
@@ -475,10 +483,11 @@ Panel {
     persist({ project: pickerProject, id: String(b.id || ""), name: b.id ? String(b.name) : "" })
   }
 
-  // https only, so no file:, javascript: or --flag value reaches the browser.
+  // https only (Logic.httpsUrl), so no file:, javascript: or --flag value reaches the browser.
   function openUrl(url) {
-    if (!/^https:\/\//.test(String(url || ""))) return
-    Quickshell.execDetached(["omarchy-launch-browser", String(url)])
+    var link = Logic.httpsUrl(url)
+    if (link === "") return
+    Quickshell.execDetached(["omarchy-launch-browser", link])
     close()
   }
 
@@ -576,10 +585,11 @@ Panel {
   }
 
   Timer { id: moveErrorTimer; interval: 8000; onTriggered: root.moveError = "" }
-  // No answer in 30 s (glab hung or never started): put the card back and
-  // reload, since the move may or may not have reached GitLab.
+  // No answer in 50 s, past board-fetch's 40 s deadline (glab hung or never
+  // started): put the card back and reload, since the move may or may not have
+  // reached GitLab.
   Timer {
-    id: moveWatchdog; interval: 30000
+    id: moveWatchdog; interval: 50000
     onTriggered: { root.refreshQueued = true; root.moveFloor = root.feed.tickets + 1; root.moveDone(JSON.stringify({ state: "error", message: "No answer from glab; reloading the board." })) }
   }
 
