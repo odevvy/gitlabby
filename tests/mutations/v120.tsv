@@ -1,0 +1,10 @@
+guard-off	board-fetch	[[ $kind == free ]] ||	true ||	sh
+case-sensitive-status	board-fetch	| map(ascii_downcase) | unique;	| unique;	sh
+labels-not-filtered	board-fetch	select((.name | type) == "string" and (.name | ascii_downcase | IN($status[]) | not))	select((.name | type) == "string")	sh
+overwrite-labels	board-fetch	{remove_labels: $r}	{labels: $r}	sh
+add-creates	board-fetch	[[ $known == true ]] ||	true ||	sh
+logic-offers-status	Logic.js	&& !has(status, l.name) &&	&&	node
+qml-status-removable	IssueView.qml	view.editing && !Logic.has(view.status, name)	view.editing	qml
+qml-no-client-guard	IssueView.qml	|| !issueReady || Logic.has(status, name)) return	|| !issueReady) return	qml
+qml-no-refresh	IssueView.qml	    host.refresh()  // the card on the board		qml
+status-not-faded	IssueView.qml	 || (view.editing && !removable)		qml
