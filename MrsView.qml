@@ -9,6 +9,10 @@ import "components"
 // Read-only: a row only opens the merge request in the browser. The lists come
 // from the shared service (BoardService.requestMrs), asked for when this view
 // opens, its scope changes, or r; never on a timer. m toggles it.
+// Quiet (v152 design A): a faint "read-only" note (with when the lists were
+// read) beside the title, the scope as two text tabs with an accent underline,
+// plain counts, a faint fill and a short accent bar on the focused row, the
+// status as coloured text. No footer: the keys live behind the keyboard icon.
 Item {
   id: view
   required property var host
@@ -52,27 +56,55 @@ Item {
   function activate() { if (rows[cursor]) host.openUrl(rows[cursor].url) }
   function stamp(ms) { return ms > 0 ? Qt.formatTime(new Date(ms), "HH:mm") : "" }
 
-  implicitHeight: top.implicitHeight + Style.space(10) + body.implicitHeight + Style.space(10) + footer.implicitHeight
+  implicitHeight: top.implicitHeight + Style.space(10) + body.implicitHeight
 
   Item {
     id: top
     width: parent.width
     implicitHeight: close.implicitHeight
     BoardText { id: heading; anchors.verticalCenter: parent.verticalCenter; text: "Merge requests"; font { pixelSize: Style.font.bodySmall; bold: true } }
+    // "read-only", and when the lists were read (or that they are reloading).
+    BoardText {
+      id: note
+      objectName: "mrsNote"
+      anchors { left: heading.right; leftMargin: Style.space(8); right: tabs.left; rightMargin: Style.space(12); baseline: heading.baseline }
+      elide: Text.ElideRight
+      color: view.host.quiet
+      font.pixelSize: Style.font.caption
+      text: "read-only"
+        + (view.loading && view.entry ? "  \u00b7  refreshing\u2026" : view.entry ? "  \u00b7  updated " + view.stamp(view.entry.startedAt) : "")
+    }
+    // The scope: two text tabs, the current one underlined in the accent.
     Row {
-      anchors { left: heading.right; leftMargin: Style.space(14); verticalCenter: parent.verticalCenter }
-      spacing: Style.space(4)
+      id: tabs
+      anchors { right: close.left; rightMargin: Style.space(12); verticalCenter: parent.verticalCenter }
+      spacing: Style.space(14)
       Repeater {
         model: [{ mode: "all", label: "All projects" }, { mode: "project", label: "This project" }]
-        delegate: Pill {
+        delegate: Item {
+          id: tab
+          objectName: "scopeTab"
           required property var modelData
+          readonly property string label: modelData.label
           readonly property bool on: view.mode === modelData.mode
           visible: modelData.mode === "all" || view.host.project !== ""
-          label: modelData.label
-          clickable: true
-          textColor: on ? view.host.background : view.host.dim
-          color: on ? view.host.accent : "transparent"
-          onClicked: view.setMode(modelData.mode)
+          implicitWidth: tabText.implicitWidth
+          implicitHeight: tabText.implicitHeight + Style.space(6)
+          BoardText {
+            id: tabText
+            anchors.top: parent.top
+            text: tab.label
+            color: tab.on ? view.host.foreground : tabMouse.containsMouse ? view.host.dim : view.host.quiet
+            font.pixelSize: Style.font.bodySmall
+          }
+          Rectangle {
+            objectName: "scopeUnderline"
+            visible: tab.on
+            anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+            height: 2; radius: 1
+            color: view.host.accent
+          }
+          MouseArea { id: tabMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: view.setMode(tab.modelData.mode) }
         }
       }
     }
@@ -81,7 +113,7 @@ Item {
 
   Flickable {
     id: flick
-    anchors { top: top.bottom; topMargin: Style.space(10); left: parent.left; right: parent.right; bottom: footer.top; bottomMargin: Style.space(10) }
+    anchors { top: top.bottom; topMargin: Style.space(10); left: parent.left; right: parent.right; bottom: parent.bottom }
     contentHeight: body.implicitHeight
     clip: true; boundsBehavior: Flickable.StopAtBounds
     ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
@@ -118,15 +150,14 @@ Item {
             anchors.bottom: parent.bottom
             spacing: Style.space(6)
             BoardText { text: item.modelData.title || ""; color: view.host.dim; font { pixelSize: Style.font.caption; bold: true; capitalization: Font.AllUppercase; letterSpacing: 1 } }
-            Pill { label: String(item.modelData.count || 0); color: view.host.faint; anchors.verticalCenter: parent.verticalCenter }
+            BoardText { objectName: "mrsCount"; text: String(item.modelData.count || 0); color: view.host.quiet; font.pixelSize: Style.font.caption }
           }
           BoardText {
             id: emptyText
             visible: item.modelData.kind === "empty"
-            leftPadding: Style.space(8)
             anchors.verticalCenter: parent.verticalCenter
             text: item.modelData.text || ""
-            color: view.host.dim
+            color: view.host.quiet
             font.pixelSize: Style.font.bodySmall
           }
           Rectangle {
@@ -139,8 +170,16 @@ Item {
             anchors { left: parent.left; right: parent.right }
             implicitHeight: lines.implicitHeight + Style.space(10)
             radius: Style.space(6)
-            color: current ? view.host.faint : "transparent"
-            border { width: current ? 1 : 0; color: Qt.rgba(view.host.accent.r, view.host.accent.g, view.host.accent.b, 0.6) }
+            color: current ? Qt.rgba(view.host.foreground.r, view.host.foreground.g, view.host.foreground.b, 0.05) : "transparent"
+            border.width: 0
+            // The focused row: a short accent bar on its left edge.
+            Rectangle {
+              objectName: "mrFocusBar"
+              visible: mr.current
+              anchors { left: parent.left; verticalCenter: parent.verticalCenter }
+              width: 2; height: parent.height - Style.space(12); radius: 1
+              color: view.host.accent
+            }
             MouseArea {
               anchors.fill: parent
               hoverEnabled: true
@@ -169,13 +208,14 @@ Item {
                   id: right
                   anchors { right: parent.right; verticalCenter: parent.verticalCenter }
                   spacing: Style.space(8)
-                  Pill {
+                  BoardText {
                     objectName: "mrStatus"
-                    visible: mr.status.text !== ""
+                    readonly property string label: mr.status.text
+                    visible: label !== ""
                     anchors.verticalCenter: parent.verticalCenter
-                    label: mr.status.text
-                    textColor: mr.status.color !== "" ? mr.status.color : view.host.dim
-                    border.color: mr.status.color !== "" ? mr.status.color : view.host.faint
+                    text: label
+                    color: mr.status.color !== "" ? mr.status.color : view.host.dim
+                    font.pixelSize: Style.font.caption
                   }
                   Row {
                     anchors.verticalCenter: parent.verticalCenter
@@ -209,7 +249,7 @@ Item {
                   BoardText {
                     anchors.verticalCenter: parent.verticalCenter
                     width: Style.space(34); horizontalAlignment: Text.AlignRight
-                    text: Logic.age(mr.row.updatedAt); color: view.host.dim; font.pixelSize: Style.font.caption
+                    text: Logic.age(mr.row.updatedAt); color: view.host.quiet; font.pixelSize: Style.font.caption
                   }
                 }
               }
@@ -218,22 +258,12 @@ Item {
                 width: parent.width
                 text: Logic.mrSubline(mr.row, item.modelData.section)
                 elide: Text.ElideRight
-                color: view.host.dim; font.pixelSize: Style.font.caption
+                color: view.host.quiet; font.pixelSize: Style.font.caption
               }
             }
           }
         }
       }
     }
-  }
-
-  BoardText {
-    id: footer
-    anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-    elide: Text.ElideRight
-    color: view.host.dim
-    font.pixelSize: Style.font.caption
-    text: "Read-only  \u00b7  Enter opens it in GitLab  \u00b7  j/k move  \u00b7  r refreshes"
-      + (view.loading && view.entry ? "  \u00b7  refreshing\u2026" : view.entry ? "  \u00b7  updated " + view.stamp(view.entry.startedAt) : "")
   }
 }

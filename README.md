@@ -393,8 +393,11 @@ requested`, `Conflicts`, `Needs approval`, `Draft`, ...), every reviewer's
 avatar with their review state (a check for approved, `!` for changes
 requested, a speech bubble for reviewed, a pencil while reviewing; hover for
 the words), and how long ago it changed. The second line has the project, the
-branch, and the author (or how many reviewers yours have). `All projects` (the
-default) or `This project` (the board's) picks the scope.
+branch, and the author (or how many reviewers yours have). The `All projects`
+(the default) and `This project` (the board's) tabs pick the scope; the
+current one is underlined. Beside the title, `read-only · updated 14:05` says
+when the lists were read (`refreshing…` while they load). The focused row has
+a faint fill and a short orange bar on its left edge.
 
 It is read-only: `Enter`, `o` or a click opens the merge request in the
 browser. The lists load when you open the view, switch its scope, or press
