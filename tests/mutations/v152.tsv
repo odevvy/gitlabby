@@ -1,0 +1,10 @@
+# v0.1.52 a quieter board (v152 design A); qml rows: tests/harness/tests/run152.py
+h-title-dot	BoardHeader.qml	" / " + host.boardName	" · " + host.boardName	qml
+h-chevron-title	BoardHeader.qml	color: titleMouse.containsMouse ? host.accent : host.quiet	color: title.color	qml
+h-star-accent	BoardHeader.qml	color: defaultMouse.containsMouse ? host.accent : host.dim	color: host.onDefault || defaultMouse.containsMouse ? host.accent : host.dim	qml
+h-columns-gone	BoardHeader.qml	visible: host.view === "board" && host.boardState === "ready" && host.setup === ""	visible: false	qml
+h-columns-everywhere	BoardHeader.qml	visible: host.view === "board" && host.boardState === "ready" && host.setup === ""	visible: true	qml
+h-columns-no-toggle	BoardHeader.qml	onClicked: host.columnChips = !host.columnChips	onClicked: {}	qml
+h-columns-no-count	BoardHeader.qml	(hiddenCount > 0 ? " " + hiddenCount : "")	""	qml
+h-columns-accent-always	BoardHeader.qml	color: columnsMouse.containsMouse || host.columnChips ? host.accent : host.dim	color: host.accent	qml
+b-quiet-is-dim	Board.qml	readonly property color quiet: Qt.tint(foreground, Qt.rgba(background.r, background.g, background.b, 0.55))	readonly property color quiet: dim	qml
