@@ -12,3 +12,10 @@ s-status-dim	BoardHeader.qml	!host.cached ? host.quiet : host.accent	!host.cache
 c-chips-always	BoardView.qml	    visible: view.host.columnChips\n	    visible: true\n	qml
 c-chips-gap-stays	BoardView.qml	topMargin: chips.visible ? view.host.gap : 0	topMargin: view.host.gap	qml
 c-chips-height	BoardView.qml	height: visible ? implicitHeight : 0	height: implicitHeight	qml
+k-pane-border	BoardView.qml	border { width: column.dropHot ? 2 : 0; color: column.tint }	border { width: column.dropHot ? 2 : 1; color: column.tint }	qml
+k-count-dim	BoardView.qml	text: Logic.countLabel(column.modelData); color: view.host.quiet; font.pixelSize	text: Logic.countLabel(column.modelData); color: view.host.dim; font.pixelSize	qml
+k-caps	BoardView.qml	font { bold: true; pixelSize: Style.font.bodySmall }	font { bold: true; pixelSize: Style.font.bodySmall; capitalization: Font.AllUppercase }	qml
+k-name-always-bright	BoardView.qml	color: headerMouse.containsMouse || column.issues.length > 0 ? view.host.foreground : view.host.dim	color: view.host.foreground	qml
+k-strip-count-bright	BoardView.qml	text: Logic.countLabel(column.modelData); color: view.host.dim; font.pixelSize	text: Logic.countLabel(column.modelData); color: view.host.foreground; font.pixelSize	qml
+k-strip-name-caps	BoardView.qml	color: stripMouse.containsMouse ? view.host.foreground : view.host.quiet\n	color: stripMouse.containsMouse ? view.host.foreground : view.host.quiet; font.capitalization: Font.AllUppercase\n	qml
+k-rule-back	BoardView.qml	              // Dot in the column's colour, the name, the count as a quiet number.\n	              Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: Math.max(1, Style.space(2)); color: column.tint }\n	qml

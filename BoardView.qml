@@ -95,7 +95,7 @@ Item {
             radius: Style.space(8)
             color: column.dropHot ? Qt.rgba(column.tint.r, column.tint.g, column.tint.b, 0.16)
               : Qt.rgba(view.host.foreground.r, view.host.foreground.g, view.host.foreground.b, column.isCollapsed && stripMouse.containsMouse ? 0.08 : 0.035)
-            border { width: column.dropHot ? 2 : 1; color: column.dropHot ? column.tint : Qt.rgba(view.host.foreground.r, view.host.foreground.g, view.host.foreground.b, 0.08) }
+            border { width: column.dropHot ? 2 : 0; color: column.tint }
             Behavior on color { ColorAnimation { duration: 120 } }
           }
 
@@ -106,16 +106,16 @@ Item {
             opacity: column.isCollapsed ? 1 : 0
             visible: opacity > 0
             Behavior on opacity { NumberAnimation { duration: 140 } }
-            implicitHeight: stripCount.implicitHeight + stripName.implicitWidth + Style.space(24)
-            Pill { id: stripCount; anchors.horizontalCenter: parent.horizontalCenter; y: Style.space(6); label: Logic.countLabel(column.modelData); textColor: view.host.foreground; border.color: column.tint }
+            implicitHeight: stripCount.implicitHeight + stripDot.height + stripName.implicitWidth + Style.space(32)
+            BoardText { id: stripCount; objectName: "stripCount"; anchors.horizontalCenter: parent.horizontalCenter; y: Style.space(8); text: Logic.countLabel(column.modelData); color: view.host.dim; font.pixelSize: Style.font.bodySmall }
+            Rectangle { id: stripDot; anchors.horizontalCenter: parent.horizontalCenter; y: stripCount.y + stripCount.height + Style.space(6); width: Style.space(6); height: width; radius: width / 2; color: column.tint }
             BoardText {
               id: stripName
               anchors.horizontalCenter: parent.horizontalCenter
-              y: stripCount.y + stripCount.height + Style.space(6) + (implicitWidth - implicitHeight) / 2
+              y: stripDot.y + stripDot.height + Style.space(8) + (implicitWidth - implicitHeight) / 2
               rotation: 90
               text: column.modelData.name
-              color: stripMouse.containsMouse ? view.host.foreground : view.host.dim
-              font.capitalization: Font.AllUppercase
+              color: stripMouse.containsMouse ? view.host.foreground : view.host.quiet
             }
             MouseArea {
               id: stripMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
@@ -138,21 +138,19 @@ Item {
             Item {
               width: parent.width
               implicitHeight: headerRow.implicitHeight + Style.space(6)
+              // Dot in the column's colour, the name, the count as a quiet number.
               Row {
                 id: headerRow
+                x: Style.space(2); y: Style.space(2)
                 spacing: Style.space(6)
-                Rectangle { anchors.verticalCenter: parent.verticalCenter; width: Style.space(8); height: width; radius: width / 2; color: column.tint }
+                Rectangle { anchors.verticalCenter: parent.verticalCenter; width: Style.space(6); height: width; radius: width / 2; color: column.tint }
                 BoardText {
                   anchors.verticalCenter: parent.verticalCenter
                   text: column.modelData.name
-                  font { bold: true; capitalization: Font.AllUppercase }
+                  color: headerMouse.containsMouse || column.issues.length > 0 ? view.host.foreground : view.host.dim
+                  font { bold: true; pixelSize: Style.font.bodySmall }
                 }
-                Pill { anchors.verticalCenter: parent.verticalCenter; label: Logic.countLabel(column.modelData); color: view.host.faint }
-              }
-              Rectangle {
-                anchors.bottom: parent.bottom; width: parent.width; height: Math.max(1, Style.space(2)); radius: height / 2
-                color: column.tint; opacity: headerMouse.containsMouse ? 1 : 0.7
-                Behavior on opacity { NumberAnimation { duration: 120 } }
+                BoardText { objectName: "columnCount"; anchors.verticalCenter: parent.verticalCenter; text: Logic.countLabel(column.modelData); color: view.host.quiet; font.pixelSize: Style.font.bodySmall }
               }
               MouseArea {
                 id: headerMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
