@@ -205,6 +205,10 @@ actions: move to a column, add or remove a label, close or reopen.
   back to picking.
 - **Run**: one card at a time, each with the same `board-fetch` write as a
   single card, so the same checks apply (an out-of-date card is not moved).
+  The whole run is one `board-fetch bulk` process: the next card goes in
+  after the last one answered, each with its own 40 s deadline. The sign-in
+  check runs once per run, and adding or removing a label reads the board
+  lists and the project's labels once, not once per card.
   The bar shows what is done and each failure with GitLab's reason. A failure
   on one card doesn't stop the rest; being signed out, glab missing, or no
   answer in time does (no answer means the write may have gone through).
