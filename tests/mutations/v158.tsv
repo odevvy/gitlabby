@@ -1,0 +1,9 @@
+# v0.1.58: open and closed issues in parallel, Review pipelines eight at a time. sh rows: tests/run.sh
+p-open-sequential	board-fetch	  echo $? >"$tmp/open.rc" ) &	  echo $? >"$tmp/open.rc" )	sh
+p-closed-unchecked	board-fetch	for part in open closed; do	for part in open; do	sh
+p-closed-first	board-fetch	for part in open closed; do	for part in closed open; do	sh
+p-no-timeout-message	board-fetch	  ((rc != 124)) || emit error "$slow"\n  if ((rc != 0)); then\n    if	  if ((rc != 0)); then\n    if	sh
+p-no-auth-recheck	board-fetch	    if ((auth_skipped)); then auth_skipped=0; forget_auth; check_auth; fi\n    emit error "Could not load $part	    emit error "Could not load $part	sh
+p-no-wait	board-fetch	fi\nwait\nfor part in	fi\nfor part in	sh
+p-pipelines-four	board-fetch	>= 8)); do wait -n; done\n  pipeline_of	>= 4)); do wait -n; done\n  pipeline_of	sh
+p-hidden-closed-fails	board-fetch	echo '[]' >"$tmp/closed"; echo 0 >"$tmp/closed.rc"	echo '[]' >"$tmp/closed"; echo 1 >"$tmp/closed.rc"	sh

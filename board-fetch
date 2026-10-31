@@ -617,14 +617,26 @@ hide_closed=$(jq -r '.hide_closed_list // false' "$tmp/board")
 # really are more (shown as 20+), and a capped column links to the rest (seeAll).
 closed_cap=20
 
-get --paginate "$base/issues?state=opened&scope=all&order_by=relative_position&sort=asc&per_page=100&with_labels_details=true$scope" >"$tmp/open" ||
-  emit error "Could not load open issues for $project."
+# Open and closed issues load at the same time (one round trip instead of two).
+# Each exit code goes to a file; after both end they are read in the old order,
+# so the answers (timeout, sign-in, "Could not load ...") are the same as before.
+( peek --paginate "$base/issues?state=opened&scope=all&order_by=relative_position&sort=asc&per_page=100&with_labels_details=true$scope" >"$tmp/open"
+  echo $? >"$tmp/open.rc" ) &
 if [[ $hide_closed == true ]]; then
-  echo '[]' >"$tmp/closed"
+  echo '[]' >"$tmp/closed"; echo 0 >"$tmp/closed.rc"
 else
-  get "$base/issues?state=closed&scope=all&order_by=updated_at&sort=desc&per_page=$((closed_cap + 1))&with_labels_details=true$scope" >"$tmp/closed" ||
-    emit error "Could not load closed issues for $project."
+  ( peek "$base/issues?state=closed&scope=all&order_by=updated_at&sort=desc&per_page=$((closed_cap + 1))&with_labels_details=true$scope" >"$tmp/closed"
+    echo $? >"$tmp/closed.rc" ) &
 fi
+wait
+for part in open closed; do
+  rc=$(<"$tmp/$part.rc")
+  ((rc != 124)) || emit error "$slow"
+  if ((rc != 0)); then
+    if ((auth_skipped)); then auth_skipped=0; forget_auth; check_auth; fi
+    emit error "Could not load $part issues for $project."
+  fi
+done
 
 # GitLab's rules (docs.gitlab.com/user/project/issue_board/#issue-board-terminology):
 # Open = open issues in no other list; a label list = open issues with that label
@@ -686,7 +698,7 @@ jq -cn --slurpfile b "$tmp/board" --slurpfile all "$tmp/boards" --slurpfile o "$
 # pipeline of its merge request: one GET of issues/:iid/related_merge_requests,
 # whose MRs carry head_pipeline. The open MR wins, else the latest merged one;
 # closed MRs don't count. Only if GitLab left head_pipeline out, one GET of that
-# MR. Best effort, four at a time: no MR, no pipeline, no access or a timeout
+# MR. Best effort, eight at a time: no MR, no pipeline, no access or a timeout
 # leaves the card without one, and never fails the board. peek() (above) is
 # GET only and never emits: these run in the background.
 # A finished pipeline (passed, failed, canceled) is reused for 2 minutes without
@@ -720,7 +732,7 @@ reused=()
 while read -r what riid; do
   [[ $riid =~ ^[1-9][0-9]*$ ]] || continue
   if [[ $what == reuse ]]; then reused+=("$riid"); continue; fi
-  while (($(jobs -rp | wc -l) >= 4)); do wait -n; done
+  while (($(jobs -rp | wc -l) >= 8)); do wait -n; done
   pipeline_of "$riid" &
 done < <(jq -r --slurpfile prev "$tmp/pipes-prev" --argjson now "$EPOCHSECONDS" '$prev[0] as $p
   | [.columns[] | select(.kind == "label" and (.name | ascii_downcase) == "review") | .issues[].iid] | unique | .[:15][]

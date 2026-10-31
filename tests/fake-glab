@@ -50,6 +50,12 @@ if [[ -n ${FAKE_MR_PROBE:-} && $endpoint == */related_merge_requests ]]; then
   mkdir -p "$FAKE_MR_PROBE"; : >"$FAKE_MR_PROBE/$$"
   find "$FAKE_MR_PROBE" -type f | wc -l >>"$FAKE_MR_PROBE.n"; sleep 0.3; rm -f "$FAKE_MR_PROBE/$$"
 fi
+# FAKE_ISSUE_PROBE=<dir>: the issue list calls (state=opened / state=closed) take 0.3 s,
+# and each logs how many were running at once to <dir>.n.
+if [[ -n ${FAKE_ISSUE_PROBE:-} && $endpoint == */issues\?state=* ]]; then
+  mkdir -p "$FAKE_ISSUE_PROBE"; : >"$FAKE_ISSUE_PROBE/$$"; sleep 0.1
+  find "$FAKE_ISSUE_PROBE" -type f | wc -l >>"$FAKE_ISSUE_PROBE.n"; sleep 0.2; rm -f "$FAKE_ISSUE_PROBE/$$"
+fi
 # GraphQL (glab api graphql -f query=...): answered from graphql.json; one with
 # "errors" exits 1 as glab does (FAKE_GQL_EXIT0=1: 0 anyway); no fixture: exit 1. Never a write: a
 # query that isn't a plain "query" is logged as BAD-GRAPHQL.

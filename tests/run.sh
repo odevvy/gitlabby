@@ -891,9 +891,31 @@ printf '[%s]' "$(mr 31 opened 2026-01-01 failed https://gitlab.com/p/31)" | fx r
 : >"$FAKE_LOG"; out=$("$fetch" --project group/app)
 check "PL workflow review column" '(.columns[] | select(.name == "review") | .issues[] | select(.iid == 3) | .pipeline.status) == "failed"' "$out"
 check "PL at most 15 Review cards asked" '.' "$([[ $(grep -c '/related_merge_requests$' "$FAKE_LOG") == 15 ]] && echo true || echo false)"
-check "PL four at a time, not one by one" '.' "$(rm -rf "$work/slow"*; fresh_pipes; FAKE_MR_PROBE=$work/slow "$fetch" --project group/app >/dev/null
-  m=$(sort -n "$work/slow.n" | tail -1); ((m >= 2 && m <= 4)) && echo true || echo false)"
+check "PL eight at a time, not one by one" '.' "$(rm -rf "$work/slow"*; fresh_pipes; FAKE_MR_PROBE=$work/slow "$fetch" --project group/app >/dev/null
+  m=$(sort -n "$work/slow.n" | tail -1); ((m >= 5 && m <= 8)) && echo true || echo false)"
 check "PL no token in output" '.' "$(grep -qiE 'glpat|bearer' <<<"$pl_out$out" && echo false || echo true)"
+
+# --- IP: open and closed issues load at the same time (v0.1.58) ----------------
+reset
+fx boards <<<'[{"id":7,"name":"Dev","hide_backlog_list":false,"hide_closed_list":false,"lists":[{"id":1,"position":0,"label":{"name":"todo"}}]}]'
+fx open <<<'[{"iid":2,"title":"t","state":"opened","labels":["todo"],"web_url":"u2"}]'
+fx closed <<<'[{"iid":9,"title":"d","state":"closed","labels":[],"web_url":"u9"}]'
+out=$(rm -rf "$work/iss"*; FAKE_ISSUE_PROBE=$work/iss "$fetch" --project group/app)
+check "IP the board is the same" "$cols"' == {"Open":[],"todo":[2],"Closed":[9]}' "$out"
+check "IP open and closed run at the same time" '.' "$([[ $(sort -n "$work/iss.n" | tail -1) == 2 ]] && echo true || echo false)"
+check "IP a hidden Closed list: no closed call, still ready" '.state == "ready" and ([.columns[].name] == ["Open","todo"])' "$(fx boards <<<'[{"id":7,"name":"Dev","hide_backlog_list":false,"hide_closed_list":true,"lists":[{"id":1,"position":0,"label":{"name":"todo"}}]}]'; : >"$FAKE_LOG"; "$fetch" --project group/app)"
+check "IP ... and no closed call in the log" '.' "$(grep -q 'state=closed' "$FAKE_LOG" && echo false || echo true)"
+fx boards <<<'[{"id":7,"name":"Dev","hide_backlog_list":false,"hide_closed_list":false,"lists":[{"id":1,"position":0,"label":{"name":"todo"}}]}]'
+check "IP open fails: its own message" '.state == "error" and .message == "Could not load open issues for group/app."' "$(mv "$FAKE_DIR/open.json" "$FAKE_DIR/open.off"; "$fetch" --project group/app)"
+check "IP both fail: the open message, as before" '.state == "error" and .message == "Could not load open issues for group/app."' "$(mv "$FAKE_DIR/closed.json" "$FAKE_DIR/closed.off"; "$fetch" --project group/app)"
+check "IP closed fails: its own message" '.state == "error" and .message == "Could not load closed issues for group/app."' "$(mv "$FAKE_DIR/open.off" "$FAKE_DIR/open.json"; "$fetch" --project group/app)"
+mv "$FAKE_DIR/closed.off" "$FAKE_DIR/closed.json"
+check "IP closed hangs: the timeout message" '.state == "error" and .message == "GitLab did not answer within 30 seconds."' "$(FAKE_HANG='state=closed' "$fetch" --project group/app)"
+check "IP open hangs: the timeout message" '.state == "error" and .message == "GitLab did not answer within 30 seconds."' "$(FAKE_HANG='state=opened' "$fetch" --project group/app)"
+ipr="$work/iprt"; mkdir -p "$ipr"; chmod 700 "$ipr"; echo "$EPOCHSECONDS" >"$ipr/odevvy.gitlab-board-auth-gitlab.com"
+check "IP a list fails with a fresh sign-in mark, signed out: logged-out" '.state == "logged-out"' "$(mv "$FAKE_DIR/closed.json" "$FAKE_DIR/closed.off"; FAKE_AUTH=no XDG_RUNTIME_DIR=$ipr "$fetch" --project group/app)"
+mv "$FAKE_DIR/closed.off" "$FAKE_DIR/closed.json"
+check "IP no token in output" '.' "$(grep -qiE 'glpat|bearer' <<<"$out" && echo false || echo true)"
 
 # --- MR: the Merge requests view's lists (reads only) ----------------------------
 reset
