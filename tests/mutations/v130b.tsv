@@ -8,6 +8,6 @@ column-tip-no-name	BoardView.qml	text: "Collapse " + column.modelData.name	text:
 done-tip-no-key	IssueView.qml	"Done editing (Esc)"	"Done editing"	qml
 star-default-dead	BoardHeader.qml	enabled: host.project !== ""; hoverEnabled: true; cursorShape: host.onDefault	enabled: !host.onDefault && host.project !== ""; hoverEnabled: true; cursorShape: host.onDefault	qml
 settings-as-qt-gave	Board.qml	readonly property var savedSettings: Logic.plainJson(settings)	readonly property var savedSettings: settings	qml
-plainjson-noop	Logic.js	var v = JSON.parse(JSON.stringify(value)); return	var v = value; return	node
-two-parsers	Logic.js	var bots = c.bots.filter(botUsable).map(	var bots = c.bots.filter(function(b) { return b && b.name }).map(	node
+plainjson-noop	logic/core.js	var v = JSON.parse(JSON.stringify(value)); return	var v = value; return	node
+two-parsers	logic/bots.js	var bots = c.bots.filter(botUsable).map(	var bots = c.bots.filter(function(b) { return b && b.name }).map(	node
 editor-own-read	BotsSection.qml	host.saved("bots", null)	host.settings.bots || null	qml

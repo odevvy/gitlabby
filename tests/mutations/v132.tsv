@@ -11,11 +11,11 @@ pl-manual-shows	board-fetch	scheduled: "pending", canceled: "canceled"}	schedule
 pl-canceling-lost	board-fetch	running: "running", canceling: "running",	running: "running",	sh
 pl-all-columns-get-it	board-fetch	.columns |= map(if .kind == "label" and (.name | ascii_downcase) == "review"	.columns |= map(if true	sh
 pl-serial-unbounded	board-fetch	while (($(jobs -rp | wc -l) >= 4)); do wait -n; done	while (($(jobs -rp | wc -l) >= 99)); do wait -n; done	sh
-mark-http	Logic.js	var url = /^https:\/\//.test(String(p.url || "")) ? String(p.url) : ""	var url = String(p.url || "")	node
-mark-unknown	Logic.js	if (!Object.prototype.hasOwnProperty.call(pipelineMarks, status)) return null	if (!pipelineMarks[status]) return { glyph: "?", color: "#fff", url: "", tip: "" }	node
-mark-mr-unchecked	Logic.js	var on = /^[!#A-Za-z0-9_.\/-]+$/.test(String(p.mr || "")) ? " on " + p.mr : ""	var on = p.mr ? " on " + p.mr : ""	node
-mark-same-glyph	Logic.js	failed: { glyph: "\uf057"	failed: { glyph: "\uf058"	node
-mark-tip-always-open	Logic.js	(url ? ": open it on GitLab" : "")	": open it on GitLab"	node
+mark-http	logic/board.js	var url = /^https:\/\//.test(String(p.url || "")) ? String(p.url) : ""	var url = String(p.url || "")	node
+mark-unknown	logic/board.js	if (!Object.prototype.hasOwnProperty.call(pipelineMarks, status)) return null	if (!pipelineMarks[status]) return { glyph: "?", color: "#fff", url: "", tip: "" }	node
+mark-mr-unchecked	logic/board.js	var on = /^[!#A-Za-z0-9_.\/-]+$/.test(String(p.mr || "")) ? " on " + p.mr : ""	var on = p.mr ? " on " + p.mr : ""	node
+mark-same-glyph	logic/board.js	failed: { glyph: "\uf057"	failed: { glyph: "\uf058"	node
+mark-tip-always-open	logic/board.js	(url ? ": open it on GitLab" : "")	": open it on GitLab"	node
 ui-no-mark	BoardView.qml	pipeline: card.modelData.pipeline || null	pipeline: null	qml
 ui-under-cardmouse	BoardView.qml	                PipelineMark {\n                  id: pipelineMark	                PipelineMark {\n                  z: -1\n                  id: pipelineMark	qml
 ui-overlaps-age	BoardView.qml	x: footer.x + meta.x - width - Style.space(8)	x: footer.x + meta.x - width / 2	qml
