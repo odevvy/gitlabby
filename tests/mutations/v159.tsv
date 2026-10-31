@@ -1,0 +1,11 @@
+# v0.1.59: lazy sign-in check for reads, writes check first. sh rows: tests/run.sh
+a-reads-check-first	board-fetch	  *) auth_skipped=1 ;;	  *) auth_skipped=0; check_auth ;;	sh
+a-writes-lazy	board-fetch	  move|relabel|close|reopen|comment|bulk) auth_skipped=0; check_auth ;;	  move|relabel|close|reopen|comment|bulk) auth_skipped=1 ;;	sh
+a-move-unchecked	board-fetch	  move|relabel|close|reopen|comment|bulk) auth_skipped=0; check_auth ;;	  relabel|close|reopen|comment|bulk) auth_skipped=0; check_auth ;;	sh
+a-relabel-unchecked	board-fetch	  move|relabel|close|reopen|comment|bulk) auth_skipped=0; check_auth ;;	  move|close|reopen|comment|bulk) auth_skipped=0; check_auth ;;	sh
+a-close-unchecked	board-fetch	  move|relabel|close|reopen|comment|bulk) auth_skipped=0; check_auth ;;	  move|relabel|reopen|comment|bulk) auth_skipped=0; check_auth ;;	sh
+a-reopen-unchecked	board-fetch	  move|relabel|close|reopen|comment|bulk) auth_skipped=0; check_auth ;;	  move|relabel|close|comment|bulk) auth_skipped=0; check_auth ;;	sh
+a-comment-unchecked	board-fetch	  move|relabel|close|reopen|comment|bulk) auth_skipped=0; check_auth ;;	  move|relabel|close|reopen|bulk) auth_skipped=0; check_auth ;;	sh
+a-bulk-unchecked	board-fetch	  move|relabel|close|reopen|comment|bulk) auth_skipped=0; check_auth ;;	  move|relabel|close|reopen|comment) auth_skipped=0; check_auth ;;	sh
+a-no-recheck-after-failed-read	board-fetch	  if ((rc != 0 && auth_skipped)); then auth_skipped=0; forget_auth; check_auth; fi	  :	sh
+a-old-mark-kept	board-fetch	forget_auth() { [[ -z $auth_mark ]] || rm -f "$auth_mark" 2>/dev/null; }	forget_auth() { :; }	sh

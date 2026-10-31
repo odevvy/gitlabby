@@ -44,6 +44,10 @@ if [[ $1 == auth ]]; then
   exit 1
 fi
 endpoint=${*: -1}
+# Signed out (any FAKE_AUTH but ok): every API call fails as glab's does without
+# a usable token (also offline: no answer at all). FAKE_PUBLIC=1: a public
+# project, whose reads work without a login (writes are still logged as such).
+if [[ ${FAKE_AUTH:-ok} != ok && $1 == api && -z ${FAKE_PUBLIC:-} ]]; then echo "glab: 401 Unauthorized" >&2; exit 1; fi
 # FAKE_MR_PROBE=<dir>: related_merge_requests calls take 0.3 s, and each logs how many
 # were running at once (the files in <dir>) to <dir>.n.
 if [[ -n ${FAKE_MR_PROBE:-} && $endpoint == */related_merge_requests ]]; then

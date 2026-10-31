@@ -641,13 +641,15 @@ you already have a read-only token), and writes are off on every project.
 `board-fetch` is the helper the widget runs. It prints one JSON object whose
 `state` is `ready`, `error`, `stale`, `no-glab` (glab isn't installed) or
 `logged-out` (`glab auth status` says no login for the host, or GitLab
-answers `401`). `glab auth status` asks GitLab (one `GET /user`), so after it
-passes it is skipped for 10 minutes: a mark holding only the time, in
-`$XDG_RUNTIME_DIR/odevvy.gitlab-board-auth-<host>`. While the mark is fresh,
-any failed read runs the check again, so a sign-out or a revoked token still
-shows the sign-in panel; signing out from the settings removes the mark. On a
-public project, reads work without a login, so a sign-out in the terminal can
-take up to 10 minutes to show there.
+answers `401`). `glab auth status` asks GitLab (one `GET /user`), so reads
+don't wait for it: it runs only after a read fails, so a sign-out or a revoked
+token still shows the sign-in panel, and a network error stays an error.
+Writes (move, labels, close, reopen, comment, bulk) run it first, every time,
+so nothing is sent while signed out. On a public project, reads work without a
+login, so a sign-out in the terminal shows there only at the next write or
+failed read. (Up to 0.1.58 a passed check left a mark holding only the time in
+`$XDG_RUNTIME_DIR/odevvy.gitlab-board-auth-<host>`; none is written now, and
+one left behind is removed at sign-out or after a failed read.)
 
 ```bash
 ./board-fetch [board] --project P [--board ID]   # board columns (the default), also saved
