@@ -40,6 +40,23 @@ Item {
     flick.contentX = Math.max(0, Math.min(Math.max(flick.contentX, p.x + item.width - flick.width), p.x, flick.contentWidth - flick.width))
     flick.contentY = Math.max(0, Math.min(Math.max(flick.contentY, p.y + item.height - flick.height), p.y, flick.contentHeight - flick.height))
   }
+  // Columns and cards come from keyed ListModels (one row per key), kept in
+  // step with the data by Logic.keyOps: a refresh that changes one card
+  // updates that card instead of rebuilding the whole board.
+  function syncKeys(model, keys) {
+    var have = []
+    for (var i = 0; i < model.count; i++) have.push(model.get(i).k)
+    Logic.keyOps(have, keys).forEach(function(o) {
+      if (o.op === "remove") model.remove(o.at)
+      else if (o.op === "move") model.move(o.from, o.to, 1)
+      else model.insert(o.at, { k: o.k })
+    })
+  }
+  readonly property var colByKey: { var m = {}; host.shownColumns.forEach(function(c) { m[Logic.columnKey(c)] = c }); return m }
+  readonly property var colKeys: host.shownColumns.map(function(c) { return Logic.columnKey(c) })
+  onColKeysChanged: syncKeys(colModel, colKeys)
+  Component.onCompleted: syncKeys(colModel, colKeys)
+  ListModel { id: colModel }
   implicitHeight: (chips.visible ? chips.implicitHeight + host.gap : 0) + Math.max(tallest, Style.space(60))
 
   Flow {
@@ -74,11 +91,30 @@ Item {
       id: board
       spacing: view.host.gap
       Repeater {
-        model: view.host.shownColumns
+        model: colModel
         delegate: Item {
           id: column
-          required property var modelData
+          required property string k
           required property int index
+          readonly property var modelData: view.colByKey[k] || ({ name: "", kind: "", issues: [] })
+          // The cards, keyed by iid like the columns (view.syncKeys): a refresh
+          // updates the cards that changed and keeps the rest as they are.
+          // byIid keeps the previous object of a card whose data is the same,
+          // so its bindings (and its avatars) are not touched.
+          property var byIid: ({})
+          function syncCards() {
+            var next = {}, keys = []
+            issues.forEach(function(i) {
+              var key = String(i.iid), old = byIid[key]
+              next[key] = old && JSON.stringify(old) === JSON.stringify(i) ? old : i
+              keys.push(key)
+            })
+            byIid = next
+            view.syncKeys(cardModel, keys)
+          }
+          onIssuesChanged: syncCards()
+          Component.onCompleted: syncCards()
+          ListModel { id: cardModel }
           readonly property bool isCollapsed: view.host.isCollapsed(modelData.name)
           readonly property var issues: modelData.issues || []
           readonly property color tint: view.host.columnAccent(modelData)
@@ -188,10 +224,11 @@ Item {
             }
 
             Repeater {
-              model: column.issues
+              model: cardModel
               delegate: Rectangle {
                 id: card
-                required property var modelData
+                required property string k
+                readonly property var modelData: column.byIid[k] || ({ iid: 0, title: "", labels: [], assignees: [] })
                 readonly property var chips: (modelData.labels || []).filter(function(l) { return l !== column.modelData.name })
                 readonly property var assignees: modelData.assignees || []
                 readonly property bool keyed: view.host.cursor !== null && view.host.cursor.col === column.index && view.host.cursor.iid === modelData.iid

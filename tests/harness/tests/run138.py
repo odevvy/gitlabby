@@ -26,7 +26,9 @@ def start():
 def shift(k, t):
     for typ in (QEvent.KeyPress, QEvent.KeyRelease): QGuiApplication.sendEvent(h.win, QKeyEvent(typ, k, Qt.ShiftModifier, t))
     h.spin(60)
-def cards(): return {it.property("modelData")["iid"]: it for it in h.visible(lambda it: it.property("picked") is not None and it.property("keyed") is not None)}
+def md(it):  # a card's data: a declared property since v0.1.57 (keyed cards), a QJSValue
+    v = it.property("modelData"); return v.toVariant() if hasattr(v, "toVariant") else v
+def cards(): return {md(it)["iid"]: it for it in h.visible(lambda it: it.property("picked") is not None and it.property("keyed") is not None)}
 def to_card(iid):  # cursor onto a card
     h.ev("root.cursor = (function(){ for (var c = 0; c < root.lanes.length; c++) { var l = root.lanes[c]; if (l && l.indexOf(%d) !== -1) return { col: c, row: l.indexOf(%d), iid: %d } } return null })()" % (iid, iid, iid)); h.spin(40)
 picked = lambda: h.ev("root.picked")
