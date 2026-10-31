@@ -841,13 +841,38 @@ check "PL one MR GET, only where head_pipeline was left out" '.' "$([[ $(grep -c
 check "PL reads only" '.' "$(grep -qE 'NON-GET|BAD-WRITE' "$FAKE_LOG" && echo false || echo true)"
 check "PL saved copy has them too" "$pipes"' | .["3"].status == "passed"' "$("$fetch" cached --project group/app)"
 pl_out=$out
+# Finished pipelines (passed, failed, canceled) are reused for 2 minutes: the
+# next refresh asks only about the others (5: no MR, 6: no access, 7: running,
+# 8: none, 9: manual), and a newer answer for 3 is not seen yet.
+pf="$XDG_CACHE_HOME/odevvy.gitlab-board/group%2Fapp-first@me.pipes.json"
+check "PC kept beside the board, 600, no token, finished and running with the time" '.' "$([[ -f $pf && $(stat -c %a "$pf") == 600 ]] && ! grep -qiE 'glpat|bearer' "$pf" &&
+  jq -e 'keys == ["10","3","4","7"] and (.["3"] | .status == "passed" and (.at | type) == "number")' "$pf" >/dev/null && echo true || echo false)"
+printf '[%s]' "$(mr 31 opened 2026-01-01 running https://gitlab.com/p/31)" | fx related-3
+jq -c 'map_values(.at -= 60)' "$pf" >"$pf.t" && mv "$pf.t" "$pf"
+: >"$FAKE_LOG"; out=$("$fetch" --project group/app)
+check "PC second refresh: the same pipelines" "$pipes"' | .["3"].status == "passed" and .["4"].status == "failed" and .["10"].status == "canceled" and .["7"].status == "running"' "$out"
+check "PC second refresh: only the unfinished asked" '.' "$([[ $(grep -c '/related_merge_requests$' "$FAKE_LOG") == 5 ]] && ! grep -qE 'issues/(3|4|10)/related' "$FAKE_LOG" && echo true || echo false)"
+check "PC the reused ones keep their time, the asked ones get now" '.' "$(jq -e --argjson now "$EPOCHSECONDS" '.["3"].at <= $now - 55 and .["7"].at >= $now - 5' "$pf" >/dev/null && echo true || echo false)"
+jq -c --argjson now "$EPOCHSECONDS" 'map_values(.at = $now)' "$pf" >"$work/pipes-elsewhere"; rm -f "$pf"; ln -s "$work/pipes-elsewhere" "$pf"
+: >"$FAKE_LOG"; "$fetch" --project group/app >/dev/null
+check "PC a symlinked pipelines file is not read" '.' "$([[ $(grep -c '/related_merge_requests$' "$FAKE_LOG") == 8 ]] && echo true || echo false)"
+rm -f "$pf"; "$fetch" --project group/app >/dev/null
+jq -c 'map_values(.at -= 130)' "$pf" >"$pf.t" && mv "$pf.t" "$pf"
+: >"$FAKE_LOG"; out=$("$fetch" --project group/app)
+check "PC after 2 minutes: asked again, the newer answer shows" "$pipes"' | .["3"].status == "running"' "$out"
+check "PC after 2 minutes: all eight asked" '.' "$([[ $(grep -c '/related_merge_requests$' "$FAKE_LOG") == 8 ]] && echo true || echo false)"
+: >"$FAKE_LOG"; FAKE_USER=other "$fetch" --project group/app >/dev/null
+check "PC another account asks for its own" '.' "$([[ $(grep -c '/related_merge_requests$' "$FAKE_LOG") == 8 ]] && echo true || echo false)"
+echo 'not json' >"$pf"; out=$("$fetch" --project group/app)
+check "PC an unreadable pipelines file: asked, board fine" '.state == "ready" and ('"$pipes"' | .["3"].status == "running")' "$out"
+fresh_pipes() { rm -f "$XDG_CACHE_HOME"/odevvy.gitlab-board/*.pipes.json; }
 # Each status word GitLab uses.
 for st in success:passed failed:failed running:running canceling:running pending:pending created:pending waiting_for_resource:pending preparing:pending scheduled:pending canceled:canceled skipped:null manual:null; do
-  printf '[%s]' "$(mr 31 opened 2026-01-01 "${st%%:*}" https://gitlab.com/p/31)" | fx related-3
+  printf '[%s]' "$(mr 31 opened 2026-01-01 "${st%%:*}" https://gitlab.com/p/31)" | fx related-3; fresh_pipes
   check "PL ${st%%:*} -> ${st##*:}" '[.columns[] | select(.name == "Review") | .issues[] | select(.iid == 3) | .pipeline.status // null][0] == '"$(jq -n --arg s "${st##*:}" 'if $s == "null" then null else $s end')" "$("$fetch" --project group/app)"
 done
 # A hung call: the board still loads, without that pipeline.
-printf '[%s]' "$(mr 31 opened 2026-01-01 success https://gitlab.com/p/31)" | fx related-3
+printf '[%s]' "$(mr 31 opened 2026-01-01 success https://gitlab.com/p/31)" | fx related-3; fresh_pipes
 out=$(FAKE_HANG=issues/4/related_merge_requests "$fetch" --project group/app)
 check "PL a hung call costs only its card" '.state == "ready" and ('"$pipes"' | .["4"] == null and .["3"] != null)' "$out"
 check "PL a hung call: still one JSON object" '. == 1' "$(jq -s length <<<"$out")"
@@ -859,11 +884,11 @@ check "PL no Review column: log" '.' "$(grep -q 'merge_requests' "$FAKE_LOG" && 
 # Workflow-label fallback (no boards): its review column counts; at most 15 cards.
 fx boards <<<'[]'
 jq -cn '[range(1; 21) | {iid: ., title: "r", state: "opened", labels: ["review"], web_url: "u"}]' | fx open
-printf '[%s]' "$(mr 31 opened 2026-01-01 failed https://gitlab.com/p/31)" | fx related-3
+printf '[%s]' "$(mr 31 opened 2026-01-01 failed https://gitlab.com/p/31)" | fx related-3; fresh_pipes
 : >"$FAKE_LOG"; out=$("$fetch" --project group/app)
 check "PL workflow review column" '(.columns[] | select(.name == "review") | .issues[] | select(.iid == 3) | .pipeline.status) == "failed"' "$out"
 check "PL at most 15 Review cards asked" '.' "$([[ $(grep -c '/related_merge_requests$' "$FAKE_LOG") == 15 ]] && echo true || echo false)"
-check "PL four at a time, not one by one" '.' "$(rm -rf "$work/slow"*; FAKE_MR_PROBE=$work/slow "$fetch" --project group/app >/dev/null
+check "PL four at a time, not one by one" '.' "$(rm -rf "$work/slow"*; fresh_pipes; FAKE_MR_PROBE=$work/slow "$fetch" --project group/app >/dev/null
   m=$(sort -n "$work/slow.n" | tail -1); ((m >= 2 && m <= 4)) && echo true || echo false)"
 check "PL no token in output" '.' "$(grep -qiE 'glpat|bearer' <<<"$pl_out$out" && echo false || echo true)"
 
