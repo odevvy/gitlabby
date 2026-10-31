@@ -40,7 +40,9 @@ Item {
   property string postFor: ""
   property string postError: ""
   readonly property bool typing: box.activeFocus || labelFilter.activeFocus
-  readonly property Item labelFilter: labelPicker.field
+  readonly property Item labelFilter: labelEditor.field
+  // The comment box (IssueComments.qml).
+  readonly property Item box: comments.box
   // Label editor: open only on request; the label list loads when it opens.
   property bool editing: false
   property string labelsFor: ""      // the project the labels are for
@@ -410,36 +412,8 @@ Item {
         font.pixelSize: Style.font.bodySmall
       }
 
-      // The label editor: a filter with Done, then the labels the issue could take.
-      Column {
-        id: editor
-        visible: view.editing
-        width: parent.width; spacing: Style.space(6)
-        LabelPicker {
-          id: labelPicker
-          width: parent.width
-          host: view.host; colors: view.colors
-          options: view.addable; shown: view.addableShown
-          labelsState: view.labelsState
-          error: view.labelError !== "" ? view.labelError : view.labelsState === "error" ? view.labelsError : ""
-          busyText: view.labelBusy !== "" ? "Saving " + view.labelBusy + "…" : ""
-          busyName: view.labelBusy
-          onPicked: function(name) { view.relabel("add", name) }
-          onEscaped: view.doneEditing()
-          ActionButton {
-            id: doneButton
-            host: view.host; small: true
-            height: labelPicker.field.height
-            label: "Done"
-            onClicked: view.doneEditing()
-          }
-        }
-        BoardText {
-          width: parent.width; wrapMode: Text.Wrap
-          text: "Board list labels change only by dragging the card."
-          color: view.host.dim; font.pixelSize: Style.font.caption
-        }
-      }
+      // The label editor (IssueLabels.qml).
+      IssueLabels { id: labelEditor; owner: view; width: parent.width }
 
       Column {
         width: parent.width; spacing: Style.space(2)
@@ -482,106 +456,7 @@ Item {
         onClicked: view.host.openUrl(view.issue.url)
       }
 
-      Rectangle { width: parent.width; height: 1; color: view.host.faint }
-
-      Row {
-        spacing: Style.space(6)
-        BoardText {
-          text: "Comments" + (view.notes.length > 0 ? " · " + view.notes.length : "")
-          color: view.host.dim
-          font { pixelSize: Style.font.bodySmall; bold: true }
-        }
-        Spinner { running: view.notesLoading }
-      }
-      BoardText {
-        width: parent.width; wrapMode: Text.Wrap
-        visible: text !== ""
-        text: view.notesError !== "" ? view.notesError
-          : view.notesLoading && view.notes.length === 0 ? "Loading comments…"
-          : view.notes.length === 0 ? "No comments yet."
-          : view.more ? "Showing the latest 100 notes. Older ones are on GitLab." : ""
-        color: view.notesError !== "" ? view.host.urgent : view.host.dim
-        font.italic: true
-      }
-
-      Repeater {
-        model: view.notes
-        delegate: Row {
-          id: note
-          required property var modelData
-          width: parent.width
-          spacing: Style.space(8)
-          Avatar { host: view.host; person: note.modelData.author || ({}) }
-          Column {
-            width: note.width - Style.space(18) - note.spacing
-            spacing: Style.space(2)
-            BoardText {
-              textFormat: Text.StyledText
-              text: Logic.escaped((note.modelData.author || {}).username || "?")
-                + "&nbsp; <font color='" + view.host.dim + "'>" + Logic.age(note.modelData.createdAt, view.notesAt) + "</font>"
-              font { pixelSize: Style.font.bodySmall; bold: true }
-            }
-            BoardText {
-              width: parent.width; wrapMode: Text.WrapAtWordBoundaryOrAnywhere
-              text: String(note.modelData.body || "")
-              font.pixelSize: Style.font.bodySmall
-            }
-          }
-        }
-      }
-
-      TextArea {
-        id: box
-        width: parent.width
-        enabled: view.loaded && !view.posting
-        wrapMode: TextEdit.Wrap
-        placeholderText: view.loaded ? "Write a comment…  (Ctrl+Enter to post)" : "Loading…"
-        placeholderTextColor: view.host.dim
-        color: view.host.foreground
-        selectionColor: view.host.accent
-        selectedTextColor: view.host.background
-        font { family: Style.font.family; pixelSize: Style.font.bodySmall }
-        padding: Style.space(8)
-        background: Rectangle {
-          implicitHeight: Style.space(64)
-          radius: Style.space(6)
-          color: "transparent"
-          border { width: 1; color: box.activeFocus ? view.host.accent : view.host.faint }
-        }
-        Keys.onPressed: function(event) {
-          if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter) && (event.modifiers & Qt.ControlModifier)) {
-            view.post(); event.accepted = true
-          } else if (event.key === Qt.Key_Escape) {
-            view.host.showView("issue"); event.accepted = true  // hand the keys back to the panel
-          }
-        }
-      }
-
-      Item {
-        width: parent.width
-        implicitHeight: Math.max(postButton.implicitHeight, postStatus.implicitHeight)
-        BoardText {
-          id: postStatus
-          // Its own width beside Post: it wraps, never runs under the button.
-          anchors.verticalCenter: parent.verticalCenter
-          width: parent.width - postButton.width - Style.space(12)
-          wrapMode: Text.Wrap
-          readonly property bool slash: Logic.quickAction(box.text)
-          text: view.postError !== "" ? view.postError
-            : slash ? "A line starts with /, which GitLab runs as a quick action, so this can't be posted. Wrap it in `backticks`."
-            : "Posts as you. Lines starting with / aren't sent."
-          color: view.postError !== "" || slash ? view.host.urgent : view.host.dim
-          font.pixelSize: Style.font.caption
-        }
-        ActionButton {
-          id: postButton
-          anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-          host: view.host; small: true; main: true
-          enabled: view.loaded && !view.posting && box.text.trim() !== "" && !postStatus.slash
-          label: view.posting ? "Posting…" : "Post"
-          onClicked: view.post()
-        }
-      }
+      IssueComments { id: comments; owner: view; width: parent.width }
     }
   }
 }

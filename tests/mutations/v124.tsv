@@ -23,8 +23,8 @@ esc-while-loading	BoardKeys.qml	else if (host.view === "issue" && issueView.edit
 done-editing-dead	IssueView.qml	onClicked: view.editing ? view.doneEditing() : view.editLabels()	onClicked: view.editLabels()	qml
 close-link-loud	IssueView.qml	color: stateMouse.containsMouse && enabled ? view.host.foreground : view.host.dim	color: view.host.foreground	qml
 close-link-dead	IssueView.qml	onClicked: view.toggleState() }	onClicked: {} }	qml
-hint-under-post	IssueView.qml	width: parent.width - postButton.width - Style.space(12)	width: parent.width	qml
-hint-long	IssueView.qml	"Posts as you. Lines starting with / aren't sent."	"Posts as you on GitLab. Lines starting with / (quick actions) aren't sent."	qml
+hint-under-post	IssueComments.qml	width: parent.width - postButton.width - Style.space(12)	width: parent.width	qml
+hint-long	IssueComments.qml	"Posts as you. Lines starting with / aren't sent."	"Posts as you on GitLab. Lines starting with / (quick actions) aren't sent."	qml
 edit-own-row	IssueView.qml	          BoardText {\n            id: editAction	          Item { width: labelFlow.width; height: 1 }\n          BoardText {\n            id: editAction	qml
 filter-not-dim	components/LabelPicker.qml	enabled: picker.labelsState === "ready"\n      opacity: enabled ? 1 : 0.5	enabled: picker.labelsState === "ready"\n      opacity: 1	qml
 see-all-hidden	BoardView.qml	visible: !!column.modelData.seeAll	visible: false	qml

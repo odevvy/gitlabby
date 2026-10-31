@@ -987,3 +987,25 @@ test("BoardKeys.qml: Board.qml's keyCatcher, handed root and every view its keys
   for (const h of ["onCloseRequested", "onDeleteRequested", "onTabRequested", "onMoveRequested", "onActivateRequested", "onTextKey"])
     assert.match(keys, new RegExp("^  " + h + ":", "m"))
 })
+
+// --- 0.1.48 IssueView split -------------------------------------------------------------
+test("IssueView: the label editor and the comments are IssueLabels.qml and IssueComments.qml; the state and writes stay", () => {
+  const fs = require("node:fs"), path = require("node:path"), dir = path.join(__dirname, "..")
+  const issue = fs.readFileSync(path.join(dir, "IssueView.qml"), "utf8")
+  const labels = fs.readFileSync(path.join(dir, "IssueLabels.qml"), "utf8")
+  const comments = fs.readFileSync(path.join(dir, "IssueComments.qml"), "utf8")
+  assert.match(issue, /IssueLabels \{ id: labelEditor; owner: view; width: parent\.width \}/)
+  assert.match(issue, /IssueComments \{ id: comments; owner: view; width: parent\.width \}/)
+  assert.match(issue, /readonly property Item labelFilter: labelEditor\.field/)
+  assert.match(issue, /readonly property Item box: comments\.box/)
+  // Every board-fetch call stays in IssueView.qml; the parts only draw and hand back.
+  for (const src of [labels, comments]) {
+    assert.doesNotMatch(src, /Process \{|helperPath|execDetached|\bview\./)
+    assert.match(src, /required property Item owner  \/\/ the IssueView/)
+  }
+  assert.deepEqual([...issue.matchAll(/Process \{\n    id: (\w+)/g)].map(m => m[1]), ["issueProcess", "notesProcess", "labelsProcess", "relabelProcess", "stateProcess", "commentProcess"])
+  assert.match(labels, /readonly property Item field: labelPicker\.field/)
+  assert.match(labels, /onPicked: function\(name\) \{ owner\.relabel\("add", name\) \}/)
+  assert.match(comments, /property alias box: box/)
+  assert.match(comments, /owner\.post\(\); event\.accepted = true/)
+})

@@ -10,7 +10,7 @@ nested-links	logic/markdown.js	links.push("<a href=\"" + url + "\">" + (t || url
 markers-kept	logic/markdown.js	  text = String(text).replace(/[\x01\x02]/g, "")	  text = String(text)	node
 qa-js-first-line	logic/markdown.js	return /(^|	return /(^	node
 movenote-generic	logic/markdown.js	  if (from.kind === "label" && to.kind === "open") return "This removes its status label on GitLab."		node
-hint-ignored	IssueView.qml	enabled: view.loaded && !view.posting && box.text.trim() !== "" && !postStatus.slash	enabled: view.loaded && !view.posting && box.text.trim() !== ""	qml
+hint-ignored	IssueComments.qml	enabled: owner.loaded && !owner.posting && box.text.trim() !== "" && !postStatus.slash	enabled: owner.loaded && !owner.posting && box.text.trim() !== ""	qml
 post-no-guard	IssueView.qml	box.text.trim() === "" || Logic.quickAction(box.text)) return	box.text.trim() === "") return	qml
 commands-no-reload	IssueView.qml	    if (data.state === "commands") { loadIssue(); loadNotes(); host.refresh() }		qml
 refresh-wipes	Board.qml	if (data.state === "error" && boardState === "ready" && columns.length > 0)	if (false)	qml
