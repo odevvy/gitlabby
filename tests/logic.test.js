@@ -834,12 +834,19 @@ test("bulk bar wiring: only the single-card writes, one at a time, picks from v 
   const bar = fs.readFileSync(path.join(dir, "BulkBar.qml"), "utf8")
   const board = fs.readFileSync(path.join(dir, "Board.qml"), "utf8")
   const view = fs.readFileSync(path.join(dir, "BoardView.qml"), "utf8")
-  // Writes: Logic.bulkPlan's arguments (move, relabel, close, reopen) and nothing else.
+  // Writes: one board-fetch bulk process for the project; each card is one
+  // stdin line, Logic.bulkPlan's arguments (move, relabel, close, reopen).
   assert.deepEqual([...bar.matchAll(/\.command = (.*)/g)].map(m => m[1]),
-    ["[host.helperPath(), \"labels\", \"--project\", host.project]", "[host.helperPath()].concat(plan[i].args)"])
+    ["[host.helperPath(), \"labels\", \"--project\", host.project]", "[host.helperPath(), \"bulk\", \"--project\", host.project]"])
   assert.doesNotMatch(bar, /execDetached/)
-  // One at a time: the next card starts only after this one's process ended.
-  assert.match(bar, /function maybeNext\(\) \{ if \(advance && !runProcess\.running && running\)/)
+  assert.deepEqual([...bar.matchAll(/write\((.*?)\)( \+ "\\n")?;/g)].map(m => m[1]),
+    ["JSON.stringify(plan[i].args) + \"\\n\"", "bar.pendingLine"])
+  assert.match(bar, /pendingLine = JSON\.stringify\(plan\[i\]\.args\) \+ "\\n"/)
+  // One at a time: the next card goes in only from stepDone, after an answer.
+  assert.deepEqual([...bar.matchAll(/\bnext\(\)/g)].length, 3)  // the function, confirm(), stepDone()
+  assert.match(bar, /if \(stopping\) \{ finish\(\); return \}\n    next\(\)\n  \}/)
+  // The end of a run closes stdin: board-fetch ends after its card.
+  assert.match(bar, /function finish\(\) \{\n    runProcess\.stdinEnabled = false/)
   assert.match(bar, /if \(out\.ok\) host\.feed\.noteOwnMove\(host\.fetchKey, plan\[step\]\.iid\)/)
   assert.match(board, /readonly property bool held: .*\|\| bulkBar\.busy \|\| bulkBar\.armed/)
   assert.match(board, /if \(text\.toLowerCase\(\) === "v" && root\.view === "board"\) \{ root\.pickAtCursor\(\); return \}/)
