@@ -8,3 +8,4 @@ qml-status-removable	IssueView.qml	view.editing && !Logic.has(view.status, name)
 qml-no-client-guard	IssueView.qml	|| !issueReady || Logic.has(status, name)) return	|| !issueReady) return	qml
 qml-no-refresh	IssueView.qml	    host.refresh()  // the card on the board		qml
 status-not-faded	IssueView.qml	 || (view.editing && !removable)		qml
+no-workflow-labels	board-fetch	| strings] + workflow | map(ascii_downcase)	| strings] + [] | map(ascii_downcase)	sh

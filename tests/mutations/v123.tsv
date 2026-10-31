@@ -34,3 +34,4 @@ dim-45	Board.qml	background.b, 0.35))	background.b, 0.45))	qml
 signout-pill-color	components/ActionButton.qml	  readonly property color tone: danger ? host.urgent : host.accent	  readonly property color tone: host.accent	qml
 skeleton-fixed	components/Skeleton.qml	  implicitWidth: knownWidth > 0 ? knownWidth : cards.length	  implicitWidth: cards.length	qml
 skeleton-no-last	components/Skeleton.qml	host.boardWidths[host.stateKey] || host.lastBoardWidth	host.boardWidths[host.stateKey] || 0	qml
+confirm-case	Board.qml	Logic.has(Logic.lowerList(saved("confirmMoves", [])), project)	Logic.lowerList(saved("confirmMoves", [])).indexOf(project) !== -1	qml
