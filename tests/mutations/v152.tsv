@@ -9,3 +9,6 @@ h-columns-no-count	BoardHeader.qml	(hiddenCount > 0 ? " " + hiddenCount : "")	""
 h-columns-accent-always	BoardHeader.qml	color: columnsMouse.containsMouse || host.columnChips ? host.accent : host.dim	color: host.accent	qml
 b-quiet-is-dim	Board.qml	readonly property color quiet: Qt.tint(foreground, Qt.rgba(background.r, background.g, background.b, 0.55))	readonly property color quiet: dim	qml
 s-status-dim	BoardHeader.qml	!host.cached ? host.quiet : host.accent	!host.cached ? host.dim : host.accent	qml
+c-chips-always	BoardView.qml	    visible: view.host.columnChips\n	    visible: true\n	qml
+c-chips-gap-stays	BoardView.qml	topMargin: chips.visible ? view.host.gap : 0	topMargin: view.host.gap	qml
+c-chips-height	BoardView.qml	height: visible ? implicitHeight : 0	height: implicitHeight	qml

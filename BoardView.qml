@@ -5,7 +5,8 @@ import qs.Ui
 import "Logic.js" as Logic
 import "components"
 
-// The board: chips to show or hide columns, then the columns. A column header
+// The board: the columns, and above them, when the header's columns button
+// opens it (host.columnChips), a row of chips to show or hide columns. A column header
 // collapses its column to a strip; clicking a card opens the issue view.
 // Dragging a card past a small threshold drags a copy of it (the ghost); dropping
 // it on another column, expanded or collapsed, asks the host to move the issue.
@@ -39,10 +40,12 @@ Item {
     flick.contentX = Math.max(0, Math.min(Math.max(flick.contentX, p.x + item.width - flick.width), p.x, flick.contentWidth - flick.width))
     flick.contentY = Math.max(0, Math.min(Math.max(flick.contentY, p.y + item.height - flick.height), p.y, flick.contentHeight - flick.height))
   }
-  implicitHeight: chips.implicitHeight + host.gap + Math.max(tallest, Style.space(60))
+  implicitHeight: (chips.visible ? chips.implicitHeight + host.gap : 0) + Math.max(tallest, Style.space(60))
 
   Flow {
     id: chips
+    visible: view.host.columnChips
+    height: visible ? implicitHeight : 0
     width: parent.width; spacing: Style.space(4)
     Repeater {
       model: view.host.availableColumns
@@ -61,7 +64,7 @@ Item {
 
   Flickable {
     id: flick
-    anchors { top: chips.bottom; topMargin: view.host.gap; left: parent.left; right: parent.right; bottom: parent.bottom }
+    anchors { top: chips.bottom; topMargin: chips.visible ? view.host.gap : 0; left: parent.left; right: parent.right; bottom: parent.bottom }
     contentWidth: board.implicitWidth; contentHeight: board.implicitHeight
     clip: true; boundsBehavior: Flickable.StopAtBounds
     ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
