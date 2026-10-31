@@ -331,8 +331,9 @@ reviewer takes everything in review:
 
 Each bot gets a filled dot when it has an issue in a working list (a `list`
 bot whenever its list has any), a ring when it only has issues waiting in
-other busy lists (approved or review), and a dim ring with "idle" when it has
-none. A busy dot takes the color of its column: the furthest along (rightmost
+other busy lists (approved or review), and a dim hollow dot and a dim name
+when it has none (pointing at it says `idle, nothing in a busy column`). It
+keeps its place in the row. A busy dot takes the color of its column: the furthest along (rightmost
 on the board) of the issues that set its state, so the working ones when any
 are working. If that color is hard to see on your theme, it uses the accent.
 Two issue numbers follow (hover one for its title, click it to open the
