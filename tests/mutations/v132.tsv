@@ -1,0 +1,28 @@
+pl-any-column	board-fetch	select(.kind == "label" and (.name | ascii_downcase) == "review") | .issues[].iid]	select(.kind == "label") | .issues[].iid]	sh
+pl-case-sensitive	board-fetch	[.columns[] | select(.kind == "label" and (.name | ascii_downcase) == "review")	[.columns[] | select(.kind == "label" and .name == "review")	sh
+pl-no-cap	board-fetch	| unique | .[:15][]	| unique | .[]	sh
+pl-merged-wins	board-fetch	sort_by([(.state == "opened"), (.updated_at // "")])	sort_by([(.updated_at // "")])	sh
+pl-closed-counts	board-fetch	select(.state == "opened" or .state == "merged")	select(.state != "x")	sh
+pl-always-mr-get	board-fetch	if ! jq -e 'has("head_pipeline")'	if ! jq -e 'false'	sh
+pl-never-mr-get	board-fetch	if ! jq -e 'has("head_pipeline")'	if jq -e 'true'	sh
+pl-get-emits	board-fetch	peek "$base/issues/$iid/related_merge_requests"	get "$base/issues/$iid/related_merge_requests"	sh
+pl-http-ok	board-fetch	{status: $s, url: (.web_url | https)}	{status: $s, url: .web_url}	sh
+pl-manual-shows	board-fetch	scheduled: "pending", canceled: "canceled"}	scheduled: "pending", canceled: "canceled", manual: "pending"}	sh
+pl-canceling-lost	board-fetch	running: "running", canceling: "running",	running: "running",	sh
+pl-all-columns-get-it	board-fetch	.columns |= map(if .kind == "label" and (.name | ascii_downcase) == "review"	.columns |= map(if true	sh
+pl-serial-unbounded	board-fetch	while (($(jobs -rp | wc -l) >= 4)); do wait -n; done	while (($(jobs -rp | wc -l) >= 99)); do wait -n; done	sh
+mark-http	Logic.js	var url = /^https:\/\//.test(String(p.url || "")) ? String(p.url) : ""	var url = String(p.url || "")	node
+mark-unknown	Logic.js	if (!Object.prototype.hasOwnProperty.call(pipelineMarks, status)) return null	if (!pipelineMarks[status]) return { glyph: "?", color: "#fff", url: "", tip: "" }	node
+mark-mr-unchecked	Logic.js	var on = /^[!#A-Za-z0-9_.\/-]+$/.test(String(p.mr || "")) ? " on " + p.mr : ""	var on = p.mr ? " on " + p.mr : ""	node
+mark-same-glyph	Logic.js	failed: { glyph: "\uf057"	failed: { glyph: "\uf058"	node
+mark-tip-always-open	Logic.js	(url ? ": open it on GitLab" : "")	": open it on GitLab"	node
+ui-no-mark	BoardView.qml	pipeline: card.modelData.pipeline || null	pipeline: null	qml
+ui-under-cardmouse	BoardView.qml	                PipelineMark {\n                  id: pipelineMark	                PipelineMark {\n                  z: -1\n                  id: pipelineMark	qml
+ui-overlaps-age	BoardView.qml	x: footer.x + meta.x - width - Style.space(8)	x: footer.x + meta.x - width / 2	qml
+ui-wrong-row	BoardView.qml	y: footer.y + (footer.height - height) / 2	y: footer.y - height	qml
+ui-click-ignores-url	components/PipelineMark.qml	onClicked: if (mark.info && mark.info.url !== "") mark.host.openUrl(mark.info.url)	onClicked: mark.host.openIssue({ iid: 0 })	qml
+ui-no-tip	components/PipelineMark.qml	IconTip { host: mark.host; shown: mouse.containsMouse;	IconTip { host: mark.host; shown: false;	qml
+ui-hand-always	components/PipelineMark.qml	cursorShape: mark.info && mark.info.url !== "" ? Qt.PointingHandCursor : Qt.ArrowCursor	cursorShape: Qt.PointingHandCursor	qml
+ui-theme-color	components/PipelineMark.qml	color: info ? info.color : "transparent"	color: host.dim	qml
+ui-always-visible	components/PipelineMark.qml	visible: info !== null	visible: true	qml
+pl-one-at-a-time	board-fetch	pipeline_of "$riid" &	pipeline_of "$riid"	sh

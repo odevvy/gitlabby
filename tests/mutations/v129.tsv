@@ -1,0 +1,10 @@
+dot-no-column	BotsRow.qml	readonly property color tint: Logic.dotColor(modelData.color, String(row.host.background)) || row.host.accent	readonly property color tint: row.host.accent	qml
+dot-no-fallback	BotsRow.qml	String(row.host.background)) || row.host.accent	String(row.host.background)) || modelData.color	qml
+contrast-ignored	Logic.js	(Math.min(a, b) + 0.05) >= 2 ? color : ""	(Math.min(a, b) + 0.05) >= 0 ? color : ""	node
+keys-button-dead	BoardHeader.qml	onClicked: host.toggleView("keys") }	onClicked: host.toggleView("board") }	qml
+reason-missing	BotsSection.qml	: newName === "" ? "Name the bot to add it."	: newName === "" ? ""	qml
+taken-reason-generic	BotsSection.qml	"There's already a bot named " + newName + "."	"Choose a label to add " + newName + "."	qml
+menu-not-auto	BotsSection.qml	menuOpen = k === "list"	menuOpen = false	qml
+pick-keeps-open	BotsSection.qml	pick = name; menuOpen = false	pick = name	qml
+noowner-hidden	BotsSection.qml	label: "cards no bot owns"; enabled: !sec.hasNoOwner;	label: "cards no bot owns"; visible: !sec.hasNoOwner;	qml
+tip-offcard	BotsRow.qml	    return Math.max(-at, Math.min(0, row.width - at - width))	    return 0	qml
