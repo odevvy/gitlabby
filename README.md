@@ -725,9 +725,11 @@ lands, ages, label text colors, the Markdown renderer) is in `logic/`, one
 file per concern (core, labels, bots, markdown, board, alerts, mrs, bulk,
 access). The Node tests load them through `logic/index.js`; the QML files
 import `Logic.js`, which imports each module, hands each the others it uses
-and re-exports every name, as Omarchy's panels do with their `Model.js`. CI
-runs both suites, and `tests/run.sh` checks that reads never send anything but
-GET. Saving a file under `~/.config/omarchy/plugins/` reloads the plugin.
+and re-exports every name, as Omarchy's panels do with their `Model.js`.
+`Board.qml` keeps the board's state and its views; which key goes to which
+view is in `BoardKeys.qml`. CI runs both suites, and `tests/run.sh` checks
+that reads never send anything but GET. Saving a file under
+`~/.config/omarchy/plugins/` reloads the plugin.
 
 ## Update, roll back, remove
 
