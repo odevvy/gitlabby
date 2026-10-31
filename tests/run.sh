@@ -497,7 +497,7 @@ check "V a 401 in the host name is not a sign-in prompt" '.state == "error"' "$(
 check "V offline is an error, not a sign-in prompt" '.state == "error" and (.message | test("connection"))' "$(FAKE_AUTH=offline "$fetch" projects)"
 check "V auth message never passed through" '.' "$(FAKE_AUTH=offline "$fetch" projects | grep -q 'dial tcp\|glpat' && echo false || echo true)"
 : >"$FAKE_LOG"; FAKE_AUTH=no "$fetch" --project a/b >/dev/null
-check "V signed out: only the auth check ran" '.' "$([[ $(grep -c . "$FAKE_LOG") == 1 ]] && grep -q '^auth status --hostname gitlab.com$' "$FAKE_LOG" && echo true || echo false)"
+check "V signed out: the first read fails, then only the auth check ran" '.' "$([[ $(grep -c . "$FAKE_LOG") == 2 && $(sed -n 2p "$FAKE_LOG") == 'auth status --hostname gitlab.com' ]] && echo true || echo false)"
 # glab missing: a PATH with only the tools board-fetch needs.
 mkdir -p "$work/noglab"
 for t in jq mktemp rm cat grep timeout mkdir chmod mv cp; do ln -sf "$(command -v "$t")" "$work/noglab/$t"; done
@@ -511,41 +511,47 @@ reset
 fx user <<<'{"id":5,"username":"dev1","name":"Dev One","email":"dev1@example.com","private_token":"glpat-SECRET"}'
 out=$(: >"$FAKE_LOG"; "$fetch" whoami)
 check "A whoami: the username only" '. == {state: "ready", message: "", user: "dev1"}' "$out"
-check "A whoami: one GET of /user after the auth check" '.' "$([[ $(sed -n 2p "$FAKE_LOG") == 'api --hostname gitlab.com --method GET user' && $(grep -c . "$FAKE_LOG") == 2 ]] && echo true || echo false)"
+check "A whoami: one GET of /user, no auth check first" '.' "$([[ $(sed -n 1p "$FAKE_LOG") == 'api --hostname gitlab.com --method GET user' && $(grep -c . "$FAKE_LOG") == 1 ]] && echo true || echo false)"
 
-# --- E: the sign-in check (glab auth status, one GET /user) at most every 10 min
-# A passed check leaves a mark in XDG_RUNTIME_DIR (the time, nothing else);
-# while it is fresh the check is skipped; a failed read runs it again.
+# --- E: the sign-in check (glab auth status, one GET /user), lazy since v0.1.59
+# Reads go first; only a failed read runs the check (signed out or refused
+# tells logged-out apart from a network error). Writes check first, every time.
+# No mark is written any more; one an older version left is removed.
 ert="$work/ert"; mkdir -p "$ert"; chmod 700 "$ert"; mark="$ert/odevvy.gitlab-board-auth-gitlab.com"
 auths() { grep -c '^auth status' "$FAKE_LOG"; }
 : >"$FAKE_LOG"; out=$(XDG_RUNTIME_DIR=$ert "$fetch" whoami)
-check "E first run: checked, mark left" '.user == "dev1"' "$out"
-check "E the mark holds only the time" '.' "$([[ $(auths) == 1 && $(<"$mark") =~ ^[0-9]+$ ]] && ! grep -q 'glpat\|FAKE\|dev1' "$mark" && echo true || echo false)"
-: >"$FAKE_LOG"; out=$(XDG_RUNTIME_DIR=$ert "$fetch" whoami)
-check "E fresh mark: no auth check, one GET" '.user == "dev1"' "$out"
-check "E fresh mark: the log is the GET only" '.' "$([[ $(auths) == 0 && $(grep -c . "$FAKE_LOG") == 1 ]] && echo true || echo false)"
-echo $((EPOCHSECONDS - 700)) >"$mark"; : >"$FAKE_LOG"; XDG_RUNTIME_DIR=$ert "$fetch" whoami >/dev/null
-check "E mark older than 10 min: checked again, renewed" '.' "$([[ $(auths) == 1 && $(<"$mark") -ge $((EPOCHSECONDS - 5)) ]] && echo true || echo false)"
-echo $((EPOCHSECONDS + 900)) >"$mark"; : >"$FAKE_LOG"; XDG_RUNTIME_DIR=$ert "$fetch" whoami >/dev/null
-check "E mark from the future: checked" '.' "$([[ $(auths) == 1 ]] && echo true || echo false)"
-rm -f "$mark"; echo "$EPOCHSECONDS" >"$work/elsewhere"; ln -s "$work/elsewhere" "$mark"; : >"$FAKE_LOG"; XDG_RUNTIME_DIR=$ert "$fetch" whoami >/dev/null
-check "E a symlinked mark is ignored" '.' "$([[ $(auths) == 1 ]] && echo true || echo false)"
-rm -f "$mark"; echo "x$EPOCHSECONDS" >"$mark"; : >"$FAKE_LOG"; XDG_RUNTIME_DIR=$ert "$fetch" whoami >/dev/null
-check "E a garbled mark is ignored" '.' "$([[ $(auths) == 1 ]] && echo true || echo false)"
-# Signed out in the terminal while the mark is fresh: the read fails, the check runs, logged-out.
-XDG_RUNTIME_DIR=$ert "$fetch" whoami >/dev/null; mv "$FAKE_DIR/user.json" "$FAKE_DIR/user.off"; : >"$FAKE_LOG"
+check "E a read: no auth check, one GET" '.user == "dev1"' "$out"
+check "E ... the log is the GET only, no mark written" '.' "$([[ $(auths) == 0 && $(grep -c . "$FAKE_LOG") == 1 && ! -e $mark ]] && echo true || echo false)"
+fx boards <<<'[{"id":7,"name":"Dev","lists":[]}]'; fx open <<<'[]'; fx closed <<<'[]'
+: >"$FAKE_LOG"; out=$(XDG_RUNTIME_DIR=$ert "$fetch" --project a/b)
+check "E a board refresh: ready, no auth check" '.state == "ready"' "$out"
+check "E ... (log)" '.' "$([[ $(auths) == 0 && $(grep -c . "$FAKE_LOG") -ge 2 ]] && echo true || echo false)"
+# Signed out in the terminal: the read fails, the check runs, logged-out.
+mv "$FAKE_DIR/user.json" "$FAKE_DIR/user.off"; echo "$EPOCHSECONDS" >"$mark"; : >"$FAKE_LOG"
 out=$(FAKE_AUTH=no XDG_RUNTIME_DIR=$ert "$fetch" whoami)
-check "E fresh mark, read fails, signed out: logged-out" '.state == "logged-out"' "$out"
-check "E ... the check ran once and the mark is gone" '.' "$([[ $(auths) == 1 && ! -e $mark ]] && echo true || echo false)"
-XDG_RUNTIME_DIR=$ert "$fetch" whoami >/dev/null; : >"$FAKE_LOG"
-out=$(XDG_RUNTIME_DIR=$ert "$fetch" whoami)
-check "E fresh mark, read fails, still signed in: the read's own error" '.state == "error" and (.message | test("sign-in") | not)' "$out"
-check "E ... checked once, mark renewed" '.' "$([[ $(auths) == 1 && -f $mark ]] && echo true || echo false)"
+check "E read fails, signed out: logged-out" '.state == "logged-out"' "$out"
+check "E ... the check ran once, after the read; an old mark is gone" '.' "$([[ $(auths) == 1 && $(sed -n 2p "$FAKE_LOG") == 'auth status --hostname gitlab.com' && ! -e $mark ]] && echo true || echo false)"
+: >"$FAKE_LOG"; out=$(XDG_RUNTIME_DIR=$ert "$fetch" whoami)
+check "E read fails, still signed in: the read's own error" '.state == "error" and (.message | test("sign-in") | not)' "$out"
+check "E ... checked once, no mark written" '.' "$([[ $(auths) == 1 && ! -e $mark ]] && echo true || echo false)"
 mv "$FAKE_DIR/user.off" "$FAKE_DIR/user.json"
-XDG_RUNTIME_DIR=$ert "$fetch" logout >/dev/null
-check "E sign out clears the mark" '.' "$([[ ! -e $mark ]] && echo true || echo false)"
-: >"$FAKE_LOG"; "$fetch" whoami >/dev/null; "$fetch" whoami >/dev/null
-check "E no XDG_RUNTIME_DIR: no mark, checked every run" '.' "$([[ $(auths) == 2 ]] && echo true || echo false)"
+echo "$EPOCHSECONDS" >"$mark"; XDG_RUNTIME_DIR=$ert "$fetch" logout >/dev/null
+check "E sign out removes an old mark" '.' "$([[ ! -e $mark ]] && echo true || echo false)"
+: >"$FAKE_LOG"; XDG_RUNTIME_DIR=$ert "$fetch" whoami >/dev/null; XDG_RUNTIME_DIR=$ert "$fetch" close --project a/b --iid 3 >/dev/null
+check "E a write checks first, even right after a read" '.' "$([[ $(auths) == 1 && $(sed -n 2p "$FAKE_LOG") == 'auth status --hostname gitlab.com' ]] && echo true || echo false)"
+: >"$FAKE_LOG"; out=$(FAKE_AUTH=no "$fetch" close --project a/b --iid 3)
+check "E a write while signed out: logged-out, only the check ran" '.state == "logged-out"' "$out"
+check "E ... nothing sent" '.' "$([[ $(grep -c . "$FAKE_LOG") == 1 && $(auths) == 1 ]] && echo true || echo false)"
+# A public project: reads work signed out, so only the check before each write keeps it from being sent.
+for w in "move --project a/b --board 7 --iid 3 --from 11 --to 12" "relabel --project a/b --iid 3 --add bug" "close --project a/b --iid 3" \
+         "reopen --project a/b --iid 3"; do
+  # shellcheck disable=SC2086  # the words of one command
+  out=$(: >"$FAKE_LOG"; FAKE_AUTH=no FAKE_PUBLIC=1 "$fetch" $w)
+  check "E public project, signed out: ${w%% *} is logged-out" '.state == "logged-out"' "$out"
+  check "E public project, signed out: ${w%% *} sends nothing" '.' "$([[ $(grep -c . "$FAKE_LOG") == 1 && $(auths) == 1 ]] && echo true || echo false)"
+done
+check "E public project, signed out: a comment sends nothing" '.state == "logged-out"' "$(: >"$FAKE_LOG"; echo '{"body":"hi"}' | FAKE_AUTH=no FAKE_PUBLIC=1 "$fetch" comment --project a/b --iid 3)"
+check "E ... (log)" '.' "$([[ $(grep -c . "$FAKE_LOG") == 1 && $(auths) == 1 ]] && echo true || echo false)"
 : >"$FAKE_LOG"; XDG_RUNTIME_DIR=$ert FAKE_AUTH=offline "$fetch" whoami >/dev/null
 check "E a failed check leaves no mark" '.' "$([[ ! -e $mark ]] && echo true || echo false)"
 check "A whoami: signed out" '.state == "logged-out"' "$(FAKE_AUTH=no "$fetch" whoami)"
@@ -995,7 +1001,7 @@ check "MG the query: review requests without drafts, mine with them, newest 10 o
 check "MG the query asks for all projects (no project argument)" '.' "$(grep ' graphql ' "$FAKE_LOG" | grep -qE 'projectPath|projectId:|-f (p|id)=' && echo false || echo true)"
 gql "[$G88]" "[$G35]"
 : >"$FAKE_LOG"; out=$("$fetch" mrs)
-check "MG every state known: one call in all" '.' "$([[ $(grep -c . "$FAKE_LOG") == 2 ]] && grep -q '^auth status' "$FAKE_LOG" && echo true || echo false)"
+check "MG every state known: one call in all" '.' "$([[ $(grep -c . "$FAKE_LOG") == 1 ]] && grep -q ' graphql ' "$FAKE_LOG" && echo true || echo false)"
 check "MG pipeline link made absolute on this host; merge status lower case" '.review[0].pipeline == {"status":"running","url":"https://gitlab.com/g/p41/-/pipelines/1"} and .review[0].status == "ci_still_running" and .mine[0].status == "mergeable"' "$out"
 check "MG reviewer states" '.review[0].reviewers == [{"username":"me","name":"Me","avatar":"","state":"requested_changes"},{"username":"x","name":"X","avatar":"","state":"approved"}]' "$out"
 for st in APPROVED:approved REQUESTED_CHANGES:requested_changes REVIEWED:reviewed REVIEW_STARTED:review_started UNAPPROVED:unapproved UNREVIEWED:unreviewed; do
