@@ -15,3 +15,12 @@ s-off-border	SettingsView.qml	hot ? view.host.foreground : Qt.rgba(view.fg.r, vi
 s-name-always-fg	SettingsView.qml	text: chk.modelData.name; color: chk.on ? view.host.foreground : view.host.dim;	text: chk.modelData.name; color: view.host.foreground;	qml
 s-account-fg	SettingsView.qml	: view.confirming ? view.host.foreground : view.host.dim	: view.host.foreground	qml
 s-title-small	SettingsView.qml	text: "Settings"; font { pixelSize: Style.font.subtitle;	text: "Settings"; font { pixelSize: Style.font.bodySmall;	qml
+b-heading-big	BotsSection.qml	    font { pixelSize: Style.font.caption; bold: true; capitalization: Font.AllUppercase; letterSpacing: 1 }\n  }\n  // A setting's name	    font { pixelSize: Style.font.bodySmall; bold: true; capitalization: Font.AllUppercase; letterSpacing: 1 }\n  }\n  // A setting's name	qml
+b-intro-dim	BotsSection.qml	width: parent.width; wrapMode: Text.Wrap; color: sec.host.quiet; font.pixelSize: Style.font.caption	width: parent.width; wrapMode: Text.Wrap; color: sec.host.dim; font.pixelSize: Style.font.caption	qml
+b-help-below	BotsSection.qml	      Hint { anchors.baseline: busyCaption.baseline; wrapMode: Text.NoWrap; text: "Open and Closed never count." }\n    }\n	    }\n    Hint { width: parent.width; text: "Open and Closed never count." }\n	qml
+b-unaligned	BotsSection.qml	    width: Math.max(implicitWidth, Math.floor((sec.width - 3 * Style.space(6)) / 4))\n	    // (natural width)\n	qml
+b-check-filled	BotsSection.qml	color: check.on ? Qt.rgba(sec.host.accent.r, sec.host.accent.g, sec.host.accent.b, 0.18) : "transparent"	color: check.on ? sec.host.accent : "transparent"	qml
+b-list-title	BotsSection.qml	text: "On " + sec.host.project	text: "Bots on " + sec.host.project	qml
+b-boxed	BotsSection.qml	    color: "transparent"\n    border { width: 0;	    color: Qt.rgba(sec.host.foreground.r, sec.host.foreground.g, sec.host.foreground.b, 0.035)\n    border { width: 1;	qml
+b-bold-names	BotsSection.qml	            font.pixelSize: Style.font.bodySmall\n          }\n          Row {	            font { pixelSize: Style.font.bodySmall; bold: true }\n          }\n          Row {	qml
+b-rule-dim	BotsSection.qml	color: sec.host.quiet; font.pixelSize: Style.font.bodySmall\n              text: !bot.ok	color: sec.host.dim; font.pixelSize: Style.font.bodySmall\n              text: !bot.ok	qml

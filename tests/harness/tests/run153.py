@@ -65,6 +65,24 @@ ok("G10 Alerts: its help is quiet", len(ah) == 1 and same(ah[0].property("color"
 acc = bt(lambda it: str(it.property("text") or "") == "Signed in as o_devvy on gitlab.com")
 ok("G11 Account: who is signed in, dim; Sign out in the accent", len(acc) == 1 and same(acc[0].property("color"), col("dim")) and same(txt("Sign out")[0].property("color"), col("accent")))
 ok("G12 'Settings' as the view's title (subtitle size)", txt("Settings")[0].property("font").pixelSize() == h.ev("Style.font.subtitle"))
+# --- stage 2: BotsSection
+b = txt("Bots")[0]
+ok("B1 the Bots heading matches the others", b.property("font").pixelSize() == g.property("font").pixelSize() and b.property("font").capitalization() == QFont.AllUppercase)
+intro = txt("Dots under the header show who is working, read from the cards.")
+ok("B2 one quiet line of intro", len(intro) == 1 and same(intro[0].property("color"), col("quiet")))
+bc = txt("Busy when its card is in"); bh = txt("Open and Closed never count.")
+ok("B3 'Busy when its card is in', its help on the same line", len(bc) == 1 and len(bh) == 1 and abs(y_of(bc[0]) + bc[0].property("baselineOffset") - y_of(bh[0]) - bh[0].property("baselineOffset")) < 1.5 and x_of(bh[0]) > x_of(bc[0]))
+busy = checks(lambda it: bs.isAncestorOf(it))
+bx = [round(x_of(c)) for c in busy]
+ok("B4 the busy check boxes line up with Start collapsed's", len(busy) == 5 and bx[:4] == xs[:4], (bx, xs[:4]))
+bon = [c for c in busy if c.property("on")]
+ok("B5 ticked busy boxes: the same accent outline", bon and same(pv(box(bon[0]), "border.color"), col("accent")) and pv(box(bon[0]), "color.a") < 0.3)
+lt = txt("On group/app")
+ok("B6 the list is titled 'On group/app'", len(lt) == 1)
+pn = [it for it in h.walk(bs) if it.inherits("QQuickRectangle") and any(str(c.property("text") or "") == "App UI" for c in h.walk(it) if c.inherits("QQuickText")) and it.width() >= bs.width() - 1]
+ok("B7 the bot list has no box: no fill, no outline", pn and all(pv(p, "color.a") == 0 and pv(p, "border.width") == 0 for p in pn), [(pv(p, "color.a"), pv(p, "border.width")) for p in pn])
+nm = txt("App UI")
+ok("B8 bot names plain, not bold; rules quiet", nm and not nm[0].property("font").bold() and same(txt("cards labelled")[0].property("color"), col("quiet")))
 shot("settings")
 print("passed %d failed %d" % (sum(ALL), len(ALL) - sum(ALL)))
 h.finish()
