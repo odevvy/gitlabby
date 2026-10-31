@@ -7,6 +7,6 @@ still-bulk-own-only	BulkBar.qml	runProcess.running || host.moveStillRunning	runP
 pick-closed-stale	Board.qml	if (bulkBar.running || bulkBar.armed || bulkBar.mode	if (bulkBar.busy || bulkBar.armed || bulkBar.mode	qml
 apply-always-columns	Board.qml	if (JSON.stringify(nextColumns) !== JSON.stringify(columns)) columns = nextColumns	columns = nextColumns	qml
 apply-always-colors	Board.qml	if (JSON.stringify(nextColors) !== JSON.stringify(labelColors)) labelColors = nextColors	labelColors = nextColors	qml
-rotation-closed	BoardHeader.qml	running: host.loading && host.opened	running: host.loading	qml
+rotation-closed	Board.qml	refreshActive: opened && (	refreshActive: (	qml
 openurl-own-check	Board.qml	var link = Logic.httpsUrl(url)	var link = /^https:\/\//.test(String(url || "")) ? String(url) : ""	qml
 signout-old	SettingsView.qml	Sign out of glab on gitlab.com? This also signs glab out in your terminal and scripts on this computer.	Sign out of gitlab.com?	qml
