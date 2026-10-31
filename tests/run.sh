@@ -372,7 +372,10 @@ check "R peek() is GET" '.' "$(grep -qxF 'peek() { bounded api --hostname "$host
 # shellcheck disable=SC2016  # the pattern is literal board-fetch source
 check "R glab runs only in bounded(), under timeout" '.' "$(grep -E '(^|[^-])\<glab "' <<<"$src" | grep -qvF '  { timeout -k 5 30 glab "$@"; } 2>"${errors:-/dev/null}"' && echo false ||
   grep -c 'timeout -k 5 30 glab' <<<"$src" | grep -qx 1 && echo true || echo false)"
-check "R glab api only in get(), peek(), write_issue(), write_labels(), write_state() and write_note()" '.' "$(grep -c 'bounded api' <<<"$src" | grep -qx 6 && echo true || echo false)"
+check "R glab api only in get(), peek(), write_issue(), write_labels(), write_state(), write_note() and the one GraphQL query" '.' "$(grep -c 'bounded api' <<<"$src" | grep -qx 7 && echo true || echo false)"
+# shellcheck disable=SC2016  # the pattern is literal board-fetch source
+check "R the GraphQL call sends a constant query, the project only as a variable" '.' "$(grep 'bounded api' <<<"$src" | grep -c ' graphql ' | grep -qx 1 &&
+  grep -qF 'bounded api --hostname "$hostname" graphql -f "query=$q" "${pv[@]}"' <<<"$src" && ! grep -qiE 'mutation|subscription' <<<"$src" && echo true || echo false)"
 check "R write_issue only inside move" '.' "$(awk '/^  move\)/{m=1} /^    exit 0 ;;/{if(m)m=2} /write_issue/{if(m!=1)bad=1} END{print bad?"false":"true"}' <<<"$src")"
 check "R move: issue read, then stale exit, then the PUT" '.' "$(awk '/^  move\)/{m=1} /^    exit 0 ;;/{if(m==1)m=2}
   m==1 && /get "\$base\/issues\/\$iid"/{g=NR} m==1 && /emit stale/{st=NR} m==1 && /\| write_issue/{w=NR}
@@ -940,6 +943,66 @@ check "MR at most 10 per list" '(.review | length) == 10 and (.mine | length) ==
 check "MR at most 10 rows asked about per list" '.' "$([[ $(grep -c '/reviewers$' "$FAKE_LOG") == 20 ]] && echo true || echo false)"
 check "MR links only over https" '[.mine[].url] | unique == [""]' "$out"
 check "MR no token in output" '.' "$(grep -qiE 'glpat|bearer' <<<"$mr_out$out" && echo false || echo true)"
+
+# --- MG: the same view from one GraphQL query ---------------------------------------
+# The fixture is the MR block's data as GraphQL answers it (enum values upper
+# case, relative pipeline paths, reviewer states on each reviewer). 86 has a
+# reviewer without a state and 12 an unknown one: those two go to REST.
+gu() { jq -cn --arg u "$1" --arg n "$2" --arg a "${3:-}" --arg st "${4:-}" '{username: $u, name: $n, avatarUrl: (if $a == "" then null else $a end),
+  mergeRequestInteraction: {reviewState: (if $st == "" then null else $st end)}}'; }
+gm() { # iid project_id path draft status pipeline-json reviewers-json
+  jq -cn --argjson i "$1" --argjson p "$2" --arg path "$3" --argjson d "$4" --arg st "$5" --argjson pl "$6" --argjson rv "$7" \
+    '{projectId: $p, iid: "\($i)", title: "MR \($i) <b>", webUrl: "https://gitlab.com/\($path)/-/merge_requests/\($i)", draft: $d,
+      reference: "\($path)!\($i)", sourceBranch: "b\($i)", updatedAt: "2026-10-30T12:00:00Z", detailedMergeStatus: $st,
+      author: {username: "bot\($i)", name: "Bot \($i)", avatarUrl: "https://x/a.png"}, headPipeline: $pl, reviewers: {nodes: $rv}}'; }
+gql() { jq -cn --argjson r "$1" --argjson m "$2" '{data: {currentUser: {review: {nodes: $r}, mine: {nodes: $m}}}}' | fx graphql; }
+G88=$(gm 88 5 g/p41 false CI_STILL_RUNNING '{"status":"RUNNING","path":"/g/p41/-/pipelines/1"}' "[$(gu me Me "" REQUESTED_CHANGES),$(gu x X "" APPROVED)]")
+G86=$(gm 86 5 g/p41 false MERGEABLE null "[$(gu me Me)]")
+G35=$(gm 35 6 o/board false MERGEABLE null '[]')
+G12=$(gm 12 7 o/dots true DRAFT_STATUS null "[$(gu r1 'R One' http://x/a.png BOGUS)]")
+printf '[%s,%s,%s]' "$(mrl 88 5 g/p41 false ci_still_running)" "$(mrl 87 5 g/p41 true draft_status)" "$(mrl 86 5 g/p41 false mergeable '[{"username":"me","name":"Me"}]')" | fx mrs-review
+printf '[%s,%s]' "$(mrl 35 6 o/board false checking)" "$(mrl 12 7 o/dots true draft_status '[{"username":"r1","name":"R One","avatar_url":"http://x/a.png"}]')" | fx mrs-mine
+rest_out=$("$fetch" mrs)
+gql "[$G88,$G86]" "[$G35,$G12]"
+: >"$FAKE_LOG"; out=$("$fetch" mrs)
+check "MG the same rows as REST" '(input | del(.updatedAt)) == del(.updatedAt)' "$(printf '%s\n%s' "$rest_out" "$out")"
+check "MG one query, no list GETs; REST GETs only for 86 and 12" '.' "$([[ $(grep -c ' graphql -f query=query' "$FAKE_LOG") == 1 && $(grep -c 'scope=' "$FAKE_LOG") == 0 &&
+  $(grep -cE 'merge_requests/(86|12)(/reviewers)?$' "$FAKE_LOG") == 4 && $(grep -cE 'merge_requests/[0-9]+(/reviewers)?$' "$FAKE_LOG") == 4 ]] && ! grep -qE 'NON-GET|BAD-GRAPHQL' "$FAKE_LOG" && echo true || echo false)"
+check "MG the query: review requests without drafts, mine with them, newest 10 of each" '.' "$(grep ' graphql ' "$FAKE_LOG" | grep -qF 'review: reviewRequestedMergeRequests(state: opened, draft: false, sort: UPDATED_DESC, first: 10)' &&
+  grep ' graphql ' "$FAKE_LOG" | grep -qF 'mine: authoredMergeRequests(state: opened, sort: UPDATED_DESC, first: 10)' && echo true || echo false)"
+check "MG the query asks for all projects (no project argument)" '.' "$(grep ' graphql ' "$FAKE_LOG" | grep -qE 'projectPath|projectId:|-f (p|id)=' && echo false || echo true)"
+gql "[$G88]" "[$G35]"
+: >"$FAKE_LOG"; out=$("$fetch" mrs)
+check "MG every state known: one call in all" '.' "$([[ $(grep -c . "$FAKE_LOG") == 2 ]] && grep -q '^auth status' "$FAKE_LOG" && echo true || echo false)"
+check "MG pipeline link made absolute on this host; merge status lower case" '.review[0].pipeline == {"status":"running","url":"https://gitlab.com/g/p41/-/pipelines/1"} and .review[0].status == "ci_still_running" and .mine[0].status == "mergeable"' "$out"
+check "MG reviewer states" '.review[0].reviewers == [{"username":"me","name":"Me","avatar":"","state":"requested_changes"},{"username":"x","name":"X","avatar":"","state":"approved"}]' "$out"
+for st in APPROVED:approved REQUESTED_CHANGES:requested_changes REVIEWED:reviewed REVIEW_STARTED:review_started UNAPPROVED:unapproved UNREVIEWED:unreviewed; do
+  gql "[$(gm 88 5 g/p41 false MERGEABLE null "[$(gu me Me "" "${st%%:*}")]")]" '[]'
+  check "MG reviewState ${st%%:*} -> ${st##*:}" '.review[0].reviewers[0].state == "'"${st##*:}"'"' "$("$fetch" mrs)"
+done
+gql "[$(gm 88 5 g/p41 false MERGEABLE '{"status":"SUCCESS","path":"/p/1"}' '[]')]" "[$(jq -c '.author.avatarUrl = "/uploads/a.png"' <<<"$G35")]"
+out=$("$fetch" mrs)
+check "MG SUCCESS -> passed; a relative avatar gets this host" '.review[0].pipeline.status == "passed" and .mine[0].author.avatar == "https://gitlab.com/uploads/a.png"' "$out"
+: >"$FAKE_LOG"; "$fetch" mrs --project g/p41 >/dev/null
+# shellcheck disable=SC2016  # GraphQL variables in the pattern
+check "MG this project: by path, as a variable" '.' "$(grep ' graphql ' "$FAKE_LOG" | grep -q 'query=query($p: String) .*projectPath: $p, .* -f p=g/p41$' && echo true || echo false)"
+: >"$FAKE_LOG"; "$fetch" mrs --project 42 >/dev/null
+# shellcheck disable=SC2016  # GraphQL variables in the pattern
+check "MG this project: by numeric id, as a global id" '.' "$(grep ' graphql ' "$FAKE_LOG" | grep -q 'query=query($id: ProjectID) .*projectId: $id, .* -f id=gid://gitlab/Project/42$' && echo true || echo false)"
+echo '{"errors":[{"message":"Field x does not exist"}],"data":null}' | fx graphql
+: >"$FAKE_LOG"; out=$("$fetch" mrs)
+check "MG GraphQL errors: the whole view from REST, same rows" '(input | del(.updatedAt)) == del(.updatedAt)' "$(printf '%s\n%s' "$rest_out" "$out")"
+check "MG ... the REST lists were read" '.' "$([[ $(grep -c 'scope=' "$FAKE_LOG") == 2 ]] && echo true || echo false)"
+gql "[$G88]" "[$G35]"; jq -c '. + {errors: [{message: "partial"}]}' "$FAKE_DIR/graphql.json" >"$FAKE_DIR/g.t" && mv "$FAKE_DIR/g.t" "$FAKE_DIR/graphql.json"
+: >"$FAKE_LOG"; FAKE_GQL_EXIT0=1 "$fetch" mrs >/dev/null
+check "MG data with errors (partial): REST, not half an answer" '.' "$([[ $(grep -c 'scope=' "$FAKE_LOG") == 2 ]] && echo true || echo false)"
+echo '{"data":{"currentUser":null}}' | fx graphql
+check "MG no current user: REST" '(input | del(.updatedAt)) == del(.updatedAt)' "$(printf '%s\n%s' "$rest_out" "$("$fetch" mrs)")"
+gql "[$G88]" "[$G35]"
+out=$(FAKE_HANG=' graphql ' "$fetch" mrs)
+check "MG a hung query: REST answers" '.state == "ready" and (input | del(.updatedAt)) == del(.updatedAt)' "$(printf '%s\n%s' "$rest_out" "$out")"
+check "MG no token in output" '.' "$(grep -qiE 'glpat|bearer' <<<"$out" && echo false || echo true)"
+rm -f "$FAKE_DIR/graphql.json"
 
 # --- AC: access level and token scopes (reads only) -------------------------------
 reset

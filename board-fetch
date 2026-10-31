@@ -240,34 +240,81 @@ JQ
 # of the merge request (its head_pipeline and a fresh merge status) and one of
 # its reviewers (each one's review state). A failed or slow one leaves that row
 # as the list had it: no pipeline, reviewers without a state.
+# First one GraphQL query (a read: "query", never "mutation"; the project goes
+# in as a variable) for both lists with each MR's pipeline, merge status and
+# reviewer states. Its answer is turned into the REST shapes below, so the rows
+# come out the same. A reviewer state outside GitLab's MergeRequestReviewState
+# (APPROVED, REQUESTED_CHANGES, REVIEWED, REVIEW_STARTED, UNAPPROVED,
+# UNREVIEWED) sends that MR to the REST GETs; any GraphQL error, timeout or
+# unexpected answer sends the whole view to REST.
+MR_FIELDS='nodes { projectId iid title webUrl draft reference(full: true) sourceBranch updatedAt detailedMergeStatus author { username name avatarUrl } headPipeline { status path } reviewers(first: 20) { nodes { username name avatarUrl mergeRequestInteraction { reviewState } } } }'
+mrs_graphql() { # writes $tmp/mrs-review, $tmp/mrs-mine, $tmp/mrd, $tmp/mrr.all and $tmp/mrs-redo, or fails
+  local vars="" arg="" q
+  # shellcheck disable=SC2016  # GraphQL variables, not shell ones
+  if [[ $project =~ ^[1-9][0-9]*$ ]]; then vars='($id: ProjectID)' arg='projectId: $id, '
+  elif [[ -n $project ]]; then vars='($p: String)' arg='projectPath: $p, '; fi
+  q="query$vars { currentUser { review: reviewRequestedMergeRequests(${arg}state: opened, draft: false, sort: UPDATED_DESC, first: 10) { $MR_FIELDS } mine: authoredMergeRequests(${arg}state: opened, sort: UPDATED_DESC, first: 10) { $MR_FIELDS } } }"
+  local -a pv=()
+  if [[ $project =~ ^[1-9][0-9]*$ ]]; then pv=(-f "id=gid://gitlab/Project/$project")
+  elif [[ -n $project ]]; then pv=(-f "p=$project"); fi
+  bounded api --hostname "$hostname" graphql -f "query=$q" "${pv[@]}" >"$tmp/gql" || return 1
+  jq -c --arg host "$hostname" "$DEFS"'
+    def abs: if type == "string" and startswith("/") then "https://\($host)\(.)" else . end;
+    def user: if type == "object" then {username, name, avatar_url: (.avatarUrl | abs)} else {} end;
+    def key: "\(.projectId)/\(.iid)";
+    def known: IN("APPROVED", "REQUESTED_CHANGES", "REVIEWED", "REVIEW_STARTED", "UNAPPROVED", "UNREVIEWED");
+    def row: {project_id: .projectId, iid: (.iid | tonumber), title, web_url: .webUrl, draft, references: {full: .reference},
+              source_branch: .sourceBranch, updated_at: .updatedAt, detailed_merge_status: (.detailedMergeStatus | strings | ascii_downcase),
+              author: (.author | user), reviewers: [(.reviewers.nodes // [])[] | user]};
+    def ok: all((.reviewers.nodes // [])[]; .mergeRequestInteraction.reviewState | type == "string" and known);
+    select((.errors // null) == null) | .data.currentUser
+    | select(type == "object" and (.review.nodes | type) == "array" and (.mine.nodes | type) == "array")
+    | ([.review.nodes[], .mine.nodes[]] | unique_by(key)) as $all
+    | {review: [.review.nodes[] | row], mine: [.mine.nodes[] | row],
+       mrd: ([$all[] | select(ok) | {(key): {project_id: .projectId, iid: (.iid | tonumber),
+              detailed_merge_status: (.detailedMergeStatus | strings | ascii_downcase),
+              head_pipeline: (.headPipeline | if type == "object" then {status: (.status | strings | ascii_downcase), web_url: (.path | abs)} else null end)}}] | add // {}),
+       mrr: ([$all[] | select(ok) | {(key): [(.reviewers.nodes // [])[] | {user: user, state: (.mergeRequestInteraction.reviewState | ascii_downcase)}]}] | add // {}),
+       redo: [$all[] | select(ok | not) | "\(.projectId) \(.iid)"]}' "$tmp/gql" >"$tmp/gql.conv" 2>/dev/null && [[ -s $tmp/gql.conv ]] || return 1
+  jq -c '.review' "$tmp/gql.conv" >"$tmp/mrs-review" && jq -c '.mine' "$tmp/gql.conv" >"$tmp/mrs-mine" &&
+    jq -c '.mrd' "$tmp/gql.conv" >"$tmp/mrd" && jq -c '.mrr' "$tmp/gql.conv" >"$tmp/mrr.all" &&
+    jq -r '.redo[]' "$tmp/gql.conv" >"$tmp/mrs-redo"
+}
 mrs_list() {
   local prefix="" kind pid miid
   [[ -z $project ]] || prefix="$base/"
   local q="state=opened&order_by=updated_at&sort=desc&per_page=20"
-  get "${prefix}merge_requests?scope=reviews_for_me&draft=false&$q" >"$tmp/mrs-review" || emit error "Could not load merge requests."
-  get "${prefix}merge_requests?scope=created_by_me&$q" >"$tmp/mrs-mine" || emit error "Could not load merge requests."
-  jq -se 'length == 2 and all(type == "array")' "$tmp/mrs-review" "$tmp/mrs-mine" >/dev/null 2>&1 ||
-    emit error "GitLab returned an unreadable response."
+  if ! mrs_graphql; then
+    get "${prefix}merge_requests?scope=reviews_for_me&draft=false&$q" >"$tmp/mrs-review" || emit error "Could not load merge requests."
+    get "${prefix}merge_requests?scope=created_by_me&$q" >"$tmp/mrs-mine" || emit error "Could not load merge requests."
+    jq -se 'length == 2 and all(type == "array")' "$tmp/mrs-review" "$tmp/mrs-mine" >/dev/null 2>&1 ||
+      emit error "GitLab returned an unreadable response."
+    echo '{}' >"$tmp/mrd"; echo '{}' >"$tmp/mrr.all"
+    jq -rn --slurpfile r "$tmp/mrs-review" --slurpfile m "$tmp/mrs-mine" \
+      '[($r[0] | map(select(.draft != true)) | .[:10][]), ($m[0][:10][])] | unique_by([.project_id, .iid])[] | "\(.project_id) \(.iid)"' >"$tmp/mrs-redo" 2>/dev/null
+  fi
   mr_detail() { # project_id iid
     peek "projects/$1/merge_requests/$2" >"$tmp/mrd-$1-$2" || rm -f "$tmp/mrd-$1-$2"
     peek "projects/$1/merge_requests/$2/reviewers" >"$tmp/mrr-$1-$2" || rm -f "$tmp/mrr-$1-$2"
     return 0
   }
+  # The REST GETs: every row (REST), or only the MRs GraphQL couldn't answer.
   while read -r pid miid; do
     [[ $pid =~ ^[1-9][0-9]*$ && $miid =~ ^[1-9][0-9]*$ ]] || continue
     while (($(jobs -rp | wc -l) >= 4)); do wait -n; done
     mr_detail "$pid" "$miid" &
-  done < <(jq -rn --slurpfile r "$tmp/mrs-review" --slurpfile m "$tmp/mrs-mine" \
-    '[($r[0] | map(select(.draft != true)) | .[:10][]), ($m[0][:10][])] | unique_by([.project_id, .iid])[] | "\(.project_id) \(.iid)"' 2>/dev/null)
+  done <"$tmp/mrs-redo"
   wait
-  jq -cs 'map(objects | select(.project_id and .iid) | {("\(.project_id)/\(.iid)"): .}) | add // {}' "$tmp"/mrd-* </dev/null >"$tmp/mrd" 2>/dev/null || echo '{}' >"$tmp/mrd"
+  local -a details=("$tmp"/mrd-*); [[ -e ${details[0]} ]] || details=()
+  jq -cs --slurpfile had "$tmp/mrd" '$had[0] + (map(objects | select(.project_id and .iid) | {("\(.project_id)/\(.iid)"): .}) | add // {})' "${details[@]}" </dev/null >"$tmp/mrd.all" 2>/dev/null &&
+    mv -f "$tmp/mrd.all" "$tmp/mrd" || echo '{}' >"$tmp/mrd"
   : >"$tmp/mrr"
   for f in "$tmp"/mrr-*; do
     [[ -e $f ]] || continue
     kind=${f##*/mrr-}
     jq -c --arg k "${kind/-//}" 'select(type == "array") | {($k): .}' "$f" >>"$tmp/mrr" 2>/dev/null
   done
-  jq -cs 'add // {}' "$tmp/mrr" >"$tmp/mrr.all" 2>/dev/null || echo '{}' >"$tmp/mrr.all"
+  jq -cs --slurpfile had "$tmp/mrr.all" '$had[0] + (add // {})' "$tmp/mrr" >"$tmp/mrr.new" 2>/dev/null && mv -f "$tmp/mrr.new" "$tmp/mrr.all" || echo '{}' >"$tmp/mrr.all"
   jq -cn --slurpfile r "$tmp/mrs-review" --slurpfile m "$tmp/mrs-mine" --slurpfile d "$tmp/mrd" --slurpfile v "$tmp/mrr.all" \
     --arg scope "${project:-all}" "$DEFS"'
     def person: {username: (.username // ""), name: (.name // .username // ""), avatar: (.avatar_url | https)};
