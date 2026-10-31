@@ -11,7 +11,7 @@ import sys, os, json, copy, shutil, tempfile, subprocess; sys.path.insert(0, os.
 from lib import *
 from PySide6.QtGui import QImage, QPainter, QColor
 out = sys.argv[2] if len(sys.argv) > 2 else None
-O406 = "/workspace/omarchy-406"
+O406 = os.environ.get("OMARCHY_PATH", os.path.expanduser("~/.local/share/omarchy"))  # Omarchy 4.0.6 checkout
 P = "group/app"
 BOTS = {P: {"busyLists": ["in progress", "review"], "bots": [{"name": "App UI", "label": "app-ui"}, {"name": "API", "label": "api"}]}}
 SETTINGS = {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": P, "defaultBoardId": "7", "defaultBoardName": "Development", "refreshIntervalSec": 60,

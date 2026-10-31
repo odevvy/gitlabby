@@ -35,7 +35,7 @@ h.click(boxes()[0]); h.spin(60)
 ok("A6 off again: nothing watched", h.ev("root.feed.watchedKeys") == [] and h.ev("root.bar.shell.writes")[-1].get("alerts") == {P: {"review": False, "idle": False}})
 h.stop_all()
 # --- notification mock renders ------------------------------------------------------
-NL = "/workspace/omarchy-406/shell/plugins/notifications/NotificationLogic.js"
+NL = os.path.join(os.environ.get("OMARCHY_PATH", os.path.expanduser("~/.local/share/omarchy")), "shell/plugins/notifications/NotificationLogic.js")
 CASES = [("notification-review", "#42 is in review", "#42 Login form shows the wrong error &lt;401&gt; · firelink21/phrase41"),
          ("notification-batch", "3 cards entered review", "#42 Login form shows the wrong…, #43 Rate limit the mail…, #47 Settings page +0 more · firelink21/phrase41".replace(" +0 more", "")),
          ("notification-idle", "Stopped working: API Engineer", "On firelink21/phrase41: API Engineer is waiting in review")]
