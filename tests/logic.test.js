@@ -736,10 +736,11 @@ test("merge requests view wiring: m and the header button open it; it loads on o
   const view = fs.readFileSync(path.join(dir, "MrsView.qml"), "utf8")
   assert.match(board, /MrsView \{ id: mrsView; host: root; anchors\.fill: parent; visible: root\.view === "mrs" \}/)
   assert.match(board, /if \(name === "mrs" && view !== "mrs"\) mrsView\.open\(\)/)
-  assert.match(board, /else if \(key === "m"\) root\.toggleView\("mrs"\)/)
-  assert.match(board, /key === "r" && root\.view === "mrs"\) mrsView\.refresh\(\)/)
-  assert.match(board, /root\.view === "mrs" && dy !== 0\) mrsView\.moveCursor\(dy\)/)
-  assert.match(board, /else if \(root\.view === "mrs"\) mrsView\.activate\(\)/)
+  const keys = fs.readFileSync(path.join(dir, "BoardKeys.qml"), "utf8")
+  assert.match(keys, /else if \(key === "m"\) host\.toggleView\("mrs"\)/)
+  assert.match(keys, /key === "r" && host\.view === "mrs"\) mrsView\.refresh\(\)/)
+  assert.match(keys, /host\.view === "mrs" && dy !== 0\) mrsView\.moveCursor\(dy\)/)
+  assert.match(keys, /else if \(host\.view === "mrs"\) mrsView\.activate\(\)/)
   const header = fs.readFileSync(path.join(dir, "BoardHeader.qml"), "utf8")
   assert.match(board, /BoardHeader \{\s*id: header\s*host: root\s*mrsScope: mrsView\.scope/)
   assert.match(header, /Logic\.mrBadge\(\(host\.feed\.mrAnswers\[mrsScope\] \|\| \{\}\)\.data\)/)
@@ -850,7 +851,7 @@ test("bulk bar wiring: only the single-card writes, one at a time, picks from v 
   assert.match(bar, /function finish\(\) \{\n    runProcess\.stdinEnabled = false/)
   assert.match(bar, /if \(out\.ok\) host\.feed\.noteOwnMove\(host\.fetchKey, plan\[step\]\.iid\)/)
   assert.match(board, /readonly property bool held: .*\|\| bulkBar\.busy \|\| bulkBar\.armed/)
-  assert.match(board, /if \(text\.toLowerCase\(\) === "v" && root\.view === "board"\) \{ root\.pickAtCursor\(\); return \}/)
+  assert.match(fs.readFileSync(path.join(dir, "BoardKeys.qml"), "utf8"), /if \(text\.toLowerCase\(\) === "v" && host\.view === "board"\) \{ host\.pickAtCursor\(\); return \}/)
   assert.match(view, /if \(mouse\.modifiers & Qt\.ControlModifier\) view\.host\.togglePick\(column\.modelData, card\.modelData\.iid\)/)
 })
 
@@ -968,4 +969,21 @@ test("Logic.js: the QML entry imports every module, hands over what each needs a
   }
   // node sees the same names QML does.
   assert.deepEqual(Object.keys(L).sort(), got.map(g => g[0]).sort())
+})
+
+// --- 0.1.47 key routing in BoardKeys.qml ------------------------------------------------
+test("BoardKeys.qml: Board.qml's keyCatcher, handed root and every view its keys go to", () => {
+  const fs = require("node:fs"), path = require("node:path"), dir = path.join(__dirname, "..")
+  const board = fs.readFileSync(path.join(dir, "Board.qml"), "utf8")
+  const keys = fs.readFileSync(path.join(dir, "BoardKeys.qml"), "utf8")
+  assert.match(board, /BoardKeys \{[^\n]*\n\s*id: keyCatcher\n\s*host: root\n\s*views: \(\{ issue: issueView, picker: picker, settings: settingsView, bulk: bulkBar, mrs: mrsView, setup: setupView \}\)/)
+  // The routing lives in one place: no key handler left in Board.qml.
+  assert.doesNotMatch(board, /on(CloseRequested|DeleteRequested|TabRequested|MoveRequested|ActivateRequested|TextKey):/)
+  assert.match(keys, /^PanelKeyCatcher \{$/m)
+  for (const [name, key] of [["issueView", "issue"], ["picker", "picker"], ["settingsView", "settings"], ["bulkBar", "bulk"], ["mrsView", "mrs"], ["setupView", "setup"]])
+    assert.match(keys, new RegExp("readonly property Item " + name + ": views\\." + key + " \\|\\| null"))
+  // Only the host and the passed views: no id from Board.qml.
+  assert.doesNotMatch(keys, /\broot\./)
+  for (const h of ["onCloseRequested", "onDeleteRequested", "onTabRequested", "onMoveRequested", "onActivateRequested", "onTextKey"])
+    assert.match(keys, new RegExp("^  " + h + ":", "m"))
 })
