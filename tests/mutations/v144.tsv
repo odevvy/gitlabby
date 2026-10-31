@@ -1,0 +1,13 @@
+bk-guard-uncached	board-fetch	if ((in_bulk)) && [[ -f $tmp/guard-b ]]	if false	sh
+bk-guard-not-saved	board-fetch	  ((in_bulk)) && cp "$tmp/b" "$tmp/guard-b"	  :	sh
+bk-labels-uncached	board-fetch	      ((in_bulk)) && cp "$tmp/l" "$tmp/guard-l"	      :	sh
+bk-any-project	board-fetch	[[ $project == "$run_project" ]] ||	true ||	sh
+bk-any-command	board-fetch	^(move|relabel|close|reopen)$ ]] || emit error "Bulk	^(move|relabel|close|reopen|comment|logout)$ ]] || emit error "Bulk	sh
+bk-host-from-step	board-fetch	  hostname=$run_host deadline=	  deadline=	sh
+bk-one-deadline	board-fetch	 deadline=$((SECONDS + deadline_s))\n  check_args	\n  check_args	sh
+bk-emit-escapes	board-fetch	  local line=$1 args=()\n  exec 3>&1	  local line=$1 args=()	sh
+bk-stdin-kept-open	BulkBar.qml	    runProcess.stdinEnabled = false  // end	    // end	qml
+bk-new-process-per-card	BulkBar.qml	if (runProcess.running) { runProcess.write	if (false) { runProcess.write	qml
+bk-first-line-lost	BulkBar.qml	onStarted: { if (bar.pendingLine !== "") write(bar.pendingLine);	onStarted: {	qml
+bk-silent-end-hangs	BulkBar.qml	onRunningChanged: if (!running && bar.running)	onRunningChanged: if (false)	qml
+bk-stdin-off	BulkBar.qml	    runProcess.stdinEnabled = true\n	\n	qml
