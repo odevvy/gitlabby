@@ -9,7 +9,11 @@ from PySide6.QtTest import QTest
 from PySide6.QtQuick import QQuickItem
 HERE = os.path.dirname(os.path.abspath(__file__)); TOOLING = os.path.dirname(HERE)
 app = QGuiApplication.instance() or QGuiApplication(sys.argv)
-for f in os.listdir(TOOLING + "/fonts"): QFontDatabase.addApplicationFont(TOOLING + "/fonts/" + f)
+# Renders use the system fonts (Omarchy ships JetBrainsMono Nerd Font); OGB_FONTS
+# may name a directory of extra font files.
+for d in [os.environ.get("OGB_FONTS", ""), TOOLING + "/fonts"]:
+    if d and os.path.isdir(d):
+        for f in os.listdir(d): QFontDatabase.addApplicationFont(os.path.join(d, f))
 
 class Harness:
     def __init__(self, src, settings=None):
