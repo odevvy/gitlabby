@@ -389,8 +389,15 @@ browser. The lists load when you open the view, switch its scope, or press
 `r`; nothing loads them in the background. An answer under a minute old is
 reused, so a second monitor shows the same lists without asking GitLab again.
 The badge on the button is how many waited on your review at the last look.
-A load costs two list GETs plus, per row, one GET of the merge request
-(pipeline and status) and one of its reviewers (their states).
+A load is one GraphQL query (`glab api graphql`, a read-only `query`; the
+project goes in as a variable) for both lists, each MR's pipeline, merge
+status and reviewer states. A reviewer state GitLab's docs don't list
+(`MergeRequestReviewState`: approved, requested changes, reviewed, review
+started, unapproved, unreviewed) sends that one MR to the REST GETs below. If
+the query fails, times out or answers something unexpected, the view loads
+the REST way: two list GETs plus, per row, one GET of the merge request
+(pipeline and status) and one of its reviewers (their states). Either way the
+rows are the same.
 
 ## Cards and colors
 
@@ -554,7 +561,8 @@ Clear it with
 
 `glab` handles all authentication; the plugin never reads, stores, or prints
 a token, and never shows glab's own messages. Every read is a
-`glab api --method GET` request. The writes are one `PUT` to the issue when
+`glab api --method GET` request, except the Merge requests view's one
+GraphQL `query` (sent as a POST, as GraphQL requires; it reads only). The writes are one `PUT` to the issue when
 you drop a card, add or remove a label, or close or reopen it, and one `POST`
 to its notes when you comment; they need the `api` scope (what `glab auth login` asks for by
 default). Each `board-fetch` run ends within 40 seconds: no single glab call
