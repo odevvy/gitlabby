@@ -76,17 +76,18 @@ Column {
   function toggleBusy(column) { host.saveBots(Logic.withBusy(raw, host.project, column, !Logic.has(busy, column))) }
   Connections { target: sec.host; function onProjectChanged() { sec.cancel() } }
 
+  // The section heading, like Omarchy's PanelSectionHeader (as SettingsView's).
   component Heading: BoardText {
-    color: sec.host.dim
-    font { bold: true; capitalization: Font.AllUppercase; letterSpacing: 1 }
-  }
-  // A sub-heading inside the section, like Omarchy's PanelSectionHeader.
-  component Caption: BoardText {
     color: sec.host.dim
     font { pixelSize: Style.font.caption; bold: true; capitalization: Font.AllUppercase; letterSpacing: 1 }
   }
+  // A setting's name inside the section.
+  component Caption: BoardText {
+    font.pixelSize: Style.font.bodySmall
+  }
+  // One quiet line of help.
   component Hint: BoardText {
-    color: sec.host.dim
+    color: sec.host.quiet
     wrapMode: Text.Wrap
     font.pixelSize: Style.font.caption
   }
@@ -105,7 +106,7 @@ Column {
     spacing: Style.space(6)
     Rectangle {
       anchors.verticalCenter: parent.verticalCenter
-      width: Style.space(8); height: width; radius: width / 2
+      width: Style.space(6); height: width; radius: width / 2
       color: tag.column ? sec.host.columnAccent(tag.column) : sec.host.dim
     }
     BoardText { anchors.verticalCenter: parent.verticalCenter; text: tag.name; font.pixelSize: Style.font.bodySmall }
@@ -140,16 +141,19 @@ Column {
     readonly property bool clickable: true
     signal clicked()
     implicitWidth: checkRow.implicitWidth + Style.space(10); implicitHeight: Style.space(22)
+    // A quarter of the row, so the boxes line up with Start collapsed's.
+    width: Math.max(implicitWidth, Math.floor((sec.width - 3 * Style.space(6)) / 4))
     Row {
       id: checkRow
       anchors.verticalCenter: parent.verticalCenter
       spacing: Style.space(6)
+      // Ticked: an accent outline, tint and tick; unticked: a hairline square.
       Rectangle {
         anchors.verticalCenter: parent.verticalCenter
-        width: Style.space(16); height: width; radius: Style.space(4)
-        color: check.on ? sec.host.accent : "transparent"
-        border { width: 1; color: check.on ? sec.host.accent : checkMouse.containsMouse ? sec.host.foreground : sec.host.dim }
-        BoardText { anchors.centerIn: parent; visible: check.on; text: "\uf00c"; color: sec.host.background; font.pixelSize: Style.font.caption }
+        width: Style.space(14); height: width; radius: Style.space(3)
+        color: check.on ? Qt.rgba(sec.host.accent.r, sec.host.accent.g, sec.host.accent.b, 0.18) : "transparent"
+        border { width: 1; color: check.on ? sec.host.accent : checkMouse.containsMouse ? sec.host.foreground : Qt.rgba(sec.host.foreground.r, sec.host.foreground.g, sec.host.foreground.b, 0.3) }
+        BoardText { anchors.centerIn: parent; visible: check.on; text: "\uf00c"; color: sec.host.accent; font.pixelSize: Style.font.caption }
       }
       ColumnTag { anchors.verticalCenter: parent.verticalCenter; name: check.label }
     }
@@ -173,10 +177,10 @@ Column {
   Heading { text: "Bots" }
   BoardText {
     id: intro
-    width: parent.width; wrapMode: Text.Wrap; color: sec.host.dim
+    width: parent.width; wrapMode: Text.Wrap; color: sec.host.quiet; font.pixelSize: Style.font.caption
     text: sec.bots.length === 0 && !sec.adding
       ? "Show who is busy on " + sec.host.project + ": a dot per bot under the header, read from the cards already on the board."
-      : "A dot per bot under the board header shows who is working, read from the cards on this board."
+      : "Dots under the header show who is working, read from the cards."
   }
   BoardText {
     id: problem
@@ -197,8 +201,12 @@ Column {
     spacing: Style.space(4)
     topPadding: Style.space(4)
     bottomPadding: Style.space(6)
-    Caption { text: "Count a bot as busy when its card is in" }
-    Hint { width: parent.width; text: "Open and Closed never count." }
+    // The name, and on the same line its help.
+    Row {
+      spacing: Style.space(8)
+      Caption { id: busyCaption; text: "Busy when its card is in" }
+      Hint { anchors.baseline: busyCaption.baseline; wrapMode: Text.NoWrap; text: "Open and Closed never count." }
+    }
     BoardText {
       visible: sec.labelColumns.length === 0
       text: "Open the board to pick columns."; color: sec.host.dim; font { pixelSize: Style.font.bodySmall; italic: true }
@@ -214,14 +222,14 @@ Column {
     }
   }
 
-  Caption { id: listTitle; visible: pane.visible; text: "Bots on " + sec.host.project }
+  Caption { id: listTitle; visible: pane.visible; text: "On " + sec.host.project }
+  // The bots, unboxed: rows split by faint hairlines.
   Rectangle {
     id: pane
     visible: sec.bots.length > 0 || sec.adding
     width: parent.width; implicitHeight: rows.implicitHeight
-    radius: Style.space(8)
-    color: Qt.rgba(sec.host.foreground.r, sec.host.foreground.g, sec.host.foreground.b, 0.035)
-    border { width: 1; color: Qt.rgba(sec.host.foreground.r, sec.host.foreground.g, sec.host.foreground.b, 0.08) }
+    color: "transparent"
+    border { width: 0; color: Qt.rgba(sec.host.foreground.r, sec.host.foreground.g, sec.host.foreground.b, 0.07) }
     Column {
       id: rows
       width: parent.width
@@ -234,28 +242,28 @@ Column {
           readonly property bool ok: Logic.botUsable(modelData)
           readonly property bool byList: ok && sec.isList(modelData)
           readonly property string label: ok && !byList ? modelData.label.trim() : ""
-          width: rows.width; implicitHeight: Style.space(34)
+          width: rows.width; implicitHeight: Style.space(30)
           opacity: ok ? 1 : 0.6
           Rectangle { visible: bot.index > 0; width: parent.width; height: 1; color: pane.border.color }
           Rectangle {
             id: dot
-            x: Style.space(12); anchors.verticalCenter: parent.verticalCenter
-            width: Style.space(8); height: width; radius: width / 2
-            color: "transparent"; border { width: 1; color: bot.ok ? sec.host.accent : sec.host.dim }
+            x: Style.space(2); anchors.verticalCenter: parent.verticalCenter
+            width: Style.space(6); height: width; radius: width / 2
+            color: "transparent"; border { width: 1; color: bot.ok ? sec.host.quiet : sec.host.dim }
           }
           BoardText {
             id: botName
             anchors { left: dot.right; leftMargin: Style.space(8); verticalCenter: parent.verticalCenter }
             width: Style.space(130); elide: Text.ElideRight
             text: bot.ok ? bot.modelData.name.trim() : String(bot.modelData && bot.modelData.name || "(no name)")
-            font { pixelSize: Style.font.bodySmall; bold: true }
+            font.pixelSize: Style.font.bodySmall
           }
           Row {
             anchors { left: botName.right; leftMargin: Style.space(8); right: remove.left; rightMargin: Style.space(8); verticalCenter: parent.verticalCenter }
             spacing: Style.space(6)
             BoardText {
               anchors.verticalCenter: parent.verticalCenter
-              color: sec.host.dim; font.pixelSize: Style.font.bodySmall
+              color: sec.host.quiet; font.pixelSize: Style.font.bodySmall
               text: !bot.ok ? "ignored: needs a name and a label or a column" : bot.byList ? "every card in" : bot.label !== "" ? "cards labelled" : "cards no other bot owns"
             }
             LabelChip { visible: bot.label !== ""; anchors.verticalCenter: parent.verticalCenter; host: sec.host; name: bot.label }
@@ -279,13 +287,13 @@ Column {
       // Footer: + Add a bot, or the new-bot form.
       Item {
         width: rows.width
-        implicitHeight: sec.adding ? form.implicitHeight + Style.space(24) : Style.space(34)
+        implicitHeight: sec.adding ? form.implicitHeight + Style.space(24) : Style.space(30)
         Rectangle { visible: sec.bots.length > 0; width: parent.width; height: 1; color: pane.border.color }
-        Link { id: addLink; visible: !sec.adding; x: Style.space(12); anchors.verticalCenter: parent.verticalCenter; text: "+  Add a bot"; onClicked: sec.open() }
+        Link { id: addLink; visible: !sec.adding; x: Style.space(2); anchors.verticalCenter: parent.verticalCenter; text: "+  Add a bot"; onClicked: sec.open() }
         Column {
           id: form
           visible: sec.adding
-          x: Style.space(12); y: Style.space(12); width: parent.width - Style.space(24)
+          x: Style.space(2); y: Style.space(12); width: parent.width - Style.space(4)
           spacing: Style.space(10)
           Caption { text: "New bot" }
           FormRow {
