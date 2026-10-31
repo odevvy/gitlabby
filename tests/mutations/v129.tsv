@@ -1,6 +1,6 @@
 dot-no-column	BotsRow.qml	readonly property color tint: Logic.dotColor(modelData.color, String(row.host.background)) || row.host.accent	readonly property color tint: row.host.accent	qml
 dot-no-fallback	BotsRow.qml	String(row.host.background)) || row.host.accent	String(row.host.background)) || modelData.color	qml
-contrast-ignored	Logic.js	(Math.min(a, b) + 0.05) >= 2 ? color : ""	(Math.min(a, b) + 0.05) >= 0 ? color : ""	node
+contrast-ignored	logic/labels.js	(Math.min(a, b) + 0.05) >= 2 ? color : ""	(Math.min(a, b) + 0.05) >= 0 ? color : ""	node
 keys-button-dead	BoardHeader.qml	onClicked: host.toggleView("keys") }	onClicked: host.toggleView("board") }	qml
 reason-missing	BotsSection.qml	: newName === "" ? "Name the bot to add it."	: newName === "" ? ""	qml
 taken-reason-generic	BotsSection.qml	"There's already a bot named " + newName + "."	"Choose a label to add " + newName + "."	qml

@@ -1,9 +1,9 @@
-edit-in-place	Logic.js	return plain(raw) ? JSON.parse(JSON.stringify(raw)) : {}	return plain(raw) ? raw : {}	node
-first-bot-no-busy	Logic.js	{ busyLists: (labelColumns || []).slice(), bots: [] }	{ busyLists: [], bots: [] }	node
-last-keeps-entry	Logic.js	if (found.entry.bots.length === 0) delete next[project]	if (false) delete next[project]	node
-busy-case-sensitive	Logic.js	return String(n).toLowerCase() !== key	return String(n) !== String(column)	node
-string-setting-ok	Logic.js	if (!plain(raw)) return { problem: "setting", entry: null }	if (!plain(raw)) return { problem: "", entry: null }	node
-name-taken-case	Logic.js	String(b.name || "").trim().toLowerCase() === key	String(b.name || "") === String(name)	node
+edit-in-place	logic/core.js	return plain(raw) ? JSON.parse(JSON.stringify(raw)) : {}	return plain(raw) ? raw : {}	node
+first-bot-no-busy	logic/bots.js	{ busyLists: (labelColumns || []).slice(), bots: [] }	{ busyLists: [], bots: [] }	node
+last-keeps-entry	logic/bots.js	if (found.entry.bots.length === 0) delete next[project]	if (false) delete next[project]	node
+busy-case-sensitive	logic/bots.js	return String(n).toLowerCase() !== key	return String(n) !== String(column)	node
+string-setting-ok	logic/bots.js	if (!plain(raw)) return { problem: "setting", entry: null }	if (!plain(raw)) return { problem: "", entry: null }	node
+name-taken-case	logic/bots.js	String(b.name || "").trim().toLowerCase() === key	String(b.name || "") === String(name)	node
 persist-ignores-bots	Board.qml	if (nextBots !== undefined) entry.bots = nextBots	if (false) entry.bots = nextBots	qml
 esc-keeps-form	Board.qml	else if (root.view === "settings" && settingsView.adding) settingsView.cancelAdd()	else if (false) settingsView.cancelAdd()	qml
 offers-columns	BotsSection.qml	Logic.statusLabels(fetchedStatus, host.columns).concat(ownerLabels)	ownerLabels	qml

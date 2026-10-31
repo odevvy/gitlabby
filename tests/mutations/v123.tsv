@@ -6,10 +6,10 @@ projects-one-page	board-fetch	    for page in 1 2 3 4 5; do	    for page in 1; d
 projects-unbounded	board-fetch	    for page in 1 2 3 4 5; do	    for page in 1 2 3 4 5 6 7; do	sh
 projects-dupes	board-fetch	if any(.[]; .id == $p.id) then . else	if false then . else	sh
 workflow-drift	board-fetch	def workflow: ["review", "in progress", "approved", "todo", "research"];	def workflow: ["review", "in progress", "approved", "todo"];	sh
-nested-links	Logic.js	links.push("<a href=\"" + url + "\">" + (t || url) + "</a>"); return "\x02" + (links.length - 1) + "\x02" })	return "<a href=\"" + url + "\">" + (t || url) + "</a>" })	node
-markers-kept	Logic.js	  text = String(text).replace(/[\x01\x02]/g, "")	  text = String(text)	node
-qa-js-first-line	Logic.js	return /(^|	return /(^	node
-movenote-generic	Logic.js	  if (from.kind === "label" && to.kind === "open") return "This removes its status label on GitLab."		node
+nested-links	logic/markdown.js	links.push("<a href=\"" + url + "\">" + (t || url) + "</a>"); return "\x02" + (links.length - 1) + "\x02" })	return "<a href=\"" + url + "\">" + (t || url) + "</a>" })	node
+markers-kept	logic/markdown.js	  text = String(text).replace(/[\x01\x02]/g, "")	  text = String(text)	node
+qa-js-first-line	logic/markdown.js	return /(^|	return /(^	node
+movenote-generic	logic/markdown.js	  if (from.kind === "label" && to.kind === "open") return "This removes its status label on GitLab."		node
 hint-ignored	IssueView.qml	enabled: view.loaded && !view.posting && box.text.trim() !== "" && !postStatus.slash	enabled: view.loaded && !view.posting && box.text.trim() !== ""	qml
 post-no-guard	IssueView.qml	box.text.trim() === "" || Logic.quickAction(box.text)) return	box.text.trim() === "") return	qml
 commands-no-reload	IssueView.qml	    if (data.state === "commands") { loadIssue(); loadNotes(); host.refresh() }		qml
