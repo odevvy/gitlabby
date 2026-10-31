@@ -152,10 +152,22 @@ bounded() {
   ((rc == 137)) && rc=124
   return $rc
 }
+# A passed sign-in check leaves a mark for 10 minutes (the time only, no auth
+# data), in the private runtime dir only; while it is fresh the check below is
+# skipped. Signing out, a logged-out answer or a failed read clears it.
+auth_mark=""
+[[ $runtime == "${XDG_RUNTIME_DIR:-}" ]] && auth_mark=$runtime/odevvy.gitlab-board-auth-$hostname
+auth_fresh() {
+  local at=""
+  [[ -n $auth_mark && -f $auth_mark && ! -L $auth_mark ]] && IFS= read -r at <"$auth_mark" 2>/dev/null &&
+    [[ $at =~ ^[0-9]{1,12}$ ]] && ((EPOCHSECONDS - at >= 0 && EPOCHSECONDS - at < 600))
+}
+forget_auth() { [[ -z $auth_mark ]] || rm -f "$auth_mark" 2>/dev/null; }
 # Sign out: glab drops the host's token from its config and keyring. glab
 # auth logout never prompts (--hostname is required); it works offline. Then the
 # saved boards go, so a signed-out machine keeps no board data.
 if [[ $cmd == logout ]]; then
+  forget_auth
   bounded auth logout --hostname "$hostname" >/dev/null || emit error "glab could not sign out of $hostname."
   [[ -z $cache_root ]] || rm -rf -- "$cache_dir" 2>/dev/null || emit error "Signed out, but the saved boards in $cache_dir could not be deleted."
   emit logged-out "Signed out of $hostname."
@@ -165,19 +177,26 @@ fi
 # GitLab refusing the token (glab's "API call failed: GET <url>: 401 ..."; a
 # 401 anywhere else, say in a host name, doesn't count), means signing in again helps. Anything else
 # (offline, GitLab down) is an error, so a network blip never asks for a login.
-errors=$tmp/auth bounded auth status --hostname "$hostname" >/dev/null
-case $? in
-  0) ;;
-  124) emit error "$slow" ;;
-  *) grep -qE 'authenticated with glab|API call failed: .*: 401( |$)' "$tmp/auth" &&
-       emit logged-out "Not signed in to $hostname. Run: glab auth login"
-     emit error "Could not check your GitLab sign-in. Check your connection and try again." ;;
-esac
+# glab auth status asks GitLab (GET /user), so it runs only without a fresh
+# mark, or again after a read failed while the mark let it skip.
+check_auth() {
+  errors=$tmp/auth bounded auth status --hostname "$hostname" >/dev/null
+  case $? in
+    0) [[ -z $auth_mark ]] || printf '%s\n' "$EPOCHSECONDS" >"$auth_mark" 2>/dev/null ;;
+    124) emit error "$slow" ;;
+    *) grep -qE 'authenticated with glab|API call failed: .*: 401( |$)' "$tmp/auth" &&
+         emit logged-out "Not signed in to $hostname. Run: glab auth login"
+       emit error "Could not check your GitLab sign-in. Check your connection and try again." ;;
+  esac
+}
+auth_skipped=0
+if auth_fresh; then auth_skipped=1; else check_auth; fi
 # Every read goes through get(), which is GET by construction.
 get() {
   bounded api --hostname "$hostname" --method GET "$@"
   local rc=$?
   ((rc != 124)) || emit error "$slow"
+  if ((rc != 0 && auth_skipped)); then auth_skipped=0; forget_auth; check_auth; fi
   return $rc
 }
 base="projects/$(jq -rn --arg p "$project" '$p | @uri')"

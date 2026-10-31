@@ -18,6 +18,7 @@ exit 99
 SH
 chmod +x "$work/bin/timeout"
 export PATH="$work/bin:$PATH" FAKE_LOG="$work/log" FAKE_DIR="$work/fx" XDG_CACHE_HOME="$work/cache"  # never the real ~/.cache
+unset XDG_RUNTIME_DIR  # no sign-in mark unless a test sets one (E block)
 pass=0 fail=0
 check() { # name jq-expression json
   if jq -e "$2" >/dev/null 2>&1 <<<"$3"; then pass=$((pass + 1)); else fail=$((fail + 1)); echo "FAIL: $1"; echo "  $3" | cut -c1-400; fi
@@ -449,10 +450,10 @@ sleep 0.4; during=$(find "$work/rt" -maxdepth 1 -name 'board-fetch.*' -type d | 
 mode=$(stat -c %a "$work"/rt/board-fetch.* 2>/dev/null)
 wait $rpid
 check "R temp dir in XDG_RUNTIME_DIR while it runs, mode 700" '.' "$([[ $during == 1 && $mode == 700 ]] && echo true || echo false)"
-check "R gone after" '.' "$([[ -z $(ls -A "$work/rt") ]] && echo true || echo false)"
+check "R gone after" '.' "$([[ -z $(find "$work/rt" -mindepth 1 -name "board-fetch.*") ]] && echo true || echo false)"
 FAKE_HANG='/boards?' XDG_RUNTIME_DIR="$work/rt" "$fetch" --project a/b >/dev/null & rpid=$!
 sleep 0.4; kill -TERM $rpid; wait $rpid; rc=$?
-check "R stopped with TERM: exits 143, temp dir gone" '.' "$([[ $rc == 143 && -z $(ls -A "$work/rt") ]] && echo true || echo false)"
+check "R stopped with TERM: exits 143, temp dir gone" '.' "$([[ $rc == 143 && -z $(find "$work/rt" -mindepth 1 -name "board-fetch.*") ]] && echo true || echo false)"
 for rt in rel/dir "$work/missing" ''; do
   (FAKE_HANG='/boards?' XDG_RUNTIME_DIR=$rt TMPDIR="$work/tmpd" "$fetch" --project a/b >/dev/null) & rpid=$!
   sleep 0.4; n=$(find "$work/tmpd" -maxdepth 1 -name 'board-fetch.*' | wc -l); wait $rpid
@@ -508,6 +509,42 @@ fx user <<<'{"id":5,"username":"dev1","name":"Dev One","email":"dev1@example.com
 out=$(: >"$FAKE_LOG"; "$fetch" whoami)
 check "A whoami: the username only" '. == {state: "ready", message: "", user: "dev1"}' "$out"
 check "A whoami: one GET of /user after the auth check" '.' "$([[ $(sed -n 2p "$FAKE_LOG") == 'api --hostname gitlab.com --method GET user' && $(grep -c . "$FAKE_LOG") == 2 ]] && echo true || echo false)"
+
+# --- E: the sign-in check (glab auth status, one GET /user) at most every 10 min
+# A passed check leaves a mark in XDG_RUNTIME_DIR (the time, nothing else);
+# while it is fresh the check is skipped; a failed read runs it again.
+ert="$work/ert"; mkdir -p "$ert"; chmod 700 "$ert"; mark="$ert/odevvy.gitlab-board-auth-gitlab.com"
+auths() { grep -c '^auth status' "$FAKE_LOG"; }
+: >"$FAKE_LOG"; out=$(XDG_RUNTIME_DIR=$ert "$fetch" whoami)
+check "E first run: checked, mark left" '.user == "dev1"' "$out"
+check "E the mark holds only the time" '.' "$([[ $(auths) == 1 && $(<"$mark") =~ ^[0-9]+$ ]] && ! grep -q 'glpat\|FAKE\|dev1' "$mark" && echo true || echo false)"
+: >"$FAKE_LOG"; out=$(XDG_RUNTIME_DIR=$ert "$fetch" whoami)
+check "E fresh mark: no auth check, one GET" '.user == "dev1"' "$out"
+check "E fresh mark: the log is the GET only" '.' "$([[ $(auths) == 0 && $(grep -c . "$FAKE_LOG") == 1 ]] && echo true || echo false)"
+echo $((EPOCHSECONDS - 700)) >"$mark"; : >"$FAKE_LOG"; XDG_RUNTIME_DIR=$ert "$fetch" whoami >/dev/null
+check "E mark older than 10 min: checked again, renewed" '.' "$([[ $(auths) == 1 && $(<"$mark") -ge $((EPOCHSECONDS - 5)) ]] && echo true || echo false)"
+echo $((EPOCHSECONDS + 900)) >"$mark"; : >"$FAKE_LOG"; XDG_RUNTIME_DIR=$ert "$fetch" whoami >/dev/null
+check "E mark from the future: checked" '.' "$([[ $(auths) == 1 ]] && echo true || echo false)"
+rm -f "$mark"; echo "$EPOCHSECONDS" >"$work/elsewhere"; ln -s "$work/elsewhere" "$mark"; : >"$FAKE_LOG"; XDG_RUNTIME_DIR=$ert "$fetch" whoami >/dev/null
+check "E a symlinked mark is ignored" '.' "$([[ $(auths) == 1 ]] && echo true || echo false)"
+rm -f "$mark"; echo "x$EPOCHSECONDS" >"$mark"; : >"$FAKE_LOG"; XDG_RUNTIME_DIR=$ert "$fetch" whoami >/dev/null
+check "E a garbled mark is ignored" '.' "$([[ $(auths) == 1 ]] && echo true || echo false)"
+# Signed out in the terminal while the mark is fresh: the read fails, the check runs, logged-out.
+XDG_RUNTIME_DIR=$ert "$fetch" whoami >/dev/null; mv "$FAKE_DIR/user.json" "$FAKE_DIR/user.off"; : >"$FAKE_LOG"
+out=$(FAKE_AUTH=no XDG_RUNTIME_DIR=$ert "$fetch" whoami)
+check "E fresh mark, read fails, signed out: logged-out" '.state == "logged-out"' "$out"
+check "E ... the check ran once and the mark is gone" '.' "$([[ $(auths) == 1 && ! -e $mark ]] && echo true || echo false)"
+XDG_RUNTIME_DIR=$ert "$fetch" whoami >/dev/null; : >"$FAKE_LOG"
+out=$(XDG_RUNTIME_DIR=$ert "$fetch" whoami)
+check "E fresh mark, read fails, still signed in: the read's own error" '.state == "error" and (.message | test("sign-in") | not)' "$out"
+check "E ... checked once, mark renewed" '.' "$([[ $(auths) == 1 && -f $mark ]] && echo true || echo false)"
+mv "$FAKE_DIR/user.off" "$FAKE_DIR/user.json"
+XDG_RUNTIME_DIR=$ert "$fetch" logout >/dev/null
+check "E sign out clears the mark" '.' "$([[ ! -e $mark ]] && echo true || echo false)"
+: >"$FAKE_LOG"; "$fetch" whoami >/dev/null; "$fetch" whoami >/dev/null
+check "E no XDG_RUNTIME_DIR: no mark, checked every run" '.' "$([[ $(auths) == 2 ]] && echo true || echo false)"
+: >"$FAKE_LOG"; XDG_RUNTIME_DIR=$ert FAKE_AUTH=offline "$fetch" whoami >/dev/null
+check "E a failed check leaves no mark" '.' "$([[ ! -e $mark ]] && echo true || echo false)"
 check "A whoami: signed out" '.state == "logged-out"' "$(FAKE_AUTH=no "$fetch" whoami)"
 fx user <<<'{"message":"500 Internal Server Error"}'
 check "A whoami: no username is an error" '.state == "error"' "$("$fetch" whoami)"
