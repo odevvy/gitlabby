@@ -33,9 +33,8 @@ named = lambda n: sorted(inside(lambda it: it.objectName() == n), key=lambda it:
 texts = lambda: [str(it.property("text") or "") for it in inside(lambda it: it.inherits("QQuickText"))]
 ok("Q1 no footer: the keys are not spelled out under the lists", not any("j/k" in t or "Enter opens" in t for t in texts()), [t for t in texts() if "\u00b7" in t])
 note = named("mrsNote"); head = [it for it in inside(lambda it: it.inherits("QQuickText") and it.property("text") == "Merge requests")]
-ok("Q2 a quiet note beside the title: read-only, and when the lists were read", len(note) == 1 and len(head) == 1 and note[0].property("text").startswith("read-only  \u00b7  updated ")
-   and same(note[0].property("color"), col("quiet")) and x_of(note[0]) > x_of(head[0]) + head[0].width()
-   and abs(y_of(note[0]) + note[0].property("baselineOffset") - y_of(head[0]) - head[0].property("baselineOffset")) < 1.5, [n.property("text") for n in note])
+ok("Q2 a quiet note on the left: read-only, and when the lists were read (the header's tab names the view)", len(note) == 1 and len(head) == 0 and note[0].property("text").startswith("read-only  \u00b7  updated ")
+   and same(note[0].property("color"), col("quiet")) and abs(x_of(note[0]) - x_of(mv)) < 1, [n.property("text") for n in note])
 pills = inside(lambda it: it.metaObject().className().startswith("Pill"))
 ok("Q3 no pills left in the view (scope, counts, status)", pills == [], [p.property("label") for p in pills])
 tabs = named("scopeTab")
@@ -48,7 +47,7 @@ ok("Q6 the tabs sit on the right half", len(tabs) == 2 and x_of(tabs[0]) > mv.wi
 cnt = named("mrsCount")
 ok("Q7 section counts are plain quiet numbers", [c.property("text") for c in cnt] == ["0", "2"] and all(same(c.property("color"), col("quiet")) for c in cnt))
 empty = [it for it in inside(lambda it: it.inherits("QQuickText") and it.property("text") == "Nothing waiting on your review.")]
-ok("Q8 the empty line is quiet and lines up with the heading", len(empty) == 1 and same(empty[0].property("color"), col("quiet")) and abs(x_of(empty[0]) + empty[0].property("leftPadding") - x_of(head[0])) < 1.5)
+ok("Q8 the empty line is quiet and lines up with the note", len(empty) == 1 and same(empty[0].property("color"), col("quiet")) and abs(x_of(empty[0]) + empty[0].property("leftPadding") - x_of(note[0])) < 1.5)
 rows = named("mrRow")
 ok("Q9 no outline on any row, focused or not", len(rows) == 2 and all(pv(r, "border.width") == 0 for r in rows))
 ok("Q10 the focused row: a faint fill; the other none", pv(rows[0], "color.a") > 0 and pv(rows[0], "color.a") < 0.1 and pv(rows[1], "color.a") == 0, (pv(rows[0], "color.a"), pv(rows[1], "color.a")))
@@ -66,6 +65,8 @@ ok("Q14 the meta line is quiet", len(meta) == 1 and same(meta[0].property("color
 import re as _re
 ages = [it for it in inside(lambda it: it.inherits("QQuickText") and _re.fullmatch(r"\d+(m|h|d|w|mo|y)", str(it.property("text") or "")))]
 ok("Q15 ages are quiet", len(ages) == 2 and all(same(a.property("color"), col("quiet")) for a in ages), [a.property("text") for a in ages])
+gb = inside(lambda it: it.metaObject().className().startswith("GlyphButton"))
+ok("Q17 no close button of its own: the header's Board tab and Esc go back", gb == [], len(gb))
 h.click(tabs[1]); h.spin(60)
 ok("Q16 clicking This project moves the underline", len(named("scopeUnderline")) == 1 and tabs[1].isAncestorOf(named("scopeUnderline")[0]) and h.ev("mrsView.mode") == "project")
 h.click(tabs[0]); h.spin(60); h.key(Qt.Key_K, "k"); h.spin(40)
