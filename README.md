@@ -159,7 +159,7 @@ Other labels are never touched.
   reloads. The check and the write are about a second apart and GitLab has no
   "only if unchanged" option, so a change inside that second can still be
   overwritten.
-- One move at a time. No drops on unsupported lists, on the workflow-label
+- One move at a time (a move still finishing on GitLab says so). No drops on unsupported lists, on the workflow-label
   fallback, or on the card's own column.
 - From the keyboard: select a card with `h j k l`, then `Shift+H` or
   `Shift+L` moves it to the nearest column on that side it can go to.
@@ -543,7 +543,10 @@ Open afterwards sticks.
 After each board load, `board-fetch` saves a copy of the board (the JSON the
 popup shows; never anything from glab's login) in
 `~/.cache/odevvy.gitlab-board/` (or `$XDG_CACHE_HOME`), one file per project
-and board, readable only by you. Clear it with
+and board, saved per glab account (from `glab config get user`, a local
+read; no saved account gives `unknown`), so after switching accounts the
+popup never starts on the other account's board. It is readable only by you.
+Clear it with
 `rm -rf ~/.cache/odevvy.gitlab-board`.
 
 ## GitLab access
@@ -553,10 +556,19 @@ a token, and never shows glab's own messages. Every read is a
 `glab api --method GET` request. The writes are one `PUT` to the issue when
 you drop a card, add or remove a label, or close or reopen it, and one `POST`
 to its notes when you comment; they need the `api` scope (what `glab auth login` asks for by
-default). A glab call that hasn't answered after 30 seconds is stopped; a
-write that times out may still have reached GitLab, so the view reloads.
+default). Each `board-fetch` run ends within 40 seconds: no single glab call
+gets more than 30, and a write only starts with at least 15 seconds left
+(otherwise nothing is sent and the header says GitLab is answering slowly). A
+write that times out may still have reached GitLab, so the view reloads. The
+popup gives up waiting after 50 seconds; should that write still be running,
+the next move or bulk action says `The last change is still finishing on
+GitLab. Try again in a moment.` instead of starting another. While a fetch
+runs, its answers wait in a private folder in `$XDG_RUNTIME_DIR` (cleared at
+logout), removed when it ends or is stopped.
 
-**Sign out** (in the settings, beside your username) asks first, then runs
+**Sign out** (in the settings, beside your username) asks `Sign out of glab
+on gitlab.com? This also signs glab out in your terminal and scripts on this
+computer.`, then runs
 `glab auth logout --hostname gitlab.com`. That is glab's own sign-out, so glab
 in your terminal is signed out too (a `GITLAB_TOKEN` in your environment still
 works; glab doesn't touch it). The token stays valid on GitLab; revoke it in

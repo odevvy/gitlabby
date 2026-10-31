@@ -922,3 +922,16 @@ test("view-only in the issue view and bulk runs: actions hidden, refused writes 
   assert.equal((issue.match(/host\.feed\.noteRefused\(host\.project, data\.message\)/g) || []).length, 2)
   assert.match(bar, /if \(!out\.ok\) host\.feed\.noteRefused\(host\.project, data\.message\)/)
 })
+
+test("manifest: every setting the widget reads has a default (settingsRevision is internal)", () => {
+  const fs = require("node:fs"), path = require("node:path"), dir = path.join(__dirname, "..")
+  const manifest = JSON.parse(fs.readFileSync(path.join(dir, "manifest.json"), "utf8"))
+  const read = new Set()
+  for (const f of fs.readdirSync(dir).filter(f => f.endsWith(".qml")))
+    for (const m of fs.readFileSync(path.join(dir, f), "utf8").matchAll(/saved\("([A-Za-z]+)"/g)) read.add(m[1])
+  read.delete("settingsRevision")
+  assert.ok(read.size >= 10, [...read].join(" "))
+  assert.deepEqual([...read].filter(k => !(k in manifest.barWidget.defaults)), [])
+  assert.deepEqual(manifest.barWidget.defaults.alerts, {})
+  assert.deepEqual(manifest.barWidget.defaults.accessHintDismissed, [])
+})
