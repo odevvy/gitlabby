@@ -1,0 +1,2 @@
+# v0.1.60: shared avatar mask. qml rows: tests/harness/tests/run160.py
+av-own-mask	components/Avatar.qml	maskSource: avatar.host.avatarMask	maskSource: null	qml
