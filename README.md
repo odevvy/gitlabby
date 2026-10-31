@@ -700,12 +700,13 @@ that issue in the new state.
 
 A board refresh makes one request for the boards (with their lists), the open
 issues (paginated), and one for the last 20 closed issues (it asks for 21, to
-know whether there are more), skipped when the board hides Closed. Issues come
+know whether there are more), skipped when the board hides Closed. The open and
+closed requests run at the same time. Issues come
 with label details, so colors need no extra request.
 
 One fetch serves every monitor (see above), so a second screen adds no
 requests. Cards in a Review column (at most 15) each add one
-`GET /projects/:id/issues/:iid/related_merge_requests`, four at a time; those
+`GET /projects/:id/issues/:iid/related_merge_requests`, eight at a time; those
 MRs carry their `head_pipeline`. Only if GitLab leaves it out, one
 `GET /projects/:id/merge_requests/:iid` for that MR. These never fail the
 board: a refusal, a timeout or no MR just leaves the card without a mark.
