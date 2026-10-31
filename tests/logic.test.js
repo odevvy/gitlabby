@@ -478,16 +478,16 @@ test("layout: every plugin type a QML file uses resolves from its own folder or 
   assert.deepEqual(problems, [])
 })
 
-test("icon buttons: every GlyphButton has a tip, and every key in a tip's brackets is a real key", () => {
+test("icon buttons: every GlyphButton, header button and tab has a tip, and every key in a tip's brackets is a real key", () => {
   const fs = require("node:fs"), path = require("node:path"), dir = path.join(__dirname, "..")
   const keys = new Set(L.keyGroups.flatMap(g => g.keys.flatMap(([k]) => k.split(" or "))))
   const tips = []
   for (const f of qmlFiles().filter(f => path.basename(f) !== "GlyphButton.qml")) {
     const src = fs.readFileSync(path.join(dir, f), "utf8")
-    for (const m of src.matchAll(/GlyphButton \{/g)) {
+    for (const m of src.matchAll(/\b(GlyphButton|HeadButton|HeadTab) \{/g)) {
       let depth = 0, end = m.index
       for (; end < src.length; end++) { if (src[end] === "{") depth++; else if (src[end] === "}" && --depth === 0) break }
-      assert.match(src.slice(m.index, end), /\btip: "/, f + ": a GlyphButton without a tip")
+      assert.match(src.slice(m.index, end), /\btip: /, f + ": a " + m[1] + " without a tip")
       tips.push(src.slice(m.index, end))
     }
     for (const m of src.matchAll(/IconTip \{[^\n]*/g)) tips.push(m[0])

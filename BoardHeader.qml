@@ -4,8 +4,10 @@ import "Logic.js" as Logic
 import "components"
 
 // The board's top row (Board.qml): project and board name (opens the picker),
-// the default star, the status ("Updated …"), then refresh, merge requests,
-// keyboard shortcuts and settings.
+// the default star, the Board and Merge requests tabs, the status ("Updated
+// …"), then the icon buttons: columns (board only), refresh, keyboard
+// shortcuts and settings. Buttons and tabs are 28 px targets with a faint fill
+// on hover (v155 design B), so they are easy to hit with a mouse.
 Item {
   id: header
   required property var host
@@ -20,11 +22,99 @@ Item {
   readonly property alias chevron: chevron
   readonly property alias defaultMark: defaultMark
   readonly property alias columnsButton: columnsButton
+  readonly property alias boardTab: boardTab
+  readonly property alias tabs: tabs
+  // The row keeps the title's height: the 28 px buttons and tabs reach a few
+  // points into the gap above and below it, so nothing under the header moves.
   implicitHeight: Math.max(title.implicitHeight, status.implicitHeight)
-  // The title gets all the room the rest of the row doesn't need; the
-  // status gets at most 40% of it, and elides from the left.
-  readonly property real titleRoom: width - mrsButton.implicitWidth - Style.space(10) - chevron.implicitWidth - defaultMark.implicitWidth - refreshButton.implicitWidth - keysButton.implicitWidth - gear.implicitWidth
-    - (columnsButton.visible ? columnsButton.implicitWidth + Style.space(10) : 0) - Style.space(8 + 12 + 8 + 10 + 10) - Math.min(status.implicitWidth, width * 0.4)
+  // A faint fill: a hovered button or tab; the accent tint: an open view's button.
+  readonly property color hoverFill: Qt.rgba(host.foreground.r, host.foreground.g, host.foreground.b, 0.08)
+  readonly property color activeFill: Qt.rgba(host.accent.r, host.accent.g, host.accent.b, 0.18)
+  // Board · Merge requests show on those two views; the others have their own
+  // heading and ✕. Short of room, the Merge requests tab reads "MRs".
+  readonly property bool tabsShown: host.view === "board" || host.view === "mrs"
+  TextMetrics { id: mrsLong; font { pixelSize: Style.font.body; bold: true } text: "Merge requests" }
+  TextMetrics { id: mrsShort; font { pixelSize: Style.font.body; bold: true } text: "MRs" }
+  // Everything but the title and the status.
+  readonly property real fixedWidth: chevron.implicitWidth + defaultMark.implicitWidth + Style.space(8 + 12 + 8)
+    + (tabsShown ? 1 + Style.space(12 + 6) + boardTab.implicitWidth + mrsLong.advanceWidth + Style.space(20) + mrsButton.badgeRoom : 0)
+    + (columnsButton.visible ? columnsButton.implicitWidth + Style.space(4) : 0) + refreshButton.implicitWidth + keysButton.implicitWidth + gear.implicitWidth + Style.space(4 + 4)
+  readonly property bool compactTabs: tabsShown && width - fixedWidth - title.implicitWidth - Style.space(48) < 0
+  // The status gets what the full title leaves (at least 48 points, so a
+  // message still shows its end; at most 40%), and elides from the left; the
+  // title gets the rest.
+  readonly property real freeWidth: width - fixedWidth + (compactTabs ? mrsLong.advanceWidth - mrsShort.advanceWidth : 0)
+  readonly property real titleRoom: freeWidth - Math.min(status.implicitWidth, width * 0.4, Math.max(Style.space(48), freeWidth - title.implicitWidth))
+
+  // An icon button: a 28 px target, the glyph at 14 px, a faint fill on hover
+  // and the accent tint while its view is open. color is the glyph's. The fill
+  // turns against the button, so it stays square while refresh spins.
+  component HeadButton: Item {
+    id: hb
+    property alias text: glyph.text
+    property alias color: glyph.color
+    property bool active: false
+    property string tip: ""
+    readonly property alias hovered: hbMouse.containsMouse
+    signal clicked()
+    implicitWidth: Math.max(Style.space(28), glyph.implicitWidth + Style.space(14)); implicitHeight: Style.space(28)
+    width: implicitWidth; height: implicitHeight
+    Rectangle {
+      objectName: "headFill"
+      anchors.fill: parent; rotation: -hb.rotation
+      radius: Style.space(6)
+      color: hb.active ? header.activeFill : hb.hovered ? header.hoverFill : "transparent"
+    }
+    BoardText { id: glyph; objectName: "headGlyph"; anchors.centerIn: parent; color: hb.active ? header.host.accent : hb.hovered ? header.host.foreground : header.host.dim; font.pixelSize: Style.font.title }
+    MouseArea { id: hbMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: hb.clicked() }
+    IconTip { host: header.host; shown: hb.hovered; text: hb.tip }
+  }
+  // A view tab: its name, the accent underline while it is on screen.
+  component HeadTab: Item {
+    id: ht
+    property string label: ""
+    property bool on: false
+    property string tip: ""
+    property string badge: ""
+    readonly property alias hovered: htMouse.containsMouse
+    // What the badge adds to the tab's width (for the header's sums).
+    readonly property real badgeRoom: badge !== "" && !on ? Math.max(badgeText.implicitHeight + Style.space(1), badgeText.implicitWidth + Style.space(6)) + tabRow.spacing : 0
+    signal clicked()
+    implicitWidth: tabRow.implicitWidth + Style.space(20); implicitHeight: Style.space(28)
+    width: implicitWidth; height: implicitHeight
+    Rectangle { objectName: "headFill"; anchors.fill: parent; radius: Style.space(6); color: ht.hovered && !ht.on ? header.hoverFill : "transparent" }
+    Row {
+      id: tabRow
+      anchors.centerIn: parent
+      spacing: Style.space(6)
+      BoardText {
+        id: tabText
+        objectName: "tabText"
+        anchors.verticalCenter: parent.verticalCenter
+        text: ht.label
+        color: ht.on || ht.hovered ? header.host.foreground : header.host.dim
+        font { pixelSize: Style.font.body; bold: ht.on }
+      }
+      Rectangle {
+        objectName: "mrsBadge"
+        visible: ht.badge !== "" && !ht.on
+        anchors.verticalCenter: parent.verticalCenter
+        width: Math.max(height, badgeText.implicitWidth + Style.space(6)); height: badgeText.implicitHeight + Style.space(1)
+        radius: height / 2
+        color: header.host.accent
+        BoardText { id: badgeText; anchors.centerIn: parent; text: ht.badge; color: header.host.background; font { pixelSize: Style.font.caption * 0.85; bold: true } }
+      }
+    }
+    Rectangle {
+      objectName: "tabUnderline"
+      visible: ht.on
+      anchors { top: tabRow.bottom; topMargin: Style.space(3); horizontalCenter: parent.horizontalCenter }
+      width: tabRow.implicitWidth; height: Math.max(2, Style.space(2)); radius: height / 2
+      color: header.host.accent
+    }
+    MouseArea { id: htMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: ht.clicked() }
+    IconTip { host: header.host; shown: ht.hovered; text: ht.tip }
+  }
 
   // Elides at the end, so the board name goes before the project.
   BoardText {
@@ -62,9 +152,39 @@ Item {
     }
     IconTip { host: header.host; shown: defaultMouse.containsMouse; text: host.onDefault ? "Your default board" : "Go to your default board" }
   }
+  // Board · Merge requests: the two views, after a hairline.
+  Rectangle {
+    id: tabRule
+    visible: header.tabsShown
+    anchors { left: defaultMark.right; leftMargin: Style.space(12); verticalCenter: parent.verticalCenter }
+    width: 1; height: Style.space(16)
+    color: Qt.rgba(host.foreground.r, host.foreground.g, host.foreground.b, 0.12)
+  }
+  Row {
+    id: tabs
+    visible: header.tabsShown
+    anchors { left: tabRule.right; leftMargin: Style.space(6); verticalCenter: parent.verticalCenter }
+    HeadTab {
+      id: boardTab
+      label: "Board"
+      on: host.view === "board"
+      tip: host.view === "board" ? "" : "Back to the board (Esc)"
+      onClicked: host.showView("board")
+    }
+    // Merge requests (MrsView), like m does. The badge: how many waited on his
+    // review at the last look (no fetch for it; it shows what the view loaded).
+    HeadTab {
+      id: mrsButton
+      label: header.compactTabs ? "MRs" : "Merge requests"
+      on: host.view === "mrs"
+      tip: "Merge requests (m)"
+      badge: Logic.mrBadge((host.feed.mrAnswers[mrsScope] || {}).data)
+      onClicked: host.showView("mrs")
+    }
+  }
   BoardText {
     id: status
-    anchors { left: defaultMark.right; leftMargin: Style.space(12); right: columnsButton.visible ? columnsButton.left : refreshButton.left; rightMargin: Style.space(8); verticalCenter: parent.verticalCenter }
+    anchors { left: header.tabsShown ? tabs.right : defaultMark.right; leftMargin: Style.space(12); right: columnsButton.visible ? columnsButton.left : refreshButton.left; rightMargin: Style.space(8); verticalCenter: parent.verticalCenter }
     horizontalAlignment: Text.AlignRight
     elide: Text.ElideLeft
     text: host.statusText()
@@ -81,68 +201,42 @@ Item {
   }
   // Show or hide columns: opens the column row under the bots (board only).
   // Shows how many are hidden, so a hidden column is never forgotten.
-  BoardText {
+  HeadButton {
     id: columnsButton
     readonly property int hiddenCount: host.availableColumns.length - host.shownColumns.length
     visible: host.view === "board" && host.boardState === "ready" && host.setup === ""
-    anchors { right: refreshButton.left; rightMargin: visible ? Style.space(10) : 0; verticalCenter: parent.verticalCenter }
+    anchors { right: refreshButton.left; rightMargin: visible ? Style.space(4) : 0; verticalCenter: parent.verticalCenter }
     text: "\uf0db" + (hiddenCount > 0 ? " " + hiddenCount : "")
-    color: columnsMouse.containsMouse || host.columnChips ? host.accent : host.dim
-    font.pixelSize: Style.font.body
-    MouseArea { id: columnsMouse; anchors.fill: parent; anchors.margins: -Style.space(4); hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: host.columnChips = !host.columnChips }
-    IconTip { host: header.host; shown: columnsMouse.containsMouse; text: columnsButton.hiddenCount > 0 ? "Show or hide columns (" + columnsButton.hiddenCount + " hidden)" : "Show or hide columns" }
+    active: host.columnChips
+    tip: hiddenCount > 0 ? "Show or hide columns (" + hiddenCount + " hidden)" : "Show or hide columns"
+    onClicked: host.columnChips = !host.columnChips
   }
-  BoardText {
+  HeadButton {
     id: refreshButton
-    anchors { right: mrsButton.left; rightMargin: Style.space(10); verticalCenter: parent.verticalCenter }
+    anchors { right: keysButton.left; rightMargin: Style.space(4); verticalCenter: parent.verticalCenter }
     text: "\uf021"
-    color: refreshMouse.containsMouse ? host.accent : host.dim
-    font.pixelSize: Style.font.body
+    tip: "Refresh (r)"
     // Spins while any refresh runs with the popup open (host.refreshActive:
     // the board, or the MR list on screen), as Omarchy's Ui/Button.qml spins
     // its icon, and finishes the turn it is on, so it always stops upright.
     RotationAnimation on rotation { running: host.refreshActive; alwaysRunToEnd: true; loops: Animation.Infinite; from: 0; to: 360; duration: 900 }
-    MouseArea { id: refreshMouse; anchors.fill: parent; anchors.margins: -Style.space(4); hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: host.refresh() }
-    IconTip { host: header.host; shown: refreshMouse.containsMouse; text: "Refresh (r)" }
-  }
-  // Merge requests (MrsView), like m does. The badge: how many waited on his
-  // review at the last look (no fetch for it; it shows what the view loaded).
-  BoardText {
-    id: mrsButton
-    anchors { right: keysButton.left; rightMargin: Style.space(10); verticalCenter: parent.verticalCenter }
-    text: "\uf407"
-    color: mrsMouse.containsMouse || host.view === "mrs" ? host.accent : host.dim
-    font.pixelSize: Style.font.body
-    readonly property string badge: Logic.mrBadge((host.feed.mrAnswers[mrsScope] || {}).data)
-    Rectangle {
-      objectName: "mrsBadge"
-      visible: mrsButton.badge !== "" && host.view !== "mrs"
-      anchors { right: parent.right; top: parent.top; rightMargin: -Style.space(7); topMargin: -Style.space(4) }
-      width: Math.max(height, badgeText.implicitWidth + Style.space(6)); height: badgeText.implicitHeight + Style.space(1)
-      radius: height / 2
-      color: host.accent
-      BoardText { id: badgeText; anchors.centerIn: parent; text: mrsButton.badge; color: host.background; font { pixelSize: Style.font.caption * 0.85; bold: true } }
-    }
-    MouseArea { id: mrsMouse; anchors.fill: parent; anchors.margins: -Style.space(4); hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: host.toggleView("mrs") }
-    IconTip { host: header.host; shown: mrsMouse.containsMouse; text: "Merge requests (m)" }
+    onClicked: host.refresh()
   }
   // The keyboard shortcuts (KeysView), like ? does.
-  BoardText {
+  HeadButton {
     id: keysButton
-    anchors { right: gear.left; rightMargin: Style.space(10); verticalCenter: parent.verticalCenter }
+    anchors { right: gear.left; rightMargin: Style.space(4); verticalCenter: parent.verticalCenter }
     text: "\uf11c"
-    color: keysMouse.containsMouse || host.view === "keys" ? host.accent : host.dim
-    font.pixelSize: Style.font.body
-    MouseArea { id: keysMouse; anchors.fill: parent; anchors.margins: -Style.space(4); hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: host.toggleView("keys") }
-    IconTip { host: header.host; shown: keysMouse.containsMouse; text: "Keyboard shortcuts (?)" }
+    active: host.view === "keys"
+    tip: "Keyboard shortcuts (?)"
+    onClicked: host.toggleView("keys")
   }
-  BoardText {
+  HeadButton {
     id: gear
     anchors { right: parent.right; verticalCenter: parent.verticalCenter }
     text: "\uf013"
-    color: gearMouse.containsMouse || host.view === "settings" ? host.accent : host.dim
-    font.pixelSize: Style.font.body
-    MouseArea { id: gearMouse; anchors.fill: parent; anchors.margins: -Style.space(4); hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: host.toggleView("settings") }
-    IconTip { host: header.host; shown: gearMouse.containsMouse; text: "Settings (s)" }
+    active: host.view === "settings"
+    tip: "Settings (s)"
+    onClicked: host.toggleView("settings")
   }
 }
