@@ -17,4 +17,4 @@ dot-always-filled	BotsRow.qml	color: bot.modelData.state === "working" ? bot.tin
 idle-ring-accent	BotsRow.qml	color: bot.busy ? bot.tint : row.host.dim }	color: bot.tint }	qml
 qa-shows-list	BotsRow.qml	(bot.oneList !== "" ? "" : " " + modelData.list)	" " + modelData.list	qml
 click-dead	BotsRow.qml	onClicked: row.host.openIssue(ref.modelData.row)	onClicked: {}	qml
-no-idle-word	BotsRow.qml	visible: !bot.busy	visible: false	qml
+# no-idle-word retired in 0.1.51: the word is gone; v151.tsv word-back and idle-name-bright cover the idle look
