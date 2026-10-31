@@ -5,7 +5,8 @@ import qs.Ui
 import "Logic.js" as Logic
 import "components"
 
-// The board: chips to show or hide columns, then the columns. A column header
+// The board: the columns, and above them, when the header's columns button
+// opens it (host.columnChips), a row of chips to show or hide columns. A column header
 // collapses its column to a strip; clicking a card opens the issue view.
 // Dragging a card past a small threshold drags a copy of it (the ghost); dropping
 // it on another column, expanded or collapsed, asks the host to move the issue.
@@ -39,10 +40,12 @@ Item {
     flick.contentX = Math.max(0, Math.min(Math.max(flick.contentX, p.x + item.width - flick.width), p.x, flick.contentWidth - flick.width))
     flick.contentY = Math.max(0, Math.min(Math.max(flick.contentY, p.y + item.height - flick.height), p.y, flick.contentHeight - flick.height))
   }
-  implicitHeight: chips.implicitHeight + host.gap + Math.max(tallest, Style.space(60))
+  implicitHeight: (chips.visible ? chips.implicitHeight + host.gap : 0) + Math.max(tallest, Style.space(60))
 
   Flow {
     id: chips
+    visible: view.host.columnChips
+    height: visible ? implicitHeight : 0
     width: parent.width; spacing: Style.space(4)
     Repeater {
       model: view.host.availableColumns
@@ -61,7 +64,7 @@ Item {
 
   Flickable {
     id: flick
-    anchors { top: chips.bottom; topMargin: view.host.gap; left: parent.left; right: parent.right; bottom: parent.bottom }
+    anchors { top: chips.bottom; topMargin: chips.visible ? view.host.gap : 0; left: parent.left; right: parent.right; bottom: parent.bottom }
     contentWidth: board.implicitWidth; contentHeight: board.implicitHeight
     clip: true; boundsBehavior: Flickable.StopAtBounds
     ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
@@ -92,7 +95,7 @@ Item {
             radius: Style.space(8)
             color: column.dropHot ? Qt.rgba(column.tint.r, column.tint.g, column.tint.b, 0.16)
               : Qt.rgba(view.host.foreground.r, view.host.foreground.g, view.host.foreground.b, column.isCollapsed && stripMouse.containsMouse ? 0.08 : 0.035)
-            border { width: column.dropHot ? 2 : 1; color: column.dropHot ? column.tint : Qt.rgba(view.host.foreground.r, view.host.foreground.g, view.host.foreground.b, 0.08) }
+            border { width: column.dropHot ? 2 : 0; color: column.tint }
             Behavior on color { ColorAnimation { duration: 120 } }
           }
 
@@ -103,16 +106,16 @@ Item {
             opacity: column.isCollapsed ? 1 : 0
             visible: opacity > 0
             Behavior on opacity { NumberAnimation { duration: 140 } }
-            implicitHeight: stripCount.implicitHeight + stripName.implicitWidth + Style.space(24)
-            Pill { id: stripCount; anchors.horizontalCenter: parent.horizontalCenter; y: Style.space(6); label: Logic.countLabel(column.modelData); textColor: view.host.foreground; border.color: column.tint }
+            implicitHeight: stripCount.implicitHeight + stripDot.height + stripName.implicitWidth + Style.space(32)
+            BoardText { id: stripCount; objectName: "stripCount"; anchors.horizontalCenter: parent.horizontalCenter; y: Style.space(8); text: Logic.countLabel(column.modelData); color: view.host.dim; font.pixelSize: Style.font.bodySmall }
+            Rectangle { id: stripDot; anchors.horizontalCenter: parent.horizontalCenter; y: stripCount.y + stripCount.height + Style.space(6); width: Style.space(6); height: width; radius: width / 2; color: column.tint }
             BoardText {
               id: stripName
               anchors.horizontalCenter: parent.horizontalCenter
-              y: stripCount.y + stripCount.height + Style.space(6) + (implicitWidth - implicitHeight) / 2
+              y: stripDot.y + stripDot.height + Style.space(8) + (implicitWidth - implicitHeight) / 2
               rotation: 90
               text: column.modelData.name
-              color: stripMouse.containsMouse ? view.host.foreground : view.host.dim
-              font.capitalization: Font.AllUppercase
+              color: stripMouse.containsMouse ? view.host.foreground : view.host.quiet
             }
             MouseArea {
               id: stripMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
@@ -135,21 +138,19 @@ Item {
             Item {
               width: parent.width
               implicitHeight: headerRow.implicitHeight + Style.space(6)
+              // Dot in the column's colour, the name, the count as a quiet number.
               Row {
                 id: headerRow
+                x: Style.space(2); y: Style.space(2)
                 spacing: Style.space(6)
-                Rectangle { anchors.verticalCenter: parent.verticalCenter; width: Style.space(8); height: width; radius: width / 2; color: column.tint }
+                Rectangle { anchors.verticalCenter: parent.verticalCenter; width: Style.space(6); height: width; radius: width / 2; color: column.tint }
                 BoardText {
                   anchors.verticalCenter: parent.verticalCenter
                   text: column.modelData.name
-                  font { bold: true; capitalization: Font.AllUppercase }
+                  color: headerMouse.containsMouse || column.issues.length > 0 ? view.host.foreground : view.host.dim
+                  font { bold: true; pixelSize: Style.font.bodySmall }
                 }
-                Pill { anchors.verticalCenter: parent.verticalCenter; label: Logic.countLabel(column.modelData); color: view.host.faint }
-              }
-              Rectangle {
-                anchors.bottom: parent.bottom; width: parent.width; height: Math.max(1, Style.space(2)); radius: height / 2
-                color: column.tint; opacity: headerMouse.containsMouse ? 1 : 0.7
-                Behavior on opacity { NumberAnimation { duration: 120 } }
+                BoardText { objectName: "columnCount"; anchors.verticalCenter: parent.verticalCenter; text: Logic.countLabel(column.modelData); color: view.host.quiet; font.pixelSize: Style.font.bodySmall }
               }
               MouseArea {
                 id: headerMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
@@ -162,7 +163,8 @@ Item {
               visible: column.issues.length === 0
               width: parent.width; wrapMode: Text.Wrap
               text: column.modelData.note || "No issues"
-              color: view.host.dim; opacity: 0.7; font.italic: true
+              leftPadding: Style.space(2)
+              color: view.host.quiet
             }
 
             Repeater {
@@ -187,7 +189,7 @@ Item {
                 radius: Style.space(6)
                 opacity: lifted || (view.host.move !== null && view.host.move.iid === modelData.iid) ? 0.4 : column.modelData.kind === "closed" ? 0.65 : 1
                 color: picked ? Qt.rgba(view.host.accent.r, view.host.accent.g, view.host.accent.b, 0.1) : Qt.rgba(fg.r, fg.g, fg.b, hovered ? 0.1 : 0.05)
-                border { width: picked ? 2 : 1; color: picked ? view.host.accent : hovered ? column.tint : Qt.rgba(fg.r, fg.g, fg.b, 0.1) }
+                border { width: picked ? 2 : 1; color: picked ? view.host.accent : hovered ? column.tint : "transparent" }
                 // Hover: lift by a couple of pixels and brighten.
                 transform: Translate { y: card.hovered ? -Style.space(2) : 0; Behavior on y { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } } }
                 Behavior on color { ColorAnimation { duration: 120 } }
@@ -197,16 +199,10 @@ Item {
                 Component.onDestruction: if (pressing) view.endDrag()
 
                 CursorSurface { anchors.fill: parent; radius: card.radius; visible: card.keyed; hasCursor: true; foreground: card.fg; accent: view.host.accent }
-                // Glass sheen along the top edge.
-                Rectangle {
-                  x: card.radius; y: 1; width: parent.width - card.radius * 2; height: 1
-                  color: Qt.rgba(card.fg.r, card.fg.g, card.fg.b, card.hovered ? 0.22 : 0.12)
-                }
                 BoardText {
                   id: cardText
                   x: Style.space(8); y: Style.space(8); width: parent.width - Style.space(16)
-                  textFormat: Text.StyledText
-                  text: "<font color='" + view.host.dim + "'>#" + card.modelData.iid + "</font>&nbsp; " + Logic.escaped(card.modelData.title)
+                  text: card.modelData.title
                   font.pixelSize: Style.font.bodySmall
                   wrapMode: Text.Wrap
                 }
@@ -220,15 +216,23 @@ Item {
                     delegate: LabelChip { required property var modelData; host: view.host; name: String(modelData); pixelSize: Math.max(8, Style.font.caption - 1) }
                   }
                 }
-                // Footer: up to three avatars (+N), then comment count and age.
+                // Footer, quiet: #iid, up to three avatars (+N), then comment count and age.
                 Item {
                   id: footer
                   x: Style.space(8); width: parent.width - Style.space(16)
                   anchors { top: chipFlow.visible ? chipFlow.bottom : cardText.bottom; topMargin: Style.space(6) }
-                  implicitHeight: Math.max(people.implicitHeight, meta.implicitHeight)
+                  implicitHeight: Math.max(people.implicitHeight, meta.implicitHeight, iidText.implicitHeight)
+                  BoardText {
+                    id: iidText
+                    objectName: "cardIid"
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "#" + card.modelData.iid
+                    color: view.host.quiet
+                    font.pixelSize: Math.max(8, Style.font.caption - 1)
+                  }
                   Row {
                     id: people
-                    anchors.verticalCenter: parent.verticalCenter
+                    anchors { left: iidText.right; leftMargin: Style.space(8); verticalCenter: parent.verticalCenter }
                     spacing: -Style.space(4)
                     Repeater {
                       model: card.assignees.slice(0, card.assignees.length > 3 ? 2 : 3)
@@ -246,7 +250,7 @@ Item {
                     id: meta
                     anchors { right: parent.right; verticalCenter: parent.verticalCenter }
                     text: (card.modelData.notes > 0 ? "\uf075 " + card.modelData.notes + "   " : "") + Logic.age(card.modelData.createdAt, view.host.updatedAt)
-                    color: view.host.dim
+                    color: view.host.quiet
                     font.pixelSize: Math.max(8, Style.font.caption - 1)
                   }
                 }

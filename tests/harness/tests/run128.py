@@ -33,6 +33,7 @@ h = Harness(src, {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultPr
 h.ok("C0 board-fetch: 35 closed on GitLab -> the latest 20, capped; exactly 20 -> not capped",
      len(cm["issues"]) == 20 and cm.get("capped") is True and len(ce["issues"]) == 20 and "capped" not in ce, [len(cm["issues"]), cm.get("capped"), ce.get("capped")])
 h.ev("root.opened = true"); h.spin(80); h.answer("board", MORE); h.spin(400)
+h.ev("root.columnChips = true"); h.spin(200)  # v0.1.52: the summary row opens from the header
 cls_is = lambda it, n: it.metaObject().className().startswith(n)
 def labels(pred):  # left to right, top to bottom on screen
     its = h.visible(lambda it: cls_is(it, "Pill") and it.parentItem() is not None and pred(it))
@@ -40,9 +41,12 @@ def labels(pred):  # left to right, top to bottom on screen
 bv = h.cls("BoardView")
 summary = lambda: labels(lambda it: cls_is(it.parentItem(), "QQuickFlow"))
 h.ok("C1 summary row: 'Closed 20+'; the others plain", summary() == ["Open 0", "research 5", "todo 0", "approved 0", "in progress 0", "review 0", "Closed 20+"], summary())
-strips = lambda: labels(lambda it: it.property("y") > 0 and not cls_is(it.parentItem(), "QQuickFlow") and not cls_is(it.parentItem(), "QQuickRow"))
+# Strip and column counts: plain numbers (stripCount, columnCount) since v0.1.52,
+# pills before; left to right.
+counts = lambda name, pills: [str(it.property("text")) for it in sorted(h.visible(lambda it: cls_is(it, "BoardText") and it.objectName() == name), key=lambda it: it.mapToScene(QPointF(0, 0)).x())] or labels(pills)
+strips = lambda: counts("stripCount", lambda it: it.property("y") > 0 and not cls_is(it.parentItem(), "QQuickFlow") and not cls_is(it.parentItem(), "QQuickRow"))
 h.ok("C2 collapsed strips: Closed reads '20+', Open and research plain", strips() == ["0", "5", "20+"], strips())
-heads = lambda: labels(lambda it: cls_is(it.parentItem(), "QQuickRow"))
+heads = lambda: counts("columnCount", lambda it: cls_is(it.parentItem(), "QQuickRow"))
 h.ok("C3 expanded label columns: plain counts", heads() == ["0", "0", "0", "0"], heads())
 QTest.mouseMove(h.win, QPoint(1, 1)); shot(0)
 h.ev("root.toggleCollapsed('Closed')"); h.spin(300)

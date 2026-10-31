@@ -33,6 +33,10 @@ Panel {
   // Solid blends so they also work inside StyledText markup.
   readonly property color dim: Qt.tint(foreground, Qt.rgba(background.r, background.g, background.b, 0.35))
   readonly property color faint: Qt.tint(background, Qt.rgba(foreground.r, foreground.g, foreground.b, 0.12))
+  // Third text level (counts, hints, empty states, "Updated"): quieter than dim.
+  readonly property color quiet: Qt.tint(foreground, Qt.rgba(background.r, background.g, background.b, 0.55))
+  // The show/hide-columns row under the bots, opened from the header (BoardView.qml).
+  property bool columnChips: false
   readonly property int columnWidth: Style.space(220)
   readonly property int stripWidth: Style.space(34)
   readonly property int gap: Style.space(10)

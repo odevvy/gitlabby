@@ -116,7 +116,7 @@ inside = lambda tp: tp.property("x") + more.mapToItem(row, QPointF(0, 0)).x() + 
 h.ok("B3b its tooltip stays inside the row", shown and inside(shown[0]), [(tp.property("x"), tp.property("width")) for tp in shown])
 h.ok("B3 hover +6: the rest, with titles", len(shown) == 1 and shown[0].property("text") == "\n".join("#%d  Issue number %d" % (i, i) for i in range(102, 108)), [tp.property("text") for tp in shown])
 shot("bots")
-ref = next(it for it in h.visible(lambda it: it.metaObject().className().startswith("BoardText") and it.property("text") == "#100"))
+ref = next(it for it in h.visible(lambda it: it.metaObject().className().startswith("BoardText") and it.property("text") == "#100" and row.isAncestorOf(it)))
 QTest.mouseMove(h.win, h.scene(ref)); h.spin(700)
 shown = [tp for tp in tips() if tp.property("visible")]
 h.ok("B4 hover an issue number: its title", len(shown) == 1 and shown[0].property("text") == "#100 Issue number 100", [tp.property("text") for tp in shown])

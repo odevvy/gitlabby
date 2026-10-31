@@ -1,8 +1,8 @@
 plus-suffix-dropped	logic/core.js	(column.capped ? "+" : "")	("")	node
 plus-always	logic/core.js	(column.capped ? "+" : "")	("+")	node
 summary-plain-count	BoardView.qml	label: modelData.name + " " + Logic.countLabel(modelData)	label: modelData.name + " " + (modelData.issues || []).length	qml
-strip-plain-count	BoardView.qml	label: Logic.countLabel(column.modelData); textColor	label: String(column.issues.length); textColor	qml
-header-plain-count	BoardView.qml	label: Logic.countLabel(column.modelData); color: view.host.faint	label: String(column.issues.length); color: view.host.faint	qml
+strip-plain-count	BoardView.qml	text: Logic.countLabel(column.modelData); color: view.host.dim	text: String(column.issues.length); color: view.host.dim	qml
+header-plain-count	BoardView.qml	text: Logic.countLabel(column.modelData); color: view.host.quiet	text: String(column.issues.length); color: view.host.quiet	qml
 fetch-no-extra	board-fetch	per_page=$((closed_cap + 1))	per_page=$closed_cap	sh
 capped-at-20	board-fetch	($fetchedClosed | length > $cap) as $capped	($fetchedClosed | length >= $cap) as $capped	sh
 shows-21	board-fetch	$fetchedClosed[:$cap] as $rawClosed	$fetchedClosed as $rawClosed	sh

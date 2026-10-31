@@ -19,11 +19,12 @@ Item {
   readonly property alias gear: gear
   readonly property alias chevron: chevron
   readonly property alias defaultMark: defaultMark
+  readonly property alias columnsButton: columnsButton
   implicitHeight: Math.max(title.implicitHeight, status.implicitHeight)
   // The title gets all the room the rest of the row doesn't need; the
   // status gets at most 40% of it, and elides from the left.
   readonly property real titleRoom: width - mrsButton.implicitWidth - Style.space(10) - chevron.implicitWidth - defaultMark.implicitWidth - refreshButton.implicitWidth - keysButton.implicitWidth - gear.implicitWidth
-    - Style.space(8 + 12 + 8 + 10 + 10) - Math.min(status.implicitWidth, width * 0.4)
+    - (columnsButton.visible ? columnsButton.implicitWidth + Style.space(10) : 0) - Style.space(8 + 12 + 8 + 10 + 10) - Math.min(status.implicitWidth, width * 0.4)
 
   // Elides at the end, so the board name goes before the project.
   BoardText {
@@ -31,7 +32,7 @@ Item {
     anchors.verticalCenter: parent.verticalCenter
     width: Math.max(0, Math.min(implicitWidth, header.titleRoom))
     elide: Text.ElideRight
-    text: host.project === "" ? "GitLab board" : host.project + (host.boardName !== "" ? " · " + host.boardName : "")
+    text: host.project === "" ? "GitLab board" : host.project + (host.boardName !== "" ? " / " + host.boardName : "")
     color: titleMouse.containsMouse ? host.accent : host.foreground
     font { pixelSize: Style.font.title; bold: true }
   }
@@ -39,7 +40,7 @@ Item {
     id: chevron
     anchors { left: title.right; verticalCenter: parent.verticalCenter }
     text: " ▾"
-    color: title.color
+    color: titleMouse.containsMouse ? host.accent : host.quiet
     font: title.font
   }
   MouseArea {
@@ -52,7 +53,7 @@ Item {
     id: defaultMark
     anchors { left: chevron.right; leftMargin: Style.space(8); verticalCenter: parent.verticalCenter }
     text: host.project === "" ? "" : host.onDefault ? "\uf005" : "\uf006 Default"
-    color: host.onDefault || defaultMouse.containsMouse ? host.accent : host.dim
+    color: defaultMouse.containsMouse ? host.accent : host.dim
     font.pixelSize: Style.font.bodySmall
     MouseArea {
       id: defaultMouse; anchors.fill: parent; anchors.margins: -Style.space(4)
@@ -63,11 +64,11 @@ Item {
   }
   BoardText {
     id: status
-    anchors { left: defaultMark.right; leftMargin: Style.space(12); right: refreshButton.left; rightMargin: Style.space(8); verticalCenter: parent.verticalCenter }
+    anchors { left: defaultMark.right; leftMargin: Style.space(12); right: columnsButton.visible ? columnsButton.left : refreshButton.left; rightMargin: Style.space(8); verticalCenter: parent.verticalCenter }
     horizontalAlignment: Text.AlignRight
     elide: Text.ElideLeft
     text: host.statusText()
-    color: host.moveError !== "" || (host.refreshError !== "" && host.boardState === "ready" && !host.refreshing) ? host.urgent : host.boardState === "ready" && host.message === "" && !host.move && !host.cached ? host.dim : host.accent
+    color: host.moveError !== "" || (host.refreshError !== "" && host.boardState === "ready" && !host.refreshing) ? host.urgent : host.boardState === "ready" && host.message === "" && !host.move && !host.cached ? host.quiet : host.accent
     font.pixelSize: Style.font.bodySmall
     // Over the words only: how often the board refreshes now, and why.
     MouseArea {
@@ -77,6 +78,19 @@ Item {
       enabled: host.boardState === "ready" && !host.cached; hoverEnabled: true
     }
     IconTip { host: header.host; shown: statusMouse.containsMouse; text: host.cadenceText() }
+  }
+  // Show or hide columns: opens the column row under the bots (board only).
+  // Shows how many are hidden, so a hidden column is never forgotten.
+  BoardText {
+    id: columnsButton
+    readonly property int hiddenCount: host.availableColumns.length - host.shownColumns.length
+    visible: host.view === "board" && host.boardState === "ready" && host.setup === ""
+    anchors { right: refreshButton.left; rightMargin: visible ? Style.space(10) : 0; verticalCenter: parent.verticalCenter }
+    text: "\uf0db" + (hiddenCount > 0 ? " " + hiddenCount : "")
+    color: columnsMouse.containsMouse || host.columnChips ? host.accent : host.dim
+    font.pixelSize: Style.font.body
+    MouseArea { id: columnsMouse; anchors.fill: parent; anchors.margins: -Style.space(4); hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: host.columnChips = !host.columnChips }
+    IconTip { host: header.host; shown: columnsMouse.containsMouse; text: columnsButton.hiddenCount > 0 ? "Show or hide columns (" + columnsButton.hiddenCount + " hidden)" : "Show or hide columns" }
   }
   BoardText {
     id: refreshButton
