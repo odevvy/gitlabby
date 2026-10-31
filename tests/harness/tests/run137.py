@@ -39,9 +39,12 @@ def shot(name, crop=None):
     if out: h.grab_card(os.path.join(out, name + ".png"))
 
 # --- closed view: nothing loads ----------------------------------------------------
-hx = {n: (round(h.ev("header." + n + ".x")), round(h.ev("header." + n + ".x + header." + n + ".width"))) for n in ("status", "refreshButton", "mrsButton", "keysButton", "gear")}
-ok("H1 header: Updated, refresh, merge requests, keys, gear, left to right, none overlapping",
-   all(hx[a][1] <= hx[b][0] for a, b in zip(["status", "refreshButton", "mrsButton", "keysButton"], ["refreshButton", "mrsButton", "keysButton", "gear"])), hx)
+# x and width in header coordinates (merge requests may sit in a group of tabs)
+box = lambda n: (lambda x, w: (round(x), round(x + w)))(h.ev("header.%s.mapToItem(header, 0, 0).x" % n) if n == "mrsButton" else h.ev("header.%s.x" % n), h.ev("header.%s.width" % n))
+hx = {n: box(n) for n in ("status", "refreshButton", "mrsButton", "keysButton", "gear")}
+order = ["status", "refreshButton", "keysButton", "gear"]
+ok("H1 header: Updated, refresh, keys, gear, left to right; merge requests overlaps none of them",
+   all(hx[a][1] <= hx[b][0] for a, b in zip(order, order[1:])) and all(hx["mrsButton"][1] <= hx[o][0] or hx["mrsButton"][0] >= hx[o][1] for o in order), hx)
 ok("M0 the board alone: no merge-request fetch", mrs_runs() == [] and h.ev("root.feed.mrAnswers") == {})
 badge = lambda: next((it for it in h.walk() if it.objectName() == "mrsBadge"), None)
 ok("M1 no answer yet: no badge", badge() is not None and not badge().isVisible())
