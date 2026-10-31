@@ -13,5 +13,5 @@ cache-no-account	board-fetch	printf '%s@%s.json' "$cache_base" "$account"	printf
 cache-account-raw	board-fetch	[[ $account =~ ^[A-Za-z0-9_.-]{1,255}$ ]] || account=unknown	[[ -n $account ]] || account=unknown	sh
 cache-old-kept	board-fetch	rm -f "$cache_base.json" 2>/dev/null	true	sh
 cr-guard-sh	board-fetch	test("(^|[\r	test("(^|[	sh
-cr-guard-js	Logic.js	/(^|[\r	/(^|[	node
-https-loose	Logic.js	/^https:\/\/[^\s"<>]+$/	/^https:\/\/\S+$/	node
+cr-guard-js	logic/markdown.js	/(^|[\r	/(^|[	node
+https-loose	logic/core.js	/^https:\/\/[^\s"<>]+$/	/^https:\/\/\S+$/	node
