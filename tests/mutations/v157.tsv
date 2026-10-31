@@ -1,0 +1,7 @@
+# v0.1.57: keyed cards. node rows: tests/logic.test.js
+k-no-dedupe	logic/board.js	if (!seen[k]) { seen[k] = true; keys.push(k) }	seen[k] = true; keys.push(k)	node
+k-remove-forward	logic/board.js	for (var i = cur.length - 1; i >= 0; i--) if (!seen[cur[i]])	for (var i = 0; i < cur.length; i++) if (!seen[cur[i]])	node
+k-no-move	logic/board.js	else if (at !== j) {	else if (false) {	node
+k-keys-not-strings	logic/board.js	var cur = have.map(String), ops = []	var cur = have.slice(), ops = []	node
+k-insert-at-end	logic/board.js	{ op: "insert", at: j, k: keys[j] }	{ op: "insert", at: cur.length, k: keys[j] }	node
+k-move-dropped	logic/board.js	cur.splice(j, 0, cur.splice(at, 1)[0])	cur.splice(at, 1)	node

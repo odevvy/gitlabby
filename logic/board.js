@@ -167,5 +167,22 @@ function durationText(sec) {
 // scroll only past it. The board and an issue keep the cap (long columns or
 // descriptions would otherwise make the popup jump to full height).
 function heightCap(view, cap) { return view === "settings" || view === "keys" ? 0 : cap }
+// Keyed lists (BoardView.qml): the steps that turn the keys a ListModel holds
+// (have) into the wanted ones (want), keeping every row that stays, so its
+// delegate is updated in place instead of rebuilt. Steps, applied in order:
+// { op: "remove", at }, { op: "move", from, to } (one row) and
+// { op: "insert", at, k }. A key twice in want counts once.
+function keyOps(have, want) {
+  var seen = {}, keys = []
+  want.forEach(function(k) { k = String(k); if (!seen[k]) { seen[k] = true; keys.push(k) } })
+  var cur = have.map(String), ops = []
+  for (var i = cur.length - 1; i >= 0; i--) if (!seen[cur[i]]) { ops.push({ op: "remove", at: i }); cur.splice(i, 1) }
+  for (var j = 0; j < keys.length; j++) {
+    var at = cur.indexOf(keys[j], j)
+    if (at === -1) { ops.push({ op: "insert", at: j, k: keys[j] }); cur.splice(j, 0, keys[j]) }
+    else if (at !== j) { ops.push({ op: "move", from: at, to: j }); cur.splice(j, 0, cur.splice(at, 1)[0]) }
+  }
+  return ops
+}
 
-if (typeof module !== "undefined") module.exports = { pipelineMarks: pipelineMarks, pipelineMark: pipelineMark, columnKey: columnKey, listSpec: listSpec, movedColumns: movedColumns, cursorMove: cursorMove, cursorFix: cursorFix, cursorAt: cursorAt, keyGroups: keyGroups, keyParts: keyParts, boardSig: boardSig, boardActive: boardActive, nextPace: nextPace, paceFloorSec: paceFloorSec, adaptiveInterval: adaptiveInterval, durationText: durationText, heightCap: heightCap }
+if (typeof module !== "undefined") module.exports = { pipelineMarks: pipelineMarks, pipelineMark: pipelineMark, columnKey: columnKey, listSpec: listSpec, movedColumns: movedColumns, cursorMove: cursorMove, cursorFix: cursorFix, cursorAt: cursorAt, keyGroups: keyGroups, keyParts: keyParts, boardSig: boardSig, boardActive: boardActive, nextPace: nextPace, paceFloorSec: paceFloorSec, adaptiveInterval: adaptiveInterval, durationText: durationText, heightCap: heightCap, keyOps: keyOps }
