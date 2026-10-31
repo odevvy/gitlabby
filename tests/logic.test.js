@@ -277,12 +277,12 @@ const BOT_COLUMNS = [
   { name: "Closed", kind: "closed", issues: [card(12, ["auth-mail", "in progress"]), card(13, ["review", "api"])] }]
 const view = states => Object.fromEntries(states.map(s => [s.name, s.state + " " + s.issues.map(i => "#" + i.iid + ":" + i.list).join(",")]))
 
-test("bots: busy rules (owner labels, no owner, two owners, Spec QA's list, any case)", () => {
+test("bots: busy rules (owner labels, no owner, two owners, Spec QA's list alone, any case)", () => {
   assert.deepEqual(view(L.botStates(L.botsConfig(P41, "group/p41"), BOT_COLUMNS)), {
     "App UI": "working #5:Approved,#6:in progress",
-    "API Engineer": "working #8:in progress,#9:review",
+    "API Engineer": "working #8:in progress",
     "Auth & Mail": "working #8:in progress",
-    "Product Lead": "working #7:in progress,#10:review",
+    "Product Lead": "working #7:in progress",
     "Spec QA": "working #9:review,#10:review"
   })
 })
@@ -291,13 +291,30 @@ test("bots: closed, Open, todo and non-label lists (even with a busy name) never
   const cols = BOT_COLUMNS.filter(c => c.name !== "in progress")
   assert.deepEqual(view(L.botStates(L.botsConfig(P41, "group/p41"), cols)), {
     "App UI": "waiting #5:Approved",
-    "API Engineer": "waiting #9:review",
+    "API Engineer": "idle ",
     "Auth & Mail": "idle ",
-    "Product Lead": "waiting #10:review",
+    "Product Lead": "idle ",
     "Spec QA": "working #9:review,#10:review"
   })
   const empty = L.botStates(L.botsConfig(P41, "group/p41"), [{ name: "review", kind: "label", issues: [] }])
   assert.deepEqual(empty.map(s => s.state), ["idle", "idle", "idle", "idle", "idle"])
+})
+
+test("bots: a card in a list bot's column counts for that bot alone; elsewhere label bots work as before", () => {
+  const P = { "a/b": { busyLists: ["approved", "in progress", "review"], bots: [
+    { name: "Auth & Mail", label: "auth-mail" }, { name: "Product Lead", label: "" }, { name: "Spec QA", list: "Review" }] } }
+  const cols = [{ name: "In Progress", kind: "label", issues: [card(134, ["in progress", "auth-mail"])] },
+                { name: "Review", kind: "label", issues: [card(135, ["review", "auth-mail"]), card(136, ["review"])] }]
+  assert.deepEqual(view(L.botStates(L.botsConfig(P, "a/b"), cols)), {
+    "Auth & Mail": "working #134:In Progress", "Product Lead": "idle ", "Spec QA": "working #135:Review,#136:Review" })
+  // Only #135 in review: Auth & Mail is idle, not waiting on Spec QA's card.
+  assert.deepEqual(L.botStates(L.botsConfig(P, "a/b"), [cols[1]]).map(s => s.name + " " + s.state), ["Auth & Mail idle", "Product Lead idle", "Spec QA working"])
+  // Without a list bot for review, review is an ordinary busy list again.
+  const noQa = { "a/b": { busyLists: ["review"], bots: [{ name: "Auth & Mail", label: "auth-mail" }, { name: "Product Lead", label: "" }] } }
+  assert.deepEqual(view(L.botStates(L.botsConfig(noQa, "a/b"), [cols[1]])), { "Auth & Mail": "waiting #135:Review", "Product Lead": "waiting #136:Review" })
+  // A list bot for another column leaves review alone.
+  const other = { "a/b": { busyLists: ["review"], bots: [{ name: "Auth & Mail", label: "auth-mail" }, { name: "Triage", list: "inbox" }] } }
+  assert.deepEqual(view(L.botStates(L.botsConfig(other, "a/b"), [cols[1]])), { "Auth & Mail": "waiting #135:Review", "Triage": "idle " })
 })
 
 test("bots: an issue in two busy lists counts once, as working if either is", () => {
@@ -318,15 +335,15 @@ test("bots: the dot's column is the furthest along of the issues that set the st
     { name: "Spec QA", list: "review" }, { name: "Idle", label: "none" }] } }, "a/b")
   const pick = s => [s.state, s.column, s.color, s.oneList]
   const [api, auth, app, qa, idle] = L.botStates(cfg, cols)
-  // working in progress, waiting in review: the filled dot wears in progress, not review
-  assert.deepEqual(pick(api), ["working", "in progress", "#e6cf17", ""])
+  // working in progress; its card in review is Spec QA's alone
+  assert.deepEqual(pick(api), ["working", "in progress", "#e6cf17", "in progress"])
   // only waiting: the furthest along of them (approved beats todo)
   assert.deepEqual(pick(auth), ["waiting", "approved", "#d4473f", ""])
   assert.deepEqual(pick(app), ["working", "in progress", "#e6cf17", "in progress"])
   assert.deepEqual(pick(qa), ["working", "review", "#86c29a", "review"])
   assert.deepEqual(pick(idle), ["idle", "", "", ""])
   // a column without a color (no-board fallback without label colors): no color
-  assert.equal(L.botStates(cfg, [col("review", undefined, [card(50, ["review", "api"])])])[0].color, "")
+  assert.equal(L.botStates(cfg, [col("review", undefined, [card(50, ["review", "api"])])])[3].color, "")
 })
 
 test("the column said once: in research, in review, but in progress as it is", () => {

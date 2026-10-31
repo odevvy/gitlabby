@@ -3,7 +3,7 @@ case-sensitive-list	logic/bots.js	var list = String(c.name).toLowerCase()	var li
 case-sensitive-label	logic/bots.js	var labels = lowerList(row.labels || [])	var labels = (row.labels || []).map(String)	node
 first-owner-only	logic/bots.js	var owners = config.bots.filter(function(b) { return b.label }).map(function(b) { return b.label })	var owners = config.bots.filter(function(b) { return b.label }).map(function(b) { return b.label }).slice(0, 1)	node
 noowner-takes-all	logic/bots.js	: !labels.some(function(l) { return owners.indexOf(l) !== -1 }))	: true)	node
-list-bot-needs-busy	logic/bots.js	if (bot.list !== undefined ? list !== bot.list : config.busyLists.indexOf(list) === -1) return	if (config.busyLists.indexOf(list) === -1 || (bot.list !== undefined && list !== bot.list)) return	node
+list-bot-needs-busy	logic/bots.js	if (bot.list !== undefined ? list !== bot.list : config.busyLists.indexOf(list) === -1 || listed.indexOf(list) !== -1) return	if (config.busyLists.indexOf(list) === -1 || (bot.list !== undefined ? list !== bot.list : listed.indexOf(list) !== -1)) return	node
 all-working	logic/bots.js	var working = bot.list !== undefined || config.workingLists.indexOf(list) !== -1	var working = true	node
 no-dedupe	logic/bots.js	if (!found[row.iid]) {	if (true) {	node
 empty-shows	logic/bots.js	if (bots.length === 0) return null	if (c.bots.length === 0) return null	node
