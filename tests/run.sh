@@ -343,7 +343,7 @@ check "PF logged out: no POST" '.' "$(grep -q NON-GET "$FAKE_LOG" && echo false 
 # --- W: one list of workflow labels on each side ----------------------------
 check "W board-fetch and Logic.js list the same workflow labels" '.' "$(
   a=$(jq -cn "$(sed -n 's/^def workflow: \(.*\);$/\1/p' "$fetch") | sort")
-  b=$(node -e 'console.log(JSON.stringify(require(process.argv[1]).workflowLabels.slice().sort()))' "$here/../Logic.js")
+  b=$(node -e 'console.log(JSON.stringify(require(process.argv[1]).workflowLabels.slice().sort()))' "$here/../logic/labels.js")
   [[ -n $a && $a == "$b" ]] && echo true || echo false)"
 
 # --- R: reads are GET only ---------------------------------------------------

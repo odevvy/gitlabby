@@ -1,8 +1,9 @@
-// Unit tests for Logic.js, the board's Qt-free logic. Run: node --test tests/logic.test.js
+// Unit tests for Logic.js, the board's Qt-free logic (logic/*.js, loaded under node
+// through logic/index.js). Run: node --test tests/logic.test.js
 "use strict"
 const test = require("node:test")
 const assert = require("node:assert/strict")
-const L = require("../Logic.js")
+const L = require("../logic/index.js")
 
 test("settings lists are lowercase names from an array or a comma string", () => {
   assert.deepEqual(L.lowerList("Closed, Research ,,"), ["closed", "research"])
@@ -941,4 +942,30 @@ test("manifest: every setting the widget reads has a default (settingsRevision i
   assert.deepEqual([...read].filter(k => !(k in manifest.barWidget.defaults)), [])
   assert.deepEqual(manifest.barWidget.defaults.alerts, {})
   assert.deepEqual(manifest.barWidget.defaults.accessHintDismissed, [])
+})
+
+// --- 0.1.46 Logic.js split by concern --------------------------------------------
+test("Logic.js: the QML entry imports every module, hands over what each needs and re-exports every name", () => {
+  const fs = require("node:fs"), path = require("node:path"), dir = path.join(__dirname, "..")
+  const entry = fs.readFileSync(path.join(dir, "Logic.js"), "utf8")
+  const imports = new Map([...entry.matchAll(/^\.import "logic\/(\w+)\.js" as (\w+)$/gm)].map(m => [m[2], m[1]]))
+  const mods = fs.readdirSync(path.join(dir, "logic")).filter(f => f.endsWith(".js") && f !== "index.js").map(f => f.slice(0, -3)).sort()
+  assert.deepEqual([...imports.values()].sort(), mods)
+  // .import lines first: QML requires them before any code.
+  assert.match(entry, /^(\.import [^\n]+\n)+\n/)
+  // Every name each module exports, re-exported from that module and nowhere else.
+  const want = [], got = [...entry.matchAll(/^var (\w+) = (\w+)\.(\w+)$/gm)].map(m => [m[1], imports.get(m[2]), m[3]])
+  for (const m of mods) for (const n of Object.keys(require(path.join(dir, "logic", m + ".js")))) want.push([n, m, n])
+  assert.deepEqual(got.sort(), want.sort())
+  assert.equal(new Set(got.map(g => g[0])).size, got.length)
+  // use(): each module that borrows from another gets exactly those modules.
+  for (const m of mods) {
+    const src = fs.readFileSync(path.join(dir, "logic", m + ".js"), "utf8")
+    const needs = [...src.matchAll(/^var (\w+) = typeof module !== "undefined" \? require\("\.\/(\w+)\.js"\) : null$/gm)].map(x => x[1] + ":" + x[2]).sort()
+    const q = [...imports].find(([, f]) => f === m)[0]
+    const given = (entry.match(new RegExp("^" + q + "\\.use\\(\\{ (.*) \\}\\)$", "m")) || [, ""])[1].split(", ").filter(Boolean).map(x => { const [k, v] = x.split(": "); assert.equal(k, v); return k + ":" + imports.get(v) }).sort()
+    assert.deepEqual(given, needs, m)
+  }
+  // node sees the same names QML does.
+  assert.deepEqual(Object.keys(L).sort(), got.map(g => g[0]).sort())
 })

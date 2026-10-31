@@ -694,7 +694,7 @@ for every issue of that project for 5 minutes.
 
 ```bash
 tests/run.sh                            # board-fetch tests with a fake glab
-node --test tests/logic.test.js         # Logic.js: move maths, ages, labels, Markdown
+node --test tests/logic.test.js         # logic/: move maths, ages, labels, Markdown
 ./board-fetch --project group/app | jq  # what the widget sees
 journalctl --user -t omarchy-shell -f   # shell log (QML errors)
 omarchy plugin validate .
@@ -721,8 +721,11 @@ tests/mutate.sh . tests/mutations/v144.tsv tests/harness/tests/run144.py
 change it). Fonts come from the system; `OGB_FONTS` adds a font directory.
 
 The QML files hold the views; logic that needs no Qt (where a moved card
-lands, ages, label text colors, the Markdown renderer) is in `Logic.js`,
-which the Node tests load, as Omarchy's panels do with their `Model.js`. CI
+lands, ages, label text colors, the Markdown renderer) is in `logic/`, one
+file per concern (core, labels, bots, markdown, board, alerts, mrs, bulk,
+access). The Node tests load them through `logic/index.js`; the QML files
+import `Logic.js`, which imports each module, hands each the others it uses
+and re-exports every name, as Omarchy's panels do with their `Model.js`. CI
 runs both suites, and `tests/run.sh` checks that reads never send anything but
 GET. Saving a file under `~/.config/omarchy/plugins/` reloads the plugin.
 

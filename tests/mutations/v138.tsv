@@ -1,12 +1,12 @@
-cap-21	Logic.js	if (list.length >= bulkCap)	if (list.length > bulkCap)	node
-pick-no-col	Logic.js	function pickKey(column, iid) { return columnKey(column) + "|" + iid }	function pickKey(column, iid) { return "|" + iid }	node
-plan-from-target	Logic.js	"--from", listSpec(from), "--to"	"--from", listSpec(action.to), "--to"	node
-plan-no-skip-there	Logic.js	else if (columnKey(from) === columnKey(action.to)) skip = "Already in " + action.to.name	else if (false) skip = ""	node
-plan-add-dup	Logic.js	if (labels.indexOf(action.label) !== -1) skip = "Already has "	if (false) skip = "Already has "	node
-summary-skips	Logic.js	todo = results.length - count("skipped")	todo = results.length	node
-outcome-timeout-goes-on	Logic.js	if (state === "timeout" || /within 30 seconds/.test(message)) return { ok: false, stop: true,	if (state === "timeout" || /within 30 seconds/.test(message)) return { ok: false, stop: false,	qml
-outcome-403-stops	Logic.js	return { ok: false, stop: false, text: message || "Failed." }	return { ok: false, stop: true, text: message || "Failed." }	qml
-outcome-loggedout-goes-on	Logic.js	if (state === "logged-out" || state === "no-glab") return { ok: false, stop: true,	if (state === "no-glab") return { ok: false, stop: true,	qml
+cap-21	logic/bulk.js	if (list.length >= bulkCap)	if (list.length > bulkCap)	node
+pick-no-col	logic/bulk.js	function pickKey(column, iid) { return columnKey(column) + "|" + iid }	function pickKey(column, iid) { return "|" + iid }	node
+plan-from-target	logic/bulk.js	"--from", listSpec(from), "--to"	"--from", listSpec(action.to), "--to"	node
+plan-no-skip-there	logic/bulk.js	else if (columnKey(from) === columnKey(action.to)) skip = "Already in " + action.to.name	else if (false) skip = ""	node
+plan-add-dup	logic/bulk.js	if (labels.indexOf(action.label) !== -1) skip = "Already has "	if (false) skip = "Already has "	node
+summary-skips	logic/bulk.js	todo = results.length - count("skipped")	todo = results.length	node
+outcome-timeout-goes-on	logic/bulk.js	if (state === "timeout" || /within 30 seconds/.test(message)) return { ok: false, stop: true,	if (state === "timeout" || /within 30 seconds/.test(message)) return { ok: false, stop: false,	qml
+outcome-403-stops	logic/bulk.js	return { ok: false, stop: false, text: message || "Failed." }	return { ok: false, stop: true, text: message || "Failed." }	qml
+outcome-loggedout-goes-on	logic/bulk.js	if (state === "logged-out" || state === "no-glab") return { ok: false, stop: true,	if (state === "no-glab") return { ok: false, stop: true,	qml
 bar-parallel	BulkBar.qml	write(bar.pendingLine)	write(bar.plan.filter(function(s){ return s.args }).map(function(s){ return JSON.stringify(s.args) + String.fromCharCode(10) }).join(""))	qml
 bar-no-own-move	BulkBar.qml	if (out.ok) host.feed.noteOwnMove(host.fetchKey, plan[step].iid)	if (false) host.feed.noteOwnMove(host.fetchKey, plan[step].iid)	qml
 bar-no-refresh	BulkBar.qml	    host.bulkFinished()  // before busy ends	    /* m */  // before busy ends	qml
