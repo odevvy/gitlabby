@@ -1004,6 +1004,43 @@ check "MG a hung query: REST answers" '.state == "ready" and (input | del(.updat
 check "MG no token in output" '.' "$(grep -qiE 'glpat|bearer' <<<"$out" && echo false || echo true)"
 rm -f "$FAKE_DIR/graphql.json"
 
+# --- BK: bulk actions, one board-fetch process for the whole run ------------------
+# Each stdin line is one card: the same answer as the single-card command, one
+# line each; the sign-in check once, and a relabel run's status lists and
+# labels read once.
+reset
+fx boards <<<'[{"id":7,"name":"Dev","lists":[{"id":1,"label":{"name":"Doing"}}]}]'
+fx labels <<<'[{"name":"ux"},{"name":"api"}]'
+fx put <<<'{"iid":3,"state":"opened","labels":["Doing","api"]}'
+bk() { : >"$FAKE_LOG"; "$fetch" bulk --project a/b; }
+strip='[inputs | del(.updatedAt)]'
+step() { printf '%s\0' "$@" | jq -Rsc 'split("\u0000")[:-1]'; }
+single=$(for a in "--add api" "--add nosuch" "--remove Doing" "--add api"; do
+  # shellcheck disable=SC2086  # split on purpose
+  "$fetch" relabel --project a/b --iid 3 $a; done | jq -cn "$strip")
+out=$({ step relabel --project a/b --iid 3 --add api; step relabel --project a/b --iid 3 --add nosuch
+  step relabel --project a/b --iid 3 --remove Doing; step relabel --project a/b --iid 3 --add api; } | bk)
+check "BK one line per card" '.' "$([[ $(wc -l <<<"$out") == 4 ]] && echo true || echo false)"
+check "BK same answers as one card at a time" ". == $single" "$(jq -cn "$strip" <<<"$out")"
+check "BK relabel: one sign-in check, one guard read, one labels read, 2 PUTs" '.' "$([[ $(grep -c '^auth status' "$FAKE_LOG") == 1 && $(grep -c 'GET --paginate projects/a%2Fb/boards' "$FAKE_LOG") == 1 && $(grep -c 'GET projects/a%2Fb$' "$FAKE_LOG") == 1 && $(grep -c 'GET --paginate projects/a%2Fb/labels' "$FAKE_LOG") == 1 && $(grep -c '^PUT ' "$FAKE_LOG") == 2 && $(grep -c NON-GET "$FAKE_LOG") == 2 ]] && echo true || echo false)"
+check "BK the status guard still holds for every card" '.state == "error" and (.message | test("board list label"))' "$(step relabel --project a/b --iid 3 --remove Doing | bk)"
+check "BK guard refusal: no write" '.' "$(grep -q NON-GET "$FAKE_LOG" && echo false || echo true)"
+fx put <<<'{"iid":3,"state":"closed","labels":["review"]}'
+out=$({ step close --project a/b --iid 3; step close --project a/b --iid 3; } | bk)
+check "BK close x2: two answers, two PUTs, one sign-in check" '.' "$([[ $(jq -s 'map(.message) == ["Closed #3.","Closed #3."]' <<<"$out") == true && $(grep -c '^PUT ' "$FAKE_LOG") == 2 && $(grep -c '^api ' "$FAKE_LOG") == 2 && $(grep -c '^auth status' "$FAKE_LOG") == 1 ]] && echo true || echo false)"
+out=$({ step comment --project a/b --iid 3; step logout; step close --project x/y --iid 3; echo 'not json'; echo '["close",1]'; echo '{}'; step close --project a/b --iid 0; } | bk)
+check "BK refused steps: one error line each" '.' "$(jq -s 'length == 7 and all(.state == "error")' <<<"$out")"
+check "BK refused: only the four writes, only this project" '.' "$(jq -sr '.[0:3] | map(.message) == ["Bulk runs only move, relabel, close and reopen.","Bulk runs only move, relabel, close and reopen.","Bulk step for another project."]' <<<"$out")"
+check "BK refused steps: no write, no logout" '.' "$(grep -qE 'NON-GET|logout' "$FAKE_LOG" && echo false || echo true)"
+check "BK a step can't change the host" '.' "$(step close --project a/b --iid 3 --hostname evil.example | bk >/dev/null; ! grep -q evil "$FAKE_LOG" && grep -qF 'PUT projects/a%2Fb/issues/3' "$FAKE_LOG" && echo true || echo false)"
+check "BK signed out: one logged-out line, nothing written" '.state == "logged-out"' "$(step close --project a/b --iid 3 | FAKE_AUTH=no bk)"
+check "BK signed out: no write" '.' "$(grep -q NON-GET "$FAKE_LOG" && echo false || echo true)"
+check "BK no input: no answer, exit 0" '.' "$(out=$(bk </dev/null); [[ $? == 0 && -z $out ]] && echo true || echo false)"
+check "BK needs a project" '.state == "error" and (.message | test("No project"))' "$("$fetch" bulk </dev/null)"
+check "BK each card gets its own deadline" '.' "$(: >"$FAKE_LOG.limits"; { step close --project a/b --iid 3; sleep 2; step close --project a/b --iid 3; } | BOARD_FETCH_DEADLINE=16 bk >/dev/null; [[ $(tr '\n' ' ' <"$FAKE_LOG.limits") == "16 16 16 " ]] && echo true || echo false)"
+check "BK a write still needs 15 s of its card's deadline" '.' "$(fx put <<<'{"iid":3,"state":"closed","labels":[]}'; out=$(step close --project a/b --iid 3 | BOARD_FETCH_DEADLINE=10 bk); jq -e '.message | test("Nothing was written")' <<<"$out" >/dev/null && ! grep -q NON-GET "$FAKE_LOG" && echo true || echo false)"
+check "BK leaves no temp files" '.' "$([[ -z $(find "${TMPDIR:-/tmp}" -maxdepth 1 -name 'board-fetch.*' -newer "$FAKE_LOG" 2>/dev/null) ]] && echo true || echo false)"
+
 # --- AC: access level and token scopes (reads only) -------------------------------
 reset
 fx project <<<'{"id":5,"path_with_namespace":"group/app","permissions":{"project_access":{"access_level":10},"group_access":null}}'

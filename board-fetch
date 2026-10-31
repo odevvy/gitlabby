@@ -44,6 +44,13 @@
 #   board-fetch close|reopen --project P --iid N   (PUT, write_state())
 #     One state_event (close or reopen) and nothing else: labels stay as they
 #     are. The answer must be that issue, in the new state.
+#   board-fetch bulk --project P   bulk actions: one process for a whole run.
+#     Reads one card per stdin line, a JSON array of the arguments of move,
+#     relabel, close or reopen for P (anything else is refused for that card),
+#     runs it as that command would, with its own deadline, and prints its
+#     answer as one line. Ends at end of input or after 60 s without a line.
+#     The sign-in check runs once, and a relabel run reads the status lists
+#     and the project's labels once, not once per card.
 #   board-fetch logout   glab auth logout for the host (glab's own local change: it
 #     forgets the token, GitLab is not called), then deletes the saved boards.
 #
@@ -58,7 +65,8 @@
 set -uo pipefail
 
 cmd=board project="" board_id="" iid="" from="" to="" add="" remove="" hostname="gitlab.com"
-case "${1:-}" in board|cached|projects|boards|issue|notes|move|comment|whoami|mrs|logout|labels|relabel|close|reopen|access) cmd=$1; shift ;; esac
+case "${1:-}" in board|cached|projects|boards|issue|notes|move|comment|whoami|mrs|logout|labels|relabel|close|reopen|access|bulk) cmd=$1; shift ;; esac
+parse_args() {
 while (($#)); do
   case "$1" in
     --project) project=${2:-} ;;
@@ -72,6 +80,8 @@ while (($#)); do
   esac
   shift $(($# >= 2 ? 2 : 1))
 done
+}
+parse_args "$@"
 
 deadline_s=${BOARD_FETCH_DEADLINE:-40}
 [[ $deadline_s =~ ^[0-9]+$ ]] && ((deadline_s >= 10 && deadline_s <= 120)) || deadline_s=40
@@ -88,6 +98,7 @@ if [[ ! $cmd =~ ^(projects|whoami|logout)$ && ($cmd != mrs || -n $project) ]]; t
   [[ $project =~ ^[0-9]+$ || ($project =~ ^[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)+$ && $project != *..*) ]] ||
     emit error "Invalid project: $project"
 fi
+check_args() {
 [[ $board_id =~ ^[0-9]*$ ]] || emit error "Invalid board id."
 [[ ! $cmd =~ ^(issue|notes|move|comment|relabel|close|reopen)$ || $iid =~ ^[1-9][0-9]*$ ]] || emit error "Invalid issue number."
 if [[ $cmd == move ]]; then
@@ -108,6 +119,8 @@ if [[ $cmd == comment ]]; then
     emit error "A line starts with /, which GitLab runs as a quick action. Wrap it in \`backticks\` or use GitLab for quick actions."
 fi
 [[ $hostname =~ ^[A-Za-z0-9][A-Za-z0-9.-]*(:[0-9]+)?$ ]] || emit error "Invalid GitLab hostname."
+}
+check_args
 
 # The last board answer per project, board and account, shown while a fresh
 # one loads. It holds the same JSON the widget gets (no auth data); dir 0700,
@@ -337,18 +350,24 @@ mrs_list() {
 # per page): the project's, all pages, and, best effort, its group's and every
 # parent group's (group boards show this project's issues too). A group whose
 # boards can't be read adds nothing; a user namespace has none.
+in_bulk=0
 guard_boards() {
+  # A bulk run reads them once: the first card's copy serves the rest.
+  if ((in_bulk)) && [[ -f $tmp/guard-b ]]; then cp "$tmp/guard-b" "$tmp/b"; return 0; fi
   get --paginate "$base/boards?per_page=100" >"$tmp/b" || emit error "Could not load boards for $project."
   local group
-  peek "$base" >"$tmp/proj" || return 0
+  peek "$base" >"$tmp/proj" || : >"$tmp/proj"  # unreadable: no group boards
   while IFS= read -r group; do
     peek "groups/$(jq -rn --arg g "$group" '$g | @uri')/boards?per_page=100" >"$tmp/gb" &&
       jq -e 'type == "array"' "$tmp/gb" >/dev/null 2>&1 && cat "$tmp/gb" >>"$tmp/b"
   done < <(jq -r 'select(.namespace.kind == "group") | .namespace.full_path | strings | split("/") as $p
     | range($p | length; 0; -1) as $n | $p[:$n] | join("/")' "$tmp/proj" 2>/dev/null)
+  ((in_bulk)) && cp "$tmp/b" "$tmp/guard-b"
   return 0
 }
 
+
+run_cmd() {
 case $cmd in
   projects)
     # Page by page, at most 5 pages (500 projects, most recently active first),
@@ -401,8 +420,10 @@ case $cmd in
     [[ $kind == free ]] || emit error "$([[ $kind == status ]] && echo "\"$label\" is a board list label. Drag the card to change it." ||
       echo "GitLab returned an unreadable response.")"
     if [[ -n $add ]]; then
-      get --paginate "$base/labels?per_page=100" >"$tmp/l" || emit error "Could not load labels for $project."
+      if ((in_bulk)) && [[ -f $tmp/guard-l ]]; then cp "$tmp/guard-l" "$tmp/l"
+      else get --paginate "$base/labels?per_page=100" >"$tmp/l" || emit error "Could not load labels for $project."; fi
       known=$(jq -rn --slurpfile all "$tmp/l" --arg l "$label" '[($all | add // [])[] | .name] | index($l) != null' 2>/dev/null)
+      ((in_bulk)) && cp "$tmp/l" "$tmp/guard-l"
       [[ $known == true ]] || emit error "$([[ $known == false ]] && echo "This project has no label \"$label\"." ||
         echo "GitLab returned an unreadable response.")"
     fi
@@ -548,6 +569,35 @@ JQ
       grep . || emit error "GitLab returned an unexpected response to the move."
     exit 0 ;;
 esac
+}
+# Bulk: each stdin line is one card's command, run in a subshell (so its emit
+# and exit end only that card) with its own deadline, in this process's
+# private dir. The project and host stay the run's own.
+bulk_step() { # one card: its stdin line
+  local line=$1 args=()
+  exec 3>&1
+  [[ ${#line} -le 4096 ]] && mapfile -d '' args < <(jq -j 'select(type == "array" and length >= 1 and length <= 12
+    and all(.[]; type == "string" and (contains("\u0000") | not))) | .[] | . + "\u0000"' <<<"$line" 2>/dev/null)
+  ((${#args[@]})) || emit error "Unreadable bulk step."
+  cmd=${args[0]} project="" board_id="" iid="" from="" to="" add="" remove=""
+  [[ $cmd =~ ^(move|relabel|close|reopen)$ ]] || emit error "Bulk runs only move, relabel, close and reopen."
+  parse_args "${args[@]:1}"
+  [[ $project == "$run_project" ]] || emit error "Bulk step for another project."
+  hostname=$run_host deadline=$((SECONDS + deadline_s))
+  check_args
+  run_cmd
+}
+if [[ $cmd == bulk ]]; then
+  in_bulk=1 run_project=$project run_host=$hostname
+  while IFS= read -r -t 60 line; do
+    (bulk_step "$line") </dev/null >"$tmp/card"
+    jq -c . "$tmp/card" 2>/dev/null | head -n 1 | grep . ||
+      jq -cn '{state: "error", message: "board-fetch gave no answer for this card.", updatedAt: (now | todateiso8601)}'
+    rm -f "$tmp/card"
+  done
+  exit 0
+fi
+run_cmd
 
 # --- board -----------------------------------------------------------------
 # One call returns every board with its lists (GET /projects/:id/boards).
