@@ -19,13 +19,13 @@ failed-blank	Board.qml	visible: root.view === "board" && (root.setup !== "" || r
 confirm-ignored	Board.qml	    if (!confirmMoves) return moveIssue(row, from, to)	    return moveIssue(row, from, to)	qml
 drop-bypasses	BoardView.qml	view.host.requestMove(row, from, to)	view.host.moveIssue(row, from, to)	qml
 confirm-not-held	Board.qml	move !== null || pendingMove !== null || boardView.holding	move !== null || boardView.holding	qml
-escape-closes	Board.qml	if (root.pendingMove) root.cancelMove()	if (false) root.cancelMove()	qml
-enter-opens	Board.qml	if (root.pendingMove) root.confirmMove()	if (false) root.confirmMove()	qml
-shift-l-nothing	Board.qml	if ((text === "H" || text === "L") && root.view === "board")	if (false)	qml
-shift-wrong-way	Board.qml	root.moveCursorCard(text === "H" ? -1 : 1)	root.moveCursorCard(text === "H" ? 1 : -1)	qml
-e-dead	Board.qml	key === "e" && root.view === "issue"	key === "#" && root.view === "issue"	qml
+escape-closes	BoardKeys.qml	if (host.pendingMove) host.cancelMove()	if (false) host.cancelMove()	qml
+enter-opens	BoardKeys.qml	if (host.pendingMove) host.confirmMove()	if (false) host.confirmMove()	qml
+shift-l-nothing	BoardKeys.qml	if ((text === "H" || text === "L") && host.view === "board")	if (false)	qml
+shift-wrong-way	BoardKeys.qml	host.moveCursorCard(text === "H" ? -1 : 1)	host.moveCursorCard(text === "H" ? 1 : -1)	qml
+e-dead	BoardKeys.qml	key === "e" && host.view === "issue"	key === "#" && host.view === "issue"	qml
 x-no-confirm	IssueView.qml	    else askClose()	    else setState("close")	qml
-issue-escape-leaves	Board.qml	else if (root.view === "issue" && issueView.confirming) issueView.confirming = false	else if (false) issueView.confirming = false	qml
+issue-escape-leaves	BoardKeys.qml	else if (host.view === "issue" && issueView.confirming) issueView.confirming = false	else if (false) issueView.confirming = false	qml
 bots-all-numbers	BotsRow.qml	model: bot.modelData.issues.slice(0, row.shown)	model: bot.modelData.issues	qml
 bots-no-tip	BotsRow.qml	            visible: moreMouse.containsMouse	            visible: false	qml
 tip-offcard	BotsRow.qml	    return Math.max(-at, Math.min(0, row.width - at - width))	    return 0	qml

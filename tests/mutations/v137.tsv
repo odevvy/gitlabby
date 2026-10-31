@@ -19,10 +19,10 @@ svc-no-pending	BoardService.qml	if (p) requestMrs(p.scope, p.force)	/* m */	qml
 svc-forget-keeps	BoardService.qml	    mrAnswers = ({})\n    mrPending = null	    mrPending = null	qml
 svc-dup-fetch	BoardService.qml	    if (mrRunning === scope) return\n	/* m */	qml
 v-no-open-fetch	Board.qml	if (name === "mrs" && view !== "mrs") mrsView.open()	/* m */	qml
-v-r-ignored	Board.qml	else if (key === "r" && root.view === "mrs") mrsView.refresh()	/* m */	qml
-v-m-ignored	Board.qml	else if (key === "m") root.toggleView("mrs")	/* m */	qml
-v-enter-ignored	Board.qml	else if (root.view === "mrs") mrsView.activate()	/* m */	qml
-v-move-ignored	Board.qml	else if (root.view === "mrs" && dy !== 0) mrsView.moveCursor(dy)	/* m */	qml
+v-r-ignored	BoardKeys.qml	else if (key === "r" && host.view === "mrs") mrsView.refresh()	/* m */	qml
+v-m-ignored	BoardKeys.qml	else if (key === "m") host.toggleView("mrs")	/* m */	qml
+v-enter-ignored	BoardKeys.qml	else if (host.view === "mrs") mrsView.activate()	/* m */	qml
+v-move-ignored	BoardKeys.qml	else if (host.view === "mrs" && dy !== 0) mrsView.moveCursor(dy)	/* m */	qml
 v-badge-in-view	BoardHeader.qml	visible: mrsButton.badge !== "" && host.view !== "mrs"	visible: true	qml
 v-scope-no-fetch	MrsView.qml	onScopeChanged: if (visible) host.feed.requestMrs(scope, false)	/* m */	qml
 v-cursor-unclamped	MrsView.qml	cursor = Math.max(0, Math.min(rows.length - 1, cursor + dy))	cursor = cursor + dy	qml
