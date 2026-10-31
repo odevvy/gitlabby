@@ -50,9 +50,10 @@ the picker's board step. The header shows a star on the default board and a
 - Click an issue for its details: state, labels, author, ages, assignees,
   milestone, the description, the comments and a box to add one, and an
   "Open in browser" link. A thin bar slides under the title while it loads.
-- The gear opens the settings, in this order: the refresh interval, which
-  columns start collapsed (a row of check boxes), the bots of the project on
-  screen (see [Who's busy](#whos-busy)), and who is signed in.
+- The gear opens the settings in four sections split by thin lines:
+  General (the refresh interval, and which columns start collapsed), Bots
+  (the bots of the project on screen, see [Who's busy](#whos-busy)), Alerts,
+  and Account (who is signed in). A ticked box has an orange outline and tick.
 - The popup is as tall as the board needs, up to 640 points (at your Omarchy
   scale). Settings and the keyboard shortcuts aren't held to that: they grow
   to their full height when the screen has room under the bar, and scroll
@@ -293,8 +294,8 @@ under **Column**), or cards no bot owns (only one bot can have that; once
 one does, the choice is shown but off). While **Add** is dim, the line
 beside it says why: a name to give, a label or column to choose, or a name
 another bot already has. The first bot turns on every label column; the
-check boxes under **Count a bot as busy when its card is in**, above the
-list, turn a column off or on (Open and Closed never count). The list reads
+check boxes under **Busy when its card is in**, above the list titled
+**On** and the project, turn a column off or on (Open and Closed never count). The list reads
 "cards labelled", "every card in" or "cards no other bot owns" per bot; ✕
 removes one at once. Every change is saved right away to the same `bots`
 setting, and the row under the header follows at once. A bot whose label the
