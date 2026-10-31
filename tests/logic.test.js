@@ -372,7 +372,7 @@ test("markdown: a URL inside link text is not linked again; marker characters ca
 })
 
 test("comments: a line starting with / is a quick action; / elsewhere or in backticks is not", () => {
-  for (const t of ["/close", "Looks good\n/label ~review", "ok\n  \t/unlabel ~x"]) assert.equal(L.quickAction(t), true, t)
+  for (const t of ["/close", "Looks good\n/label ~review", "ok\n  \t/unlabel ~x", "ok\r/close", "ok\r\n /close"]) assert.equal(L.quickAction(t), true, t)
   for (const t of ["", "see a/b and /usr", "`/close`", "path: /etc"]) assert.equal(L.quickAction(t), false, t)
 })
 
@@ -643,6 +643,9 @@ test("alerts: settings per project, events between two good answers, the notify 
   // Only https links; a bad project path: no board link.
   assert.equal(L.httpsUrl("http://x"), "")
   assert.equal(L.httpsUrl("https://gitlab.com/a b"), "")
+  // The one https check (Board.qml openUrl too): a quote or angle bracket can't ride along; ' can.
+  for (const u of ['https://x/"a', "https://x/<a", "https://x/a>", "https://x/a\nb", "javascript:x", "--x", ""]) assert.equal(L.httpsUrl(u), "", u)
+  assert.equal(L.httpsUrl("https://gitlab.com/g/p/-/issues/1?x=it's"), "https://gitlab.com/g/p/-/issues/1?x=it's")
   assert.equal(L.boardUrl({ project: "g/p;rm", board: { id: 7 } }), "")
   assert.equal(L.boardUrl({ project: "g/sub/p", board: { id: "x" } }), "https://gitlab.com/g/sub/p/-/boards")
   // The command (Omarchy bin/omarchy-notification-send): our app name, low urgency, the
@@ -918,4 +921,17 @@ test("view-only in the issue view and bulk runs: actions hidden, refused writes 
   assert.match(issue, /function toggleState\(\) \{\n    if \(!host\.writable\) return/)
   assert.equal((issue.match(/host\.feed\.noteRefused\(host\.project, data\.message\)/g) || []).length, 2)
   assert.match(bar, /if \(!out\.ok\) host\.feed\.noteRefused\(host\.project, data\.message\)/)
+})
+
+test("manifest: every setting the widget reads has a default (settingsRevision is internal)", () => {
+  const fs = require("node:fs"), path = require("node:path"), dir = path.join(__dirname, "..")
+  const manifest = JSON.parse(fs.readFileSync(path.join(dir, "manifest.json"), "utf8"))
+  const read = new Set()
+  for (const f of fs.readdirSync(dir).filter(f => f.endsWith(".qml")))
+    for (const m of fs.readFileSync(path.join(dir, f), "utf8").matchAll(/saved\("([A-Za-z]+)"/g)) read.add(m[1])
+  read.delete("settingsRevision")
+  assert.ok(read.size >= 10, [...read].join(" "))
+  assert.deepEqual([...read].filter(k => !(k in manifest.barWidget.defaults)), [])
+  assert.deepEqual(manifest.barWidget.defaults.alerts, {})
+  assert.deepEqual(manifest.barWidget.defaults.accessHintDismissed, [])
 })

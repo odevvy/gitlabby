@@ -291,7 +291,7 @@ function inline(text) {
 
 // A comment line GitLab would run as a quick action (/close, /label ...):
 // board-fetch refuses those, the box says so before Post.
-function quickAction(text) { return /(^|\n)[ \t]*\//.test(String(text || "")) }
+function quickAction(text) { return /(^|[\r\n])[ \t]*\//.test(String(text || "")) }
 
 // What a confirmed move does on GitLab, for the confirm (settings.confirmMoves).
 function moveNote(from, to) {
@@ -498,7 +498,9 @@ function reviewRows(data) {
   })
   return out
 }
-function httpsUrl(url) { return /^https:\/\/[^\s"'<>]+$/.test(String(url || "")) ? String(url) : "" }
+// The one check before a link opens or rides in a notification: https, one
+// word, no quote or angle bracket that could end an attribute.
+function httpsUrl(url) { return /^https:\/\/[^\s"<>]+$/.test(String(url || "")) ? String(url) : "" }
 function boardUrl(data) {
   var p = String(data && data.project || "")
   if (!/^[A-Za-z0-9_.-]+(\/[A-Za-z0-9_.-]+)+$/.test(p)) return ""

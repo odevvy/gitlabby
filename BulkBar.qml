@@ -64,6 +64,8 @@ Rectangle {
 
   // Arming. key: the text key that armed it ("" for a click).
   function arm(next, key) {
+    // A write the watchdog gave up on (here or a single move) hasn't ended yet.
+    if (!running && (runProcess.running || host.moveStillRunning)) { note = host.stillFinishing; return }
     if (busy || host.picked.length === 0 || !host.canMove) return
     action = next
     armKey = key || ""
@@ -179,11 +181,11 @@ Rectangle {
     id: labelsProcess
     stdout: StdioCollector { waitForEnd: true; onStreamFinished: bar.labelsDone(text) }
   }
-  // No answer in 45 s (board-fetch's own calls end in 30): count it as a
+  // No answer in 50 s (board-fetch ends by its 40 s deadline): count it as a
   // timeout, which may have gone through, and stop.
   Timer {
-    id: watchdog; interval: 45000
-    onTriggered: bar.stepDone(JSON.stringify({ state: "timeout", message: "No answer from glab in 45 seconds." }))
+    id: watchdog; interval: 50000
+    onTriggered: bar.stepDone(JSON.stringify({ state: "timeout", message: "No answer from glab in 50 seconds." }))
   }
 
   Column {

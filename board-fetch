@@ -47,6 +47,10 @@
 #   board-fetch logout   glab auth logout for the host (glab's own local change: it
 #     forgets the token, GitLab is not called), then deletes the saved boards.
 #
+# Every command ends within one deadline (40 s; BOARD_FETCH_DEADLINE, 10-120),
+# and a write starts only with 15 s of it left (else "nothing was written"), so
+# the widget's 50 s watchdogs never give up on a command that may still write.
+#
 # P is a project path (group/name) or numeric id; every command but projects,
 # whoami, mrs and logout needs one. --hostname defaults to gitlab.com.
 # Before any GitLab call: state "no-glab" if glab is missing, "logged-out" if
@@ -69,6 +73,9 @@ while (($#)); do
   shift $(($# >= 2 ? 2 : 1))
 done
 
+deadline_s=${BOARD_FETCH_DEADLINE:-40}
+[[ $deadline_s =~ ^[0-9]+$ ]] && ((deadline_s >= 10 && deadline_s <= 120)) || deadline_s=40
+deadline=$((SECONDS + deadline_s)) write_room=15
 exec 3>&1  # emit writes here, so it also works inside get() while stdout goes to a file
 emit() { # state message
   jq -cn --arg s "$1" --arg m "$2" '{state:$s,message:$m,updatedAt:(now|todateiso8601)}' >&3
@@ -97,32 +104,50 @@ if [[ $cmd == comment ]]; then
   # Read before any glab call; jq builds the JSON body, so the text stays off argv.
   note=$(jq -Rsc '{body: .}') || emit error "Could not read the comment."
   jq -e '.body | test("\\S")' <<<"$note" >/dev/null || emit error "Comment is empty."
-  ! jq -e '.body | test("(^|\n)[ \t]*/")' <<<"$note" >/dev/null ||
+  ! jq -e '.body | test("(^|[\r\n])[ \t]*/")' <<<"$note" >/dev/null ||
     emit error "A line starts with /, which GitLab runs as a quick action. Wrap it in \`backticks\` or use GitLab for quick actions."
 fi
 [[ $hostname =~ ^[A-Za-z0-9][A-Za-z0-9.-]*(:[0-9]+)?$ ]] || emit error "Invalid GitLab hostname."
 
-# The last board answer per project and board, shown while a fresh one loads.
-# It holds the same JSON the widget gets (no auth data); dir 0700, file 0600.
+# The last board answer per project, board and account, shown while a fresh
+# one loads. It holds the same JSON the widget gets (no auth data); dir 0700,
+# file 0600. The account is the username glab saved at login (glab config get
+# user: a local read, no GitLab call, never the token), so signing glab in as
+# someone else never shows the other account's saved board.
 cache_root=${XDG_CACHE_HOME:-}
 [[ $cache_root == /* ]] || cache_root=${HOME:+$HOME/.cache}
 cache_dir=$cache_root/odevvy.gitlab-board
-cache_file=$cache_dir/$(jq -rn --arg p "$project" '$p | @uri')-${board_id:-first}.json
+cache_base=$cache_dir/$(jq -rn --arg p "$project" '$p | @uri')-${board_id:-first}
+cache_file() {
+  local account=""
+  IFS= read -r account < <(timeout 5 glab config get user --host "$hostname" 2>/dev/null)
+  [[ $account =~ ^[A-Za-z0-9_.-]{1,255}$ ]] || account=unknown
+  printf '%s@%s.json' "$cache_base" "$account"
+}
 if [[ $cmd == cached ]]; then
   # Marked cached: true. A missing, unreadable or foreign file gives state "none".
   jq -cse --arg p "$project" '.[0] | select(.state == "ready" and .project == $p and (.columns | type) == "array")
-    | .cached = true' "$cache_file" 2>/dev/null || printf '%s\n' '{"state":"none"}'
+    | .cached = true' "$(cache_file)" 2>/dev/null || printf '%s\n' '{"state":"none"}'
   exit 0
 fi
 command -v glab >/dev/null 2>&1 || emit no-glab "The GitLab CLI (glab) is not installed."
-tmp=$(mktemp -d) || emit error "Could not create a temporary directory."
+# Answers wait in a private dir, in the per-user runtime dir (a tmpfs that
+# logout clears) when there is one, and go when board-fetch ends, also when it
+# is stopped (bash runs the EXIT trap on TERM, HUP and INT too).
+runtime=${XDG_RUNTIME_DIR:-}
+[[ $runtime == /* && -d $runtime && -w $runtime ]] || runtime=${TMPDIR:-/tmp}
+tmp=$(mktemp -d -p "$runtime" board-fetch.XXXXXX) || emit error "Could not create a temporary directory."
 trap 'rm -rf "$tmp"' EXIT
 # Every glab call ends within 30 s (exit 124), so a hung one can't hold the widget.
 slow="GitLab did not answer within 30 seconds."
 # 137: glab ignored the TERM and was killed 5 s later; that is a timeout too.
-# glab's stderr is discarded, except where errors= names a file for it.
+# glab's stderr is discarded, except where errors= names a file for it. No call
+# runs past the deadline: each gets at most what is left of it.
 bounded() {
-  { timeout -k 5 30 glab "$@"; } 2>"${errors:-/dev/null}"  # braces: bash's "Killed" notice goes there too
+  local left=$((deadline - SECONDS))
+  ((left <= 30)) || left=30
+  ((left >= 1)) || return 124
+  { timeout -k 5 "$left" glab "$@"; } 2>"${errors:-/dev/null}"  # braces: bash's "Killed" notice goes there too
   local rc=$?
   ((rc == 137)) && rc=124
   return $rc
@@ -156,6 +181,8 @@ get() {
   return $rc
 }
 base="projects/$(jq -rn --arg p "$project" '$p | @uri')"
+# Before each write: enough of the deadline left for it, or nothing is sent.
+room() { ((deadline - SECONDS >= write_room)) || emit error "GitLab is answering slowly. Nothing was written; try again."; }
 # peek() is GET by construction like get(), but never emits: for best-effort
 # extras (pipelines, reviewers) whose failure must not fail the answer.
 peek() { bounded api --hostname "$hostname" --method GET "$@"; }
@@ -317,6 +344,7 @@ case $cmd in
     write_labels() {
       bounded api --hostname "$hostname" --method PUT --header "Content-Type: application/json" --input - "$base/issues/$iid"
     }
+    room
     jq -cn --arg a "$add" --arg r "$remove" 'if $a != "" then {add_labels: $a} else {remove_labels: $r} end' | write_labels >"$tmp/r"
     case $? in
       0) ;;
@@ -335,6 +363,7 @@ case $cmd in
       bounded api --hostname "$hostname" --method PUT --header "Content-Type: application/json" --input - "$base/issues/$iid"
     }
     if [[ $cmd == close ]]; then want=closed done_=closed doing=Closing; else want=opened done_=reopened doing=Reopening; fi
+    room
     jq -cn --arg e "$cmd" '{state_event: $e}' | write_state >"$tmp/r"
     case $? in
       0) ;;
@@ -372,6 +401,7 @@ case $cmd in
     write_note() {
       bounded api --hostname "$hostname" --method POST --header "Content-Type: application/json" --input - "$base/issues/$iid/notes"
     }
+    room
     printf '%s' "$note" | write_note >"$tmp/r"
     case $? in
       0) ;;
@@ -439,6 +469,7 @@ JQ
     write_issue() {
       bounded api --hostname "$hostname" --method PUT --header "Content-Type: application/json" --input - "$base/issues/$iid"
     }
+    room
     jq -c '.body' "$tmp/plan" | write_issue >"$tmp/r"
     case $? in
       0) ;;
@@ -574,6 +605,7 @@ fi
 # copy, so a reader never sees half a file. A failed write changes nothing.
 if [[ -n $cache_root ]] && mkdir -p "$cache_dir" 2>/dev/null && chmod 700 "$cache_dir" 2>/dev/null &&
   part=$(mktemp "$cache_dir/.part.XXXXXX" 2>/dev/null); then
-  { cat "$tmp/out" >"$part" && mv -f "$part" "$cache_file"; } 2>/dev/null || rm -f "$part"
+  { cat "$tmp/out" >"$part" && mv -f "$part" "$(cache_file)"; } 2>/dev/null || rm -f "$part"
+  rm -f "$cache_base.json" 2>/dev/null  # the copy saved before accounts (0.1.40 and older)
 fi
 cat "$tmp/out"

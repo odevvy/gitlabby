@@ -9,8 +9,12 @@ mkdir -p "$work/bin"; cp "$here/fake-glab" "$work/bin/glab"
 # real timeout (coreutils) but cuts the limits to 1 s so the T tests run fast.
 real_timeout=$(command -v timeout)
 { printf '#!/usr/bin/env bash\nreal=%q\n' "$real_timeout"; cat <<'SH'; } >"$work/bin/timeout"
-[[ $1 == -k && $3 == 30 && $4 == glab ]] || exit 99
-exec "$real" -k 1 1 "${@:4}"
+# Each glab call's limit (what is left of the deadline, at most 30) goes to $FAKE_LOG.limits.
+if [[ $1 == -k && $2 == 5 && $3 =~ ^[0-9]+$ && $3 -ge 1 && $3 -le 30 && $4 == glab ]]; then
+  printf '%s\n' "$3" >>"$FAKE_LOG.limits"; exec "$real" -k 1 1 "${@:4}"
+fi
+[[ $1 == 5 && $2 == glab && $3 == config ]] && exec "$real" 1 "${@:2}"  # the account lookup
+exit 99
 SH
 chmod +x "$work/bin/timeout"
 export PATH="$work/bin:$PATH" FAKE_LOG="$work/log" FAKE_DIR="$work/fx" XDG_CACHE_HOME="$work/cache"  # never the real ~/.cache
@@ -315,6 +319,7 @@ check "P empty message" '.message == "Comment is empty."' "$(say </dev/null)"
 nothing_ran "P quick action" '/close'
 nothing_ran "P quick action after text" $'Looks good\n/label ~review'
 nothing_ran "P quick action, indented" $'ok\n  \t/unlabel ~"in progress"'
+nothing_ran "P quick action after a carriage return" $'ok\r/close'
 check "P quick action message" '.message | test("starts with /")' "$(printf '/close' | say)"
 fx post <<<'{"id":901,"body":"x"}'
 check "P a / inside a line or in backticks is fine" '.state == "ready"' "$(printf '%s\n%s' 'see a/b and /usr' "\`/close\`" | say)"
@@ -398,6 +403,62 @@ check "T close PUT killed" '.state == "error" and (.message | test("may have bee
 check "T one JSON line each" '.' "$(n=$(echo hi | FAKE_HANG='--method POST' say | wc -l); m=$(FAKE_HANG='--method PUT' mv_ --from 11 --to 12 | wc -l)
   [[ $n == 1 && $m == 1 ]] && echo true || echo false)"
 
+# --- D: one deadline per command (BOARD_FETCH_DEADLINE, default 40 s) ----------
+# Each glab call gets at most what is left of it (the limits the timeout
+# stand-in logs), and a write starts only with 15 s left: else nothing is sent.
+reset
+fx board <<<'{"id":7,"name":"Dev","lists":[{"id":11,"label":{"name":"todo"}},{"id":12,"label":{"name":"approved"}}]}'
+at opened '["todo"]'
+echo '{"iid":3,"state":"opened","labels":["approved"]}' | fx put
+limits() { tr '\n' ' ' <"$FAKE_LOG.limits" 2>/dev/null; }
+lim_ok() { # max min: every limit within [min, max]
+  local l; while IFS= read -r l; do ((l <= $1 && l >= $2)) || return 1; done <"$FAKE_LOG.limits"; [[ -s $FAKE_LOG.limits ]]
+}
+rm -f "$FAKE_LOG" "$FAKE_LOG.limits"; out=$(mv_ --from 11 --to 12)
+check "D default: the move goes through, every call at most 30 s" '.state == "ready"' "$out"
+check "D default limits are 30 ($(limits))" '.' "$(lim_ok 30 30 && echo true || echo false)"
+rm -f "$FAKE_LOG" "$FAKE_LOG.limits"; out=$(BOARD_FETCH_DEADLINE=25 mv_ --from 11 --to 12)
+check "D a 25 s deadline: calls get what is left ($(limits))" '.' "$(lim_ok 25 22 && echo true || echo false)"
+check "D a 25 s deadline: the write still starts (15 s left)" '.state == "ready"' "$out"
+for bad in abc 5 500 -3 ''; do
+  rm -f "$FAKE_LOG.limits"; BOARD_FETCH_DEADLINE=$bad "$fetch" --project group/app >/dev/null
+  check "D deadline '$bad' ignored: 40 s ($(limits))" '.' "$(lim_ok 30 30 && echo true || echo false)"
+done
+refused='.state == "error" and (.message | test("Nothing was written"))'
+nowrite() { [[ $(grep -c NON-GET "$FAKE_LOG") == 0 ]] && echo true || echo false; }
+rm -f "$FAKE_LOG"; out=$(BOARD_FETCH_DEADLINE=10 mv_ --from 11 --to 12)
+check "D move with under 15 s left: refused" "$refused" "$out"
+check "D move refused: no write" '.' "$(nowrite)"
+check "D move refused: the reads ran" '.' "$([[ $(grep -c -- '--method GET' "$FAKE_LOG") == 2 ]] && echo true || echo false)"
+rm -f "$FAKE_LOG"; out=$(BOARD_FETCH_DEADLINE=10 "$fetch" close --project a/b --iid 3)
+check "D close with under 15 s left: refused, no write" "$refused" "$out"; check "D close: no write" '.' "$(nowrite)"
+rm -f "$FAKE_LOG"; out=$(echo hi | BOARD_FETCH_DEADLINE=10 say)
+check "D comment with under 15 s left: refused" "$refused" "$out"; check "D comment: no write" '.' "$(nowrite)"
+fx labels <<<'[{"name":"bug"}]'; fx boards <<<'[]'
+rm -f "$FAKE_LOG"; out=$(BOARD_FETCH_DEADLINE=10 "$fetch" relabel --project a/b --iid 3 --add bug)
+check "D relabel with under 15 s left: refused" "$refused" "$out"; check "D relabel: no write" '.' "$(nowrite)"
+
+# --- R: the private temp dir --------------------------------------------------
+# In XDG_RUNTIME_DIR when it is a usable absolute dir, else TMPDIR (or /tmp);
+# gone when board-fetch ends, also when it is stopped with TERM.
+reset
+fx board <<<'{"id":7,"name":"Dev","lists":[]}'
+mkdir -p "$work/rt" "$work/tmpd"
+(FAKE_HANG='/boards?' XDG_RUNTIME_DIR="$work/rt" "$fetch" --project a/b >/dev/null) & rpid=$!
+sleep 0.4; during=$(find "$work/rt" -maxdepth 1 -name 'board-fetch.*' -type d | wc -l)
+mode=$(stat -c %a "$work"/rt/board-fetch.* 2>/dev/null)
+wait $rpid
+check "R temp dir in XDG_RUNTIME_DIR while it runs, mode 700" '.' "$([[ $during == 1 && $mode == 700 ]] && echo true || echo false)"
+check "R gone after" '.' "$([[ -z $(ls -A "$work/rt") ]] && echo true || echo false)"
+FAKE_HANG='/boards?' XDG_RUNTIME_DIR="$work/rt" "$fetch" --project a/b >/dev/null & rpid=$!
+sleep 0.4; kill -TERM $rpid; wait $rpid; rc=$?
+check "R stopped with TERM: exits 143, temp dir gone" '.' "$([[ $rc == 143 && -z $(ls -A "$work/rt") ]] && echo true || echo false)"
+for rt in rel/dir "$work/missing" ''; do
+  (FAKE_HANG='/boards?' XDG_RUNTIME_DIR=$rt TMPDIR="$work/tmpd" "$fetch" --project a/b >/dev/null) & rpid=$!
+  sleep 0.4; n=$(find "$work/tmpd" -maxdepth 1 -name 'board-fetch.*' | wc -l); wait $rpid
+  check "R XDG_RUNTIME_DIR '$rt' unusable: TMPDIR, cleaned" '.' "$([[ $n == 1 && -z $(ls -A "$work/tmpd") ]] && echo true || echo false)"
+done
+
 # --- U: GitLab values that must not pass through ------------------------------
 # Issue links: https only, so no file:, javascript: or --flag reaches the
 # browser. Board scope: a non-numeric assignee id adds no query parameter.
@@ -479,7 +540,7 @@ reset
 fx boards <<<'[{"id":7,"name":"Dev","lists":[{"id":11,"position":0,"label":{"name":"todo"}}]},{"id":8,"name":"Ops","lists":[]}]'
 fx open <<<'[{"iid":1,"title":"a","state":"opened","labels":["todo"],"web_url":"https://x/1"}]'
 fx closed <<<'[]'
-kdir=$XDG_CACHE_HOME/odevvy.gitlab-board; kfile=$kdir/group%2Fapp-7.json
+kdir=$XDG_CACHE_HOME/odevvy.gitlab-board; kfile=$kdir/group%2Fapp-7@me.json
 rm -rf "$XDG_CACHE_HOME"
 out=$("$fetch" --project group/app --board 7)
 check "K saved as printed" '.' "$([[ -f $kfile && $(cat "$kfile") == "$out" ]] && echo true || echo false)"
@@ -487,21 +548,21 @@ check "K modes: dir 700, file 600, no temp left" '.' "$([[ $(stat -c %a "$kdir")
 : >"$FAKE_LOG"
 cached=$(FAKE_AUTH=no "$fetch" cached --project group/app --board 7)
 check "K read back, marked cached" "(del(.cached) | tojson) == ($out | tojson) and .cached == true and .state == \"ready\"" "$cached"
-check "K read runs no glab, even signed out" '.' "$([[ -s $FAKE_LOG ]] && echo false || echo true)"
+check "K read: no GitLab call, even signed out; only glab's local account lookup" '.' "$([[ $(cat "$FAKE_LOG") == "config get user --host gitlab.com" ]] && echo true || echo false)"
 check "K other board: none" '. == {"state":"none"}' "$("$fetch" cached --project group/app --board 8)"
 check "K other project: none" '. == {"state":"none"}' "$("$fetch" cached --project group/other --board 7)"
 "$fetch" --project group/app >/dev/null
 check "K no board id: its own copy" '.cached == true and .board.id == 7' "$("$fetch" cached --project group/app)"
-check "K first-board file" '.' "$([[ -f $kdir/group%2Fapp-first.json ]] && echo true || echo false)"
+check "K first-board file" '.' "$([[ -f $kdir/group%2Fapp-first@me.json ]] && echo true || echo false)"
 "$fetch" --project 12345 --board 8 >/dev/null
 check "K numeric project" '.cached == true and .board.id == 8 and .project == "12345"' "$("$fetch" cached --project 12345 --board 8)"
-cp "$kfile" "$kdir/group%2Fx-7.json"
+cp "$kfile" "$kdir/group%2Fx-7@me.json"
 check "K copy for another project: none" '. == {"state":"none"}' "$("$fetch" cached --project group/x --board 7)"
-printf '{"state":"ready","proj' >"$kdir/group%2Fx-7.json"
+printf '{"state":"ready","proj' >"$kdir/group%2Fx-7@me.json"
 check "K corrupt: none" '. == {"state":"none"}' "$("$fetch" cached --project group/x --board 7)"
-printf '%s\n%s\n' "$out" "$out" >"$kdir/group%2Fx-7.json"
+printf '%s\n%s\n' "$out" "$out" >"$kdir/group%2Fx-7@me.json"
 check "K two objects: none" '. == {"state":"none"}' "$("$fetch" cached --project group/x --board 7)"
-echo '{"state":"error","message":"x","project":"group/x"}' >"$kdir/group%2Fx-7.json"
+echo '{"state":"error","message":"x","project":"group/x"}' >"$kdir/group%2Fx-7@me.json"
 check "K error answer: none" '. == {"state":"none"}' "$("$fetch" cached --project group/x --board 7)"
 chmod 000 "$kfile"
 [[ -r $kfile ]] || check "K unreadable: none" '. == {"state":"none"}' "$("$fetch" cached --project group/app --board 7)"
@@ -520,9 +581,23 @@ check "K cache not writable: board still ready" '.state == "ready" and .columns[
 rm -f "$XDG_CACHE_HOME"
 mkdir -p "$work/home"
 check "K XDG_CACHE_HOME unset: ~/.cache" '.' "$(XDG_CACHE_HOME='' HOME="$work/home" "$fetch" --project group/app --board 7 >/dev/null
-  [[ -f $work/home/.cache/odevvy.gitlab-board/group%2Fapp-7.json ]] && echo true || echo false)"
+  [[ -f $work/home/.cache/odevvy.gitlab-board/group%2Fapp-7@me.json ]] && echo true || echo false)"
 check "K relative XDG_CACHE_HOME ignored" '.' "$(cd "$work" && XDG_CACHE_HOME=rel HOME="$work/home2" "$fetch" --project group/app --board 7 >/dev/null
-  [[ ! -e $work/rel && -f $work/home2/.cache/odevvy.gitlab-board/group%2Fapp-7.json ]] && echo true || echo false)"
+  [[ ! -e $work/rel && -f $work/home2/.cache/odevvy.gitlab-board/group%2Fapp-7@me.json ]] && echo true || echo false)"
+# Saved per account (glab config get user): another account never sees it.
+rm -rf "$XDG_CACHE_HOME"; out=$("$fetch" --project group/app --board 7)
+check "K other account: none" '. == {"state":"none"}' "$(FAKE_USER=someone "$fetch" cached --project group/app --board 7)"
+check "K same account: its copy" '.cached == true' "$("$fetch" cached --project group/app --board 7)"
+FAKE_USER=none "$fetch" --project group/app --board 7 >/dev/null
+check "K no saved account: its own 'unknown' copy" '.' "$([[ -f $kdir/group%2Fapp-7@unknown.json ]] && echo true || echo false)"
+check "K unknown account doesn't read a named one" '.cached == true and (input | . == {"state":"none"})' "$(FAKE_USER=none "$fetch" cached --project group/app --board 7; FAKE_USER=x "$fetch" cached --project group/app --board 7)"
+for odd in '../x' 'a b' 'ü'; do
+  rm -f "$kdir/group%2Fapp-7@unknown.json"
+  check "K odd account name ($odd): unknown" '.' "$(FAKE_USER=$odd "$fetch" --project group/app --board 7 >/dev/null; [[ -f $kdir/group%2Fapp-7@unknown.json && ! -e $kdir/../x.json && $(find "$kdir" -name '*x*' -o -name '* *' | wc -l) == 0 ]] && echo true || echo false)"
+done
+echo "$out" >"$kdir/group%2Fapp-7.json"
+"$fetch" --project group/app --board 7 >/dev/null
+check "K the copy from before accounts is removed, never read" '.' "$([[ ! -e $kdir/group%2Fapp-7.json ]] && echo true || echo false)"
 saved=("$work"/home*/.cache/odevvy.gitlab-board/*)
 check "K no token in any saved copy" '.' "$([[ ${#saved[@]} == 2 && -f ${saved[0]} ]] && ! grep -qiE 'glpat|bearer' "${saved[@]}" && echo true || echo false)"
 

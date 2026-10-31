@@ -240,7 +240,7 @@ Item {
           wrapMode: Text.Wrap
           color: view.host.accountError !== "" && !view.confirming ? view.host.urgent : view.host.foreground
           text: view.host.signingOut ? "Signing out…"
-            : view.confirming ? "Sign out of gitlab.com?"
+            : view.confirming ? "Sign out of glab on gitlab.com? This also signs glab out in your terminal and scripts on this computer."
             : view.host.accountError !== "" ? view.host.accountError
             : view.host.account !== "" ? "Signed in as " + view.host.account + " on gitlab.com" : "Checking your GitLab account…"
         }
