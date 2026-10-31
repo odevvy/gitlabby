@@ -1,0 +1,36 @@
+slash-allowed	board-fetch	  ! jq -e '.body | test(	  jq -e '.body | test(	sh
+slash-first-line-only	board-fetch	test("(^|	test("(^	sh
+commands-silent	board-fetch	      emit commands "GitLab ran	      emit error "GitLab ran	sh
+401-anywhere	board-fetch	authenticated with glab|API call failed: .*: 401( |$)	authenticated with glab|401	sh
+projects-one-page	board-fetch	    for page in 1 2 3 4 5; do	    for page in 1; do	sh
+projects-unbounded	board-fetch	    for page in 1 2 3 4 5; do	    for page in 1 2 3 4 5 6 7; do	sh
+projects-dupes	board-fetch	if any(.[]; .id == $p.id) then . else	if false then . else	sh
+workflow-drift	board-fetch	def workflow: ["review", "in progress", "approved", "todo", "research"];	def workflow: ["review", "in progress", "approved", "todo"];	sh
+nested-links	Logic.js	links.push("<a href=\"" + url + "\">" + (t || url) + "</a>"); return "\x02" + (links.length - 1) + "\x02" })	return "<a href=\"" + url + "\">" + (t || url) + "</a>" })	node
+markers-kept	Logic.js	  text = String(text).replace(/[\x01\x02]/g, "")	  text = String(text)	node
+qa-js-first-line	Logic.js	return /(^|	return /(^	node
+movenote-generic	Logic.js	  if (from.kind === "label" && to.kind === "open") return "This removes its status label on GitLab."		node
+hint-ignored	IssueView.qml	enabled: view.loaded && !view.posting && box.text.trim() !== "" && !postStatus.slash	enabled: view.loaded && !view.posting && box.text.trim() !== ""	qml
+post-no-guard	IssueView.qml	box.text.trim() === "" || Logic.quickAction(box.text)) return	box.text.trim() === "") return	qml
+commands-no-reload	IssueView.qml	    if (data.state === "commands") { loadIssue(); loadNotes(); host.refresh() }		qml
+refresh-wipes	Board.qml	if (data.state === "error" && boardState === "ready" && columns.length > 0)	if (false)	qml
+refresh-error-sticks	Board.qml	    refreshError = ""\n    cached = !!fromCache	    cached = !!fromCache	qml
+failed-blank	Board.qml	visible: root.view === "board" && (root.setup !== "" || root.failed) }	visible: root.view === "board" && root.setup !== "" }	qml
+confirm-ignored	Board.qml	    if (!confirmMoves) return moveIssue(row, from, to)	    return moveIssue(row, from, to)	qml
+drop-bypasses	BoardView.qml	view.host.requestMove(row, from, to)	view.host.moveIssue(row, from, to)	qml
+confirm-not-held	Board.qml	move !== null || pendingMove !== null || boardView.holding	move !== null || boardView.holding	qml
+escape-closes	Board.qml	if (root.pendingMove) root.cancelMove()	if (false) root.cancelMove()	qml
+enter-opens	Board.qml	if (root.pendingMove) root.confirmMove()	if (false) root.confirmMove()	qml
+shift-l-nothing	Board.qml	if ((text === "H" || text === "L") && root.view === "board")	if (false)	qml
+shift-wrong-way	Board.qml	root.moveCursorCard(text === "H" ? -1 : 1)	root.moveCursorCard(text === "H" ? 1 : -1)	qml
+e-dead	Board.qml	key === "e" && root.view === "issue"	key === "#" && root.view === "issue"	qml
+x-no-confirm	IssueView.qml	    else askClose()	    else setState("close")	qml
+issue-escape-leaves	Board.qml	else if (root.view === "issue" && issueView.confirming) issueView.confirming = false	else if (false) issueView.confirming = false	qml
+bots-all-numbers	BotsRow.qml	model: bot.modelData.issues.slice(0, row.shown)	model: bot.modelData.issues	qml
+bots-no-tip	BotsRow.qml	            visible: moreMouse.containsMouse	            visible: false	qml
+tip-offcard	BotsRow.qml	    return Math.max(-at, Math.min(0, row.width - at - width))	    return 0	qml
+bots-spacing	BotsRow.qml	    spacing: Style.space(6)  // between	    spacing: Style.space(18)  // between	qml
+dim-45	Board.qml	background.b, 0.35))	background.b, 0.45))	qml
+signout-pill-color	components/ActionButton.qml	  readonly property color tone: danger ? host.urgent : host.accent	  readonly property color tone: host.accent	qml
+skeleton-fixed	components/Skeleton.qml	  implicitWidth: knownWidth > 0 ? knownWidth : cards.length	  implicitWidth: cards.length	qml
+skeleton-no-last	components/Skeleton.qml	host.boardWidths[host.stateKey] || host.lastBoardWidth	host.boardWidths[host.stateKey] || 0	qml
