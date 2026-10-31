@@ -86,7 +86,7 @@ Item {
     font.pixelSize: Style.font.body
     // Spins while the board loads (as Omarchy's Ui/Button.qml spins its
     // icon) and finishes the turn it is on, so it always stops upright.
-    RotationAnimation on rotation { running: host.loading; alwaysRunToEnd: true; loops: Animation.Infinite; from: 0; to: 360; duration: 900 }
+    RotationAnimation on rotation { running: host.loading && host.opened; alwaysRunToEnd: true; loops: Animation.Infinite; from: 0; to: 360; duration: 900 }
     MouseArea { id: refreshMouse; anchors.fill: parent; anchors.margins: -Style.space(4); hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: host.refresh() }
     IconTip { host: header.host; shown: refreshMouse.containsMouse; text: "Refresh (r)" }
   }

@@ -296,8 +296,11 @@ Panel {
     boardState = String(data.state || "error")
     message = String(data.message || "")
     updatedAt = String(data.updatedAt || "")
-    columns = Array.isArray(data.columns) ? data.columns : []
-    labelColors = data.labelColors || {}
+    // Unchanged columns stay the same objects, so no card is rebuilt.
+    var nextColumns = Array.isArray(data.columns) ? data.columns : []
+    if (JSON.stringify(nextColumns) !== JSON.stringify(columns)) columns = nextColumns
+    var nextColors = data.labelColors || {}
+    if (JSON.stringify(nextColors) !== JSON.stringify(labelColors)) labelColors = nextColors
     resolvedBoardId = data.board ? String(data.board.id) : ""
     fallback = !!data.fallback
     firstBoardId = data.boards && data.boards.length > 0 ? String(data.boards[0].id) : ""
