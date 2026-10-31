@@ -1,0 +1,32 @@
+bf-drafts-kept	board-fetch	review: [$r[0] | map(select(.draft != true))[:10][] | row]	review: [$r[0][:10][] | row]	sh
+bf-no-reviewers-get	board-fetch	    peek "projects/$1/merge_requests/$2/reviewers"	    : "projects/$1/merge_requests/$2/reviewers"	sh
+bf-no-mr-get	board-fetch	    peek "projects/$1/merge_requests/$2" >"$tmp/mrd-$1-$2"	    : >"$tmp/mrd-$1-$2"	sh
+bf-wrong-scope	board-fetch	scope=reviews_for_me&draft=false&$q	scope=assigned_to_me&draft=false&$q	sh
+bf-no-cap	board-fetch	($m[0][:10][])] | unique_by	($m[0][])] | unique_by	sh
+bf-state-unchecked	board-fetch	{state: (.state | select(IN(states[])) // null)}	{state: .state}	sh
+bf-list-fail-ok	board-fetch	get "${prefix}merge_requests?scope=created_by_me&$q" >"$tmp/mrs-mine" || emit error "Could not load merge requests."	get "${prefix}merge_requests?scope=created_by_me&$q" >"$tmp/mrs-mine" || echo "[]" >"$tmp/mrs-mine"	sh
+bf-project-ignored	board-fetch	[[ -z $project ]] || prefix="$base/"	:	sh
+bf-http-links	board-fetch	url: (.web_url | https), draft:	url: .web_url, draft:	sh
+lg-draft-not-first	Logic.js	if (row && row.draft) return { text: "Draft", color: "" }	/* m */	node
+lg-badge-mine	Logic.js	answer.state === "ready" ? answer.review.length : 0	answer.state === "ready" ? answer.review.length + answer.mine.length : 0	qml
+lg-badge-cap	Logic.js	n > 9 ? "9+" : String(n)	String(n)	node
+lg-args-unchecked	Logic.js	&& String(scope).indexOf("..") === -1 ? ["mrs"	? ["mrs"	node
+lg-https-dropped	Logic.js	return { iid: iid, title: String(r.title || ""), url: httpsUrl(r.url),	return { iid: iid, title: String(r.title || ""), url: String(r.url || ""),	node
+lg-state-unchecked	Logic.js	o.state = reviewerStates.indexOf(p.state) !== -1 ? p.state : ""	o.state = String(p.state || "")	node
+svc-no-reuse	BoardService.qml	if (!force && last && Date.now() - last.startedAt < 60000) return	/* m */	qml
+svc-force-ignored	BoardService.qml	if (!force && last &&	if (last &&	qml
+svc-no-pending	BoardService.qml	if (p) requestMrs(p.scope, p.force)	/* m */	qml
+svc-forget-keeps	BoardService.qml	    mrAnswers = ({})\n    mrPending = null	    mrPending = null	qml
+svc-dup-fetch	BoardService.qml	    if (mrRunning === scope) return\n	/* m */	qml
+v-no-open-fetch	Board.qml	if (name === "mrs" && view !== "mrs") mrsView.open()	/* m */	qml
+v-r-ignored	Board.qml	else if (key === "r" && root.view === "mrs") mrsView.refresh()	/* m */	qml
+v-m-ignored	Board.qml	else if (key === "m") root.toggleView("mrs")	/* m */	qml
+v-enter-ignored	Board.qml	else if (root.view === "mrs") mrsView.activate()	/* m */	qml
+v-move-ignored	Board.qml	else if (root.view === "mrs" && dy !== 0) mrsView.moveCursor(dy)	/* m */	qml
+v-badge-in-view	BoardHeader.qml	visible: mrsButton.badge !== "" && host.view !== "mrs"	visible: true	qml
+v-scope-no-fetch	MrsView.qml	onScopeChanged: if (visible) host.feed.requestMrs(scope, false)	/* m */	qml
+v-cursor-unclamped	MrsView.qml	cursor = Math.max(0, Math.min(rows.length - 1, cursor + dy))	cursor = cursor + dy	qml
+v-reviewers-hidden	MrsView.qml	model: (mr.row.reviewers || []).slice(0, 4)	model: []	qml
+v-section-order	MrsView.qml	answer.review.concat(answer.mine)	answer.mine.concat(answer.review)	qml
+v-retry-hint	MrsView.qml	(view.loading ? "" : "  Press r to try again.")	""	qml
+v-this-project-wrong	MrsView.qml	mode === "project" && host.project !== "" ? host.project : "all"	"all"	qml

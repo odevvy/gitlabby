@@ -1,0 +1,23 @@
+edit-in-place	Logic.js	return plain(raw) ? JSON.parse(JSON.stringify(raw)) : {}	return plain(raw) ? raw : {}	node
+first-bot-no-busy	Logic.js	{ busyLists: (labelColumns || []).slice(), bots: [] }	{ busyLists: [], bots: [] }	node
+last-keeps-entry	Logic.js	if (found.entry.bots.length === 0) delete next[project]	if (false) delete next[project]	node
+busy-case-sensitive	Logic.js	return String(n).toLowerCase() !== key	return String(n) !== String(column)	node
+string-setting-ok	Logic.js	if (!plain(raw)) return { problem: "setting", entry: null }	if (!plain(raw)) return { problem: "", entry: null }	node
+name-taken-case	Logic.js	String(b.name || "").trim().toLowerCase() === key	String(b.name || "") === String(name)	node
+persist-ignores-bots	Board.qml	if (nextBots !== undefined) entry.bots = nextBots	if (false) entry.bots = nextBots	qml
+esc-keeps-form	Board.qml	else if (root.view === "settings" && settingsView.adding) settingsView.cancelAdd()	else if (false) settingsView.cancelAdd()	qml
+offers-columns	BotsSection.qml	Logic.statusLabels(fetchedStatus, host.columns).concat(ownerLabels)	ownerLabels	qml
+offers-taken	BotsSection.qml	.concat(ownerLabels)	.concat([])	qml
+dup-allowed	BotsSection.qml	readonly property bool ready: newName !== "" && !taken &&	readonly property bool ready: newName !== "" &&	qml
+no-owner-twice	BotsSection.qml	label: "cards no bot owns"; enabled: !sec.hasNoOwner;	label: "cards no bot owns"; enabled: true;	qml
+switch-keeps-form	BotsSection.qml	function onProjectChanged() { sec.cancel() }	function onProjectChanged() { sec.pick = sec.pick }	qml
+no-flag-label	BotsSection.qml	? "not a label here"	? ""	qml
+no-flag-column	BotsSection.qml	? "not a column here"	? ""	qml
+malformed-unsaid	BotsSection.qml	text: !bot.ok ? "ignored: needs a name and a label or a column"	text: !bot.ok ? ""	qml
+problem-unsaid	BotsSection.qml	text: sec.found.problem === "setting" ? "The bots	text: false ? "The bots	qml
+remove-first	BotsSection.qml	onClicked: sec.remove(bot.index)	onClicked: sec.remove(0)	qml
+busy-dead	BotsSection.qml	onClicked: sec.toggleBusy(modelData)	onClicked: sec.pick = sec.pick	qml
+form-unfocused	BotsSection.qml	    nameField.forceActiveFocus()	    nameField.text = ""	qml
+labels-not-on-open	SettingsView.qml	if (visible && botsSection.bots.length > 0) loadLabels()	if (false) loadLabels()	qml
+add-no-labels	BotsSection.qml	    wantLabels()	    adding = true	qml
+picker-adds	BotsSection.qml	choose: true; selected: sec.pick	choose: false; selected: sec.pick	qml

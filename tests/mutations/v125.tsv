@@ -1,0 +1,7 @@
+work-items-unread-sh	board-fetch	/-/(?:issues|work_items)/[0-9]+$	/-/issues/[0-9]+$	sh
+work-items-unread-qml	board-fetch	/-/(?:issues|work_items)/[0-9]+$	/-/issues/[0-9]+$	qml
+issues-unread	board-fetch	/-/(?:issues|work_items)/[0-9]+$	/-/work_items/[0-9]+$	sh
+footer-hidden	BoardView.qml	visible: !!column.modelData.seeAll	visible: false	qml
+column-no-taller	BoardView.qml	height: Math.max(view.tallest, flick.height)	height: flick.height	qml
+board-not-scrolling	BoardView.qml	contentHeight: board.implicitHeight	contentHeight: flick.height	qml
+opens-scrolled	BoardView.qml	contentWidth: board.implicitWidth; contentHeight: board.implicitHeight	contentWidth: board.implicitWidth; contentHeight: board.implicitHeight; onContentHeightChanged: contentY = Math.max(0, contentHeight - height)	qml

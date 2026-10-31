@@ -1,0 +1,14 @@
+gql-off	board-fetch	  if ! mrs_graphql; then	  if true; then	sh
+gql-unknown-ok	board-fetch	type == "string" and known)	true)	sh
+gql-state-raw	board-fetch	state: (.mergeRequestInteraction.reviewState | ascii_downcase)	state: .mergeRequestInteraction.reviewState	sh
+gql-errors-ignored	board-fetch	select((.errors // null) == null) | 	 	sh
+gql-path-relative	board-fetch	web_url: (.path | abs)	web_url: .path	sh
+gql-avatar-relative	board-fetch	avatar_url: (.avatarUrl | abs)	avatar_url: .avatarUrl	sh
+gql-status-raw	board-fetch	detailed_merge_status: (.detailedMergeStatus | strings | ascii_downcase),\n              head_pipeline	detailed_merge_status: .detailedMergeStatus,\n              head_pipeline	sh
+gql-pipe-upper	board-fetch	{status: (.status | strings | ascii_downcase), web_url	{status: .status, web_url	sh
+gql-redo-dropped	board-fetch	redo: [$all[] | select(ok | not)	redo: [$all[] | select(false)	sh
+gql-no-draft-filter	board-fetch	state: opened, draft: false, sort	state: opened, sort	sh
+gql-project-ignored	board-fetch	elif [[ -n $project ]]; then vars='($p: String)' arg='projectPath: $p, '; fi	fi	sh
+gql-id-as-path	board-fetch	pv=(-f "id=gid://gitlab/Project/$project")	pv=(-f "id=$project")	sh
+gql-merge-lost	board-fetch	'$had[0] + (map(objects	'(map(objects	sh
+gql-rev-merge-lost	board-fetch	'$had[0] + (add // {})'	'(add // {})'	sh

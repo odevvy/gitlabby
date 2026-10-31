@@ -1,0 +1,11 @@
+labels-no-spinner	components/LabelPicker.qml	Spinner { id: spinner; running: status.busy;	Spinner { id: spinner; running: false;	qml
+labels-spin-forever	components/LabelPicker.qml	readonly property bool busy: !bad && (picker.busyText !== "" || picker.labelsState === "loading")	readonly property bool busy: true	qml
+spin-on-error	components/LabelPicker.qml	readonly property bool busy: !bad && (	readonly property bool busy: (	qml
+saving-no-spin	components/LabelPicker.qml	readonly property bool busy: !bad && (picker.busyText !== "" || picker.labelsState === "loading")	readonly property bool busy: !bad && (picker.labelsState === "loading")	qml
+spinner-overlaps-text	components/LabelPicker.qml	Row {\n    width: parent.width; spacing: Style.space(6)\n    visible: status.text	Item {\n    width: parent.width; height: status.height; property int spacing: Style.space(6)\n    visible: status.text	qml
+spinner-still	components/Spinner.qml	RotationAnimation on rotation { running: spinner.running;	RotationAnimation on rotation { running: false;	qml
+spinner-dim	components/Spinner.qml	color: Commons.Color.accent	color: Commons.Color.popups.text	qml
+spinner-big	components/Spinner.qml	font.pixelSize: Style.font.bodySmall	font.pixelSize: Style.font.body * 2	qml
+spinner-always	components/Spinner.qml	visible: running	visible: true	qml
+comments-no-spinner	IssueView.qml	Spinner { running: view.notesLoading }	Spinner { running: false }	qml
+picker-no-spinner	Picker.qml	Spinner { id: auxSpinner; running: view.host.auxLoading;	Spinner { id: auxSpinner; running: false;	qml

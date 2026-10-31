@@ -1,0 +1,32 @@
+bf-simple	board-fetch	    get "$base" >"$tmp/a"	    get "$base?simple=true" >"$tmp/a"	sh
+bf-no-group	board-fetch	[$proj.permissions.project_access.access_level?, $proj.permissions.group_access.access_level?]	[$proj.permissions.project_access.access_level?]	sh
+bf-min	board-fetch	| map(numbers) | max // 0)	| map(numbers) | min // 0)	sh
+bf-no-scope-filter	board-fetch	[$tok.scopes[] | strings | select(test("^[a-z_]{1,40}$"))]	[$tok.scopes[] | strings]	sh
+bf-whole-token	board-fetch	then [$tok.scopes[] | strings	then [$tok | tostring	sh
+bf-no-token-get	board-fetch	    peek personal_access_tokens/self >"$tmp/t" 2>/dev/null || : >"$tmp/t"	    : >"$tmp/t"	sh
+bf-error-ready	board-fetch	if ($proj | type) != "object" or ($proj.id | type) != "number" then null else	if false then null else	sh
+lg-planner-14	Logic.js	var plannerLevel = 15	var plannerLevel = 14	node
+lg-unknown-viewonly	Logic.js	if ((entry.known && entry.level < plannerLevel) || entry.refused === "forbidden")	if ((entry.level < plannerLevel) || entry.refused === "forbidden")	node
+lg-scope-ignored	Logic.js	if (entry.refused === "scope" || (Array.isArray(entry.scopes) && entry.scopes.indexOf("api") === -1)) return "read-token"	if (entry.refused === "scope") return "read-token"	node
+lg-403-ignored	Logic.js	/\b403\b|forbidden/i.test(m) ? "forbidden"	/forbiddenx/.test(m) ? "forbidden"	node
+lg-url-api	Logic.js	&scopes=read_api"\n}	&scopes=api"\n}	node
+lg-url-http	Logic.js	return "https://" + host + "/-/user_settings	return "http://" + host + "/-/user_settings	node
+svc-every-time	BoardService.qml	if (project === "" || access[project] !== undefined || accessWaiting	if (project === "" || accessWaiting	qml
+svc-no-wait	BoardService.qml	if (accessFetch.running) { if (accessFetch.project !== project) accessWaiting = accessWaiting.concat([project]); return }	if (accessFetch.running) { return }	qml
+svc-no-next	BoardService.qml	onRunningChanged: if (!running) Qt.callLater(service.accessNext)	onRunningChanged: {}	qml
+svc-no-forget	BoardService.qml	    access = ({})\n    accessWaiting = []	    accessWaiting = []	qml
+svc-refused-ignored	BoardService.qml	if (kind !== "" && project !== "") setAccess	if (false) setAccess	qml
+bd-canmove-writes	Board.qml	resolvedBoardId !== "" && writable	resolvedBoardId !== ""	qml
+bd-no-request	Board.qml	    if (boardState === "ready" && !cached) feed.requestAccess(project)	    /* m */	qml
+bd-move-403	Board.qml	      feed.noteRefused(project, data.message)  // a 403: view-only here	      /* m */	qml
+bd-pick-viewonly	Board.qml	|| !column || !writable) return	|| !column) return	qml
+bd-dismiss-not-saved	Board.qml	persist(undefined, undefined, undefined, { accessHintDismissed:	persist(undefined, undefined, undefined, { other:	qml
+bd-dismiss-case	Board.qml	readonly property bool hintDismissed: Logic.has(Logic.lowerList(saved("accessHintDismissed", [])), project)	readonly property bool hintDismissed: saved("accessHintDismissed", []).indexOf(project) !== -1	qml
+bd-status	Board.qml	      if (!writable) time = "View-only  " + time	      /* m */	qml
+ah-always	AccessHint.qml	host.accessNote !== "" && !host.hintDismissed	!host.hintDismissed	qml
+ah-dismiss-ignored	AccessHint.qml	&& !host.hintDismissed	&& true	qml
+ah-link-readtoken	AccessHint.qml	visible: hint.words.link; host	visible: true; host	qml
+iv-edit-shown	IssueView.qml	id: editAction\n            visible: view.issueReady && view.issueError === "" && view.host.writable	id: editAction\n            visible: view.issueReady && view.issueError === ""	qml
+iv-close-shown	IssueView.qml	verticalAlignment: Text.AlignVCenter\n          visible: view.issueReady && view.issueError === "" && view.host.writable	verticalAlignment: Text.AlignVCenter\n          visible: view.issueReady && view.issueError === ""	qml
+iv-e-key	IssueView.qml	if (!issueReady || issueError !== "" || !host.writable) return	if (!issueReady || issueError !== "") return	qml
+iv-x-key	IssueView.qml	    if (!host.writable) return  // view-only here	    /* m */	qml
