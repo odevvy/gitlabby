@@ -43,7 +43,8 @@ Item {
   readonly property Item labelFilter: labelPicker.field
   // Label editor: open only on request; the label list loads when it opens.
   property bool editing: false
-  property string labelsFor: ""
+  property string labelsFor: ""      // the project the labels are for
+  property double labelsAt: 0        // when they loaded (reused for 5 minutes)
   property string labelsState: ""  // "", loading, ready, error
   property string labelsError: ""
   property var allLabels: []
@@ -133,19 +134,21 @@ Item {
     closeEditor()
     host.showView("issue")  // hand the keys back to the panel, as Esc in the comment box does
   }
+  // The project's labels, reused across its issues for 5 minutes (BulkBar keeps its own).
   function loadLabels() {
+    if (labelsFor === host.project && labelsState === "ready" && Date.now() - labelsAt < 300000) return
     if (labelsProcess.running) return
-    labelsFor = key
+    labelsFor = host.project
     labelsState = "loading"
     labelsProcess.command = [host.helperPath(), "labels", "--project", host.project]
     labelsProcess.running = true
   }
   function labelsDone(raw) {
-    if (labelsFor !== key) { labelsState = ""; return }
+    if (labelsFor !== host.project) { labelsState = ""; return }
     var data = host.parse(raw)
     labelsState = data.state === "ready" ? "ready" : "error"
     labelsError = data.state === "ready" ? "" : String(data.message || "Could not load labels.")
-    if (data.state === "ready") { allLabels = data.labels || []; fetchedStatus = data.status || [] }
+    if (data.state === "ready") { allLabels = data.labels || []; fetchedStatus = data.status || []; labelsAt = Date.now() }
     if (labelsState === "ready" && editing) labelFilter.forceActiveFocus()
   }
   // op: "add" or "remove"; one change at a time, never a status label.

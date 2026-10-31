@@ -18,6 +18,7 @@ exit 99
 SH
 chmod +x "$work/bin/timeout"
 export PATH="$work/bin:$PATH" FAKE_LOG="$work/log" FAKE_DIR="$work/fx" XDG_CACHE_HOME="$work/cache"  # never the real ~/.cache
+unset XDG_RUNTIME_DIR  # no sign-in mark unless a test sets one (E block)
 pass=0 fail=0
 check() { # name jq-expression json
   if jq -e "$2" >/dev/null 2>&1 <<<"$3"; then pass=$((pass + 1)); else fail=$((fail + 1)); echo "FAIL: $1"; echo "  $3" | cut -c1-400; fi
@@ -449,10 +450,10 @@ sleep 0.4; during=$(find "$work/rt" -maxdepth 1 -name 'board-fetch.*' -type d | 
 mode=$(stat -c %a "$work"/rt/board-fetch.* 2>/dev/null)
 wait $rpid
 check "R temp dir in XDG_RUNTIME_DIR while it runs, mode 700" '.' "$([[ $during == 1 && $mode == 700 ]] && echo true || echo false)"
-check "R gone after" '.' "$([[ -z $(ls -A "$work/rt") ]] && echo true || echo false)"
+check "R gone after" '.' "$([[ -z $(find "$work/rt" -mindepth 1 -name "board-fetch.*") ]] && echo true || echo false)"
 FAKE_HANG='/boards?' XDG_RUNTIME_DIR="$work/rt" "$fetch" --project a/b >/dev/null & rpid=$!
 sleep 0.4; kill -TERM $rpid; wait $rpid; rc=$?
-check "R stopped with TERM: exits 143, temp dir gone" '.' "$([[ $rc == 143 && -z $(ls -A "$work/rt") ]] && echo true || echo false)"
+check "R stopped with TERM: exits 143, temp dir gone" '.' "$([[ $rc == 143 && -z $(find "$work/rt" -mindepth 1 -name "board-fetch.*") ]] && echo true || echo false)"
 for rt in rel/dir "$work/missing" ''; do
   (FAKE_HANG='/boards?' XDG_RUNTIME_DIR=$rt TMPDIR="$work/tmpd" "$fetch" --project a/b >/dev/null) & rpid=$!
   sleep 0.4; n=$(find "$work/tmpd" -maxdepth 1 -name 'board-fetch.*' | wc -l); wait $rpid
@@ -508,6 +509,42 @@ fx user <<<'{"id":5,"username":"dev1","name":"Dev One","email":"dev1@example.com
 out=$(: >"$FAKE_LOG"; "$fetch" whoami)
 check "A whoami: the username only" '. == {state: "ready", message: "", user: "dev1"}' "$out"
 check "A whoami: one GET of /user after the auth check" '.' "$([[ $(sed -n 2p "$FAKE_LOG") == 'api --hostname gitlab.com --method GET user' && $(grep -c . "$FAKE_LOG") == 2 ]] && echo true || echo false)"
+
+# --- E: the sign-in check (glab auth status, one GET /user) at most every 10 min
+# A passed check leaves a mark in XDG_RUNTIME_DIR (the time, nothing else);
+# while it is fresh the check is skipped; a failed read runs it again.
+ert="$work/ert"; mkdir -p "$ert"; chmod 700 "$ert"; mark="$ert/odevvy.gitlab-board-auth-gitlab.com"
+auths() { grep -c '^auth status' "$FAKE_LOG"; }
+: >"$FAKE_LOG"; out=$(XDG_RUNTIME_DIR=$ert "$fetch" whoami)
+check "E first run: checked, mark left" '.user == "dev1"' "$out"
+check "E the mark holds only the time" '.' "$([[ $(auths) == 1 && $(<"$mark") =~ ^[0-9]+$ ]] && ! grep -q 'glpat\|FAKE\|dev1' "$mark" && echo true || echo false)"
+: >"$FAKE_LOG"; out=$(XDG_RUNTIME_DIR=$ert "$fetch" whoami)
+check "E fresh mark: no auth check, one GET" '.user == "dev1"' "$out"
+check "E fresh mark: the log is the GET only" '.' "$([[ $(auths) == 0 && $(grep -c . "$FAKE_LOG") == 1 ]] && echo true || echo false)"
+echo $((EPOCHSECONDS - 700)) >"$mark"; : >"$FAKE_LOG"; XDG_RUNTIME_DIR=$ert "$fetch" whoami >/dev/null
+check "E mark older than 10 min: checked again, renewed" '.' "$([[ $(auths) == 1 && $(<"$mark") -ge $((EPOCHSECONDS - 5)) ]] && echo true || echo false)"
+echo $((EPOCHSECONDS + 900)) >"$mark"; : >"$FAKE_LOG"; XDG_RUNTIME_DIR=$ert "$fetch" whoami >/dev/null
+check "E mark from the future: checked" '.' "$([[ $(auths) == 1 ]] && echo true || echo false)"
+rm -f "$mark"; echo "$EPOCHSECONDS" >"$work/elsewhere"; ln -s "$work/elsewhere" "$mark"; : >"$FAKE_LOG"; XDG_RUNTIME_DIR=$ert "$fetch" whoami >/dev/null
+check "E a symlinked mark is ignored" '.' "$([[ $(auths) == 1 ]] && echo true || echo false)"
+rm -f "$mark"; echo "x$EPOCHSECONDS" >"$mark"; : >"$FAKE_LOG"; XDG_RUNTIME_DIR=$ert "$fetch" whoami >/dev/null
+check "E a garbled mark is ignored" '.' "$([[ $(auths) == 1 ]] && echo true || echo false)"
+# Signed out in the terminal while the mark is fresh: the read fails, the check runs, logged-out.
+XDG_RUNTIME_DIR=$ert "$fetch" whoami >/dev/null; mv "$FAKE_DIR/user.json" "$FAKE_DIR/user.off"; : >"$FAKE_LOG"
+out=$(FAKE_AUTH=no XDG_RUNTIME_DIR=$ert "$fetch" whoami)
+check "E fresh mark, read fails, signed out: logged-out" '.state == "logged-out"' "$out"
+check "E ... the check ran once and the mark is gone" '.' "$([[ $(auths) == 1 && ! -e $mark ]] && echo true || echo false)"
+XDG_RUNTIME_DIR=$ert "$fetch" whoami >/dev/null; : >"$FAKE_LOG"
+out=$(XDG_RUNTIME_DIR=$ert "$fetch" whoami)
+check "E fresh mark, read fails, still signed in: the read's own error" '.state == "error" and (.message | test("sign-in") | not)' "$out"
+check "E ... checked once, mark renewed" '.' "$([[ $(auths) == 1 && -f $mark ]] && echo true || echo false)"
+mv "$FAKE_DIR/user.off" "$FAKE_DIR/user.json"
+XDG_RUNTIME_DIR=$ert "$fetch" logout >/dev/null
+check "E sign out clears the mark" '.' "$([[ ! -e $mark ]] && echo true || echo false)"
+: >"$FAKE_LOG"; "$fetch" whoami >/dev/null; "$fetch" whoami >/dev/null
+check "E no XDG_RUNTIME_DIR: no mark, checked every run" '.' "$([[ $(auths) == 2 ]] && echo true || echo false)"
+: >"$FAKE_LOG"; XDG_RUNTIME_DIR=$ert FAKE_AUTH=offline "$fetch" whoami >/dev/null
+check "E a failed check leaves no mark" '.' "$([[ ! -e $mark ]] && echo true || echo false)"
 check "A whoami: signed out" '.state == "logged-out"' "$(FAKE_AUTH=no "$fetch" whoami)"
 fx user <<<'{"message":"500 Internal Server Error"}'
 check "A whoami: no username is an error" '.state == "error"' "$("$fetch" whoami)"
@@ -804,13 +841,38 @@ check "PL one MR GET, only where head_pipeline was left out" '.' "$([[ $(grep -c
 check "PL reads only" '.' "$(grep -qE 'NON-GET|BAD-WRITE' "$FAKE_LOG" && echo false || echo true)"
 check "PL saved copy has them too" "$pipes"' | .["3"].status == "passed"' "$("$fetch" cached --project group/app)"
 pl_out=$out
+# Finished pipelines (passed, failed, canceled) are reused for 2 minutes: the
+# next refresh asks only about the others (5: no MR, 6: no access, 7: running,
+# 8: none, 9: manual), and a newer answer for 3 is not seen yet.
+pf="$XDG_CACHE_HOME/odevvy.gitlab-board/group%2Fapp-first@me.pipes.json"
+check "PC kept beside the board, 600, no token, finished and running with the time" '.' "$([[ -f $pf && $(stat -c %a "$pf") == 600 ]] && ! grep -qiE 'glpat|bearer' "$pf" &&
+  jq -e 'keys == ["10","3","4","7"] and (.["3"] | .status == "passed" and (.at | type) == "number")' "$pf" >/dev/null && echo true || echo false)"
+printf '[%s]' "$(mr 31 opened 2026-01-01 running https://gitlab.com/p/31)" | fx related-3
+jq -c 'map_values(.at -= 60)' "$pf" >"$pf.t" && mv "$pf.t" "$pf"
+: >"$FAKE_LOG"; out=$("$fetch" --project group/app)
+check "PC second refresh: the same pipelines" "$pipes"' | .["3"].status == "passed" and .["4"].status == "failed" and .["10"].status == "canceled" and .["7"].status == "running"' "$out"
+check "PC second refresh: only the unfinished asked" '.' "$([[ $(grep -c '/related_merge_requests$' "$FAKE_LOG") == 5 ]] && ! grep -qE 'issues/(3|4|10)/related' "$FAKE_LOG" && echo true || echo false)"
+check "PC the reused ones keep their time, the asked ones get now" '.' "$(jq -e --argjson now "$EPOCHSECONDS" '.["3"].at <= $now - 55 and .["7"].at >= $now - 5' "$pf" >/dev/null && echo true || echo false)"
+jq -c --argjson now "$EPOCHSECONDS" 'map_values(.at = $now)' "$pf" >"$work/pipes-elsewhere"; rm -f "$pf"; ln -s "$work/pipes-elsewhere" "$pf"
+: >"$FAKE_LOG"; "$fetch" --project group/app >/dev/null
+check "PC a symlinked pipelines file is not read" '.' "$([[ $(grep -c '/related_merge_requests$' "$FAKE_LOG") == 8 ]] && echo true || echo false)"
+rm -f "$pf"; "$fetch" --project group/app >/dev/null
+jq -c 'map_values(.at -= 130)' "$pf" >"$pf.t" && mv "$pf.t" "$pf"
+: >"$FAKE_LOG"; out=$("$fetch" --project group/app)
+check "PC after 2 minutes: asked again, the newer answer shows" "$pipes"' | .["3"].status == "running"' "$out"
+check "PC after 2 minutes: all eight asked" '.' "$([[ $(grep -c '/related_merge_requests$' "$FAKE_LOG") == 8 ]] && echo true || echo false)"
+: >"$FAKE_LOG"; FAKE_USER=other "$fetch" --project group/app >/dev/null
+check "PC another account asks for its own" '.' "$([[ $(grep -c '/related_merge_requests$' "$FAKE_LOG") == 8 ]] && echo true || echo false)"
+echo 'not json' >"$pf"; out=$("$fetch" --project group/app)
+check "PC an unreadable pipelines file: asked, board fine" '.state == "ready" and ('"$pipes"' | .["3"].status == "running")' "$out"
+fresh_pipes() { rm -f "$XDG_CACHE_HOME"/odevvy.gitlab-board/*.pipes.json; }
 # Each status word GitLab uses.
 for st in success:passed failed:failed running:running canceling:running pending:pending created:pending waiting_for_resource:pending preparing:pending scheduled:pending canceled:canceled skipped:null manual:null; do
-  printf '[%s]' "$(mr 31 opened 2026-01-01 "${st%%:*}" https://gitlab.com/p/31)" | fx related-3
+  printf '[%s]' "$(mr 31 opened 2026-01-01 "${st%%:*}" https://gitlab.com/p/31)" | fx related-3; fresh_pipes
   check "PL ${st%%:*} -> ${st##*:}" '[.columns[] | select(.name == "Review") | .issues[] | select(.iid == 3) | .pipeline.status // null][0] == '"$(jq -n --arg s "${st##*:}" 'if $s == "null" then null else $s end')" "$("$fetch" --project group/app)"
 done
 # A hung call: the board still loads, without that pipeline.
-printf '[%s]' "$(mr 31 opened 2026-01-01 success https://gitlab.com/p/31)" | fx related-3
+printf '[%s]' "$(mr 31 opened 2026-01-01 success https://gitlab.com/p/31)" | fx related-3; fresh_pipes
 out=$(FAKE_HANG=issues/4/related_merge_requests "$fetch" --project group/app)
 check "PL a hung call costs only its card" '.state == "ready" and ('"$pipes"' | .["4"] == null and .["3"] != null)' "$out"
 check "PL a hung call: still one JSON object" '. == 1' "$(jq -s length <<<"$out")"
@@ -822,11 +884,11 @@ check "PL no Review column: log" '.' "$(grep -q 'merge_requests' "$FAKE_LOG" && 
 # Workflow-label fallback (no boards): its review column counts; at most 15 cards.
 fx boards <<<'[]'
 jq -cn '[range(1; 21) | {iid: ., title: "r", state: "opened", labels: ["review"], web_url: "u"}]' | fx open
-printf '[%s]' "$(mr 31 opened 2026-01-01 failed https://gitlab.com/p/31)" | fx related-3
+printf '[%s]' "$(mr 31 opened 2026-01-01 failed https://gitlab.com/p/31)" | fx related-3; fresh_pipes
 : >"$FAKE_LOG"; out=$("$fetch" --project group/app)
 check "PL workflow review column" '(.columns[] | select(.name == "review") | .issues[] | select(.iid == 3) | .pipeline.status) == "failed"' "$out"
 check "PL at most 15 Review cards asked" '.' "$([[ $(grep -c '/related_merge_requests$' "$FAKE_LOG") == 15 ]] && echo true || echo false)"
-check "PL four at a time, not one by one" '.' "$(rm -rf "$work/slow"*; FAKE_MR_PROBE=$work/slow "$fetch" --project group/app >/dev/null
+check "PL four at a time, not one by one" '.' "$(rm -rf "$work/slow"*; fresh_pipes; FAKE_MR_PROBE=$work/slow "$fetch" --project group/app >/dev/null
   m=$(sort -n "$work/slow.n" | tail -1); ((m >= 2 && m <= 4)) && echo true || echo false)"
 check "PL no token in output" '.' "$(grep -qiE 'glpat|bearer' <<<"$pl_out$out" && echo false || echo true)"
 

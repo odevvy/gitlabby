@@ -407,7 +407,8 @@ A load costs two list GETs plus, per row, one GET of the merge request
   pipeline in the browser, not the issue. The MR is the issue's open related
   merge request, else its latest merged one. No MR, no pipeline, a skipped or
   manual one, or one you can't see: no mark. It comes with each refresh, never
-  on its own timer.
+  on its own timer; a finished one (passed, failed, canceled) is reused for up
+  to 2 minutes, so a new push can take that long to show.
 
 The popup card is Omarchy's, in your theme's `popups.background`. To make
 every popup see-through, set an alpha in `~/.config/omarchy/shell.toml` (it
@@ -602,7 +603,13 @@ you already have a read-only token), and writes are off on every project.
 `board-fetch` is the helper the widget runs. It prints one JSON object whose
 `state` is `ready`, `error`, `stale`, `no-glab` (glab isn't installed) or
 `logged-out` (`glab auth status` says no login for the host, or GitLab
-answers `401`).
+answers `401`). `glab auth status` asks GitLab (one `GET /user`), so after it
+passes it is skipped for 10 minutes: a mark holding only the time, in
+`$XDG_RUNTIME_DIR/odevvy.gitlab-board-auth-<host>`. While the mark is fresh,
+any failed read runs the check again, so a sign-out or a revoked token still
+shows the sign-in panel; signing out from the settings removes the mark. On a
+public project, reads work without a login, so a sign-out in the terminal can
+take up to 10 minutes to show there.
 
 ```bash
 ./board-fetch [board] --project P [--board ID]   # board columns (the default), also saved
@@ -664,6 +671,12 @@ requests. Cards in a Review column (at most 15) each add one
 MRs carry their `head_pipeline`. Only if GitLab leaves it out, one
 `GET /projects/:id/merge_requests/:iid` for that MR. These never fail the
 board: a refusal, a timeout or no MR just leaves the card without a mark.
+Finished pipelines are kept for 2 minutes beside the saved board
+(`<board file>.pipes.json`: status, link, MR and when it was asked) and not
+asked again in that time; running and pending ones are asked every refresh.
+
+The issue view's label editor reads the project's labels once and reuses them
+for every issue of that project for 5 minutes.
 
 ## Tests and debugging
 

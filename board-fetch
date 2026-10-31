@@ -152,10 +152,22 @@ bounded() {
   ((rc == 137)) && rc=124
   return $rc
 }
+# A passed sign-in check leaves a mark for 10 minutes (the time only, no auth
+# data), in the private runtime dir only; while it is fresh the check below is
+# skipped. Signing out, a logged-out answer or a failed read clears it.
+auth_mark=""
+[[ $runtime == "${XDG_RUNTIME_DIR:-}" ]] && auth_mark=$runtime/odevvy.gitlab-board-auth-$hostname
+auth_fresh() {
+  local at=""
+  [[ -n $auth_mark && -f $auth_mark && ! -L $auth_mark ]] && IFS= read -r at <"$auth_mark" 2>/dev/null &&
+    [[ $at =~ ^[0-9]{1,12}$ ]] && ((EPOCHSECONDS - at >= 0 && EPOCHSECONDS - at < 600))
+}
+forget_auth() { [[ -z $auth_mark ]] || rm -f "$auth_mark" 2>/dev/null; }
 # Sign out: glab drops the host's token from its config and keyring. glab
 # auth logout never prompts (--hostname is required); it works offline. Then the
 # saved boards go, so a signed-out machine keeps no board data.
 if [[ $cmd == logout ]]; then
+  forget_auth
   bounded auth logout --hostname "$hostname" >/dev/null || emit error "glab could not sign out of $hostname."
   [[ -z $cache_root ]] || rm -rf -- "$cache_dir" 2>/dev/null || emit error "Signed out, but the saved boards in $cache_dir could not be deleted."
   emit logged-out "Signed out of $hostname."
@@ -165,19 +177,26 @@ fi
 # GitLab refusing the token (glab's "API call failed: GET <url>: 401 ..."; a
 # 401 anywhere else, say in a host name, doesn't count), means signing in again helps. Anything else
 # (offline, GitLab down) is an error, so a network blip never asks for a login.
-errors=$tmp/auth bounded auth status --hostname "$hostname" >/dev/null
-case $? in
-  0) ;;
-  124) emit error "$slow" ;;
-  *) grep -qE 'authenticated with glab|API call failed: .*: 401( |$)' "$tmp/auth" &&
-       emit logged-out "Not signed in to $hostname. Run: glab auth login"
-     emit error "Could not check your GitLab sign-in. Check your connection and try again." ;;
-esac
+# glab auth status asks GitLab (GET /user), so it runs only without a fresh
+# mark, or again after a read failed while the mark let it skip.
+check_auth() {
+  errors=$tmp/auth bounded auth status --hostname "$hostname" >/dev/null
+  case $? in
+    0) [[ -z $auth_mark ]] || printf '%s\n' "$EPOCHSECONDS" >"$auth_mark" 2>/dev/null ;;
+    124) emit error "$slow" ;;
+    *) grep -qE 'authenticated with glab|API call failed: .*: 401( |$)' "$tmp/auth" &&
+         emit logged-out "Not signed in to $hostname. Run: glab auth login"
+       emit error "Could not check your GitLab sign-in. Check your connection and try again." ;;
+  esac
+}
+auth_skipped=0
+if auth_fresh; then auth_skipped=1; else check_auth; fi
 # Every read goes through get(), which is GET by construction.
 get() {
   bounded api --hostname "$hostname" --method GET "$@"
   local rc=$?
   ((rc != 124)) || emit error "$slow"
+  if ((rc != 0 && auth_skipped)); then auth_skipped=0; forget_auth; check_auth; fi
   return $rc
 }
 base="projects/$(jq -rn --arg p "$project" '$p | @uri')"
@@ -573,39 +592,71 @@ jq -cn --slurpfile b "$tmp/board" --slurpfile all "$tmp/boards" --slurpfile o "$
 # MR. Best effort, four at a time: no MR, no pipeline, no access or a timeout
 # leaves the card without one, and never fails the board. peek() (above) is
 # GET only and never emits: these run in the background.
+# A finished pipeline (passed, failed, canceled) is reused for 2 minutes without
+# asking: they are kept beside the saved board (<board file>.pipes.json, the
+# same fields plus the time asked). Running and pending ones are asked each time.
 pipeline_of() { # iid; writes $tmp/pipe-<iid> with {"<iid>": {status, url, mr}} or nothing
-  local iid=$1 pid miid
+  local iid=$1 pid="" miid="" found
   peek "$base/issues/$iid/related_merge_requests" >"$tmp/rel-$iid" || return 0
-  jq -c 'select(type == "array") | [.[] | objects | select(.state == "opened" or .state == "merged")]
-    | sort_by([(.state == "opened"), (.updated_at // "")]) | last // empty' "$tmp/rel-$iid" >"$tmp/mr-$iid" 2>/dev/null
-  [[ -s $tmp/mr-$iid ]] || return 0
-  if ! jq -e 'has("head_pipeline")' "$tmp/mr-$iid" >/dev/null 2>&1; then
-    pid=$(jq -r '.project_id' "$tmp/mr-$iid") miid=$(jq -r '.iid' "$tmp/mr-$iid")
-    [[ $pid =~ ^[1-9][0-9]*$ && $miid =~ ^[1-9][0-9]*$ ]] || return 0
-    peek "projects/$pid/merge_requests/$miid" >"$tmp/mr-$iid" || return 0
-  fi
-  jq -c --arg iid "$iid" "$DEFS"' select(type == "object") | (.head_pipeline | pipeline) as $p | select($p)
-    | {($iid): ($p + {mr: (.reference // "!\(.iid)" | tostring)})}' "$tmp/mr-$iid" >"$tmp/pipe-$iid" 2>/dev/null
+  # One jq: the MR's pipeline, or "need <project> <iid>" when head_pipeline is missing.
+  found=$(jq -r --arg iid "$iid" "$DEFS"' select(type == "array") | [.[] | objects | select(.state == "opened" or .state == "merged")]
+    | sort_by([(.state == "opened"), (.updated_at // "")]) | last // empty
+    | if has("head_pipeline") then (.head_pipeline | pipeline) as $p | select($p)
+        | "pipe " + ({($iid): ($p + {mr: (.reference // "!\(.iid)" | tostring)})} | tojson)
+      else "need \(.project_id) \(.iid)" end' "$tmp/rel-$iid" 2>/dev/null)
+  case $found in
+    "pipe "*) printf '%s\n' "${found#pipe }" >"$tmp/pipe-$iid" ;;
+    "need "*)
+      read -r _ pid miid <<<"$found"
+      [[ $pid =~ ^[1-9][0-9]*$ && $miid =~ ^[1-9][0-9]*$ ]] || return 0
+      peek "projects/$pid/merge_requests/$miid" >"$tmp/mr-$iid" || return 0
+      jq -c --arg iid "$iid" "$DEFS"' select(type == "object") | (.head_pipeline | pipeline) as $p | select($p)
+        | {($iid): ($p + {mr: (.reference // "!\(.iid)" | tostring)})}' "$tmp/mr-$iid" >"$tmp/pipe-$iid" 2>/dev/null ;;
+  esac
   return 0
 }
-while read -r riid; do
+board_file="" pipes_file=""
+if [[ -n $cache_root ]]; then board_file=$(cache_file); pipes_file=${board_file%.json}.pipes.json; fi
+[[ -n $pipes_file && -f $pipes_file && ! -L $pipes_file ]] && jq -e 'type == "object"' "$pipes_file" >/dev/null 2>&1 &&
+  cp "$pipes_file" "$tmp/pipes-prev" 2>/dev/null || echo '{}' >"$tmp/pipes-prev"
+reused=()
+while read -r what riid; do
   [[ $riid =~ ^[1-9][0-9]*$ ]] || continue
+  if [[ $what == reuse ]]; then reused+=("$riid"); continue; fi
   while (($(jobs -rp | wc -l) >= 4)); do wait -n; done
   pipeline_of "$riid" &
-done < <(jq -r '[.columns[] | select(.kind == "label" and (.name | ascii_downcase) == "review") | .issues[].iid] | unique | .[:15][]' "$tmp/out" 2>/dev/null)
+done < <(jq -r --slurpfile prev "$tmp/pipes-prev" --argjson now "$EPOCHSECONDS" '$prev[0] as $p
+  | [.columns[] | select(.kind == "label" and (.name | ascii_downcase) == "review") | .issues[].iid] | unique | .[:15][]
+  | tostring as $i | ($p[$i] // null) as $c
+  | if ($c | type) == "object" and ($c.status | IN("passed", "failed", "canceled"))
+       and ((($c.at | numbers) // -1) as $at | $now - $at >= 0 and $now - $at < 120)
+    then "reuse \($i)" else "ask \($i)" end' "$tmp/out" 2>/dev/null)
 wait
-if compgen -G "$tmp/pipe-*" >/dev/null; then
-  jq -cs 'add // {}' "$tmp"/pipe-* >"$tmp/pipes" 2>/dev/null &&
-    jq -c --slurpfile p "$tmp/pipes" '$p[0] as $p | .columns |= map(if .kind == "label" and (.name | ascii_downcase) == "review"
-      then .issues |= map(if $p[.iid | tostring] then . + {pipeline: $p[.iid | tostring]} else . end) else . end)' "$tmp/out" >"$tmp/out2" 2>/dev/null &&
-    mv -f "$tmp/out2" "$tmp/out"
+# One jq: the board with each Review card's pipeline (line 1) and the pipelines
+# to keep (line 2): those just asked, stamped now, and the reused ones.
+pipe_files=("$tmp"/pipe-*); [[ -e ${pipe_files[0]} ]] || pipe_files=()
+if ((${#pipe_files[@]} + ${#reused[@]})); then
+  jq -cn --slurpfile o "$tmp/out" --slurpfile prev "$tmp/pipes-prev" --argjson now "$EPOCHSECONDS" \
+    --argjson reused "$(printf '%s\n' "${reused[@]}" | jq -sc 'map(tostring)')" '
+    (reduce inputs as $x ({}; . + ($x | objects))) as $fresh
+    | (($prev[0] | with_entries(select(.key | IN($reused[])))) + ($fresh | map_values(. + {at: $now}))) as $all
+    | ($o[0] | .columns |= map(if .kind == "label" and (.name | ascii_downcase) == "review"
+        then .issues |= map(if $all[.iid | tostring] then . + {pipeline: ($all[.iid | tostring] | del(.at))} else . end) else . end)),
+      $all' "${pipe_files[@]}" </dev/null >"$tmp/both" 2>/dev/null &&
+    { IFS= read -r board && IFS= read -r pipes; } <"$tmp/both" && [[ -n $board && -n $pipes ]] &&
+    printf '%s\n' "$board" >"$tmp/out" && printf '%s\n' "$pipes" >"$tmp/pipes-next"
 fi
+[[ -f $tmp/pipes-next ]] || echo '{}' >"$tmp/pipes-next"
 
 # Best effort: write a temp file in the cache dir, then rename it over the old
 # copy, so a reader never sees half a file. A failed write changes nothing.
 if [[ -n $cache_root ]] && mkdir -p "$cache_dir" 2>/dev/null && chmod 700 "$cache_dir" 2>/dev/null &&
   part=$(mktemp "$cache_dir/.part.XXXXXX" 2>/dev/null); then
-  { cat "$tmp/out" >"$part" && mv -f "$part" "$(cache_file)"; } 2>/dev/null || rm -f "$part"
+  { cat "$tmp/out" >"$part" && mv -f "$part" "$board_file"; } 2>/dev/null || rm -f "$part"
+  # The pipelines beside it, only when there are some (or were: then emptied).
+  if [[ $(<"$tmp/pipes-next") != "{}" || -e $pipes_file ]] && part=$(mktemp "$cache_dir/.part.XXXXXX" 2>/dev/null); then
+    { cat "$tmp/pipes-next" >"$part" && mv -f "$part" "$pipes_file"; } 2>/dev/null || rm -f "$part"
+  fi
   rm -f "$cache_base.json" 2>/dev/null  # the copy saved before accounts (0.1.40 and older)
 fi
 cat "$tmp/out"
