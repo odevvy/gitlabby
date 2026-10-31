@@ -700,6 +700,26 @@ journalctl --user -t omarchy-shell -f   # shell log (QML errors)
 omarchy plugin validate .
 ```
 
+The QML views have offscreen tests too: `tests/harness/` loads a copy of
+the plugin with stand-ins for Quickshell and Omarchy's `qs.Commons`/`qs.Ui`
+(`tests/harness/stubs`, and `tests/harness15` at 1.5x scale) into PySide6,
+answers its board-fetch calls with fixtures, and checks what is on screen.
+`tests/mutations/` lists deliberate bugs (one per line: name, file, from,
+to, sh|qml|node); each must make its test fail. They need a Python with
+PySide6, kept out of the system Python:
+
+```bash
+python -m venv ~/.cache/ogb-tests && ~/.cache/ogb-tests/bin/pip install PySide6-Essentials==6.12.0
+export PYTHON=~/.cache/ogb-tests/bin/python
+tests/harness/all.sh                                  # every view test (about 3 min)
+$PYTHON tests/harness/tests/run144.py .               # one of them
+tests/mutate.sh . tests/mutations/v144.tsv tests/harness/tests/run144.py
+```
+
+`run136.py` and `run136b.py` use Omarchy's own notification script and
+`NotificationLogic.js` from `~/.local/share/omarchy` (`OMARCHY_PATH` to
+change it). Fonts come from the system; `OGB_FONTS` adds a font directory.
+
 The QML files hold the views; logic that needs no Qt (where a moved card
 lands, ages, label text colors, the Markdown renderer) is in `Logic.js`,
 which the Node tests load, as Omarchy's panels do with their `Model.js`. CI
