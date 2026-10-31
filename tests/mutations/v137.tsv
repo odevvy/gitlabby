@@ -7,12 +7,12 @@ bf-state-unchecked	board-fetch	{state: (.state | select(IN(states[])) // null)}	
 bf-list-fail-ok	board-fetch	get "${prefix}merge_requests?scope=created_by_me&$q" >"$tmp/mrs-mine" || emit error "Could not load merge requests."	get "${prefix}merge_requests?scope=created_by_me&$q" >"$tmp/mrs-mine" || echo "[]" >"$tmp/mrs-mine"	sh
 bf-project-ignored	board-fetch	[[ -z $project ]] || prefix="$base/"	:	sh
 bf-http-links	board-fetch	url: (.web_url | https), draft:	url: .web_url, draft:	sh
-lg-draft-not-first	Logic.js	if (row && row.draft) return { text: "Draft", color: "" }	/* m */	node
-lg-badge-mine	Logic.js	answer.state === "ready" ? answer.review.length : 0	answer.state === "ready" ? answer.review.length + answer.mine.length : 0	qml
-lg-badge-cap	Logic.js	n > 9 ? "9+" : String(n)	String(n)	node
-lg-args-unchecked	Logic.js	&& String(scope).indexOf("..") === -1 ? ["mrs"	? ["mrs"	node
-lg-https-dropped	Logic.js	return { iid: iid, title: String(r.title || ""), url: httpsUrl(r.url),	return { iid: iid, title: String(r.title || ""), url: String(r.url || ""),	node
-lg-state-unchecked	Logic.js	o.state = reviewerStates.indexOf(p.state) !== -1 ? p.state : ""	o.state = String(p.state || "")	node
+lg-draft-not-first	logic/mrs.js	if (row && row.draft) return { text: "Draft", color: "" }	/* m */	node
+lg-badge-mine	logic/mrs.js	answer.state === "ready" ? answer.review.length : 0	answer.state === "ready" ? answer.review.length + answer.mine.length : 0	qml
+lg-badge-cap	logic/mrs.js	n > 9 ? "9+" : String(n)	String(n)	node
+lg-args-unchecked	logic/mrs.js	&& String(scope).indexOf("..") === -1 ? ["mrs"	? ["mrs"	node
+lg-https-dropped	logic/mrs.js	return { iid: iid, title: String(r.title || ""), url: httpsUrl(r.url),	return { iid: iid, title: String(r.title || ""), url: String(r.url || ""),	node
+lg-state-unchecked	logic/mrs.js	o.state = reviewerStates.indexOf(p.state) !== -1 ? p.state : ""	o.state = String(p.state || "")	node
 svc-no-reuse	BoardService.qml	if (!force && last && Date.now() - last.startedAt < 60000) return	/* m */	qml
 svc-force-ignored	BoardService.qml	if (!force && last &&	if (last &&	qml
 svc-no-pending	BoardService.qml	if (p) requestMrs(p.scope, p.force)	/* m */	qml

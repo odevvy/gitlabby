@@ -13,14 +13,14 @@ svc-bg-signed-out	BoardService.qml	if (!cfg || (last && (last.state === "logged-
 board-no-watch	Board.qml	onWatchCfgChanged: feed.watch(watchOwner, watchCfg)	onWatchCfgChanged: {}	qml
 board-no-own-move	Board.qml	if (data.state === "ready") feed.noteOwnMove(fetchKey, move.iid)	if (false) feed.noteOwnMove(fetchKey, move.iid)	qml
 board-no-persist	Board.qml	if (nextAlerts !== undefined) entry.alerts = nextAlerts	if (false) entry.alerts = nextAlerts	qml
-logic-alert-default-on	Logic.js	return { review: !!(e && e.review === true), idle: !!(e && e.idle === true) }	return { review: !(e && e.review === false), idle: !!(e && e.idle === true) }	qml
-logic-no-batch	Logic.js	} else if (came.length > 1) {	} else if (false) {	qml
-logic-batch-each	Logic.js	if (came.length === 1) {	if (came.length >= 1) {	qml
-logic-no-escape	Logic.js	"-g", "\uf296", oneLine(ev.headline, 120), escaped(oneLine(ev.body, 300))]	"-g", "\uf296", oneLine(ev.headline, 120), oneLine(ev.body, 300)]	qml
-logic-urgency-normal	Logic.js	"-u", "low"	"-u", "normal"	qml
-logic-app-default	Logic.js	"--app-name", "GitLab board", 	"--app-name", "omarchy-action", 	qml
-logic-exec-http	Logic.js	function httpsUrl(url) { return /^https:	function httpsUrl(url) { return /^https?:	node
-logic-idle-any	Logic.js	was[i] && was[i].state === "working" && b.state !== "working"	b.state !== "working"	qml
-logic-idle-off	Logic.js	  if (opts.idle) {	  if (false) {	qml
-logic-review-off	Logic.js	  if (opts.review) {	  if (true) {	node
-logic-other-project	Logic.js	|| prev.project !== next.project) return out	) return out	node
+logic-alert-default-on	logic/alerts.js	return { review: !!(e && e.review === true), idle: !!(e && e.idle === true) }	return { review: !(e && e.review === false), idle: !!(e && e.idle === true) }	qml
+logic-no-batch	logic/alerts.js	} else if (came.length > 1) {	} else if (false) {	qml
+logic-batch-each	logic/alerts.js	if (came.length === 1) {	if (came.length >= 1) {	qml
+logic-no-escape	logic/alerts.js	"-g", "\uf296", oneLine(ev.headline, 120), escaped(oneLine(ev.body, 300))]	"-g", "\uf296", oneLine(ev.headline, 120), oneLine(ev.body, 300)]	qml
+logic-urgency-normal	logic/alerts.js	"-u", "low"	"-u", "normal"	qml
+logic-app-default	logic/alerts.js	"--app-name", "GitLab board", 	"--app-name", "omarchy-action", 	qml
+logic-exec-http	logic/core.js	function httpsUrl(url) { return /^https:	function httpsUrl(url) { return /^https?:	node
+logic-idle-any	logic/alerts.js	was[i] && was[i].state === "working" && b.state !== "working"	b.state !== "working"	qml
+logic-idle-off	logic/alerts.js	  if (opts.idle) {	  if (false) {	qml
+logic-review-off	logic/alerts.js	  if (opts.review) {	  if (true) {	node
+logic-other-project	logic/alerts.js	|| prev.project !== next.project) return out	) return out	node

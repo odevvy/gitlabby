@@ -5,12 +5,12 @@ bf-no-scope-filter	board-fetch	[$tok.scopes[] | strings | select(test("^[a-z_]{1
 bf-whole-token	board-fetch	then [$tok.scopes[] | strings	then [$tok | tostring	sh
 bf-no-token-get	board-fetch	    peek personal_access_tokens/self >"$tmp/t" 2>/dev/null || : >"$tmp/t"	    : >"$tmp/t"	sh
 bf-error-ready	board-fetch	if ($proj | type) != "object" or ($proj.id | type) != "number" then null else	if false then null else	sh
-lg-planner-14	Logic.js	var plannerLevel = 15	var plannerLevel = 14	node
-lg-unknown-viewonly	Logic.js	if ((entry.known && entry.level < plannerLevel) || entry.refused === "forbidden")	if ((entry.level < plannerLevel) || entry.refused === "forbidden")	node
-lg-scope-ignored	Logic.js	if (entry.refused === "scope" || (Array.isArray(entry.scopes) && entry.scopes.indexOf("api") === -1)) return "read-token"	if (entry.refused === "scope") return "read-token"	node
-lg-403-ignored	Logic.js	/\b403\b|forbidden/i.test(m) ? "forbidden"	/forbiddenx/.test(m) ? "forbidden"	node
-lg-url-api	Logic.js	&scopes=read_api"\n}	&scopes=api"\n}	node
-lg-url-http	Logic.js	return "https://" + host + "/-/user_settings	return "http://" + host + "/-/user_settings	node
+lg-planner-14	logic/access.js	var plannerLevel = 15	var plannerLevel = 14	node
+lg-unknown-viewonly	logic/access.js	if ((entry.known && entry.level < plannerLevel) || entry.refused === "forbidden")	if ((entry.level < plannerLevel) || entry.refused === "forbidden")	node
+lg-scope-ignored	logic/access.js	if (entry.refused === "scope" || (Array.isArray(entry.scopes) && entry.scopes.indexOf("api") === -1)) return "read-token"	if (entry.refused === "scope") return "read-token"	node
+lg-403-ignored	logic/access.js	/\b403\b|forbidden/i.test(m) ? "forbidden"	/forbiddenx/.test(m) ? "forbidden"	node
+lg-url-api	logic/access.js	&scopes=read_api"\n}	&scopes=api"\n}	node
+lg-url-http	logic/access.js	return "https://" + host + "/-/user_settings	return "http://" + host + "/-/user_settings	node
 svc-every-time	BoardService.qml	if (project === "" || access[project] !== undefined || accessWaiting	if (project === "" || accessWaiting	qml
 svc-no-wait	BoardService.qml	if (accessFetch.running) { if (accessFetch.project !== project) accessWaiting = accessWaiting.concat([project]); return }	if (accessFetch.running) { return }	qml
 svc-no-next	BoardService.qml	onRunningChanged: if (!running) Qt.callLater(service.accessNext)	onRunningChanged: {}	qml
