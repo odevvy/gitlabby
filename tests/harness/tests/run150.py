@@ -17,7 +17,8 @@ def spins():
     a = h.ev("header.refreshButton.rotation"); h.spin(120); return h.ev("header.refreshButton.rotation") != a
 def shot(name):
     if out: QTest.mouseMove(h.win, QPoint(1, 1)); h.spin(500); h.grab_card(os.path.join(out, name + ".png"))
-cards = lambda: len(h.visible(lambda it: it.metaObject().className().startswith("BoardText") and str(it.property("text") or "").startswith("<font")))
+# Cards: the board's card delegates (they alone carry movable and lifted).
+cards = lambda: len(h.visible(lambda it: it.property("movable") is not None and it.property("lifted") is not None))
 def settle():  # the answer is in: wait for the icon to finish its turn
     for _ in range(20):
         if not h.ev("header.refreshButton.rotation") % 360: break

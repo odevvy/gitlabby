@@ -24,6 +24,8 @@ BOTS = {"firelink21/phrase41": {"busyLists": ["approved", "in progress", "review
   {"name": "Product Lead", "label": ""}, {"name": "Spec QA", "list": "review"}]}}
 rows = lambda: h.visible(lambda it: it.metaObject().className().startswith("BotsRow"))
 texts = lambda: [it.property("text") for it in h.visible(lambda it: it.metaObject().className().startswith("BoardText")) if it.property("text")]
+# The bots row's own texts (cards elsewhere on the board carry issue numbers too).
+row_texts = lambda: [it.property("text") for it in h.visible(lambda it: it.metaObject().className().startswith("BoardText") and h.cls("BotsRow").isAncestorOf(it)) if it.property("text")]
 ref = lambda t: [it for it in h.visible(lambda it: it.metaObject().className().startswith("BoardText") and it.property("text") == t)]
 same = lambda a, b: abs(a.redF() - b.redF()) < 0.01 and abs(a.greenF() - b.greenF()) < 0.01 and abs(a.blueF() - b.blueF()) < 0.01
 def dot(name):
@@ -43,7 +45,7 @@ h.ok("B2 the popup grows by exactly the row (no stale height), the board sits be
      abs(h.ev("keyCatcher.implicitHeight") - h0 - (r[0].height() + h.ev("root.gap"))) < 1 and board_top() >= r[0].mapToScene(QPointF(0, r[0].height())).y(), (h.ev("keyCatcher.implicitHeight"), h0, r[0].height()))
 t = texts()
 h.ok("B3 App UI: #115 approved · #112 in progress", "#115 approved" in t and "· #112 in progress" in t, t)
-h.ok("B4 #113 (api) in review is Spec QA's alone (v0.1.49): it shows once, 'in review' once, API Engineer idle", t.count("#113") == 1 and t.count("in review") == 1 and "#113 review" not in t and [s["state"] for s in h.ev("root.botStates") if s["name"] == "API Engineer"] == ["idle"], t)
+h.ok("B4 #113 (api) in review is Spec QA's alone (v0.1.49): it shows once, 'in review' once, API Engineer idle", row_texts().count("#113") == 1 and t.count("in review") == 1 and "#113 review" not in t and [s["state"] for s in h.ev("root.botStates") if s["name"] == "API Engineer"] == ["idle"], t)
 h.ok("B5 Auth & Mail idle (todo and Closed don't count)", [s["state"] for s in h.ev("root.botStates") if s["name"] == "Auth & Mail"] == ["idle"] and "#117 todo" not in t and not [x for x in t if "#109" in x])
 h.ok("B6 Product Lead owns #114 (no owner label), 'in progress' said once; #118 in Open doesn't count", "#114" in t and "in progress" in t and not [x for x in t if "#118" in x])
 acc, dim = h.ev("root.accent"), h.ev("root.dim")
