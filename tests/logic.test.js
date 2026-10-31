@@ -569,7 +569,8 @@ test("popup height: Settings and Keys have no cap (they grow to the free screen 
   for (const v of ["board", "issue", "picker", ""]) assert.equal(L.heightCap(v, 960), 960)
   const fs = require("node:fs"), path = require("node:path")
   const board = fs.readFileSync(path.join(__dirname, "..", "Board.qml"), "utf8")
-  assert.match(board, /contentHeight: panel\.fittedContentHeight\(keyCatcher\.implicitHeight, Logic\.heightCap\(root\.view, Style\.space\(640\)\)\)/)
+  assert.match(board, /contentHeight: panel\.fittedContentHeight\(root\.shownHeight, Logic\.heightCap\(root\.view, Style\.space\(640\)\)\)/)
+  assert.match(board, /property real shownHeight: keyCatcher\.implicitHeight\n/)
 })
 
 test("compact settings: Start collapsed and the busy columns are wrapping rows of check boxes with the same gaps", () => {
@@ -687,7 +688,7 @@ test("alerts wiring: Settings saves settings.alerts per project; each copy hands
   const settings = fs.readFileSync(path.join(dir, "SettingsView.qml"), "utf8")
   assert.match(board, /readonly property var alerts: Logic\.alertsFor\(saved\("alerts", null\), project\)/)
   assert.match(board, /onWatchCfgChanged: feed\.watch\(watchOwner, watchCfg\)/)
-  assert.match(board, /Component\.onDestruction: feed\.watch\(watchOwner, null\)/)
+  assert.match(board, /Component\.onDestruction: \{ saveFolds\(\); feed\.watch\(watchOwner, null\) \}/)
   assert.match(board, /if \(nextAlerts !== undefined\) entry\.alerts = nextAlerts/)
   // No notifier in the widget: one per event comes from the service only.
   assert.doesNotMatch(board, /omarchy-notification-send|notifyArgv/)
