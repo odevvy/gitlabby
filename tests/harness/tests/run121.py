@@ -1,0 +1,67 @@
+# v0.1.21: close an issue from the issue view (asks first), reopen a closed one.
+# Usage: run121.py <src> [close.png confirm.png error.png]
+import sys, os; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from lib import *
+from fixtures import BOARD
+pngs = sys.argv[2:5]
+h = Harness(sys.argv[1], {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": "group/app"})
+button = lambda label: h.visible(lambda it: it.metaObject().className().startswith("ActionButton") and it.property("label") == label)
+pill = lambda label: h.visible(lambda it: it.metaObject().className().startswith("Pill") and it.property("label") == label)
+texts = lambda: [it.property("text") for it in h.visible(lambda it: it.metaObject().className().startswith("BoardText")) if it.property("text")]
+# v0.1.24: Close / Reopen issue is a quiet text action on the label row.
+link = lambda label: h.visible(lambda it: it.metaObject().className().startswith("BoardText") and it.property("text") == label)
+edit = lambda: h.visible(lambda it: it.metaObject().className().startswith("BoardText") and it.property("text") == "\uf040  Edit labels")
+row_y = lambda it: round(it.mapToScene(QPointF(0, it.height() / 2)).y())
+right = lambda it: round(it.mapToScene(QPointF(it.width(), 0)).x())
+same = lambda a, b: abs(a.redF() - b.redF()) < 0.01 and abs(a.greenF() - b.greenF()) < 0.01 and abs(a.blueF() - b.blueF()) < 0.01
+helper = lambda: h.ev("root.helperPath()")
+QUESTION = "Close #2? This closes it on GitLab."
+
+h.ev("root.opened = true"); h.spin(80); h.answer("board", BOARD)
+h.ev("root.openIssue(root.columns[1].issues[0])"); h.spin(80)
+ISSUE = {"iid": 2, "title": "Second issue with a longer title", "state": "opened", "labels": ["review", "app-ui"], "url": "https://gitlab.com/group/app/-/issues/2",
+         "description": "Make the board faster on large projects.", "author": "dev1", "milestone": "", "assignees": ["dev1"], "createdAt": "2026-10-20T12:00:00Z", "updatedAt": "2026-10-29T12:00:00Z"}
+h.answer("issue", {"state": "ready", "message": "", "issue": ISSUE}); h.answer("notes", {"state": "ready", "message": "", "iid": 2, "more": False, "notes": []})
+cb = link("Close issue")
+h.ok("C1 Close issue: a quiet text action, no border, on the state and labels row, right of Edit labels", len(cb) == 1 and same(cb[0].property("color"), h.ev("root.dim"))
+     and not button("Close issue") and abs(row_y(cb[0]) - row_y(pill("Open")[0])) <= 1 and abs(row_y(cb[0]) - row_y(edit()[0])) <= 1 and cb[0].x() > edit()[0].x() and abs(right(cb[0]) - right(h.cls("IssueView"))) <= 12, (right(cb[0]), right(h.cls("IssueView"))) if cb else "")
+h.ok("C2 nothing asked or run yet", QUESTION not in texts() and not h.running("close"))
+if pngs: h.grab_card(pngs[0])
+h.click(cb[0])
+at = (cb[0].mapToScene(QPointF(0, 0)).x(), cb[0].mapToScene(QPointF(0, 0)).y())
+h.ok("C3 click: asks first (below), with the issue number and what happens; Close issue stays put", QUESTION in texts() and not h.running("close")
+     and len(link("Close issue")) == 1 and at == (cb[0].mapToScene(QPointF(0, 0)).x(), cb[0].mapToScene(QPointF(0, 0)).y()))
+h.ok("C4 says which status label stays", "Its labels stay as they are, review included." in texts(), texts())
+close, cancel = button("Close"), button("Cancel")
+h.ok("C5 Close is the main button, Cancel the quiet one, side by side", len(close) == 1 and close[0].property("main") and len(cancel) == 1 and not cancel[0].property("main")
+     and abs(row_y(close[0]) - row_y(cancel[0])) <= 1 and close[0].x() < cancel[0].x())
+if len(pngs) > 1: h.grab_card(pngs[1])
+h.click(cancel[0])
+h.ok("C6 Cancel: back, nothing run", QUESTION not in texts() and len(link("Close issue")) == 1 and not h.running("close"))
+h.click(link("Close issue")[0]); h.click(button("Close")[0])
+h.ok("W1 Close runs board-fetch close for #2 only", h.running("close") == [[helper(), "close", "--project", "group/app", "--iid", "2"]], h.running())
+h.ok("W2 while it runs: Closing…, locked", len(link("Closing…")) == 1 and not link("Closing…")[0].property("enabled"))
+h.ev("issueView.setState('close'); issueView.setState('reopen'); issueView.askClose()")
+h.ok("W3 one at a time", len(h.running("close")) == 1 and not h.running("reopen") and not h.ev("issueView.confirming"))
+h.ev("root.boardState = 'ready'"); h.stop_all(); h.ev("issueView.stateBusy = ''")
+h.click(link("Close issue")[0]); h.click(button("Close")[0])
+h.answer("close", {"state": "ready", "message": "Closed #2.", "issueState": "closed", "labels": ["review", "app-ui"]})
+h.ok("W4 closed: the state reads Closed, labels kept, the board refreshes", len(pill("Closed")) == 1 and h.ev("issueView.issue.labels") == ["review", "app-ui"] and bool(h.running("board")))
+h.ok("W5 a closed issue offers Reopen issue", len(link("Reopen issue")) == 1 and not link("Close issue"))
+h.stop_all()
+h.click(link("Reopen issue")[0])
+h.ok("O1 Reopen runs board-fetch reopen at once (no question)", h.running("reopen") == [[helper(), "reopen", "--project", "group/app", "--iid", "2"]] and QUESTION not in texts(), h.running())
+h.answer("reopen", {"state": "ready", "message": "Reopened #2.", "issueState": "opened", "labels": ["review", "app-ui"]})
+h.ok("O2 reopened: Open again, Close issue back", len(pill("Open")) == 1 and len(link("Close issue")) == 1)
+h.stop_all()
+h.click(link("Close issue")[0]); h.click(button("Close")[0])
+h.answer("close", {"state": "error", "message": "GitLab did not answer within 30 seconds. The issue may have been closed."})
+err = h.visible(lambda it: it.metaObject().className().startswith("BoardText") and it.property("text") == "GitLab did not answer within 30 seconds. The issue may have been closed.")
+h.ok("E1 timeout: the reason in the urgent color, the issue reloads, Close issue back", len(err) == 1 and same(err[0].property("color"), h.ev("root.urgent"))
+     and bool(h.running("issue")) and len(link("Close issue")) == 1)
+if len(pngs) > 2: h.grab_card(pngs[2])
+h.stop_all(); h.click(link("Close issue")[0])
+h.ok("E2 asking again clears the old error", not err[0].isVisible() and QUESTION in texts())
+h.ev("root.back()"); h.spin(80); h.ev("root.openIssue(root.columns[1].issues[0])"); h.spin(80)
+h.ok("K1 leaving the issue drops the question", not h.ev("issueView.confirming") and QUESTION not in texts())
+sys.exit(h.finish())
