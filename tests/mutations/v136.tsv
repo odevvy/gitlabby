@@ -1,0 +1,26 @@
+svc-no-notify	BoardService.qml	events.forEach(function(ev) { Quickshell.execDetached(Logic.notifyArgv(ev)) })	events.forEach(function(ev) {})	qml
+svc-first-load-alerts	BoardService.qml	var events = baselines[key] ? Logic.alertEvents(baselines[key], data,	var events = true ? Logic.alertEvents(baselines[key] || { state: "ready", project: data.project, columns: [] }, data,	qml
+svc-error-keeps-baseline	BoardService.qml	if (!data || data.state !== "ready") { dropBaseline(key); return }	if (!data || data.state !== "ready") { return }	qml
+svc-no-baseline-update	BoardService.qml	    b[key] = data\n    baselines = b	    baselines = b	qml
+svc-own-moves-ignored	BoardService.qml	ignore: moved.map(function(m) { return m.iid })	ignore: []	qml
+svc-own-moves-forever	BoardService.qml	m[key] = moved.filter(function(x) { return ticket < x.after })	m[key] = moved	qml
+svc-bg-always	BoardService.qml	request(cfg.project, cfg.boardId, true, cad.sec * 1000 - 2000, 0)	request(cfg.project, cfg.boardId, false, 0, 0)	qml
+svc-bg-off	BoardService.qml	running: service.watchedKeys.length > 0	running: false	qml
+svc-bg-never-stops	BoardService.qml	running: service.watchedKeys.length > 0	running: true	qml
+svc-watch-alerts-off	BoardService.qml	if (cfg && (cfg.review || cfg.idle)) {	if (cfg) {	qml
+svc-unwatch-keeps	BoardService.qml	if (o !== owner) { owners[o] = watchers[key][o]; any = true }	{ owners[o] = watchers[key][o]; any = true }	qml
+svc-bg-signed-out	BoardService.qml	if (!cfg || (last && (last.state === "logged-out" || last.state === "no-glab"))) return	if (!cfg) return	qml
+board-no-watch	Board.qml	onWatchCfgChanged: feed.watch(watchOwner, watchCfg)	onWatchCfgChanged: {}	qml
+board-no-own-move	Board.qml	if (data.state === "ready") feed.noteOwnMove(fetchKey, move.iid)	if (false) feed.noteOwnMove(fetchKey, move.iid)	qml
+board-no-persist	Board.qml	if (nextAlerts !== undefined) entry.alerts = nextAlerts	if (false) entry.alerts = nextAlerts	qml
+logic-alert-default-on	Logic.js	return { review: !!(e && e.review === true), idle: !!(e && e.idle === true) }	return { review: !(e && e.review === false), idle: !!(e && e.idle === true) }	qml
+logic-no-batch	Logic.js	} else if (came.length > 1) {	} else if (false) {	qml
+logic-batch-each	Logic.js	if (came.length === 1) {	if (came.length >= 1) {	qml
+logic-no-escape	Logic.js	"-g", "\uf296", oneLine(ev.headline, 120), escaped(oneLine(ev.body, 300))]	"-g", "\uf296", oneLine(ev.headline, 120), oneLine(ev.body, 300)]	qml
+logic-urgency-normal	Logic.js	"-u", "low"	"-u", "normal"	qml
+logic-app-default	Logic.js	"--app-name", "GitLab board", 	"--app-name", "omarchy-action", 	qml
+logic-exec-http	Logic.js	function httpsUrl(url) { return /^https:	function httpsUrl(url) { return /^https?:	node
+logic-idle-any	Logic.js	was[i] && was[i].state === "working" && b.state !== "working"	b.state !== "working"	qml
+logic-idle-off	Logic.js	  if (opts.idle) {	  if (false) {	qml
+logic-review-off	Logic.js	  if (opts.review) {	  if (true) {	node
+logic-other-project	Logic.js	|| prev.project !== next.project) return out	) return out	node
