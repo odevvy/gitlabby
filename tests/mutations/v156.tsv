@@ -1,0 +1,13 @@
+# v0.1.56: smooth fold (deferred save, folding flag, animated popup edge and height, staged fades). qml rows: tests/harness/tests/run156.py
+s-save-each-fold	Board.qml	    foldsUnsaved = true	    persist()	qml
+s-no-2s-save	Board.qml	foldSave.restart()	foldSave.stop()	qml
+s-no-close-save	Board.qml	dropPicks(); saveFolds() }	dropPicks() }	qml
+s-pending-kept	Board.qml	foldsUnsaved = false; foldSave.stop()	foldSave.restart()	qml
+s-default-deferred	Board.qml	    persist()  // a Settings change: saved now	    else persist()	qml
+f-no-folding	Board.qml	function startFold() { folding = true; foldClock.restart() }	function startFold() { foldClock.restart() }	qml
+f-never-ends	Board.qml	onTriggered: root.folding = false	onTriggered: root.folding = true	qml
+f-answers-not-held	Board.qml	bulkBar.armed || folding	bulkBar.armed	qml
+w-popup-snaps	Board.qml	: root.shownBoardWidth) + panel.padding	: root.boardWidth) + panel.padding	qml
+w-popup-always	Board.qml	Behavior on shownBoardWidth { enabled: root.folding;	Behavior on shownBoardWidth { enabled: true;	qml
+h-height-snaps	Board.qml	fittedContentHeight(root.shownHeight,	fittedContentHeight(keyCatcher.implicitHeight,	qml
+h-height-always	Board.qml	Behavior on shownHeight { enabled: root.folding;	Behavior on shownHeight { enabled: true;	qml

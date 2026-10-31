@@ -76,7 +76,7 @@ Panel {
   readonly property var watchCfg: project !== "" && setup === "" && (alerts.review || alerts.idle)
     ? { key: fetchKey, project: project, boardId: boardId, review: alerts.review, idle: alerts.idle, bots: saved("bots", null), base: refreshIntervalSec } : null
   onWatchCfgChanged: feed.watch(watchOwner, watchCfg)
-  Component.onDestruction: feed.watch(watchOwner, null)
+  Component.onDestruction: { saveFolds(); feed.watch(watchOwner, null) }
   function setAlert(kind, on) { persist(undefined, undefined, Logic.withAlert(saved("alerts", null), project, kind, on)) }
   // Projects whose card moves ask first (settings.confirmMoves; none by default).
   readonly property bool confirmMoves: Logic.has(Logic.lowerList(saved("confirmMoves", [])), project)
@@ -171,7 +171,9 @@ Panel {
 
   // New board data would replace the card being moved or held under the
   // pointer, so while held, board answers are dropped and refetched after.
-  readonly property bool held: move !== null || pendingMove !== null || boardView.holding || bulkBar.busy || bulkBar.armed
+  // A fold or hide in progress (folding) holds answers too, so a refresh never
+  // rebuilds the board under the animation; it lands right after.
+  readonly property bool held: move !== null || pendingMove !== null || boardView.holding || bulkBar.busy || bulkBar.armed || folding
   // A refresh asked for while busy waits here and runs once nothing is busy.
   readonly property bool busy: loading || held
   property bool refreshQueued: false
@@ -191,22 +193,41 @@ Panel {
   function isHidden(name) { return Logic.has(hiddenList(), name) }
   function isDefaultCollapsed(name) { return Logic.has(defaultCollapsed, name) }
 
+  // Folds and hides change boardStates in memory at once and are saved later:
+  // when the popup closes, or 2 s after the last one (foldSave). Each save
+  // rewrites shell.json, and Omarchy reloads its shell-wide state on that, which
+  // froze the fold animation when it happened on every click.
+  property bool foldsUnsaved: false
   function storeBoard(collapsed, hidden) {
     var next = {}
     for (var key in boardStates) next[key] = boardStates[key]
     next[stateKey] = { collapsed: collapsed, hidden: hidden }
     boardStates = next
-    persist()
+    foldsUnsaved = true
+    foldSave.restart()
   }
-  function toggleCollapsed(name) { storeBoard(Logic.toggled(collapsedList(), name), hiddenList()) }
-  function toggleHidden(name) { storeBoard(collapsedList(), Logic.toggled(hiddenList(), name)) }
+  function saveFolds() { if (foldsUnsaved) persist() }
+  // folding: true for a moment after a fold or hide. Only then do the column,
+  // the popup's width and its height animate (board and view switches stay
+  // instant), and answers wait (held).
+  property bool folding: false
+  function startFold() { folding = true; foldClock.restart() }
+  function toggleCollapsed(name) { startFold(); storeBoard(Logic.toggled(collapsedList(), name), hiddenList()) }
+  function toggleHidden(name) { startFold(); storeBoard(collapsedList(), Logic.toggled(hiddenList(), name)) }
   function toggleDefaultCollapsed(name) {
     var on = !isDefaultCollapsed(name)
     defaultCollapsed = Logic.toggled(defaultCollapsed, name)
     // Apply to the board on screen too, so the change is visible at once.
     if (isCollapsed(name) !== on) toggleCollapsed(name)
-    else persist()
+    persist()  // a Settings change: saved now
   }
+  Timer { id: foldSave; interval: 2000; onTriggered: root.saveFolds() }
+  Timer { id: foldClock; interval: 200; onTriggered: root.folding = false }
+  // The popup edge and height follow the columns while they fold.
+  property real shownBoardWidth: boardWidth
+  Behavior on shownBoardWidth { enabled: root.folding; NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+  property real shownHeight: keyCatcher.implicitHeight
+  Behavior on shownHeight { enabled: root.folding; NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
   // One-time update to settings revision 2 (v0.1.3): Open joins the collapsed
   // defaults and every saved board, without touching anything else. Runs again
   // only if it could not be saved.
@@ -250,6 +271,7 @@ Panel {
     entry.defaultCollapsed = defaultCollapsed
     entry.boardStates = boardStates
     entry.settingsRevision = settingsRevision
+    foldsUnsaved = false; foldSave.stop()  // boardStates goes out with this write
     if (nextBots !== undefined) entry.bots = nextBots
     if (nextAlerts !== undefined) entry.alerts = nextAlerts
     for (var k in more || {}) entry[k] = more[k]
@@ -564,7 +586,7 @@ Panel {
   implicitHeight: button.implicitHeight
 
   Component.onCompleted: { Qt.callLater(readCache); feed.watch(watchOwner, watchCfg) }
-  onOpenedChanged: if (opened) { view = "board"; cursor = null; refresh(true) } else { boardView.endDrag(); pendingMove = null; if (!bulkBar.busy && bulkBar.mode !== "results") dropPicks() }
+  onOpenedChanged: if (opened) { view = "board"; cursor = null; refresh(true) } else { boardView.endDrag(); pendingMove = null; if (!bulkBar.busy && bulkBar.mode !== "results") dropPicks(); saveFolds() }
 
   // Only while the popup is open; opening it refreshes if due (onOpenedChanged).
   // A copy on another screen that fetched meanwhile makes the tick a no-op.
@@ -634,10 +656,10 @@ Panel {
     // fittedContentWidth caps at availableCardWidth (screen minus margins);
     // anything wider scrolls horizontally inside the board.
     contentWidth: panel.fittedContentWidth(Math.max(Style.space(520), (root.view === "keys" || root.view === "mrs") ? Style.space(760) : root.view !== "board" ? 0
-      : (root.setup !== "" || root.failed || root.boardState === "loading" ? skeleton.implicitWidth : root.boardWidth) + panel.padding * 2 + Style.space(4)))
+      : (root.setup !== "" || root.failed || root.boardState === "loading" ? skeleton.implicitWidth : root.shownBoardWidth) + panel.padding * 2 + Style.space(4)))
     // fittedContentHeight caps at the free screen height (availableCardHeight)
     // and at heightCap: none for Settings and Keys, 640 for the board and an issue.
-    contentHeight: panel.fittedContentHeight(keyCatcher.implicitHeight, Logic.heightCap(root.view, Style.space(640)))
+    contentHeight: panel.fittedContentHeight(root.shownHeight, Logic.heightCap(root.view, Style.space(640)))
 
     BoardKeys {  // the key routing (BoardKeys.qml)
       id: keyCatcher
