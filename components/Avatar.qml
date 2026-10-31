@@ -35,15 +35,8 @@ Rectangle {
     visible: image.status === Image.Ready
     source: image
     maskEnabled: true
-    maskSource: mask
+    maskSource: avatar.host.avatarMask  // one shared round mask (Board.qml), not one layer per avatar
     maskThresholdMin: 0.5
     maskSpreadAtMin: 1.0
-  }
-  Item {
-    id: mask
-    anchors.fill: parent
-    visible: false
-    layer.enabled: true
-    Rectangle { anchors.fill: parent; radius: width / 2; color: "black" }
   }
 }

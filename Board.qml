@@ -81,6 +81,7 @@ Panel {
   // Projects whose card moves ask first (settings.confirmMoves; none by default).
   readonly property bool confirmMoves: Logic.has(Logic.lowerList(saved("confirmMoves", [])), project)
   property var boardStates: saved("boardStates", ({})) || ({})
+  readonly property Item avatarMask: sharedAvatarMask
 
   // The shared board fetch (BoardService.qml): the shell's one service when the
   // built-in bar hosts this widget (PluginShellApi.serviceFor), else a private one.
@@ -671,6 +672,16 @@ Panel {
       implicitHeight: header.implicitHeight + root.gap + (botsRow.visible ? botsRow.height + root.gap : 0) + (accessHint.visible ? accessHint.height + root.gap : 0) + (moveConfirm.visible ? moveConfirm.height + root.gap : 0) + (bulkBar.visible ? bulkBar.height + root.gap : 0) + (root.view === "board" ? (root.setup !== "" || root.failed ? Math.max(setupView.implicitHeight, skeleton.implicitHeight) : root.boardState === "loading" ? skeleton.implicitHeight : boardView.implicitHeight)
         : root.view === "issue" ? issueView.implicitHeight : root.view === "picker" ? picker.implicitHeight
         : root.view === "keys" ? keysView.implicitHeight : root.view === "mrs" ? mrsView.implicitHeight : settingsView.implicitHeight)
+      // One round mask for every avatar (Avatar.qml's maskSource): one
+      // offscreen layer for the popup instead of one per avatar.
+      Item {
+        id: sharedAvatarMask
+        objectName: "sharedAvatarMask"
+        width: 64; height: 64
+        visible: false
+        layer.enabled: true
+        Rectangle { anchors.fill: parent; radius: width / 2; color: "black" }
+      }
       // Glass wash: a soft light from the top of the card (the card itself is
       // KeyboardPanel's, drawn in the theme's popups.background).
       Rectangle {
