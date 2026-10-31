@@ -8,8 +8,9 @@ import "components"
 // Nothing is written until the second step: the first (a button, Shift+H/L,
 // x, or a label) arms the bar, which says what happens to which card; the
 // same key again, Enter or the main button confirms; Esc steps back.
-// Writes run one card at a time through board-fetch (move, relabel, close,
-// reopen: the single-card writes), each with its own outcome. An ordinary
+// Writes run one card at a time in one board-fetch bulk process: each card
+// is one stdin line with the single-card write's arguments (move, relabel,
+// close, reopen), answered by one line, each with its own outcome. An ordinary
 // failure is shown and the run goes on; signed out, no glab or no answer in
 // time stops it. Esc while running stops before the next card.
 // mode: "" (picking), "column" or "label" (choosing the target), "armed",
@@ -59,7 +60,7 @@ Rectangle {
   border { width: armed ? 2 : 1; color: mode === "results" && otherResults.some(function(r) { return r.status === "failed" || r.status === "untried" }) ? host.urgent : host.accent }
   radius: Style.space(6)
 
-  function reset() { advance = false; mode = ""; action = null; armKey = ""; plan = []; results = []; step = -1; stopping = false; note = "" }
+  function reset() { mode = ""; action = null; armKey = ""; plan = []; results = []; step = -1; stopping = false; note = "" }
   function pickNote(full) { note = full ? "Up to " + Logic.bulkCap + " cards at a time." : "" }
 
   // Arming. key: the text key that armed it ("" for a click).
@@ -131,10 +132,14 @@ Rectangle {
     for (var i = step + 1; i < plan.length; i++) if (plan[i].args) break
     if (i >= plan.length) { finish(); return }
     step = i
-    runProcess.command = [host.helperPath()].concat(plan[i].args)
-    runProcess.running = true
     watchdog.restart()
+    if (runProcess.running) { runProcess.write(JSON.stringify(plan[i].args) + "\n"); return }
+    pendingLine = JSON.stringify(plan[i].args) + "\n"  // written once it has started
+    runProcess.command = [host.helperPath(), "bulk", "--project", host.project]
+    runProcess.stdinEnabled = true
+    runProcess.running = true
   }
+  property string pendingLine: ""
   function setResult(i, status, text) {
     var r = results.slice()
     r[i] = Object.assign({}, r[i], { status: status, text: text })
@@ -150,15 +155,10 @@ Rectangle {
     if (out.ok) host.feed.noteOwnMove(host.fetchKey, plan[step].iid)  // no alert for his own change
     if (out.stop) stopping = true
     if (stopping) { finish(); return }
-    advance = true
-    maybeNext()
+    next()
   }
-  // The next card starts once this one's process has ended (a Process
-  // can't be started again while it still runs).
-  property bool advance: false
-  function maybeNext() { if (advance && !runProcess.running && running) { advance = false; next() } }
   function finish() {
-    advance = false
+    runProcess.stdinEnabled = false  // end of input: board-fetch ends after the card it is on
     var r = results.map(function(x) { return x.status === "untried" ? Object.assign({}, x, { text: stopping ? "Not tried: the run stopped." : x.text }) : x })
     results = r
     host.bulkFinished()  // before busy ends, so the queued refresh runs then
@@ -174,8 +174,10 @@ Rectangle {
 
   Process {
     id: runProcess
-    onRunningChanged: if (!running) Qt.callLater(bar.maybeNext)
-    stdout: StdioCollector { waitForEnd: true; onStreamFinished: bar.stepDone(text) }
+    onStarted: { if (bar.pendingLine !== "") write(bar.pendingLine); bar.pendingLine = "" }
+    // Ended without answering the card it was on: that card has no answer.
+    onRunningChanged: if (!running && bar.running) Qt.callLater(function() { if (!runProcess.running && bar.running) bar.stepDone("") })
+    stdout: SplitParser { onRead: function(line) { bar.stepDone(line) } }
   }
   Process {
     id: labelsProcess
