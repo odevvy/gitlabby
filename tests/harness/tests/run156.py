@@ -4,7 +4,6 @@
 # For 200 ms after a fold (root.folding) the column width, the popup width and
 # its height animate 150 ms ease-out together, cards and strip fade in turns,
 # and a board answer waits; board and view switches stay instant.
-# (Stage 1: the save and the popup; the column and fade checks come with BoardView.qml.)
 # Usage: run156.py <src> [outdir]   (outdir: frame PNGs of a fold and an unfold)
 import sys, os, time; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from lib import *
@@ -47,9 +46,10 @@ h.ok("F1 a fold writes nothing at once", writes() == w0, writes() - w0)
 mid = [r for r in fold if sw + 2 < r[1] < cw - 2]
 h.ok("F2 the column width animates (in-between frames)", len(mid) >= 2, [r[1] for r in fold][:12])
 edge = [round(r[2] - r[1]) for r in fold]
-ws = [r[2] for r in fold]
-h.ok("F3 the popup width animates too (in-between frames)", sum(1 for x in ws if min(ws) + 2 < x < max(ws) - 2) >= 2, sorted(set(int(x) for x in ws)))
+h.ok("F3 the popup edge moves with the column (card minus column constant)", max(edge) - min(edge) <= 2, (min(edge), max(edge)))
 h.ok("F4 the fold ends at the strip width within 200 ms", fold[-1][1] == sw and all(r[1] == sw for r in fold if r[0] > 200), [(int(r[0]), r[1]) for r in fold if r[0] > 150][:4])
+h.ok("F5 cards fade first, the strip after: never both half-shown", max(min(r[4], r[5]) for r in fold) < 0.45 and all(r[4] < 0.1 for r in fold if r[0] < 40) and fold[-1][4] == 1 and fold[-1][5] == 0,
+     [(int(r[0]), round(r[4], 2), round(r[5], 2)) for r in fold][:8])
 hs = [r[3] for r in fold]
 h.ok("F6 the height animates too (the tallest column folded)", fold[-1][3] < h0 - 4 and any(fold[-1][3] + 2 < x < h0 - 2 for x in hs), (h0, sorted(set(int(x) for x in hs))))
 h.ok("F7 folding is over after 200 ms", not h.ev("root.folding"))
@@ -57,7 +57,10 @@ h.ok("F7 folding is over after 200 ms", not h.ev("root.folding"))
 h.ev("root.toggleCollapsed('todo')"); unfold = sample("todo", "unfold")
 h.ok("U1 the unfold animates and ends at the column width", any(sw + 2 < r[1] < cw - 2 for r in unfold) and unfold[-1][1] == cw)
 edge = [round(r[2] - r[1]) for r in unfold]
+h.ok("U2 the popup edge moves with the column", max(edge) - min(edge) <= 2, (min(edge), max(edge)))
 early = [r for r in unfold if r[0] < 40]
+h.ok("U3 the strip goes first, the cards come after it", max(min(r[4], r[5]) for r in unfold) < 0.45 and all(r[5] < 0.1 for r in early) and unfold[-1][5] == 1 and unfold[-1][4] == 0,
+     [(int(r[0]), round(r[4], 2), round(r[5], 2)) for r in unfold][:8])
 h.ok("U4 still nothing written", writes() == w0)
 # --- saving ------------------------------------------------------------------------
 h.ev("root.toggleCollapsed('research')"); h.spin(1200); h.ev("root.toggleHidden('review')"); h.spin(1500)
@@ -89,6 +92,7 @@ h.ok("A2 and lands once the fold is over", h.ev("root.columns.length") == n0 + 1
 # --- instant switches ------------------------------------------------------------------
 c = column("approved"); was = c.width(); bw = h.ev("root.boardWidth")
 h.ev("(function(){ var s = {}; s[root.stateKey] = { collapsed: [], hidden: [] }; root.boardStates = s })()"); app.processEvents()
+h.ok("I1 a board switch (states replaced, no fold) resizes columns at once", column("approved").width() == cw and was == sw, (was, column("approved").width()))
 h.ok("I2 and the popup width at once", h.ev("root.shownBoardWidth") == h.ev("root.boardWidth") != bw)
 hh = h.ev("root.shownHeight"); h.ev("root.showView('settings')"); app.processEvents()
 h.ok("I3 a view switch sizes the popup at once", h.ev("root.shownHeight") == h.ev("keyCatcher.implicitHeight") and h.ev("root.shownHeight") != hh)

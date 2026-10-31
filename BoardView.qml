@@ -87,7 +87,8 @@ Item {
           readonly property real contentHeight: isCollapsed ? strip.implicitHeight : cards.implicitHeight + Style.space(12)
           height: Math.max(view.tallest, flick.height)
           clip: true  // while the width animates
-          Behavior on width { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+          // Only during a fold (host.folding), in step with the popup edge.
+          Behavior on width { enabled: view.host.folding; NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
 
           // Glass pane behind the column.
           Rectangle {
@@ -105,7 +106,17 @@ Item {
             anchors.fill: parent
             opacity: column.isCollapsed ? 1 : 0
             visible: opacity > 0
-            Behavior on opacity { NumberAnimation { duration: 140 } }
+            // Staged, so strip and cards never show at once: folding, the strip
+            // fades in over 60-150 ms; unfolding, it fades out over 0-60 ms.
+            Behavior on opacity {
+              id: stripFade
+              enabled: view.host.folding
+              // targetValue, not isCollapsed: that binding may not have updated yet.
+              SequentialAnimation {
+                PauseAnimation { duration: stripFade.targetValue > 0 ? 60 : 0 }
+                NumberAnimation { duration: stripFade.targetValue > 0 ? 90 : 60 }
+              }
+            }
             implicitHeight: stripCount.implicitHeight + stripDot.height + stripName.implicitWidth + Style.space(32)
             BoardText { id: stripCount; objectName: "stripCount"; anchors.horizontalCenter: parent.horizontalCenter; y: Style.space(8); text: Logic.countLabel(column.modelData); color: view.host.dim; font.pixelSize: Style.font.bodySmall }
             Rectangle { id: stripDot; anchors.horizontalCenter: parent.horizontalCenter; y: stripCount.y + stripCount.height + Style.space(6); width: Style.space(6); height: width; radius: width / 2; color: column.tint }
@@ -133,7 +144,16 @@ Item {
             spacing: Style.space(6)
             opacity: column.isCollapsed ? 0 : 1
             visible: opacity > 0
-            Behavior on opacity { NumberAnimation { duration: 140 } }
+            // Folding, the cards fade out over 0-90 ms; unfolding, they fade in
+            // over 60-150 ms, once there is room.
+            Behavior on opacity {
+              id: cardsFade
+              enabled: view.host.folding
+              SequentialAnimation {
+                PauseAnimation { duration: cardsFade.targetValue > 0 ? 60 : 0 }
+                NumberAnimation { duration: 90 }
+              }
+            }
 
             Item {
               width: parent.width
