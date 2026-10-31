@@ -2,12 +2,12 @@
 m-footer-back	MrsView.qml	      + (view.loading && view.entry ? "  \u00b7  refreshing	      + "  j/k move" + (view.loading && view.entry ? "  \u00b7  refreshing	qml
 m-note-dim	MrsView.qml	      elide: Text.ElideRight\n      color: view.host.quiet	      elide: Text.ElideRight\n      color: view.host.dim	qml
 m-note-no-time	MrsView.qml	: view.entry ? "  \u00b7  updated " + view.stamp(view.entry.startedAt) : "")	: "")	qml
-m-note-off-baseline	MrsView.qml	rightMargin: Style.space(12); baseline: heading.baseline }	rightMargin: Style.space(12); top: parent.top }	qml
+m-note-indented	MrsView.qml	anchors { left: parent.left; right: tabs.left;	anchors { left: parent.left; leftMargin: Style.space(40); right: tabs.left;	qml
 m-underline-all	MrsView.qml	            visible: tab.on\n	            visible: true\n	qml
 m-underline-dim	MrsView.qml	            height: 2; radius: 1\n            color: view.host.accent	            height: 2; radius: 1\n            color: view.host.dim	qml
 m-tab-off-dim	MrsView.qml	tabMouse.containsMouse ? view.host.dim : view.host.quiet	tabMouse.containsMouse ? view.host.dim : view.host.dim	qml
 m-tab-on-accent	MrsView.qml	color: tab.on ? view.host.foreground :	color: tab.on ? view.host.accent :	qml
-m-tabs-left	MrsView.qml	anchors { right: close.left; rightMargin: Style.space(12); verticalCenter: parent.verticalCenter }	anchors { left: parent.left; leftMargin: Style.space(140); verticalCenter: parent.verticalCenter }	qml
+m-tabs-left	MrsView.qml	      anchors { right: parent.right; verticalCenter: parent.verticalCenter }\n      spacing: Style.space(14)	      anchors { left: parent.left; leftMargin: Style.space(140); verticalCenter: parent.verticalCenter }\n      spacing: Style.space(14)	qml
 m-count-dim	MrsView.qml	objectName: "mrsCount"; text: String(item.modelData.count || 0); color: view.host.quiet	objectName: "mrsCount"; text: String(item.modelData.count || 0); color: view.host.dim	qml
 m-empty-dim	MrsView.qml	text: item.modelData.text || ""\n            color: view.host.quiet	text: item.modelData.text || ""\n            color: view.host.dim	qml
 m-empty-indent	MrsView.qml	            anchors.verticalCenter: parent.verticalCenter\n            text: item.modelData.text	            leftPadding: Style.space(8)\n            anchors.verticalCenter: parent.verticalCenter\n            text: item.modelData.text	qml
@@ -22,3 +22,5 @@ m-status-dim	MrsView.qml	color: mr.status.color !== "" ? mr.status.color : view.
 m-meta-dim	MrsView.qml	                elide: Text.ElideRight\n                color: view.host.quiet	                elide: Text.ElideRight\n                color: view.host.dim	qml
 m-age-dim	MrsView.qml	text: Logic.age(mr.row.updatedAt); color: view.host.quiet	text: Logic.age(mr.row.updatedAt); color: view.host.dim	qml
 m-tab-no-click	MrsView.qml	onClicked: view.setMode(tab.modelData.mode)	onClicked: {}	qml
+m-heading-back	MrsView.qml	    implicitHeight: tabs.implicitHeight\n	    implicitHeight: tabs.implicitHeight\n    BoardText { x: 300; text: "Merge requests" }\n	qml
+m-close-back	MrsView.qml	    implicitHeight: tabs.implicitHeight\n	    implicitHeight: tabs.implicitHeight\n    GlyphButton { x: 300; host: view.host; glyph: "\uf00d"; onClicked: view.host.back() }\n	qml

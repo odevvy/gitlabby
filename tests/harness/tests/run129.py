@@ -80,7 +80,7 @@ finish()
 # --- the keyboard button (the popup keeps its own width binding) ---------------
 start(FOUR, None)
 kb, rb, gb = h.ev("header.keysButton"), h.ev("header.refreshButton"), h.ev("header.gear")
-x = lambda it: it.mapToScene(QPointF(0, 0)).x()
+x = lambda it: it.mapToScene(QPointF(it.width() / 2, it.height() / 2)).x()  # centres: refresh may be mid-turn
 ok("K1 the keyboard button sits between refresh and the gear", kb.isVisible() and x(rb) < x(kb) < x(gb), [x(rb), x(kb), x(gb)])
 shot("header")
 QTest.mouseMove(h.win, h.scene(kb)); h.spin(900)

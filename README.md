@@ -43,6 +43,12 @@ the picker's board step. The header shows a star on the default board and a
 
 - The title, `group/project / Board ▾`, opens the picker: pick a project (type
   to filter your projects, up to 500, most recently active first), then one of its boards.
+- After the title, the **Board** and **Merge requests** tabs switch between the
+  two views (the current one is underlined; the Merge requests tab shows how many
+  wait on your review). On the right: `Updated`, then the columns (board only),
+  refresh, keyboard and settings buttons. Buttons and tabs are 28-point targets
+  with a faint fill on hover, and every tip names its key. On a narrow board
+  `Updated` shrinks first, then the tab reads `MRs`.
 - Click a column header to collapse it to a narrow strip (count, colour dot,
   name). The columns button in the header (the columns icon left of refresh, with
   a number when columns are hidden) opens a row of chips under the bots: click one to hide or show
@@ -379,7 +385,7 @@ there is one refresh and one notification per event (the plugin's service).
 
 ## Merge requests
 
-The merge-request button in the header (left of the keyboard button), or `m`,
+The **Merge requests** tab in the header (after the title), or `m`,
 shows your open merge requests in two lists, newest change first, up to 10
 each:
 

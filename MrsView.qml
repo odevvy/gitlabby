@@ -10,7 +10,8 @@ import "components"
 // from the shared service (BoardService.requestMrs), asked for when this view
 // opens, its scope changes, or r; never on a timer. m toggles it.
 // Quiet (v152 design A): a faint "read-only" note (with when the lists were
-// read) beside the title, the scope as two text tabs with an accent underline,
+// read) on the left (the header's Merge requests tab names the view, and Esc or the
+// Board tab goes back), the scope as two text tabs with an accent underline,
 // plain counts, a faint fill and a short accent bar on the focused row, the
 // status as coloured text. No footer: the keys live behind the keyboard icon.
 Item {
@@ -61,13 +62,12 @@ Item {
   Item {
     id: top
     width: parent.width
-    implicitHeight: close.implicitHeight
-    BoardText { id: heading; anchors.verticalCenter: parent.verticalCenter; text: "Merge requests"; font { pixelSize: Style.font.bodySmall; bold: true } }
+    implicitHeight: tabs.implicitHeight
     // "read-only", and when the lists were read (or that they are reloading).
     BoardText {
       id: note
       objectName: "mrsNote"
-      anchors { left: heading.right; leftMargin: Style.space(8); right: tabs.left; rightMargin: Style.space(12); baseline: heading.baseline }
+      anchors { left: parent.left; right: tabs.left; rightMargin: Style.space(12); verticalCenter: parent.verticalCenter }
       elide: Text.ElideRight
       color: view.host.quiet
       font.pixelSize: Style.font.caption
@@ -77,7 +77,7 @@ Item {
     // The scope: two text tabs, the current one underlined in the accent.
     Row {
       id: tabs
-      anchors { right: close.left; rightMargin: Style.space(12); verticalCenter: parent.verticalCenter }
+      anchors { right: parent.right; verticalCenter: parent.verticalCenter }
       spacing: Style.space(14)
       Repeater {
         model: [{ mode: "all", label: "All projects" }, { mode: "project", label: "This project" }]
@@ -108,7 +108,6 @@ Item {
         }
       }
     }
-    GlyphButton { id: close; anchors.right: parent.right; host: view.host; glyph: "\uf00d"; tip: "Back to the board (Esc)"; onClicked: view.host.back() }
   }
 
   Flickable {
