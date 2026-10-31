@@ -1,0 +1,13 @@
+# v0.1.57: keyed cards. node rows: tests/logic.test.js; qml rows: tests/harness/tests/run157.py
+k-no-dedupe	logic/board.js	if (!seen[k]) { seen[k] = true; keys.push(k) }	seen[k] = true; keys.push(k)	node
+k-remove-forward	logic/board.js	for (var i = cur.length - 1; i >= 0; i--) if (!seen[cur[i]])	for (var i = 0; i < cur.length; i++) if (!seen[cur[i]])	node
+k-no-move	logic/board.js	else if (at !== j) {	else if (false) {	node
+k-keys-not-strings	logic/board.js	var cur = have.map(String), ops = []	var cur = have.slice(), ops = []	node
+k-insert-at-end	logic/board.js	{ op: "insert", at: j, k: keys[j] }	{ op: "insert", at: cur.length, k: keys[j] }	node
+k-move-dropped	logic/board.js	cur.splice(j, 0, cur.splice(at, 1)[0])	cur.splice(at, 1)	node
+q-columns-unkeyed	BoardView.qml	        model: colModel	        model: view.host.shownColumns	qml
+q-cards-rebuilt	BoardView.qml	            view.syncKeys(cardModel, keys)	            cardModel.clear(); keys.forEach(function(k) { cardModel.append({ k: k }) })	qml
+q-columns-rebuilt	BoardView.qml	onColKeysChanged: syncKeys(colModel, colKeys)	onColKeysChanged: { colModel.clear(); syncKeys(colModel, colKeys) }	qml
+q-card-objects-new	BoardView.qml	next[key] = old && JSON.stringify(old) === JSON.stringify(i) ? old : i	next[key] = i	qml
+q-move-backwards	BoardView.qml	else if (o.op === "move") model.move(o.from, o.to, 1)	else if (o.op === "move") model.move(o.to, o.from, 1)	qml
+q-insert-first	BoardView.qml	else model.insert(o.at, { k: o.k })	else model.insert(0, { k: o.k })	qml

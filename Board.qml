@@ -326,7 +326,8 @@ Panel {
     boardState = String(data.state || "error")
     message = String(data.message || "")
     updatedAt = String(data.updatedAt || "")
-    // Unchanged columns stay the same objects, so no card is rebuilt.
+    // Columns and cards on screen are keyed (BoardView.qml), so a new array
+    // only redraws the cards whose data changed.
     var nextColumns = Array.isArray(data.columns) ? data.columns : []
     if (JSON.stringify(nextColumns) !== JSON.stringify(columns)) columns = nextColumns
     var nextColors = data.labelColors || {}

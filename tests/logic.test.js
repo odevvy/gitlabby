@@ -1027,3 +1027,44 @@ test("IssueView: the label editor and the comments are IssueLabels.qml and Issue
   assert.match(comments, /property alias box: box/)
   assert.match(comments, /owner\.post\(\); event\.accepted = true/)
 })
+
+// v0.1.57: keyed lists. keyOps turns the keys a ListModel holds into the wanted
+// ones with the fewest steps that keep every row that stays.
+function runOps(have, ops) {
+  const cur = have.map(String)
+  for (const o of ops) {
+    if (o.op === "remove") cur.splice(o.at, 1)
+    else if (o.op === "insert") cur.splice(o.at, 0, o.k)
+    else if (o.op === "move") cur.splice(o.to, 0, cur.splice(o.from, 1)[0])
+  }
+  return cur
+}
+test("keyOps: same keys, nothing to do; updates in place stay in place", () => {
+  assert.deepEqual(L.keyOps(["1", "2", "3"], ["1", "2", "3"]), [])
+  assert.deepEqual(L.keyOps([], []), [])
+  assert.deepEqual(L.keyOps([1, 2], ["1", "2"]), [], "numbers and strings are the same key")
+})
+test("keyOps: one card added, removed or moved costs one step", () => {
+  assert.deepEqual(L.keyOps(["1", "2"], ["1", "9", "2"]), [{ op: "insert", at: 1, k: "9" }])
+  assert.deepEqual(L.keyOps(["1", "2", "3"], ["1", "3"]), [{ op: "remove", at: 1 }])
+  assert.deepEqual(L.keyOps(["1", "2", "3"], ["3", "1", "2"]), [{ op: "move", from: 2, to: 0 }])
+  assert.deepEqual(L.keyOps([], ["a", "b"]), [{ op: "insert", at: 0, k: "a" }, { op: "insert", at: 1, k: "b" }])
+  assert.deepEqual(L.keyOps(["a", "b"], []), [{ op: "remove", at: 1 }, { op: "remove", at: 0 }])
+})
+test("keyOps: any change ends at the wanted order, rows that stay are never removed", () => {
+  let seed = 7
+  const rnd = (n) => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed % n }
+  for (let t = 0; t < 300; t++) {
+    const have = [], want = []
+    for (let i = 0; i < rnd(8); i++) { const k = String(rnd(12)); if (!have.includes(k)) have.push(k) }
+    for (let i = 0; i < rnd(8); i++) { const k = String(rnd(12)); if (!want.includes(k)) want.push(k) }
+    const ops = L.keyOps(have, want)
+    assert.deepEqual(runOps(have, ops), want, JSON.stringify([have, want]))
+    const removed = ops.filter((o) => o.op === "remove").length
+    assert.equal(removed, have.filter((k) => !want.includes(k)).length, JSON.stringify([have, want, ops]))
+    assert.equal(ops.filter((o) => o.op === "insert").length, want.filter((k) => !have.includes(k)).length)
+  }
+})
+test("keyOps: a key twice in the wanted list counts once", () => {
+  assert.deepEqual(runOps(["1"], L.keyOps(["1"], ["1", "2", "1"])), ["1", "2"])
+})

@@ -435,6 +435,8 @@ rows are the same.
   fades in (and the other way round), and a refresh that lands meanwhile
   waits for it. Switching boards or views stays instant. Cards lift slightly
   on hover.
+- A refresh redraws only the cards that changed (a new comment count, a card
+  that moved); the rest of the board stays as it is, hover included.
 - Cards in a column named Review (any case) show the pipeline of their merge
   request beside the age: ✓ passed (green), ✕ failed (red), ◉ running (blue),
   a clock for pending (amber), ⊘ canceled (grey). Hovering says which and on
