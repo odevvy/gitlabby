@@ -90,6 +90,10 @@ Panel {
   // A refresh of a board already on screen (button, r or the timer); a saved
   // copy says "updating…" itself.
   readonly property bool refreshing: loading && boardState === "ready" && !cached
+  // Any refresh on its way while the popup is open, manual or automatic: the
+  // board, or the merge-request list on screen. The header bar slides and the
+  // refresh icon spins on it; the cards stay.
+  readonly property bool refreshActive: opened && (loading || (view === "mrs" && mrsView.loading))
   property string boardState: "loading"
   property string message: ""
   property string updatedAt: ""
@@ -657,6 +661,22 @@ Panel {
         host: root
         mrsScope: mrsView.scope
         width: parent.width
+      }
+
+      // Refreshing (refreshActive): a thin bar slides along a faint track under
+      // the header, in the gap already there, so nothing below moves.
+      Item {
+        id: refreshBar
+        objectName: "refreshBar"
+        anchors { top: header.bottom; topMargin: Math.round((root.gap - height) / 2); left: parent.left; right: parent.right }
+        height: Math.max(2, Style.space(2)); clip: true
+        visible: root.refreshActive
+        Rectangle { anchors.fill: parent; radius: height / 2; color: root.faint }
+        Rectangle {
+          id: refreshSlider
+          width: parent.width * 0.28; height: parent.height; radius: height / 2; color: root.accent
+          NumberAnimation on x { running: refreshBar.visible; loops: Animation.Infinite; from: -refreshSlider.width; to: refreshBar.width; duration: 1400; easing.type: Easing.InOutQuad }
+        }
       }
 
       BotsRow {
