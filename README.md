@@ -430,7 +430,11 @@ rows are the same.
 - Cards show the title first, then one quiet line: the issue number, up to
   three assignee avatars (two plus `+N`), the comment count, and the age (`45m`, `3h`, `4d`, `2w`, `6mo`, `1y`). Avatars show initials
   until the image loads from GitLab's `https` URL, or if it doesn't.
-- Columns slide when they collapse, and cards lift slightly on hover.
+- Collapsing or hiding a column animates in 150 ms: the column, the popup's
+  edge and its height move together, the cards fade out before the strip
+  fades in (and the other way round), and a refresh that lands meanwhile
+  waits for it. Switching boards or views stays instant. Cards lift slightly
+  on hover.
 - Cards in a column named Review (any case) show the pipeline of their merge
   request beside the age: ✓ passed (green), ✕ failed (red), ◉ running (blue),
   a clock for pending (amber), ⊘ canceled (grey). Hovering says which and on
@@ -557,7 +561,7 @@ Settings live on the widget's entry in `~/.config/omarchy/shell.json`:
 | `defaultBoardId`, `defaultBoardName` | Default board; empty means the project's first board |
 | `refreshIntervalSec` | Refresh interval in seconds |
 | `defaultCollapsed` | Columns that start collapsed on a board you have not changed yet. Default `["closed","research","open"]`; matched case-insensitively |
-| `boardStates` | Collapsed and hidden columns for each project and board, keyed `project#boardId` |
+| `boardStates` | Collapsed and hidden columns for each project and board, keyed `project#boardId`. Saved when the popup closes, or 2 s after the last fold |
 | `confirmMoves` | Projects whose card moves ask first (see [Ask before moving](#ask-before-moving)). Default `[]` |
 | `bots` | Busy markers per project (see [Who's busy](#whos-busy)). Default `{}`: no row |
 | `settingsRevision` | Set to `2` by v0.1.3 after its one-time update |
