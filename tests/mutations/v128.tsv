@@ -1,0 +1,11 @@
+plus-suffix-dropped	Logic.js	(column.capped ? "+" : "")	("")	node
+plus-always	Logic.js	(column.capped ? "+" : "")	("+")	node
+summary-plain-count	BoardView.qml	label: modelData.name + " " + Logic.countLabel(modelData)	label: modelData.name + " " + (modelData.issues || []).length	qml
+strip-plain-count	BoardView.qml	label: Logic.countLabel(column.modelData); textColor	label: String(column.issues.length); textColor	qml
+header-plain-count	BoardView.qml	label: Logic.countLabel(column.modelData); color: view.host.faint	label: String(column.issues.length); color: view.host.faint	qml
+fetch-no-extra	board-fetch	per_page=$((closed_cap + 1))	per_page=$closed_cap	sh
+capped-at-20	board-fetch	($fetchedClosed | length > $cap) as $capped	($fetchedClosed | length >= $cap) as $capped	sh
+shows-21	board-fetch	$fetchedClosed[:$cap] as $rawClosed	$fetchedClosed as $rawClosed	sh
+no-capped-flag	board-fetch	(if $capped then {capped: true} else {} end)	{}	sh
+form-row-no-wrap	BotsSection.qml	Flow {\n              id: choiceRow	Row {\n              id: choiceRow	qml
+form-flow-no-width	BotsSection.qml	id: choiceRow\n              width: parent.width; spacing	id: choiceRow\n              spacing	qml
