@@ -1,13 +1,13 @@
-closed-counts	Logic.js	if (c.kind !== "label") return	if (c.kind === "open") return	node
-case-sensitive-list	Logic.js	var list = String(c.name).toLowerCase()	var list = String(c.name)	node
-case-sensitive-label	Logic.js	var labels = lowerList(row.labels || [])	var labels = (row.labels || []).map(String)	node
-first-owner-only	Logic.js	var owners = config.bots.filter(function(b) { return b.label }).map(function(b) { return b.label })	var owners = config.bots.filter(function(b) { return b.label }).map(function(b) { return b.label }).slice(0, 1)	node
-noowner-takes-all	Logic.js	: !labels.some(function(l) { return owners.indexOf(l) !== -1 }))	: true)	node
-list-bot-needs-busy	Logic.js	if (bot.list !== undefined ? list !== bot.list : config.busyLists.indexOf(list) === -1) return	if (config.busyLists.indexOf(list) === -1 || (bot.list !== undefined && list !== bot.list)) return	node
-all-working	Logic.js	var working = bot.list !== undefined || config.workingLists.indexOf(list) !== -1	var working = true	node
-no-dedupe	Logic.js	if (!found[row.iid]) {	if (true) {	node
-empty-shows	Logic.js	if (bots.length === 0) return null	if (c.bots.length === 0) return null	node
-any-project	Logic.js	  var e = raw[project]\n	  var e = raw[project] || raw[Object.keys(raw)[0]]\n	node
+closed-counts	logic/bots.js	if (c.kind !== "label") return	if (c.kind === "open") return	node
+case-sensitive-list	logic/bots.js	var list = String(c.name).toLowerCase()	var list = String(c.name)	node
+case-sensitive-label	logic/bots.js	var labels = lowerList(row.labels || [])	var labels = (row.labels || []).map(String)	node
+first-owner-only	logic/bots.js	var owners = config.bots.filter(function(b) { return b.label }).map(function(b) { return b.label })	var owners = config.bots.filter(function(b) { return b.label }).map(function(b) { return b.label }).slice(0, 1)	node
+noowner-takes-all	logic/bots.js	: !labels.some(function(l) { return owners.indexOf(l) !== -1 }))	: true)	node
+list-bot-needs-busy	logic/bots.js	if (bot.list !== undefined ? list !== bot.list : config.busyLists.indexOf(list) === -1) return	if (config.busyLists.indexOf(list) === -1 || (bot.list !== undefined && list !== bot.list)) return	node
+all-working	logic/bots.js	var working = bot.list !== undefined || config.workingLists.indexOf(list) !== -1	var working = true	node
+no-dedupe	logic/bots.js	if (!found[row.iid]) {	if (true) {	node
+empty-shows	logic/bots.js	if (bots.length === 0) return null	if (c.bots.length === 0) return null	node
+any-project	logic/bots.js	  var e = raw[project]\n	  var e = raw[project] || raw[Object.keys(raw)[0]]\n	node
 row-always	Board.qml	root.boardState === "ready" && root.botStates.length > 0	root.boardState === "ready"	qml
 row-every-view	Board.qml	visible: root.view === "board" && root.setup === ""	visible: root.setup === ""	qml
 stale-height	Board.qml	+ (botsRow.visible ? botsRow.height + root.gap : 0) +	+	qml
