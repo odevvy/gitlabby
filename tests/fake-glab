@@ -22,6 +22,11 @@ if [[ -n ${FAKE_HANG:-} && " $* " == *"$FAKE_HANG"* ]]; then  # never answers
   exec sleep 5
 fi
 echo "glpat-FAKEFAKEFAKEFAKEFAKE Authorization: Bearer FAKE" >&2
+# glab config get user --host H: the account glab saved at login (FAKE_USER, default me;
+# FAKE_USER=none: nothing saved).
+if [[ $1 == config && $2 == get && $3 == user ]]; then
+  [[ ${FAKE_USER:-me} == none ]] || printf '%s\n' "${FAKE_USER:-me}"; exit 0
+fi
 # auth status: FAKE_AUTH picks one of glab's real answers (its stderr, exit 1).
 if [[ $1 == auth && $2 == logout ]]; then
   [[ ${FAKE_LOGOUT:-ok} == ok ]] || { echo "could not write config" >&2; exit 1; }
