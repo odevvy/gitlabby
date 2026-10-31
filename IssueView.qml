@@ -67,6 +67,22 @@ Item {
   // The comment box opens only once the issue and its comments have arrived.
   property string notesReadyFor: ""
   readonly property bool loaded: issueReady && notesReadyFor === key
+  // The last 10 issues opened this session (their issue and notes answers),
+  // keyed by project#iid, in memory only: reopening one shows them at once
+  // while both are fetched again. Labels, state and the comment box stay
+  // locked until the fresh answers arrive. Signing out forgets them.
+  property var recent: ({})
+  property var recentOrder: []
+  property bool fromCache: false
+  readonly property bool described: issueReady || fromCache
+  function remember(k, part) {
+    var next = Object.assign({}, recent)
+    next[k] = Object.assign({}, next[k] || {}, part)
+    var order = recentOrder.filter(function(x) { return x !== k }).concat([k])
+    while (order.length > 10) delete next[order.shift()]
+    recent = next; recentOrder = order
+  }
+  Connections { target: view.host; function onSigningOutChanged() { view.recent = ({}); view.recentOrder = [] } }
 
   // Styles for the description, which Logic.markdown turns into Text.RichText HTML.
   readonly property string css: "<style>"
@@ -82,9 +98,22 @@ Item {
     closeEditor()
     confirming = false; stateError = ""
     if (key === "") return
+    var seen = recent[key] || null
     if (key !== shownKey) {  // another issue: drop the last one's thread and draft
       shownKey = key
-      notes = []; more = false; notesError = ""; postError = ""; box.text = ""
+      notes = seen && seen.notes ? seen.notes : []; more = !!(seen && seen.more); notesAt = seen && seen.notesAt ? seen.notesAt : ""
+      notesError = ""; postError = ""; box.text = ""
+    }
+    // Seen before: its description at once; the card's own row (fresher) wins.
+    // Right after this handler: issue feeds key, so not from inside it.
+    fromCache = false
+    if (seen && seen.issue) {
+      var k = key
+      Qt.callLater(function() {
+        if (view.key !== k || view.issueReady) return
+        view.issue = Object.assign({}, seen.issue, view.issue)
+        view.fromCache = true
+      })
     }
     // (Re)opened: lock the box until this visit's issue and notes arrive.
     issueReadyFor = ""; issueError = ""; notesReadyFor = ""
@@ -103,7 +132,7 @@ Item {
     if (issueFor !== key) return  // answer for an issue we already left
     var data = host.parse(raw)
     issueError = data.state === "ready" ? "" : String(data.message || "Request failed.")
-    if (data.state === "ready" && data.issue) issue = data.issue
+    if (data.state === "ready" && data.issue) { issue = data.issue; remember(key, { issue: data.issue }) }
     issueReadyFor = key
   }
 
@@ -121,7 +150,7 @@ Item {
     notesReadyFor = key
     var data = host.parse(raw)
     notesError = data.state === "ready" ? "" : String(data.message || "Could not load comments.")
-    if (data.state === "ready") { notes = data.notes || []; more = !!data.more; notesAt = new Date().toISOString() }
+    if (data.state === "ready") { notes = data.notes || []; more = !!data.more; notesAt = new Date().toISOString(); remember(key, { notes: notes, more: more, notesAt: notesAt }) }
   }
 
   function editLabels() {
@@ -425,8 +454,8 @@ Item {
 
       BoardText {
         width: parent.width; wrapMode: Text.Wrap
-        visible: !view.issueReady || view.issueError !== "" || !view.issue.description
-        text: !view.issueReady ? "Loading…" : (view.issueError || "No description.")
+        visible: !view.described || view.issueError !== "" || !view.issue.description
+        text: !view.described ? "Loading…" : (view.issueError || "No description.")
         color: view.host.dim; font.italic: true
       }
 
@@ -434,7 +463,7 @@ Item {
       Text {
         id: description
         width: parent.width; wrapMode: Text.Wrap
-        visible: view.issueReady && !!view.issue.description
+        visible: view.described && !!view.issue.description
         textFormat: Text.RichText
         text: visible ? view.css + Logic.markdown(view.issue.description, function(t) { return metrics.advanceWidth(t) }, function(px) { return Style.space(px) }) : ""
         color: view.host.foreground
