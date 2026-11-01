@@ -213,29 +213,33 @@ test("the README's Keyboard section lists exactly the keys the popup shows, grou
     if (title) groups.push({ title: title[1], rows: [] })
     else if (/^\| (?!Key |---)/.test(l)) groups[groups.length - 1].rows.push(l.replace(/`/g, ""))
   })
-  assert.deepEqual(groups, L.keyGroups.map(g => ({ title: g.title, rows: g.keys.map(([k, a]) => "| " + k + " | " + a + " |") })))
+  assert.deepEqual(groups, L.keyGroups.map(g => ({ title: g.title, rows: g.keys.map(([k, a]) => "| " + k.replace(/_/g, " ") + " | " + a + " |") })))
 })
 
-test("the key groups: every view's keys, the setup panel's, no key twice in a group", () => {
+test("the key groups: every view's keys, the setup panel's, no key twice in a group, Board's four on the left", () => {
   const group = title => (L.keyGroups.find(g => g.title === title) || { keys: [] }).keys
   const action = (title, key) => (group(title).find(([k]) => k === key) || [])[1] || ""
-  assert.deepEqual(L.keyGroups.map(g => g.title), ["Board", "Confirm a move or a close", "Picked cards", "Anywhere", "Issue", "Merge requests", "Comment box", "Pickers and filters", "Setup panel"])
-  assert.match(action("Setup panel", "Enter or Space"), /main button/)
+  assert.deepEqual(L.keyGroups.map(g => g.title), ["Board", "Picked cards", "Confirm a move or a close", "Setup panel", "Anywhere", "Issue", "Comment box", "Merge requests", "Pickers and filters"])
+  assert.match(action("Setup panel", "Enter / Space"), /main button/)
   assert.match(action("Setup panel", "r"), /Try again/)
-  assert.match(action("Anywhere", "?"), /keyboard button in the header/)
+  assert.match(action("Anywhere", "?"), /shortcuts/)
   for (const k of ["o", "c", "e", "x"]) assert.ok(action("Issue", k), k)
   assert.match(action("Anywhere", "m"), /Merge requests/)
-  for (const k of ["j k or ↓ ↑", "Enter or o", "r"]) assert.ok(action("Merge requests", k), k)
-  assert.match(action("Board", "v"), /bulk action/)
-  for (const k of ["Shift+H or Shift+L", "x", "e", "Enter or Space", "Esc"]) assert.ok(action("Picked cards", k), k)
+  for (const k of ["j_k / ↓_↑", "Enter / o", "r"]) assert.ok(action("Merge requests", k), k)
+  assert.match(action("Board", "v"), /bulk/)
+  assert.match(action("Board", "Shift+H / L"), /asks first/)
+  for (const k of ["Shift+H / L", "x", "e", "Enter / Space", "Esc"]) assert.ok(action("Picked cards", k), k)
   for (const g of L.keyGroups) assert.equal(new Set(g.keys.map(([k]) => k)).size, g.keys.length, g.title)
+  // Every shortcut the popup had before 0.1.62's shorter rows is still listed.
+  assert.equal(L.keyGroups.reduce((n, g) => n + g.keys.length, 0), 33)
 })
 
-test("keycaps: words are caps, or is said, + joins a chord", () => {
-  assert.deepEqual(L.keyParts("Shift+H or Shift+L"), [{ cap: "Shift" }, { text: "+" }, { cap: "H" }, { text: "or" }, { cap: "Shift" }, { text: "+" }, { cap: "L" }])
-  assert.deepEqual(L.keyParts("h j k l"), [{ cap: "h" }, { cap: "j" }, { cap: "k" }, { cap: "l" }])
+test("keycaps: a chord's caps are joined, / splits choices, _ keeps one cap", () => {
+  assert.deepEqual(L.keyParts("Shift+H / L"), [{ cap: "Shift" }, { cap: "H", joined: true }, { text: "/" }, { cap: "L" }])
+  assert.deepEqual(L.keyParts("h_j_k_l / ←_↓_↑_→"), [{ cap: "h j k l" }, { text: "/" }, { cap: "← ↓ ↑ →" }])
   assert.deepEqual(L.keyParts("?"), [{ cap: "?" }])
-  assert.deepEqual(L.keyParts("Ctrl+Enter"), [{ cap: "Ctrl" }, { text: "+" }, { cap: "Enter" }])
+  assert.deepEqual(L.keyParts("Ctrl+Enter"), [{ cap: "Ctrl" }, { cap: "Enter", joined: true }])
+  assert.deepEqual(L.keyParts("Tab / Shift+Tab"), [{ cap: "Tab" }, { text: "/" }, { cap: "Shift" }, { cap: "Tab", joined: true }])
 })
 
 test("label editor: status labels are never editable or offered", () => {
@@ -480,7 +484,7 @@ test("layout: every plugin type a QML file uses resolves from its own folder or 
 
 test("icon buttons: every GlyphButton, header button and tab has a tip, and every key in a tip's brackets is a real key", () => {
   const fs = require("node:fs"), path = require("node:path"), dir = path.join(__dirname, "..")
-  const keys = new Set(L.keyGroups.flatMap(g => g.keys.flatMap(([k]) => k.split(" or "))))
+  const keys = new Set(L.keyGroups.flatMap(g => g.keys.flatMap(([k]) => k.split(" / "))))
   const tips = []
   for (const f of qmlFiles().filter(f => path.basename(f) !== "GlyphButton.qml")) {
     const src = fs.readFileSync(path.join(dir, f), "utf8")

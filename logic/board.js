@@ -62,63 +62,65 @@ function cursorAt(lanes, col, row) {
   var r = Math.max(0, Math.min(row, lanes[col].length - 1))
   return { col: col, row: r, iid: lanes[col][r] }
 }
-// The popup's keys, shown by ? and listed in the README's Keyboard section.
-// The popup's keys, by where they work (KeysView, and the README's Keyboard
-// section, which tests/logic.test.js holds to this list). In a key, spaces
-// separate keys, "or" separates choices, and + joins a chord.
+// The popup's keys, by where they work (KeysView, two columns: the first four
+// groups on the left), and the README's Keyboard section, which
+// tests/logic.test.js holds to this list. A key: " / " separates choices, +
+// joins a chord, _ is a space inside one cap ("h_j_k_l" is one cap). An
+// action: what it does, then after " · " a quiet note. Each fits one line.
 var keyGroups = [
   { title: "Board", keys: [
-    ["h j k l or ← ↓ ↑ →", "Move between cards"],
-    ["Enter or Space", "Open the selected issue"],
-    ["o", "Open the selected issue in the browser"],
-    ["Shift+H or Shift+L", "Move the selected card to the column on the left or right, after a confirm"],
-    ["v", "Pick the selected card for a bulk action (Ctrl+click picks with the mouse)"],
-    ["r", "Refresh the board"]] },
-  { title: "Confirm a move or a close", keys: [
-    ["Enter or Space", "Yes"],
-    ["Esc", "Cancel"]] },
+    ["h_j_k_l / ←_↓_↑_→", "Move between cards"],
+    ["Enter / Space", "Open the issue"],
+    ["o", "Open in the browser"],
+    ["Shift+H / L", "Move left / right · asks first"],
+    ["v", "Pick for bulk · or Ctrl+click"],
+    ["r", "Refresh"]] },
   { title: "Picked cards", keys: [
-    ["Shift+H or Shift+L", "Move them to the column on the left or right"],
-    ["x", "Close them, or reopen them when all are closed"],
-    ["e", "Add a label to them"],
-    ["Enter or Space", "Confirm the action shown (the same key again works too)"],
-    ["Esc", "Back one step; while it runs, stop after the current card; else clear the picks"]] },
+    ["Shift+H / L", "Move them left / right"],
+    ["x", "Close, or reopen if all closed"],
+    ["e", "Add a label"],
+    ["Enter / Space", "Run the action shown · or its key"],
+    ["Esc", "Step back or stop · else unpick"]] },
+  { title: "Confirm a move or a close", keys: [
+    ["Enter / Space", "Yes"],
+    ["Esc", "Cancel"]] },
+  { title: "Setup panel", keys: [
+    ["Enter / Space", "Its main button"],
+    ["r", "Try again"]] },
   { title: "Anywhere", keys: [
-    ["p", "Choose a project and board"],
+    ["p", "Project and board"],
     ["s", "Settings"],
-    ["m", "Merge requests waiting on your review, and yours"],
-    ["?", "These shortcuts (or the keyboard button in the header)"],
-    ["Tab or Shift+Tab", "Next or previous bar panel"],
-    ["Esc", "Back to the board; on the board, close"]] },
+    ["m", "Merge requests"],
+    ["?", "These shortcuts"],
+    ["Tab / Shift+Tab", "Next / previous bar panel"],
+    ["Esc", "Back to the board, then close"]] },
   { title: "Issue", keys: [
-    ["o", "Open the issue in the browser"],
+    ["o", "Open in the browser"],
     ["c", "Write a comment"],
     ["e", "Edit labels"],
-    ["x", "Close the issue, after a confirm, or reopen it"]] },
-  { title: "Merge requests", keys: [
-    ["j k or ↓ ↑", "Move between merge requests"],
-    ["Enter or o", "Open the selected one in the browser"],
-    ["r", "Refresh the lists"]] },
+    ["x", "Close or reopen · asks first"]] },
   { title: "Comment box", keys: [
-    ["Ctrl+Enter", "Post the comment"],
+    ["Ctrl+Enter", "Post"],
     ["Esc", "Leave the box"]] },
+  { title: "Merge requests", keys: [
+    ["j_k / ↓_↑", "Move between them"],
+    ["Enter / o", "Open in the browser"],
+    ["r", "Refresh the lists"]] },
   { title: "Pickers and filters", keys: [
-    ["↑ ↓", "Move in the list (j and k too, once you're choosing a board)"],
-    ["Enter", "Pick the selected row, or the first match"],
-    ["Esc", "Close the picker, the label editor or the new-bot form"]] },
-  { title: "Setup panel", keys: [
-    ["Enter or Space", "Its main button"],
-    ["r", "Try again"]] }
+    ["↑_↓", "Move up / down · j k for boards"],
+    ["Enter", "Pick the row or first match"],
+    ["Esc", "Close the picker or form"]] }
 ]
-// A key as keycaps and the words between them: "Shift+H or L" ->
-// [{cap:"Shift"},{text:"+"},{cap:"H"},{text:"or"},{cap:"L"}].
+// A key as caps and the quiet "/" between choices: "Shift+H / L" ->
+// [{cap:"Shift"},{cap:"H",joined:true},{text:"/"},{cap:"L"}] (joined: drawn
+// tight against the cap before it, a chord); "h_j_k_l" -> [{cap:"h j k l"}].
 function keyParts(key) {
   var out = []
   String(key).split(" ").forEach(function(word) {
     if (word === "") return
-    if (word === "or") { out.push({ text: "or" }); return }
+    if (word === "/") { out.push({ text: "/" }); return }
     var parts = word.length > 1 ? word.split("+") : [word]
-    parts.forEach(function(p, i) { if (i > 0) out.push({ text: "+" }); out.push({ cap: p }) })
+    parts.forEach(function(p, i) { out.push(i > 0 ? { cap: p.replace(/_/g, " "), joined: true } : { cap: p.replace(/_/g, " ") }) })
   })
   return out
 }

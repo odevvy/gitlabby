@@ -1,0 +1,6 @@
+# v0.1.62: shortcuts screen like Settings. node rows: tests/logic.test.js
+kp-chord-loose	logic/board.js	{ cap: p.replace(/_/g, " "), joined: true }	{ cap: p.replace(/_/g, " ") }	node
+kp-underscore-kept	logic/board.js	: { cap: p.replace(/_/g, " ") })	: { cap: p })	node
+kp-slash-as-cap	logic/board.js	if (word === "/") { out.push({ text: "/" }); return }	if (false) return	node
+kg-row-dropped	logic/board.js	["s", "Settings"],\n    ["m",	["m",	node
+kg-board-right	logic/board.js	  { title: "Setup panel", keys: [\n    ["Enter / Space", "Its main button"],\n    ["r", "Try again"]] },\n  { title: "Anywhere"	  { title: "Anywhere"	node

@@ -477,89 +477,86 @@ Omarchy's own `SUPER + CTRL + 1`…`9` also open the right section's bar panels 
 position. In the popup the keyboard cursor shows after the first move.
 
 The keyboard button in the header (between refresh and the gear), or `?`,
-shows these in the popup.
+shows these in the popup, laid out like Settings: each group in a soft card,
+each shortcut on one line, with a quiet note after some (`asks first`).
 
 **Board**
 
 | Key | Action |
 | --- | --- |
-| `h` `j` `k` `l` or `←` `↓` `↑` `→` | Move between cards |
-| `Enter` or `Space` | Open the selected issue |
-| `o` | Open the selected issue in the browser |
-| `Shift+H` or `Shift+L` | Move the selected card to the column on the left or right, after a confirm |
-| `v` | Pick the selected card for a bulk action (Ctrl+click picks with the mouse) |
-| `r` | Refresh the board |
-
-**Confirm a move or a close**
-
-| Key | Action |
-| --- | --- |
-| `Enter` or `Space` | Yes |
-| `Esc` | Cancel |
+| `h j k l` / `← ↓ ↑ →` | Move between cards |
+| `Enter` / `Space` | Open the issue |
+| `o` | Open in the browser |
+| `Shift+H` / `L` | Move left / right · asks first |
+| `v` | Pick for bulk · or Ctrl+click |
+| `r` | Refresh |
 
 **Picked cards**
 
 | Key | Action |
 | --- | --- |
-| `Shift+H` or `Shift+L` | Move them to the column on the left or right |
-| `x` | Close them, or reopen them when all are closed |
-| `e` | Add a label to them |
-| `Enter` or `Space` | Confirm the action shown (the same key again works too) |
-| `Esc` | Back one step; while it runs, stop after the current card; else clear the picks |
+| `Shift+H` / `L` | Move them left / right |
+| `x` | Close, or reopen if all closed |
+| `e` | Add a label |
+| `Enter` / `Space` | Run the action shown · or its key |
+| `Esc` | Step back or stop · else unpick |
 
-**Anywhere**
-
-| Key | Action |
-| --- | --- |
-| `p` | Choose a project and board |
-| `s` | Settings |
-| `m` | Merge requests waiting on your review, and yours |
-| `?` | These shortcuts (or the keyboard button in the header) |
-| `Tab` or `Shift+Tab` | Next or previous bar panel |
-| `Esc` | Back to the board; on the board, close |
-
-**Issue**
+**Confirm a move or a close**
 
 | Key | Action |
 | --- | --- |
-| `o` | Open the issue in the browser |
-| `c` | Write a comment |
-| `e` | Edit labels |
-| `x` | Close the issue, after a confirm, or reopen it |
-
-**Merge requests**
-
-| Key | Action |
-| --- | --- |
-| `j` `k` or `↓` `↑` | Move between merge requests |
-| `Enter` or `o` | Open the selected one in the browser |
-| `r` | Refresh the lists |
-
-**Comment box**
-
-| Key | Action |
-| --- | --- |
-| `Ctrl+Enter` | Post the comment |
-| `Esc` | Leave the box |
-
-**Pickers and filters**
-
-| Key | Action |
-| --- | --- |
-| `↑` `↓` | Move in the list (j and k too, once you're choosing a board) |
-| `Enter` | Pick the selected row, or the first match |
-| `Esc` | Close the picker, the label editor or the new-bot form |
+| `Enter` / `Space` | Yes |
+| `Esc` | Cancel |
 
 **Setup panel**
 
 | Key | Action |
 | --- | --- |
-| `Enter` or `Space` | Its main button |
+| `Enter` / `Space` | Its main button |
 | `r` | Try again |
 
-Letters go to the comment box, the label filter or the picker's filter while
-you type in them. While the label editor waits for the labels, letters do
-nothing.
+**Anywhere**
+
+| Key | Action |
+| --- | --- |
+| `p` | Project and board |
+| `s` | Settings |
+| `m` | Merge requests |
+| `?` | These shortcuts |
+| `Tab` / `Shift+Tab` | Next / previous bar panel |
+| `Esc` | Back to the board, then close |
+
+**Issue**
+
+| Key | Action |
+| --- | --- |
+| `o` | Open in the browser |
+| `c` | Write a comment |
+| `e` | Edit labels |
+| `x` | Close or reopen · asks first |
+
+**Comment box**
+
+| Key | Action |
+| --- | --- |
+| `Ctrl+Enter` | Post |
+| `Esc` | Leave the box |
+
+**Merge requests**
+
+| Key | Action |
+| --- | --- |
+| `j k` / `↓ ↑` | Move between them |
+| `Enter` / `o` | Open in the browser |
+| `r` | Refresh the lists |
+
+**Pickers and filters**
+
+| Key | Action |
+| --- | --- |
+| `↑ ↓` | Move up / down · j k for boards |
+| `Enter` | Pick the row or first match |
+| `Esc` | Close the picker or form |
 
 ## Saved state
 
