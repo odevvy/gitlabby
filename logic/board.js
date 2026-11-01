@@ -164,11 +164,6 @@ function durationText(sec) {
   var m = Math.floor(sec / 60), r = sec % 60
   return r === 0 ? m + " min" : m + " min " + r + " s"
 }
-// The popup's height cap for a view. Settings and Keys are short, fixed lists:
-// no cap, so they grow to the free screen height Omarchy's panel allows and
-// scroll only past it. The board and an issue keep the cap (long columns or
-// descriptions would otherwise make the popup jump to full height).
-function heightCap(view, cap) { return view === "settings" || view === "keys" ? 0 : cap }
 // Keyed lists (BoardView.qml): the steps that turn the keys a ListModel holds
 // (have) into the wanted ones (want), keeping every row that stays, so its
 // delegate is updated in place instead of rebuilt. Steps, applied in order:
@@ -187,4 +182,4 @@ function keyOps(have, want) {
   return ops
 }
 
-if (typeof module !== "undefined") module.exports = { pipelineMarks: pipelineMarks, pipelineMark: pipelineMark, columnKey: columnKey, listSpec: listSpec, movedColumns: movedColumns, cursorMove: cursorMove, cursorFix: cursorFix, cursorAt: cursorAt, keyGroups: keyGroups, keyParts: keyParts, boardSig: boardSig, boardActive: boardActive, nextPace: nextPace, paceFloorSec: paceFloorSec, adaptiveInterval: adaptiveInterval, durationText: durationText, heightCap: heightCap, keyOps: keyOps }
+if (typeof module !== "undefined") module.exports = { pipelineMarks: pipelineMarks, pipelineMark: pipelineMark, columnKey: columnKey, listSpec: listSpec, movedColumns: movedColumns, cursorMove: cursorMove, cursorFix: cursorFix, cursorAt: cursorAt, keyGroups: keyGroups, keyParts: keyParts, boardSig: boardSig, boardActive: boardActive, nextPace: nextPace, paceFloorSec: paceFloorSec, adaptiveInterval: adaptiveInterval, durationText: durationText, keyOps: keyOps }
