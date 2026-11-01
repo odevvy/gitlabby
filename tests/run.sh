@@ -1090,6 +1090,50 @@ check "AC refused: error, no level" '.state == "error" and (.level | not)' "$("$
 check "AC needs a project" '.state == "error" and (.message | test("No project"))' "$("$fetch" access)"
 check "AC signed out" '.state == "logged-out"' "$(FAKE_AUTH=no "$fetch" access --project group/app)"
 
+# --- S: another GitLab server (--hostname, v0.1.65) -----------------------------
+# Every glab call goes to the server given, as a bare name; anything else is
+# refused before glab runs. Its saved boards are its own; gitlab.com's names stay.
+reset
+H=gitlab.example.com
+fx boards <<<'[{"id":7,"name":"Dev","lists":[{"id":11,"position":0,"label":{"name":"todo"}}]}]'
+fx open <<<'[{"iid":1,"title":"a","state":"opened","labels":["todo"],"web_url":"https://gitlab.example.com/group/app/-/issues/1"}]'
+fx closed <<<'[]'
+fx issue <<<'{"iid":45,"title":"t","state":"opened","labels":[],"description":"","author":{"username":"me"}}'
+fx user <<<'{"username":"dev1"}'
+fx project <<<'{"id":5,"permissions":{"project_access":{"access_level":30},"group_access":null}}'
+fx mrs-review <<<'[]'; fx mrs-mine <<<'[]'
+fx labels <<<'[{"name":"ux"}]'
+rm -rf "$XDG_CACHE_HOME"; : >"$FAKE_LOG"
+s_out=$("$fetch" --project group/app --board 7 --hostname $H)
+check "S board from the other server" '.state == "ready" and .project == "group/app"' "$s_out"
+"$fetch" issue --project a/b --iid 45 --hostname $H >/dev/null; "$fetch" whoami --hostname $H >/dev/null
+"$fetch" mrs --hostname $H >/dev/null; "$fetch" access --project group/app --hostname $H >/dev/null
+"$fetch" labels --project group/app --hostname $H >/dev/null; "$fetch" projects --hostname $H >/dev/null
+"$fetch" cached --project group/app --board 7 --hostname $H >/dev/null
+FAKE_AUTH=no "$fetch" --project group/app --board 7 --hostname $H >/dev/null
+fx board <<<'{"id":7,"name":"Dev","lists":[{"id":11,"label":{"name":"todo"}},{"id":12,"label":{"name":"approved"}}]}'
+at opened '["todo"]'; fx put <<<'{"iid":3,"state":"opened","labels":["approved"]}'; fx post <<<'{"id":1}'
+mv_ --from 11 --to 12 --hostname $H >/dev/null; echo hi | say --hostname $H >/dev/null
+check "S writes go there too" '.' "$(grep -q "^api --hostname $H --method PUT " "$FAKE_LOG" && grep -q "^api --hostname $H --method POST " "$FAKE_LOG" && echo true || echo false)"
+check "S every glab call names the server, and only that one" '.' "$(grep -Eq '^(api|auth|config) ' "$FAKE_LOG" && ! grep -E '^(api|auth|config) ' "$FAKE_LOG" | grep -v -e "--hostname $H " -e "--host $H\$" -e "--hostname $H\$" | grep -q . && echo true || echo false)"
+check "S GraphQL too" '.' "$(grep -q "^api --hostname $H graphql " "$FAKE_LOG" && echo true || echo false)"
+check "S the sign-in check and the account lookup too" '.' "$(grep -q "^auth status --hostname $H\$" "$FAKE_LOG" && grep -q "^config get user --host $H\$" "$FAKE_LOG" && echo true || echo false)"
+check "S signed out: the login command names the server" '.state == "logged-out" and (.message | endswith("glab auth login --hostname gitlab.example.com"))' "$(FAKE_AUTH=no "$fetch" --project group/app --board 7 --hostname $H)"
+check "S gitlab.com's login hint is as before" '.message | endswith("Run: glab auth login")' "$(FAKE_AUTH=no "$fetch" --project group/app --board 7)"
+check "S saved board: its own file, the server's name first" '.' "$([[ -f $XDG_CACHE_HOME/odevvy.gitlab-board/gitlab.example.com~group%2Fapp-7@me.json ]] && echo true || echo false)"
+check "S gitlab.com doesn't see it" '. == {"state":"none"}' "$("$fetch" cached --project group/app --board 7)"
+check "S the server reads it back" '.cached == true and .project == "group/app"' "$("$fetch" cached --project group/app --board 7 --hostname $H)"
+"$fetch" --project group/app --board 7 >/dev/null
+check "S gitlab.com's file keeps its old name" '.' "$([[ -f $XDG_CACHE_HOME/odevvy.gitlab-board/group%2Fapp-7@me.json ]] && echo true || echo false)"
+check "S another server doesn't see gitlab.com's" '. == {"state":"none"}' "$("$fetch" cached --project group/app --board 7 --hostname other.example.org)"
+for bad in "https://$H" "$H/gitlab" "$H:8443" "http://$H" "-$H" "$H." "a..b" "" "a b" "$H/../x" "$(printf 'x%.0s' {1..254})"; do
+  : >"$FAKE_LOG"; out=$("$fetch" --project group/app --hostname "$bad")
+  check "S refused before glab runs: '${bad:0:40}'" '.state == "error" and (.message | test("Invalid GitLab server"))' "$out"
+  check "S (no glab call for '${bad:0:40}')" '.' "$([[ ! -s $FAKE_LOG ]] && echo true || echo false)"
+done
+check "S an IP address is a name too" '.state == "ready"' "$("$fetch" --project group/app --board 7 --hostname 10.0.0.5)"
+check "S one label is a name too (localhost)" '.state == "ready"' "$("$fetch" --project group/app --board 7 --hostname localhost)"
+
 # --- safety: no token in any output --------------------------------------------
 fx board <<<'{"id":7,"name":"Dev","lists":[{"id":11,"label":{"name":"todo"}},{"id":12,"label":{"name":"approved"}}]}'
 fx put <<<'{"iid":3,"state":"opened","labels":["approved"]}'

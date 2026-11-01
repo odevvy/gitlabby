@@ -1,0 +1,9 @@
+host-port-allowed	board-fetch	[A-Za-z0-9])?)*$ && ${#hostname}	[A-Za-z0-9])?)*(:[0-9]+)?$ && ${#hostname}	sh
+host-path-allowed	board-fetch	[A-Za-z0-9])?)*$ && ${#hostname}	[A-Za-z0-9])?)*(/.*)?$ && ${#hostname}	sh
+host-no-length-cap	board-fetch	 && ${#hostname} -le 253 ]]	 ]]	sh
+host-cache-shared	board-fetch	host_tag="$hostname~"	true	sh
+host-cache-tag-on-gitlab	board-fetch	[[ $hostname == gitlab.com ]] || host_tag=	[[ $hostname == nothing ]] || host_tag=	sh
+host-hint-missing	board-fetch	glab auth login${host_tag:+ --hostname $hostname}	glab auth login	sh
+host-hint-always	board-fetch	glab auth login${host_tag:+ --hostname $hostname}	glab auth login --hostname $hostname	sh
+host-graphql-default	board-fetch	bounded api --hostname "$hostname" graphql	bounded api --hostname gitlab.com graphql	sh
+host-post-default	board-fetch	bounded api --hostname "$hostname" --method POST	bounded api --hostname gitlab.com --method POST	sh
