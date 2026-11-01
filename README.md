@@ -92,16 +92,18 @@ an `in progress` (or `doing`) column it never slows past your setting.
 Pointing at `Updated 14:05` says the current pace and why, e.g.
 `Refreshes every 30 s while open · cards moved recently`. Refresh, `r` and a
 right-click always fetch at once.
-While any refresh runs (yours or the timer's, or the merge-request list
-loading in its view), a thin bar slides along under the header and the
-refresh icon spins, in every view; the header says `Refreshing…` (instead
-of `Updated 14:05`) and the board stays usable. A refresh
+While a refresh runs, a small dot breathes before `Updated 14:05` in the
+header and the board stays usable, in every view. The dot is grey for the
+timer's refresh in the background and orange for one you asked for (Refresh,
+`r`, a right-click, or the merge-request list loading in its view); only
+then does the refresh icon spin too. The first load shows the skeleton
+board and the spinning icon. A refresh
 that comes due while you hold a card waits until you let go.
 
 With several monitors, every bar has its own copy of the widget, but they
 share one refresh (the plugin's service, `BoardService.qml`, which the shell
 loads once). A board is fetched at most once at a time for the whole shell:
-every screen showing it says `Refreshing…` and gets the same answer. Opening
+every screen showing it shows the dot and gets the same answer. Opening
 the popup or the timer reuses the last answer when that board was fetched
 less than an interval ago on any screen; Refresh, `r` and a right-click
 always fetch, unless a fetch of that board is already running, which they

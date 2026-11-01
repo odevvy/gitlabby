@@ -199,6 +199,22 @@ Item {
     }
     IconTip { host: header.host; shown: statusMouse.containsMouse; text: host.cadenceText() }
   }
+  // While any refresh runs with the popup open, a small dot before the status
+  // breathes: grey for the timer's, accent for one you asked for. Nothing else
+  // moves, and the status keeps saying when the board was updated.
+  Rectangle {
+    id: refreshDot
+    objectName: "refreshDot"
+    visible: host.refreshActive && status.text !== ""
+    anchors { right: status.right; rightMargin: status.paintedWidth + Style.space(8); verticalCenter: status.verticalCenter }
+    width: Style.space(6); height: width; radius: width / 2
+    color: host.loudRefresh ? host.accent : host.quiet
+    SequentialAnimation on opacity {
+      running: refreshDot.visible; loops: Animation.Infinite
+      NumberAnimation { from: 0.25; to: 1; duration: 700; easing.type: Easing.InOutSine }
+      NumberAnimation { from: 1; to: 0.25; duration: 700; easing.type: Easing.InOutSine }
+    }
+  }
   // Show or hide columns: opens the column row under the bots (board only).
   // Shows how many are hidden, so a hidden column is never forgotten.
   HeadButton {
@@ -216,10 +232,11 @@ Item {
     anchors { right: keysButton.left; rightMargin: Style.space(4); verticalCenter: parent.verticalCenter }
     text: "\uf021"
     tip: "Refresh (r)"
-    // Spins while any refresh runs with the popup open (host.refreshActive:
-    // the board, or the MR list on screen), as Omarchy's Ui/Button.qml spins
-    // its icon, and finishes the turn it is on, so it always stops upright.
-    RotationAnimation on rotation { running: host.refreshActive; alwaysRunToEnd: true; loops: Animation.Infinite; from: 0; to: 360; duration: 900 }
+    // Spins while a refresh you asked for runs with the popup open
+    // (host.loudRefresh: Refresh, r, the first load, or the MR list on
+    // screen), as Omarchy's Ui/Button.qml spins its icon, and finishes the
+    // turn it is on, so it always stops upright. The timer's doesn't spin it.
+    RotationAnimation on rotation { running: host.loudRefresh; alwaysRunToEnd: true; loops: Animation.Infinite; from: 0; to: 360; duration: 900 }
     onClicked: host.refresh()
   }
   // The keyboard shortcuts (KeysView), like ? does.

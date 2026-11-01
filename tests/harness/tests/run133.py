@@ -2,7 +2,7 @@
 # in each, like Omarchy's bar per screen) share one BoardService, handed over the
 # way Omarchy does it (bar.shell.serviceFor(moduleName), PluginShellApi.qml).
 # Proves: one board-fetch per interval and per manual refresh for both, both show
-# the same answer, "Refreshing…" on both while it runs, moves and sign out still
+# the same answer, both refreshing (a dot; "Refreshing…" before v0.1.63) while it runs, moves and sign out still
 # right, different boards kept apart; without serviceFor a Board uses its own.
 # Usage: run133.py <src> [outdir]   (previews: two-screens-refreshing, two-screens-updated)
 import sys, os, json, copy, shutil, tempfile; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -98,7 +98,7 @@ ok("I1 both timers tick within the interval: no fetch", tickets() == 1 and not r
 age()
 ev("a", "refreshTimer.triggered()"); spin(40); ev("b", "refreshTimer.triggered()"); spin(60)
 ok("I2 an interval later both tick: one board-fetch", tickets() == 2 and len(running()) == 1, (tickets(), running()))
-ok("I3 'Refreshing…' on both screens while it runs", status("a") == "Refreshing…" and status("b") == "Refreshing…", (status("a"), status("b")))
+ok("I3 'Updated' stays on both screens while it runs (v0.1.63: the dot says it)", status("a").startswith("Updated ") and status("a") == status("b") and ev("a", "root.refreshing") and ev("b", "root.refreshing"), (status("a"), status("b")))
 ok("I4 refresh icon spins on both", ev("a", "root.loading") and ev("b", "root.loading"))
 shot("two-screens-refreshing")
 answer(B2)
@@ -110,7 +110,7 @@ ok("R1 Refresh on screen 2 fetches although the last one is fresh", tickets() ==
 ev("a", "root.refresh()"); spin(40)
 QTest.keyClick(wins["w1"], Qt.Key_R, Qt.NoModifier); spin(40)
 ok("R2 Refresh and r on screen 1 meanwhile join it: still one", tickets() == 3 and len(running()) == 1, (tickets(), running()))
-ok("R3 'Refreshing…' on both", status("a") == "Refreshing…" and status("b") == "Refreshing…")
+ok("R3 refreshing on both, 'Updated' stays", ev("a", "root.refreshing") and ev("b", "root.refreshing") and status("a").startswith("Updated ") and status("a") == status("b"))
 answer(B1); ok("R4 both done, same board", iids("a") == iids("b") and status("a") == status("b") and not ev("a", "root.loading") and not ev("b", "root.loading"))
 # --- a move on screen 1 ------------------------------------------------------------
 ev("a", "root.moveIssue(root.columns[1].issues[0], root.columns[1], root.columns[2])"); spin(60)
@@ -119,7 +119,7 @@ ev("b", "root.refresh()"); spin(40)
 ok("M2 screen 2 refreshes meanwhile: one fetch", tickets() == 4)
 moved = copy.deepcopy(B1); moved["columns"][2]["issues"] = moved["columns"][1]["issues"]; moved["columns"][1]["issues"] = []
 answer_proc("a", "move", {"state": "ready", "message": "Moved #2 to review."}); spin(120)
-ok("M3 move done while that fetch (started before the write) is out: screen 1 shows Refreshing…, no second fetch yet", tickets() == 4 and status("a") == "Refreshing…", (tickets(), status("a")))
+ok("M3 move done while that fetch (started before the write) is out: screen 1 is refreshing, no second fetch yet", tickets() == 4 and ev("a", "root.refreshing") and status("a").startswith("Updated "), (tickets(), status("a")))
 ev("a", "root.refresh()"); spin(40)
 ok("M3 Refresh on screen 1 now doesn't join that older fetch: a newer one waits", tickets() == 4 and ev("a", "root.feed.queue.length") == 1, (tickets(), ev("a", "root.feed.queue.length")))
 answer(B1); spin(60)

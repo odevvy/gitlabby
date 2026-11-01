@@ -99,6 +99,12 @@ Panel {
   // board, or the merge-request list on screen. The header bar slides and the
   // refresh icon spins on it; the cards stay.
   readonly property bool refreshActive: opened && (loading || (view === "mrs" && mrsView.loading))
+  // A refresh you asked for (Refresh, r, a click on the icon), not the timer's
+  // or the one opening the popup runs: set by each refresh(). It, the first
+  // load and the merge-request list loading are "loud": the icon spins and
+  // the status dot is accent. A background refresh only breathes the dot, grey.
+  property bool manualRefresh: false
+  readonly property bool loudRefresh: refreshActive && ((loading && (manualRefresh || boardState !== "ready")) || (view === "mrs" && mrsView.loading))
   property string boardState: "loading"
   property string message: ""
   property string updatedAt: ""
@@ -295,6 +301,9 @@ Panel {
     if (project === "") { boardState = "loading"; runAux("projects", []); return }
     readCache()
     if (held) { refreshQueued = true; return }
+    // A refresh you asked for stays loud until its answer, even if the
+    // popup opening (or the timer) joins it meanwhile.
+    manualRefresh = ifDue !== true || (manualRefresh && loading)
     var last = feed.request(project, boardId, ifDue === true, cadence.sec * 1000 - 2000, moveFloor)
     if (last) apply(last.raw, false, last.ticket)
   }
@@ -568,8 +577,9 @@ Panel {
   function statusText() {
     if (moveError !== "") return moveError
     if (move) return "Moving #" + move.iid + "…"
-    if (refreshing) return message !== "" ? message + "  Refreshing…" : "Refreshing…"
-    if (boardState === "ready" && refreshError !== "")
+    // While a refresh runs the status keeps its time (the dot before it says
+    // a refresh is on), and a last failure gives way to it.
+    if (boardState === "ready" && refreshError !== "" && !refreshing)
       return "Couldn't refresh · showing " + (updatedAt !== "" ? new Date(updatedAt).toLocaleTimeString(Qt.locale(), "HH:mm") : "the last board")
     if (boardState === "ready" && cached) return Logic.savedNote(updatedAt)
     if (boardState === "ready") {
@@ -699,22 +709,6 @@ Panel {
         host: root
         mrsScope: mrsView.scope
         width: parent.width
-      }
-
-      // Refreshing (refreshActive): a thin bar slides along a faint track under
-      // the header, in the gap already there, so nothing below moves.
-      Item {
-        id: refreshBar
-        objectName: "refreshBar"
-        anchors { top: header.bottom; topMargin: Math.round((root.gap - height) / 2); left: parent.left; right: parent.right }
-        height: Math.max(2, Style.space(2)); clip: true
-        visible: root.refreshActive
-        Rectangle { anchors.fill: parent; radius: height / 2; color: root.faint }
-        Rectangle {
-          id: refreshSlider
-          width: parent.width * 0.28; height: parent.height; radius: height / 2; color: root.accent
-          NumberAnimation on x { running: refreshBar.visible; loops: Animation.Infinite; from: -refreshSlider.width; to: refreshBar.width; duration: 1400; easing.type: Easing.InOutQuad }
-        }
       }
 
       BotsRow {

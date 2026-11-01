@@ -1,10 +1,14 @@
-# v0.1.50 refresh bar; qml rows: tests/harness/tests/run150.py
+# v0.1.50 a refresh shows (v0.1.63: a breathing dot instead of the bar); qml rows: tests/harness/tests/run150.py
 active-no-mrs	Board.qml	opened && (loading || (view === "mrs" && mrsView.loading))	opened && loading	qml
 active-closed-too	Board.qml	refreshActive: opened && (	refreshActive: (	qml
-bar-always	Board.qml	        visible: root.refreshActive	        visible: true	qml
-bar-over-header	Board.qml	anchors { top: header.bottom; topMargin: Math.round((root.gap - height) / 2)	anchors { top: header.top; topMargin: Math.round((root.gap - height) / 2)	qml
-bar-pushes-board	Board.qml	anchors { top: botsRow.bottom	anchors { top: refreshBar.bottom	qml
-slider-faint	Board.qml	radius: height / 2; color: root.accent	radius: height / 2; color: root.faint	qml
-slider-still	Board.qml	NumberAnimation on x { running: refreshBar.visible	NumberAnimation on x { running: false	qml
-icon-board-only	BoardHeader.qml	RotationAnimation on rotation { running: host.refreshActive;	RotationAnimation on rotation { running: host.loading && host.opened;	qml
-icon-still	BoardHeader.qml	RotationAnimation on rotation { running: host.refreshActive;	RotationAnimation on rotation { running: false;	qml
+icon-still	BoardHeader.qml	RotationAnimation on rotation { running: host.loudRefresh;	RotationAnimation on rotation { running: false;	qml
+icon-timer-too	BoardHeader.qml	RotationAnimation on rotation { running: host.loudRefresh;	RotationAnimation on rotation { running: host.refreshActive;	qml
+manual-always	Board.qml	manualRefresh = ifDue !== true || (manualRefresh && loading)	manualRefresh = true	qml
+manual-never	Board.qml	manualRefresh = ifDue !== true || (manualRefresh && loading)	manualRefresh = false	qml
+loud-no-mrs	Board.qml	(loading && (manualRefresh || boardState !== "ready")) || (view === "mrs" && mrsView.loading))	(loading && (manualRefresh || boardState !== "ready")))	qml
+dot-never	BoardHeader.qml	visible: host.refreshActive && status.text !== ""	visible: false	qml
+dot-always	BoardHeader.qml	visible: host.refreshActive && status.text !== ""	visible: status.text !== ""	qml
+dot-one-color	BoardHeader.qml	color: host.loudRefresh ? host.accent : host.quiet	color: host.accent	qml
+dot-still	BoardHeader.qml	running: refreshDot.visible; loops: Animation.Infinite	running: false; loops: Animation.Infinite	qml
+dot-away	BoardHeader.qml	rightMargin: status.paintedWidth + Style.space(8)	rightMargin: Style.space(8)	qml
+manual-demoted	Board.qml	ifDue !== true || (manualRefresh && loading)	ifDue !== true	qml
