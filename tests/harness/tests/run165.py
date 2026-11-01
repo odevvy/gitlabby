@@ -156,6 +156,17 @@ h.ev("box.text = 'Looks good'", iv); h.spin(40); h.ev("issueView.post()"); h.spi
 h.ok("I6 a comment on this server", tail_ok(h.running("comment", raw=True), H), h.running(raw=True))
 h.answer("comment", {"state": "ready", "note": {"id": 1, "body": "Looks good", "author": {"username": "me"}}}); drain("notes", {"state": "ready", "notes": []})
 h.ev("root.back()"); h.spin(40)
+# View-only here (AccessHint.qml): the login and the token page are this server's; Not now is per server.
+VIEW_ONLY = "root.feed.setAccess(%s, {known: true, level: 10, scopes: null, refused: ''})" % json.dumps(P)
+h.ev(VIEW_ONLY); h.spin(60)
+body = next((it.property("text") for it in h.visible(lambda it: it.objectName() == "accessBody")), "")
+h.ok("V1 the hint's login names this server", "run glab auth login --hostname %s in a terminal" % H in body, body)
+before = len(h.launched())
+h.click(next(it for it in h.visible(lambda it: it.objectName() == "accessTokenPage"))); h.spin(40)
+h.ok("V2 the token page is this server's", [c for c in h.launched()[before:] if c[0] == "omarchy-launch-browser"] == [["omarchy-launch-browser", "https://%s/-/user_settings/personal_access_tokens?name=GitLab+board&description=Read-only+token+for+the+Omarchy+GitLab+board&scopes=read_api" % H]], h.launched()[before:])
+h.ev("root.opened = true"); h.spin(60); drain("board", C(H))
+h.ev("root.dismissHint()"); h.spin(40)
+h.ok("V3 Not now: saved under this server's key", writes()[-1]["accessHintDismissed"] == [H + ":" + P] and h.ev("root.hintDismissed"), writes()[-1].get("accessHintDismissed"))
 h.ev("root.refreshIntervalSec = 120; root.persist()"); w = writes()[-1]
 h.ok("K15 another write here keeps both defaults as saved", w["defaultProject"] == P and w["defaultBoardId"] == "7" and w.get("serverDefaults", {}).get(H, {}).get("id") == "7", w.get("serverDefaults"))
 
@@ -170,6 +181,9 @@ cmds = [c for c in cmds if c[1] in ("board", "cached")]  # the other server's la
 h.ok("B2 its board loads from gitlab.com", tail_ok(cmds, "gitlab.com") and "board" in [c[1] for c in cmds], cmds)
 drain("cached", {"state": "none"}); h.answer("board", A())
 h.ok("B3 gitlab.com's bots show again", h.ev("root.botStates").__len__() == 2)
+h.ev(VIEW_ONLY); h.spin(60)
+h.ok("B3b the other server's Not now doesn't hide gitlab.com's hint; its words as before", not h.ev("root.hintDismissed")
+     and "run glab auth login --hostname gitlab.com in a terminal" in next((it.property("text") for it in h.visible(lambda it: it.objectName() == "accessBody")), ""))
 h.ev("root.signOut()"); h.spin(40)
 h.ok("B4 sign out names the server", tail_ok(h.running("logout", raw=True), "gitlab.com"))
 h.answer("logout", {"state": "logged-out", "message": "Signed out of gitlab.com."})

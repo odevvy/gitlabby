@@ -965,7 +965,7 @@ test("view-only wiring: the hint opens only GitLab's token page; writes off whil
   const board = fs.readFileSync(path.join(dir, "Board.qml"), "utf8")
   // No process, no text field, no clipboard: one link, through openUrl (https only).
   assert.doesNotMatch(hint, /Process|execDetached|TextField|TextInput|wl-copy|helperPath/)
-  assert.deepEqual([...hint.matchAll(/openUrl\(([^)]*\))\)/g)].map(m => m[1]), ["Logic.patUrl(\"gitlab.com\")"])
+  assert.deepEqual([...hint.matchAll(/openUrl\(([^)]*\))\)/g)].map(m => m[1]), ["Logic.patUrl(hint.host.gitlabHost)"])
   assert.match(board, /readonly property bool canMove: .* && writable$/m)
   assert.match(board, /if \(boardState === "ready" && !cached\) feed\.requestAccess\(project\)/)
   assert.match(board, /feed\.noteRefused\(project, data\.message\)/)
