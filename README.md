@@ -567,6 +567,7 @@ Settings live on the widget's entry in `~/.config/omarchy/shell.json`:
 
 | Key | Meaning |
 | --- | --- |
+| `gitlabHost` | The GitLab server, by its bare name (default `gitlab.com`; `https://` and a trailing `/` are dropped). `http://`, a port or a path aren't accepted here (the server is then `gitlab.com`): set those in glab's own config for the host (`api_protocol`, `api_host`, `subfolder`). Every `board-fetch` call gets it as `--hostname` |
 | `defaultProject` | Default project: path or numeric id. Empty (the default): the first board you open |
 | `defaultBoardId`, `defaultBoardName` | Default board; empty means the project's first board |
 | `refreshIntervalSec` | Refresh interval in seconds |
@@ -574,11 +575,20 @@ Settings live on the widget's entry in `~/.config/omarchy/shell.json`:
 | `boardStates` | Collapsed and hidden columns for each project and board, keyed `project#boardId`. Saved when the popup closes, or 2 s after the last fold |
 | `confirmMoves` | Projects whose card moves ask first (see [Ask before moving](#ask-before-moving)). Default `[]` |
 | `bots` | Busy markers per project (see [Who's busy](#whos-busy)). Default `{}`: no row |
+| `serverDefaults` | The default board on each other server: `{ "host": { "project", "id", "name" } }`. gitlab.com's stays in `defaultProject`, `defaultBoardId` and `defaultBoardName` |
 | `settingsRevision` | Set to `2` by v0.1.3 after its one-time update |
+
+On another server than gitlab.com, the per-project keys (`bots`, `alerts`,
+`confirmMoves`, `accessHintDismissed`, `boardStates`) use `host:project`
+(for example `gitlab.example.com:group/app`), so each server keeps its own
+and switching back finds gitlab.com's as they were. Switching server clears
+the board, the project list, the account and the merge requests on screen,
+and loads that server's default board (or the picker).
 
 ```bash
 omarchy bar set odevvy.gitlab-board defaultProject group/project
 omarchy bar set odevvy.gitlab-board refreshIntervalSec 120
+omarchy bar set odevvy.gitlab-board gitlabHost gitlab.example.com   # then: glab auth login --hostname gitlab.example.com
 ```
 
 The board you're browsing isn't saved. v0.1.2 drops older keys (`project`,
@@ -591,7 +601,9 @@ popup shows; never anything from glab's login) in
 `~/.cache/odevvy.gitlab-board/` (or `$XDG_CACHE_HOME`), one file per project
 and board, saved per glab account (from `glab config get user`, a local
 read; no saved account gives `unknown`), so after switching accounts the
-popup never starts on the other account's board. It is readable only by you.
+popup never starts on the other account's board. Another server's copies
+start with its name (`gitlab.example.com~group%2Fapp-7@me.json`), so the same
+project path on two servers never shares one. It is readable only by you.
 Clear it with
 `rm -rf ~/.cache/odevvy.gitlab-board`.
 
@@ -615,8 +627,8 @@ logout), removed when it ends or is stopped.
 
 **Sign out** (in the settings, beside your username) asks `Sign out of glab
 on gitlab.com? This also signs glab out in your terminal and scripts on this
-computer.`, then runs
-`glab auth logout --hostname gitlab.com`. That is glab's own sign-out, so glab
+computer.` (the server's name in place of gitlab.com on another one), then runs
+`glab auth logout --hostname gitlab.com` (that server's). That is glab's own sign-out, so glab
 in your terminal is signed out too (a `GITLAB_TOKEN` in your environment still
 works; glab doesn't touch it). The token stays valid on GitLab; revoke it in
 your GitLab user settings if you need to. The saved boards in
@@ -636,7 +648,7 @@ under the header says why. Comments stay on (Guests may comment).
 The note suggests a token that can only read: **Open GitLab's token page**
 opens GitLab's own page over https with the name and the `read_api` scope
 filled in; you create the token there, then run
-`glab auth login --hostname gitlab.com` in a terminal and paste it into
+`glab auth login --hostname gitlab.com` (or your server's name) in a terminal and paste it into
 glab, never into this plugin or a chat. glab keeps one token per host, so
 glab in your terminal becomes read-only too. **Not now** hides the note for
 that project (saved in `accessHintDismissed`); writes stay off.
@@ -678,7 +690,8 @@ one left behind is removed at sign-out or after a failed read.)
 ./board-fetch relabel --project P --iid N --remove L # remove one label (a write)
 ./board-fetch close --project P --iid N         # close an issue (a write)
 ./board-fetch reopen --project P --iid N        # reopen it (a write)
-# all of them accept --hostname HOST (default gitlab.com)
+# all of them accept --hostname HOST (default gitlab.com): a bare name;
+# https://, a path or a port is refused before glab runs
 ```
 
 `move` takes list ids: `L` is `open`, `closed`, or the `listId` of a label
