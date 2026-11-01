@@ -99,6 +99,12 @@ Panel {
   // board, or the merge-request list on screen. The header bar slides and the
   // refresh icon spins on it; the cards stay.
   readonly property bool refreshActive: opened && (loading || (view === "mrs" && mrsView.loading))
+  // A refresh you asked for (Refresh, r, a click on the icon), not the timer's
+  // or the one opening the popup runs: set by each refresh(). It, the first
+  // load and the merge-request list loading are "loud": the icon spins and
+  // the status dot is accent. A background refresh only breathes the dot, grey.
+  property bool manualRefresh: false
+  readonly property bool loudRefresh: refreshActive && ((loading && (manualRefresh || boardState !== "ready")) || (view === "mrs" && mrsView.loading))
   property string boardState: "loading"
   property string message: ""
   property string updatedAt: ""
@@ -295,6 +301,9 @@ Panel {
     if (project === "") { boardState = "loading"; runAux("projects", []); return }
     readCache()
     if (held) { refreshQueued = true; return }
+    // A refresh you asked for stays loud until its answer, even if the
+    // popup opening (or the timer) joins it meanwhile.
+    manualRefresh = ifDue !== true || (manualRefresh && loading)
     var last = feed.request(project, boardId, ifDue === true, cadence.sec * 1000 - 2000, moveFloor)
     if (last) apply(last.raw, false, last.ticket)
   }
