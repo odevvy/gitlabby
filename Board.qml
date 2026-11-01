@@ -701,22 +701,6 @@ Panel {
         width: parent.width
       }
 
-      // Refreshing (refreshActive): a thin bar slides along a faint track under
-      // the header, in the gap already there, so nothing below moves.
-      Item {
-        id: refreshBar
-        objectName: "refreshBar"
-        anchors { top: header.bottom; topMargin: Math.round((root.gap - height) / 2); left: parent.left; right: parent.right }
-        height: Math.max(2, Style.space(2)); clip: true
-        visible: root.refreshActive
-        Rectangle { anchors.fill: parent; radius: height / 2; color: root.faint }
-        Rectangle {
-          id: refreshSlider
-          width: parent.width * 0.28; height: parent.height; radius: height / 2; color: root.accent
-          NumberAnimation on x { running: refreshBar.visible; loops: Animation.Infinite; from: -refreshSlider.width; to: refreshBar.width; duration: 1400; easing.type: Easing.InOutQuad }
-        }
-      }
-
       BotsRow {
         id: botsRow
         host: root
