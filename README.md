@@ -47,7 +47,9 @@ the picker's board step. The header shows a star on the default board and a
   two views (the current one is underlined; the Merge requests tab shows how many
   wait on your review). On the right: `Updated`, then the columns (board only),
   refresh, keyboard and settings buttons. Buttons and tabs are 28-point targets
-  with a faint fill on hover, and every tip names its key. On a narrow board
+  with a faint fill on hover, and every tip names its key. Tips come after
+  half a second of hovering, and never while a column folds, so a strip or
+  header that slides under the cursor doesn't flash one. On a narrow board
   `Updated` shrinks first, then the tab reads `MRs`.
 - Click a column header to collapse it to a narrow strip (count, colour dot,
   name). The columns button in the header (the columns icon left of refresh, with
