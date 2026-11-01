@@ -577,8 +577,9 @@ Panel {
   function statusText() {
     if (moveError !== "") return moveError
     if (move) return "Moving #" + move.iid + "…"
-    if (refreshing) return message !== "" ? message + "  Refreshing…" : "Refreshing…"
-    if (boardState === "ready" && refreshError !== "")
+    // While a refresh runs the status keeps its time (the dot before it says
+    // a refresh is on), and a last failure gives way to it.
+    if (boardState === "ready" && refreshError !== "" && !refreshing)
       return "Couldn't refresh · showing " + (updatedAt !== "" ? new Date(updatedAt).toLocaleTimeString(Qt.locale(), "HH:mm") : "the last board")
     if (boardState === "ready" && cached) return Logic.savedNote(updatedAt)
     if (boardState === "ready") {
