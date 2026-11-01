@@ -127,17 +127,39 @@ drain("board", C(H))
 h.ev("root.picked = [root.columns[3].kind + ':' + root.columns[3].listId + '|4']"); h.spin(40)
 h.ev("bulkBar.loadLabels()"); h.spin(40)
 h.ok("U1 the bulk label list from this server", [c[1:] for c in h.running("labels", raw=True) if "--hostname" in c] == [["labels", "--project", P, "--hostname", H]], h.running(raw=True))
-h.answer("labels", {"state": "ready", "labels": [{"name": "ux"}]})
+drain("labels", {"state": "ready", "labels": [{"name": "ux"}]})
 h.ev("bulkBar.armClose('')"); h.spin(40); h.ev("bulkBar.confirm()"); h.spin(40)
 bk = [c for c in h.running(raw=True) if c[1] == "bulk"]
 h.ok("U2 the bulk run on this server", len(bk) == 1 and bk[0][1:] == ["bulk", "--project", P, "--hostname", H], h.running(raw=True))
 h.answer("close", {"state": "ready"}); h.spin(80); h.ev("bulkBar.done()"); drain("board", C(H))
+# The issue view (IssueView.qml): every read and write on this server.
+ISSUE = {"iid": 4, "title": "Card 4", "state": "opened", "labels": ["review"], "description": "", "author": {"username": "me", "name": "Me"}, "url": "https://%s/%s/-/issues/4" % (H, P), "createdAt": "2026-10-29T12:00:00Z", "assignees": []}
+h.ev("root.openIssue(root.columns[3].issues[0])"); h.spin(60)
+iss = [c for c in h.running(raw=True) if c[1] in ("issue", "notes")]
+h.ok("I1 the issue and its comments from this server", len(iss) == 2 and tail_ok(iss, H), h.running(raw=True))
+h.answer("issue", {"state": "ready", "issue": ISSUE}); h.answer("notes", {"state": "ready", "notes": []})
+h.ok("I2 remembered under this server's key", h.ev("Object.keys(issueView.recent)") == [H + ":" + P + "#4"], h.ev("Object.keys(issueView.recent)"))
+h.ev("issueView.loadLabels()"); h.spin(40)
+h.ok("I3 its label list from this server", [c[1:] for c in h.running("labels", raw=True) if "--hostname" in c] == [["labels", "--project", P, "--hostname", H]], h.running(raw=True))
+h.answer("labels", {"state": "ready", "labels": [{"name": "ux"}]})
+h.ev("issueView.relabel('add', 'ux')"); h.spin(40)
+h.ok("I4 a label change on this server", tail_ok(h.running("relabel", raw=True), H), h.running(raw=True))
+h.answer("relabel", {"state": "ready", "labels": ["review", "ux"]}); drain("issue", {"state": "ready", "issue": ISSUE})
+h.ev("issueView.setState('close')"); h.spin(40)
+h.ok("I5 close on this server", tail_ok(h.running("close", raw=True), H), h.running(raw=True))
+h.answer("close", {"state": "ready", "issueState": "closed"}); drain("board", C(H)); drain("issue", {"state": "ready", "issue": ISSUE})
+iv = h.ctx_of(h.cls("IssueView"))
+h.ev("box.text = 'Looks good'", iv); h.spin(40); h.ev("issueView.post()"); h.spin(40)
+h.ok("I6 a comment on this server", tail_ok(h.running("comment", raw=True), H), h.running(raw=True))
+h.answer("comment", {"state": "ready", "note": {"id": 1, "body": "Looks good", "author": {"username": "me"}}}); drain("notes", {"state": "ready", "notes": []})
+h.ev("root.back()"); h.spin(40)
 h.ev("root.refreshIntervalSec = 120; root.persist()"); w = writes()[-1]
 h.ok("K15 another write here keeps both defaults as saved", w["defaultProject"] == P and w["defaultBoardId"] == "7" and w.get("serverDefaults", {}).get(H, {}).get("id") == "7", w.get("serverDefaults"))
 
 # --- back to gitlab.com -----------------------------------------------------------------
 h.answer("board", A(H)) if h.running("board") else None
 setting(gitlabHost="gitlab.com")
+h.ok("I7 another server: the issues seen on the last one are forgotten", h.ev("Object.keys(issueView.recent)") == [])
 h.ok("B1 back: gitlab.com's default board, its bots and alerts", h.ev("root.project") == P and h.ev("root.boardId") == "7" and h.ev("root.projectKey") == P
      and h.ev("root.alerts.review") is True and h.ev("root.feed.host") == "gitlab.com")
 cmds = [c for c in h.running(raw=True) if c[1] != "labels"]  # Settings' label list: a later v0.1.65 commit

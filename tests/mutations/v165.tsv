@@ -56,3 +56,11 @@ s-access-no-host	BoardService.qml	accessFetch.command = helperCommand(["access",
 s-alert-no-host	BoardService.qml	m.iid }), host: cfg.host })	m.iid }) })	qml
 b-labels-no-host	BulkBar.qml	labelsProcess.command = host.helperCommand(["labels", "--project", host.project])	labelsProcess.command = [host.helperPath(), "labels", "--project", host.project]	qml
 b-bulk-no-host	BulkBar.qml	runProcess.command = host.helperCommand(["bulk", "--project", host.project])	runProcess.command = [host.helperPath(), "bulk", "--project", host.project]	qml
+i-issue-no-host	IssueView.qml	issueProcess.command = host.helperCommand(["issue"	issueProcess.command = [host.helperPath()].concat(["issue"	qml
+i-notes-no-host	IssueView.qml	notesProcess.command = host.helperCommand(["notes"	notesProcess.command = [host.helperPath()].concat(["notes"	qml
+i-labels-no-host	IssueView.qml	labelsProcess.command = host.helperCommand(["labels"	labelsProcess.command = [host.helperPath()].concat(["labels"	qml
+i-relabel-no-host	IssueView.qml	relabelProcess.command = host.helperCommand(["relabel"	relabelProcess.command = [host.helperPath()].concat(["relabel"	qml
+i-state-no-host	IssueView.qml	stateProcess.command = host.helperCommand([op	stateProcess.command = [host.helperPath()].concat([op	qml
+i-comment-no-host	IssueView.qml	commentProcess.command = host.helperCommand(["comment"	commentProcess.command = [host.helperPath()].concat(["comment"	qml
+i-recent-shared	IssueView.qml	key: visible && issue.iid ? host.projectKey + "#"	key: visible && issue.iid ? host.project + "#"	qml
+i-recent-kept	IssueView.qml	    function onGitlabHostChanged() { view.recent = ({}); view.recentOrder = [] } }	    function onGitlabHostChanged() {} }	qml
