@@ -7,3 +7,13 @@ host-hint-missing	board-fetch	glab auth login${host_tag:+ --hostname $hostname}	
 host-hint-always	board-fetch	glab auth login${host_tag:+ --hostname $hostname}	glab auth login --hostname $hostname	sh
 host-graphql-default	board-fetch	bounded api --hostname "$hostname" graphql	bounded api --hostname gitlab.com graphql	sh
 host-post-default	board-fetch	bounded api --hostname "$hostname" --method POST	bounded api --hostname gitlab.com --method POST	sh
+srv-keeps-scheme	logic/core.js	if (h.indexOf("https://") === 0) h = h.slice(8)	if (false) h = h.slice(8)	node
+srv-keeps-slash	logic/core.js	h = h.replace(/\/+$/, "")	h = h	node
+srv-one-slash	logic/core.js	h = h.replace(/\/+$/, "")	h = h.replace(/\/$/, "")	node
+srv-case-kept	logic/core.js	.trim().toLowerCase()	.trim()	node
+srv-port-ok	logic/core.js	"(\\." + label + ")*$"	"(\\." + label + ")*(:[0-9]+)?$"	node
+srv-path-ok	logic/core.js	"(\\." + label + ")*$"	"(\\." + label + ")*(/.*)?$"	node
+srv-unanchored	logic/core.js	new RegExp("^" + label	new RegExp(label	node
+srv-no-cap	logic/core.js	h.length <= 253 && 	true && 	node
+key-tagged-gitlab	logic/core.js	!host || host === "gitlab.com" ? project	!host ? project	node
+key-shared	logic/core.js	host + ":" + project\n	project\n	node

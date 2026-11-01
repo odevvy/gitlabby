@@ -919,6 +919,28 @@ test("access hint: the words, glab login only, the token page over https with re
   assert.doesNotMatch(url, /scopes=[^&]*\bapi\b(?!_)/, "never the write scope")
 })
 
+test("server host: a bare name glab takes; https:// and a trailing / dropped; http, ports and paths refused", () => {
+  assert.equal(L.serverHost("gitlab.com"), "gitlab.com")
+  assert.equal(L.serverHost(" https://GitLab.Example.com/ "), "gitlab.example.com")
+  assert.equal(L.serverHost("gitlab.example.com//"), "gitlab.example.com")
+  assert.equal(L.serverHost("localhost"), "localhost")
+  assert.equal(L.serverHost("10.0.0.5"), "10.0.0.5")
+  assert.equal(L.serverHost("my-git.corp.example"), "my-git.corp.example")
+  for (const bad of ["http://gitlab.example.com", "gitlab.example.com:8443", "https://gitlab.example.com:8443/",
+    "gitlab.example.com/gitlab", "https://gitlab.example.com/group/app", "ftp://x", "-x.com", "x-.com", "a..b", "x.com.",
+    "", "  ", "a b", "x_y.com", "x.com;id", "$(id)", "x.com --hostname y", "https://", "a".repeat(254), null, undefined])
+    assert.equal(L.serverHost(bad), "", String(bad).slice(0, 30))
+  assert.equal(L.serverHost("a".repeat(63) + "." + "b".repeat(63)), "a".repeat(63) + "." + "b".repeat(63))
+})
+
+test("server key: gitlab.com's settings keep their bare project key; another server's are its own", () => {
+  assert.equal(L.serverKey("gitlab.com", "group/app"), "group/app")
+  assert.equal(L.serverKey("", "group/app"), "group/app")
+  assert.equal(L.serverKey("gitlab.example.com", "group/app"), "gitlab.example.com:group/app")
+  assert.notEqual(L.serverKey("a.example", "group/app"), L.serverKey("b.example", "group/app"))
+  assert.equal(L.serverKey("gitlab.example.com", ""), "gitlab.example.com:")
+})
+
 test("access in the service: asked once per project, its own process, forgotten on sign out", () => {
   const fs = require("node:fs"), path = require("node:path")
   const svc = fs.readFileSync(path.join(__dirname, "..", "BoardService.qml"), "utf8")
