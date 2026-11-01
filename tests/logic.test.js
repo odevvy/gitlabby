@@ -567,14 +567,12 @@ test("shared refresh: one BoardService for every screen; Board.qml fetches board
   assert.deepEqual([...service.matchAll(/^\s*Process \{\s*\n\s*id: (\w+)/gm)].map(m => m[1]), ["fetch", "mrFetch", "accessFetch"])
 })
 
-test("popup height: Settings and Keys have no cap (they grow to the free screen height); board and issue keep it", () => {
-  assert.equal(L.heightCap("settings", 960), 0)
-  assert.equal(L.heightCap("keys", 960), 0)
-  for (const v of ["board", "issue", "picker", ""]) assert.equal(L.heightCap(v, 960), 960)
+test("popup size: one frame for every view, the board's width (760 at least) and a fixed 640 height", () => {
   const fs = require("node:fs"), path = require("node:path")
   const board = fs.readFileSync(path.join(__dirname, "..", "Board.qml"), "utf8")
-  assert.match(board, /contentHeight: panel\.fittedContentHeight\(root\.shownHeight, Logic\.heightCap\(root\.view, Style\.space\(640\)\)\)/)
-  assert.match(board, /property real shownHeight: keyCatcher\.implicitHeight\n/)
+  assert.match(board, /contentHeight: panel\.fittedContentHeight\(Style\.space\(640\), Style\.space\(640\)\)\n/)
+  assert.match(board, /contentWidth: panel\.fittedContentWidth\(Math\.max\(Style\.space\(760\),\n\s*\(root\.setup !== "" \|\| root\.failed \|\| root\.boardState === "loading" \? skeleton\.implicitWidth : root\.shownBoardWidth\) \+ panel\.padding \* 2 \+ Style\.space\(4\)\)\)\n/)
+  assert.doesNotMatch(board, /root\.view === "keys" \|\| root\.view === "mrs"|shownHeight/)
 })
 
 test("compact settings: Start collapsed and the busy columns are wrapping rows of check boxes with the same gaps", () => {

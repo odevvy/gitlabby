@@ -1,6 +1,7 @@
-# v0.1.64: every view gets the board's width (760 at least); only a fold changes it.
-# v0.1.34: Settings and Keys grow to the free screen height (no 640 cap) and
-# scroll only past it; the board and an issue keep the cap; the compact
+# v0.1.64: one frame for every view: the board's width (760 at least) and a
+# fixed 640 height (960 at scale 1.5), or the free height on a short screen.
+# Views fit or scroll inside; switching views never resizes the popup, only a
+# fold changes its width. (v0.1.34 grew Settings and Keys past the cap.) The compact
 # Settings (Refresh every on one line, Start collapsed as wrapping check boxes,
 # the busy row's wrap gap). Rendered at scale 1.5 (his screenshot) with the
 # stubs in harness15/. Screens: 1440 tall (free 1385) and an 800 laptop (745).
@@ -55,10 +56,10 @@ start(DESK)
 h0 = H()
 W = lambda: h.ev("panel.contentWidth")
 w0 = W()
-ok("W1 the popup is the board's width, 760 (x1.5 = 1140) at least", w0 >= 1140 and abs(w0 - min(1460, max(1140, h.ev("root.shownBoardWidth") + h.ev("panel.padding") * 2 + h.ev("Style.space(4)")))) <= 1, w0)
-ok("B1 the board keeps its own height (under the 640 cap, x1.5 = 960)", h0 == min(need(), 960), (h0, need()))
+ok("B1 a short board still gets the full frame: 640 (x1.5 = 960)", h0 == 960 and need() < 960, (h0, need()))
+ok("W1 the frame is the board's width, 760 (x1.5 = 1140) at least", w0 >= 1140 and abs(w0 - min(1460, max(1140, h.ev("root.shownBoardWidth") + h.ev("panel.padding") * 2 + h.ev("Style.space(4)")))) <= 1, w0)
 settings()
-ok("S1 Settings grows to its content: no cap, under the free height, nothing to scroll", H() == need() and H() <= DESK and not scrolls(flick("settingsView")), (H(), need(), DESK))
+ok("S1 Settings in the same frame, scrolling what's below", H() == 960 and W() == w0 and scrolls(flick("settingsView")) == (need() > 960), (H(), W(), need()))
 ok("S2 compact Settings (with 0.1.36's Alerts section) still fits under the old cap's 1198", H() < 1198, H())
 row = next(it for it in h.walk(h.ev("settingsView")) if it.property("oneLine") is not None)
 ok("S3 Refresh every: heading and segments on one line", row.property("oneLine") and row.property("height") < 60, row.property("height"))
@@ -75,18 +76,18 @@ gap = lambda its, ys: ys[1] - ys[0] - its[0].property("height") if len(ys) > 1 e
 ok("S7 rows of check boxes wrap with a small gap (space(6) = 9), Start collapsed and busy alike", abs(gap(cb, ys) - 9) < 1 and abs(gap(bc, bys) - 9) < 1, (ys, bys, cb[0].property("height")))
 shot("settings-1440")
 h.ev("root.showView('keys')"); h.spin(150)
-ok("K1 Keys at its content height, no scroll, the board's width", H() == need() and not scrolls(flick("keysView")) and W() == w0, (H(), need(), W()))
+ok("K1 Keys in the same frame", H() == 960 and W() == w0 and scrolls(flick("keysView")) == (need() > 960), (H(), W(), need()))
 shot("keys-1440")
 h.ev("root.showView('board')"); h.spin(150)
-ok("J1 back to the board: the popup shrinks back to the board's height", H() == h0, (H(), h0))
+ok("J1 back to the board: nothing moves", H() == h0 and W() == w0, (H(), h0, W()))
 h.ev("root.openIssue(root.columns[3].issues[0])"); h.spin(80)
 h.answer("issue", {"state": "ready", "message": "", "issue": ISSUE}); h.answer("notes", {"state": "ready", "message": "", "iid": 30, "more": False, "notes": []}); h.spin(150)
-ok("C1 an issue keeps the cap (960), the board's width", H() == min(need(), 960) and W() == w0, (need(), H(), W()))
+ok("C1 an issue in the same frame (960), scrolling past it", H() == 960 and W() == w0, (need(), H(), W()))
 shot("issue-1440")
 h.ev("root.showView('board')"); h.spin(150)
-ok("J2 issue -> board: the board's height again", H() == h0 and W() == w0)
+ok("J2 issue -> board: the same frame", H() == h0 and W() == w0)
 h.ev("root.toggleCollapsed('todo')"); h.spin(400)
-ok("W2 a fold is what changes the width (and keeps the 1140 floor)", W() != w0 and W() >= 1140, (W(), w0))
+ok("W2 a fold is what changes the width (and keeps the 1140 floor)", W() != w0 and W() >= 1140 and H() == 960, (W(), w0))
 h.ev("root.toggleCollapsed('todo')"); h.spin(400)
 for c in ["approved", "in progress", "review"]: h.ev("root.toggleCollapsed(%s)" % json.dumps(c))
 h.spin(400)
@@ -99,14 +100,14 @@ h.stop_all()
 start(DESK, n=8)
 ok("C2 a tall board keeps the cap (960)", need() > 960 and H() == 960, (need(), H()))
 settings()
-ok("J3 tall board -> Settings: Settings' own height, not the board's", H() == need() and H() != 960, H())
+ok("J3 tall board -> Settings: the same 960", H() == 960, H())
 h.ev("root.showView('board')"); h.spin(150)
 ok("J4 and back: 960 again", H() == 960)
 h.stop_all()
-# A narrow screen: Keys in one column is taller than 960 and grows past the old cap.
+# A narrow screen: Keys in one column, scrolling inside the 960 frame.
 start(DESK, width=760)
 h.ev("root.showView('keys')"); h.spin(150)
-ok("K2 Keys in one column (narrow screen) grows past 960, up to the free height", need() > 960 and H() == min(need(), DESK) and W() == 760, (need(), H(), W()))
+ok("K2 Keys in one column (narrow screen): the 960 frame, scrolling", need() > 960 and H() == 960 and W() == 760 and scrolls(flick("keysView")), (need(), H(), W()))
 shot("keys-narrow-1440")
 h.stop_all()
 
@@ -124,7 +125,7 @@ h.ev("root.showView('keys')"); h.spin(150)
 ok("L3 Keys stops at 745 and scrolls", H() == LAPTOP and scrolls(flick("keysView")))
 shot("keys-800")
 h.ev("root.showView('board')"); h.spin(150)
-ok("L4 back to the board: its own height", H() == min(need(), LAPTOP))
+ok("L4 back to the board: the same 745", H() == LAPTOP)
 h.stop_all()
 
 # --- a narrow popup: Refresh every stacks instead of overlapping ----------------------

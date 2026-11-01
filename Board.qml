@@ -214,8 +214,8 @@ Panel {
     foldSave.restart()
   }
   function saveFolds() { if (foldsUnsaved) persist() }
-  // folding: true for a moment after a fold or hide. Only then do the column,
-  // the popup's width and its height animate (board and view switches stay
+  // folding: true for a moment after a fold or hide. Only then do the column
+  // and the popup's width animate (board and view switches stay
   // instant), and answers wait (held).
   property bool folding: false
   function startFold() { folding = true; foldClock.restart() }
@@ -230,11 +230,9 @@ Panel {
   }
   Timer { id: foldSave; interval: 2000; onTriggered: root.saveFolds() }
   Timer { id: foldClock; interval: 200; onTriggered: root.folding = false }
-  // The popup edge and height follow the columns while they fold.
+  // The popup edge follows the columns while they fold.
   property real shownBoardWidth: boardWidth
   Behavior on shownBoardWidth { enabled: root.folding; NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
-  property real shownHeight: keyCatcher.implicitHeight
-  Behavior on shownHeight { enabled: root.folding; NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
   // One-time update to settings revision 2 (v0.1.3): Open joins the collapsed
   // defaults and every saved board, without touching anything else. Runs again
   // only if it could not be saved.
@@ -665,14 +663,15 @@ Panel {
     id: panel
     anchorItem: button; owner: root; bar: root.bar
     open: root.opened; focusTarget: keyCatcher
-    // Every view gets the board's width (760 at least), so switching views
-    // never changes it; only folding columns does. fittedContentWidth caps at
-    // availableCardWidth (screen minus margins); anything wider scrolls inside.
+    // One frame for every view: the board's width (760 at least) and a fixed
+    // 640 height. Views fit or scroll inside it, so switching views never
+    // resizes the popup; only folding columns changes the width.
+    // fittedContentWidth caps at availableCardWidth (screen minus margins) and
+    // fittedContentHeight at the free screen height (availableCardHeight):
+    // anything bigger scrolls inside.
     contentWidth: panel.fittedContentWidth(Math.max(Style.space(760),
       (root.setup !== "" || root.failed || root.boardState === "loading" ? skeleton.implicitWidth : root.shownBoardWidth) + panel.padding * 2 + Style.space(4)))
-    // fittedContentHeight caps at the free screen height (availableCardHeight)
-    // and at heightCap: none for Settings and Keys, 640 for the board and an issue.
-    contentHeight: panel.fittedContentHeight(root.shownHeight, Logic.heightCap(root.view, Style.space(640)))
+    contentHeight: panel.fittedContentHeight(Style.space(640), Style.space(640))
 
     BoardKeys {  // the key routing (BoardKeys.qml)
       id: keyCatcher
