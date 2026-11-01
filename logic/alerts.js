@@ -33,39 +33,40 @@ function reviewRows(data) {
   })
   return out
 }
-function boardUrl(data) {
+// The board on its server (host: a bare name, gitlab.com when not one).
+function boardUrl(data, host) {
   var p = String(data && data.project || "")
   if (!/^[A-Za-z0-9_.-]+(\/[A-Za-z0-9_.-]+)+$/.test(p)) return ""
   var id = data.board && /^[0-9]+$/.test(String(data.board.id)) ? "/-/boards/" + data.board.id : "/-/boards"
-  return "https://gitlab.com/" + p + id
+  return "https://" + (Core.serverHost(host) || "gitlab.com") + "/" + p + id
 }
 // What changed from one good answer to the next, as notifications:
 // [{ headline, body (plain), url }]. opts: { review, idle, bots (settings.bots),
-// ignore (iids this user just moved) }. Several cards entering review make one.
+// ignore (iids this user just moved), host (the server; gitlab.com if none) }. Several cards entering review make one.
 function alertEvents(prev, next, opts) {
   var out = []
   if (!prev || !next || prev.state !== "ready" || next.state !== "ready" || prev.project !== next.project) return out
-  var project = String(next.project)
+  var project = String(next.project), host = Core.serverHost(opts.host) || "gitlab.com"
   if (opts.review) {
     var before = reviewRows(prev), now = reviewRows(next), ignore = opts.ignore || []
     var came = Object.keys(now).filter(function(iid) { return !before[iid] && ignore.indexOf(Number(iid)) === -1 && ignore.indexOf(String(iid)) === -1 })
       .map(function(iid) { return now[iid] })
     if (came.length === 1) {
       var r = came[0]
-      out.push({ headline: "#" + r.iid + " is in review", body: "#" + r.iid + " " + oneLine(r.title, 80) + " · " + project, url: httpsUrl(r.url) || boardUrl(next) })
+      out.push({ headline: "#" + r.iid + " is in review", body: "#" + r.iid + " " + oneLine(r.title, 80) + " · " + project, url: httpsUrl(r.url) || boardUrl(next, host) })
     } else if (came.length > 1) {
       var shown = came.slice(0, 3).map(function(r) { return "#" + r.iid + " " + oneLine(r.title, 40) })
-      out.push({ headline: came.length + " cards entered review", body: shown.join(", ") + (came.length > 3 ? " +" + (came.length - 3) + " more" : "") + " · " + project, url: boardUrl(next) })
+      out.push({ headline: came.length + " cards entered review", body: shown.join(", ") + (came.length > 3 ? " +" + (came.length - 3) + " more" : "") + " · " + project, url: boardUrl(next, host) })
     }
   }
   if (opts.idle) {
-    var cfg = botsConfig(opts.bots, project)
+    var cfg = botsConfig(opts.bots, Core.serverKey(host, project))
     var was = botStates(cfg, prev.columns), is = botStates(cfg, next.columns)
     var stopped = is.filter(function(b, i) { return was[i] && was[i].state === "working" && b.state !== "working" })
     if (stopped.length > 0)
       out.push({ headline: "Stopped working: " + stopped.map(function(b) { return oneLine(b.name, 30) }).join(", "),
                  body: "On " + project + ": " + stopped.map(function(b) { return oneLine(b.name, 30) + (b.state === "waiting" ? " is waiting in " + b.column : " has no cards left") }).join("; "),
-                 url: boardUrl(next) })
+                 url: boardUrl(next, host) })
   }
   return out
 }

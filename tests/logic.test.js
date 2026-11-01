@@ -661,6 +661,13 @@ test("alerts: settings per project, events between two good answers, the notify 
   const c = ans([col("todo", [row(1, ["todo"]), row(2, ["todo", "app-ui"])]), col("in progress", []), col("Review", [row(4, ["review"]), row(3, ["review", "api"])])])
   assert.deepEqual(L.alertEvents(a, c, { idle: true, bots: on.bots }), [{ headline: "Stopped working: API", body: "On g/p: API is waiting in Review", url: "https://gitlab.com/g/p/-/boards/7" }])
   assert.deepEqual(L.alertEvents(a, c, { idle: false, bots: on.bots }), [])
+  // Another server (v0.1.65): its board link, and its own bots (gitlab.com's same path doesn't count).
+  const there = { "gitlab.example.com:g/p": on.bots["g/p"] }
+  assert.deepEqual(L.alertEvents(a, c, { idle: true, bots: there, host: "gitlab.example.com" }), [{ headline: "Stopped working: API", body: "On g/p: API is waiting in Review", url: "https://gitlab.example.com/g/p/-/boards/7" }])
+  assert.deepEqual(L.alertEvents(a, c, { idle: true, bots: on.bots, host: "gitlab.example.com" }), [], "gitlab.com's bots aren't this server's")
+  assert.deepEqual(L.alertEvents(a, c, { idle: true, bots: there }), [], "nor the other way round")
+  assert.deepEqual(L.alertEvents(a, c, { idle: true, bots: on.bots, host: "gitlab.com" }), L.alertEvents(a, c, { idle: true, bots: on.bots }))
+  assert.equal(L.alertEvents(ans([col("Review", [row(4, ["review"])])]), many, { review: true, host: "gitlab.example.com" })[0].url, "https://gitlab.example.com/g/p/-/boards/7")
   // Only https links; a bad project path: no board link.
   assert.equal(L.httpsUrl("http://x"), "")
   assert.equal(L.httpsUrl("https://gitlab.com/a b"), "")
@@ -669,6 +676,8 @@ test("alerts: settings per project, events between two good answers, the notify 
   assert.equal(L.httpsUrl("https://gitlab.com/g/p/-/issues/1?x=it's"), "https://gitlab.com/g/p/-/issues/1?x=it's")
   assert.equal(L.boardUrl({ project: "g/p;rm", board: { id: 7 } }), "")
   assert.equal(L.boardUrl({ project: "g/sub/p", board: { id: "x" } }), "https://gitlab.com/g/sub/p/-/boards")
+  assert.equal(L.boardUrl({ project: "g/p", board: { id: 7 } }, "https://Git.Example.org/"), "https://git.example.org/g/p/-/boards/7")
+  for (const bad of ["evil.com/x?", "x.com:8443", "http://x.com", "x.com\"@y", ""]) assert.equal(L.boardUrl({ project: "g/p", board: { id: 7 } }, bad), "https://gitlab.com/g/p/-/boards/7", bad)
   // The command (Omarchy bin/omarchy-notification-send): our app name, low urgency, the
   // body escaped for StyledText, --exec last with separate words, https only.
   assert.deepEqual(L.notifyArgv({ headline: "#2 is in review", body: "#2 Fix <b> & co · g/p", url: "https://gitlab.com/g/p/-/issues/2" }),

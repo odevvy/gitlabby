@@ -17,3 +17,8 @@ srv-unanchored	logic/core.js	new RegExp("^" + label	new RegExp(label	node
 srv-no-cap	logic/core.js	h.length <= 253 && 	true && 	node
 key-tagged-gitlab	logic/core.js	!host || host === "gitlab.com" ? project	!host ? project	node
 key-shared	logic/core.js	host + ":" + project\n	project\n	node
+url-host-ignored	logic/alerts.js	"https://" + (Core.serverHost(host) || "gitlab.com") + "/"	"https://gitlab.com/"	node
+url-host-raw	logic/alerts.js	(Core.serverHost(host) || "gitlab.com")	(host || "gitlab.com")	node
+alert-host-dropped	logic/alerts.js	host = Core.serverHost(opts.host) || "gitlab.com"	host = "gitlab.com"	node
+alert-bots-shared	logic/alerts.js	botsConfig(opts.bots, Core.serverKey(host, project))	botsConfig(opts.bots, project)	node
+alert-review-url-default	logic/alerts.js	came.length + " cards entered review", body: shown.join(", ") + (came.length > 3 ? " +" + (came.length - 3) + " more" : "") + " · " + project, url: boardUrl(next, host)	came.length + " cards entered review", body: shown.join(", ") + (came.length > 3 ? " +" + (came.length - 3) + " more" : "") + " · " + project, url: boardUrl(next)	node
