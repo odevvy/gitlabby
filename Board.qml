@@ -49,12 +49,25 @@ Panel {
     return value === undefined || value === null ? fallback : value
   }
 
+  // The GitLab server (settings.gitlabHost; gitlab.com by default), as a bare
+  // name (Logic.serverHost); every board-fetch call gets it as --hostname
+  // (helperCommand). One that isn't a bare name (http, a port, a path) counts
+  // as gitlab.com. Another server keeps its own default board, bots, alerts,
+  // confirm moves and column state (projectKey); gitlab.com's stay as before.
+  readonly property string gitlabHost: Logic.serverHost(saved("gitlabHost", "gitlab.com")) || "gitlab.com"
+  readonly property bool onGitlabCom: gitlabHost === "gitlab.com"
+  readonly property string projectKey: Logic.serverKey(gitlabHost, project)
+  readonly property string loginCommand: "glab auth login" + (onGitlabCom ? "" : " --hostname " + gitlabHost)
   // Saved default board (empty id = the project's first board). The only
   // place the default project is set: none, so a new install starts in the
-  // picker, and the first board opened there becomes the default.
-  readonly property string defaultProject: String(saved("defaultProject", "")).trim()
-  readonly property string defaultBoardId: String(saved("defaultBoardId", ""))
-  readonly property string defaultBoardName: String(saved("defaultBoardName", ""))
+  // picker, and the first board opened there becomes the default. gitlab.com's
+  // is defaultProject/Id/Name; another server's is settings.serverDefaults[host].
+  readonly property var hostDefault: onGitlabCom
+    ? { project: saved("defaultProject", ""), id: saved("defaultBoardId", ""), name: saved("defaultBoardName", "") }
+    : Object(saved("serverDefaults", ({})))[gitlabHost] || ({})
+  readonly property string defaultProject: String(hostDefault.project || "").trim()
+  readonly property string defaultBoardId: String(hostDefault.id || "")
+  readonly property string defaultBoardName: String(hostDefault.name || "")
   // Board on screen: starts as the default on every shell start; browsing
   // assigns these (breaking the binding) and is never saved.
   property string project: defaultProject
@@ -66,20 +79,20 @@ Panel {
   // while nothing changes (Logic.adaptiveInterval), from the shared pace.
   readonly property var cadence: Logic.adaptiveInterval(refreshIntervalSec, feed.paces[fetchKey])
   property var defaultCollapsed: Logic.lowerList(saved("defaultCollapsed", ["closed", "research", "open"]))
-  // Busy markers (settings.bots, keyed by project; none by default), from the board on screen.
-  readonly property var botStates: Logic.botStates(Logic.botsConfig(saved("bots", null), project), columns)
+  // Busy markers (settings.bots, keyed by projectKey; none by default), from the board on screen.
+  readonly property var botStates: Logic.botStates(Logic.botsConfig(saved("bots", null), projectKey), columns)
   // Desktop alerts for the project on screen (settings.alerts; off by default).
   // While one is on, the shared service watches this board, refreshes it with
   // the popup closed and notifies (BoardService.qml watch); one per event.
-  readonly property var alerts: Logic.alertsFor(saved("alerts", null), project)
+  readonly property var alerts: Logic.alertsFor(saved("alerts", null), projectKey)
   readonly property string watchOwner: "w" + Math.floor(Math.random() * 1e9)
   readonly property var watchCfg: project !== "" && setup === "" && (alerts.review || alerts.idle)
-    ? { key: fetchKey, project: project, boardId: boardId, review: alerts.review, idle: alerts.idle, bots: saved("bots", null), base: refreshIntervalSec } : null
+    ? { key: fetchKey, project: project, boardId: boardId, review: alerts.review, idle: alerts.idle, bots: saved("bots", null), base: refreshIntervalSec, host: gitlabHost } : null
   onWatchCfgChanged: feed.watch(watchOwner, watchCfg)
   Component.onDestruction: { saveFolds(); feed.watch(watchOwner, null) }
-  function setAlert(kind, on) { persist(undefined, undefined, Logic.withAlert(saved("alerts", null), project, kind, on)) }
+  function setAlert(kind, on) { persist(undefined, undefined, Logic.withAlert(saved("alerts", null), projectKey, kind, on)) }
   // Projects whose card moves ask first (settings.confirmMoves; none by default).
-  readonly property bool confirmMoves: Logic.has(Logic.lowerList(saved("confirmMoves", [])), project)
+  readonly property bool confirmMoves: Logic.has(Logic.lowerList(saved("confirmMoves", [])), projectKey)
   property var boardStates: saved("boardStates", ({})) || ({})
   readonly property Item avatarMask: sharedAvatarMask
 
@@ -129,7 +142,7 @@ Panel {
   // (the reason and Try again) takes the board's place.
   readonly property bool failed: setup === "" && boardState !== "ready" && boardState !== "loading"
   readonly property bool onDefault: project === defaultProject && resolvedBoardId === (defaultBoardId || firstBoardId)
-  readonly property string stateKey: project + "#" + (resolvedBoardId || "labels")
+  readonly property string stateKey: projectKey + "#" + (resolvedBoardId || "labels")
   readonly property var boardEntry: boardStates[stateKey] || null
   readonly property var availableColumns: columns.filter(function(c) { return c.name !== "Unlabeled" || (c.issues || []).length > 0 })
   readonly property var shownColumns: availableColumns.filter(function(c) { return !isHidden(c.name) })
@@ -173,8 +186,8 @@ Panel {
   readonly property var accessEntry: project !== "" ? feed.access[project] || null : null
   readonly property string accessNote: Logic.accessNote(accessEntry)
   readonly property bool writable: accessNote === ""
-  readonly property bool hintDismissed: Logic.has(Logic.lowerList(saved("accessHintDismissed", [])), project)
-  function dismissHint() { if (!hintDismissed) persist(undefined, undefined, undefined, { accessHintDismissed: Logic.lowerList(saved("accessHintDismissed", [])).concat([project.toLowerCase()]) }) }
+  readonly property bool hintDismissed: Logic.has(Logic.lowerList(saved("accessHintDismissed", [])), projectKey)
+  function dismissHint() { if (!hintDismissed) persist(undefined, undefined, undefined, { accessHintDismissed: Logic.lowerList(saved("accessHintDismissed", [])).concat([projectKey.toLowerCase()]) }) }
 
   // New board data would replace the card being moved or held under the
   // pointer, so while held, board answers are dropped and refetched after.
@@ -260,7 +273,8 @@ Panel {
 
   // Same write path as built-in widgets: merge into the inline entry and hand
   // it to the shell facade. Without the facade the state stays in memory.
-  // nextDefault ({ project, id, name }) replaces the saved default board.
+  // nextDefault ({ project, id, name }) replaces the saved default board (this
+  // server's: on another one, settings.serverDefaults[host]; gitlab.com's stays).
   // nextBots replaces settings.bots (Settings > Bots), nextAlerts settings.alerts
   // (Settings > Alerts); otherwise they are kept as saved. more: other keys to set.
   function persist(nextDefault, nextBots, nextAlerts, more) {
@@ -269,9 +283,16 @@ Panel {
     var entry = { id: moduleName }
     var dropped = ["id", "collapsedColumns", "hiddenColumns", "project", "boardId", "boardName"]
     for (var key in savedSettings) if (dropped.indexOf(key) === -1) entry[key] = savedSettings[key]
-    entry.defaultProject = d.project
-    entry.defaultBoardId = d.id
-    entry.defaultBoardName = d.name
+    if (onGitlabCom) {
+      entry.defaultProject = d.project
+      entry.defaultBoardId = d.id
+      entry.defaultBoardName = d.name
+    } else if (nextDefault) {
+      var defaults = {}, old = Object(saved("serverDefaults", ({})))
+      for (var h in old) defaults[h] = old[h]
+      defaults[gitlabHost] = { project: d.project, id: d.id, name: d.name }
+      entry.serverDefaults = defaults
+    }
     entry.refreshIntervalSec = refreshIntervalSec
     entry.defaultCollapsed = defaultCollapsed
     entry.boardStates = boardStates
@@ -287,6 +308,8 @@ Panel {
   function helperPath() {
     return decodeURIComponent(Qt.resolvedUrl("board-fetch").toString().replace(/^file:\/\//, ""))
   }
+  // board-fetch with these arguments, on this server: the one way every view runs it.
+  function helperCommand(args) { return [helperPath()].concat(args, ["--hostname", gitlabHost]) }
 
   // ifDue (the timer, opening the popup): skipped when this board was fetched
   // less than an interval ago, on any screen; that answer is shown instead.
@@ -315,7 +338,7 @@ Panel {
     if (project === "" || boardState !== "loading" || cacheProcess.running) return
     cacheProcess.key = project + "#" + boardId
     cacheProcess.session = session
-    cacheProcess.command = [helperPath(), "cached", "--project", project, "--board", boardId]
+    cacheProcess.command = helperCommand(["cached", "--project", project, "--board", boardId])
     cacheProcess.running = true
   }
   function applyCache(raw, key) {
@@ -409,8 +432,8 @@ Panel {
     move = { iid: row.iid, snapshot: columns, key: stateKey }
     moveError = ""
     columns = Logic.movedColumns(columns, row, from, to)
-    moveProcess.command = [helperPath(), "move", "--project", project, "--board", resolvedBoardId,
-      "--iid", String(row.iid), "--from", Logic.listSpec(from), "--to", Logic.listSpec(to)]
+    moveProcess.command = helperCommand(["move", "--project", project, "--board", resolvedBoardId,
+      "--iid", String(row.iid), "--from", Logic.listSpec(from), "--to", Logic.listSpec(to)])
     moveProcess.running = true
     moveWatchdog.restart()
     return true
@@ -442,7 +465,7 @@ Panel {
     auxProcess.session = session
     auxError = ""
     auxLoading = true
-    auxProcess.command = [helperPath(), kind].concat(args)
+    auxProcess.command = helperCommand([kind].concat(args))
     auxProcess.running = true
   }
 
@@ -547,7 +570,7 @@ Panel {
     if (signingOut) return
     signingOut = true
     accountError = ""
-    logoutProcess.command = [helperPath(), "logout"]
+    logoutProcess.command = helperCommand(["logout"])
     logoutProcess.running = true
   }
   function signedOut(raw) {
@@ -566,7 +589,7 @@ Panel {
   readonly property string installCommand: "sudo pacman -S glab"
   readonly property string icon: "\uf296"  // Font Awesome gitlab (Nerd Font): the bar icon and the setup panel
   function signIn() {
-    Quickshell.execDetached(["omarchy-launch-floating-terminal-with-presentation", "glab auth login"])
+    Quickshell.execDetached(["omarchy-launch-floating-terminal-with-presentation", loginCommand])
     close()
   }
   function copyInstall() { Quickshell.execDetached(["wl-copy", installCommand]) }
@@ -588,14 +611,40 @@ Panel {
     if (view === "board" && (setup !== "" || failed || boardState === "loading")) return ""  // the board body says it
     if (project === "") return ""
     if (boardState === "loading") return "Loading GitLab issues…"
-    if (boardState === "logged-out") return message || "Not signed in. Run: glab auth login"
+    if (boardState === "logged-out") return message || "Not signed in. Run: " + loginCommand
     return message || "Could not load issues."
   }
 
   implicitWidth: button.implicitWidth
   implicitHeight: button.implicitHeight
 
-  Component.onCompleted: { Qt.callLater(readCache); feed.watch(watchOwner, watchCfg) }
+  Component.onCompleted: { feed.setHost(gitlabHost); Qt.callLater(readCache); feed.watch(watchOwner, watchCfg) }
+  // Another server: nothing from the last one stays (its board, saved copy,
+  // projects, account, merge requests: feed.setHost forgets them), and its own
+  // default board loads, or the picker. Answers on their way are dropped (session).
+  property string shownHost: "gitlab.com"  // the server this copy shows
+  onGitlabHostChanged: switchServer()
+  function switchServer() {
+    if (gitlabHost === shownHost) return
+    shownHost = gitlabHost
+    feed.setHost(gitlabHost)
+    session++
+    // Back to following the saved default, as on a shell start.
+    project = Qt.binding(function() { return root.defaultProject })
+    boardId = Qt.binding(function() { return root.defaultBoardId })
+    boardName = Qt.binding(function() { return root.defaultBoardName })
+    columns = []; projects = []; pickerBoards = []; cached = false; account = ""; accountError = ""
+    resolvedBoardId = boardId; firstBoardId = ""; refreshError = ""; moveError = ""; message = ""; updatedAt = ""
+    pendingMove = null; dropPicks()
+    boardState = "loading"
+    if (view !== "board" && view !== "settings") showView("board")
+    // Once the settings-bound properties (the default board) have caught up.
+    Qt.callLater(function() {
+      if (view === "settings") checkAccount()
+      if (opened) refresh()
+      else readCache()
+    })
+  }
   onOpenedChanged: if (opened) { view = "board"; cursor = null; refresh(true) } else { boardView.endDrag(); pendingMove = null; if (!bulkBar.busy && bulkBar.mode !== "results") dropPicks(); saveFolds() }
 
   // Only while the popup is open; opening it refreshes if due (onOpenedChanged).

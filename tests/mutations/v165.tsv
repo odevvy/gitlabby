@@ -22,3 +22,35 @@ url-host-raw	logic/alerts.js	(Core.serverHost(host) || "gitlab.com")	(host || "g
 alert-host-dropped	logic/alerts.js	host = Core.serverHost(opts.host) || "gitlab.com"	host = "gitlab.com"	node
 alert-bots-shared	logic/alerts.js	botsConfig(opts.bots, Core.serverKey(host, project))	botsConfig(opts.bots, project)	node
 alert-review-url-default	logic/alerts.js	came.length + " cards entered review", body: shown.join(", ") + (came.length > 3 ? " +" + (came.length - 3) + " more" : "") + " · " + project, url: boardUrl(next, host)	came.length + " cards entered review", body: shown.join(", ") + (came.length > 3 ? " +" + (came.length - 3) + " more" : "") + " · " + project, url: boardUrl(next)	node
+q-host-ignored	Board.qml	readonly property string gitlabHost: Logic.serverHost(saved("gitlabHost", "gitlab.com")) || "gitlab.com"	readonly property string gitlabHost: "gitlab.com"	qml
+q-host-raw	Board.qml	Logic.serverHost(saved("gitlabHost", "gitlab.com")) || "gitlab.com"	String(saved("gitlabHost", "gitlab.com"))	qml
+q-key-bare	Board.qml	readonly property string projectKey: Logic.serverKey(gitlabHost, project)	readonly property string projectKey: project	qml
+q-bots-shared	Board.qml	Logic.botsConfig(saved("bots", null), projectKey)	Logic.botsConfig(saved("bots", null), project)	qml
+q-alerts-shared	Board.qml	Logic.alertsFor(saved("alerts", null), projectKey)	Logic.alertsFor(saved("alerts", null), project)	qml
+q-setalert-shared	Board.qml	Logic.withAlert(saved("alerts", null), projectKey, kind, on)	Logic.withAlert(saved("alerts", null), project, kind, on)	qml
+q-confirm-shared	Board.qml	Logic.lowerList(saved("confirmMoves", [])), projectKey)	Logic.lowerList(saved("confirmMoves", [])), project)	qml
+q-statekey-shared	Board.qml	stateKey: projectKey + "#"	stateKey: project + "#"	qml
+q-default-shared	Board.qml	  readonly property var hostDefault: onGitlabCom\n	  readonly property var hostDefault: true\n	qml
+q-default-overwrites	Board.qml	    if (onGitlabCom) {\n      entry.defaultProject	    if (true) {\n      entry.defaultProject	qml
+q-default-not-saved	Board.qml	    } else if (nextDefault) {	    } else if (false) {	qml
+q-default-written-always	Board.qml	    } else if (nextDefault) {	    } else {	qml
+q-no-hostname-arg	Board.qml	concat(args, ["--hostname", gitlabHost])	concat(args)	qml
+q-cache-no-host	Board.qml	cacheProcess.command = helperCommand(["cached", "--project", project, "--board", boardId])	cacheProcess.command = [helperPath(), "cached", "--project", project, "--board", boardId]	qml
+q-login-plain	Board.qml	"glab auth login" + (onGitlabCom ? "" : " --hostname " + gitlabHost)	"glab auth login"	qml
+q-login-always	Board.qml	"glab auth login" + (onGitlabCom ? "" : " --hostname " + gitlabHost)	"glab auth login --hostname " + gitlabHost	qml
+q-signin-fixed	Board.qml	"omarchy-launch-floating-terminal-with-presentation", loginCommand]	"omarchy-launch-floating-terminal-with-presentation", "glab auth login"]	qml
+q-no-switch	Board.qml	  onGitlabHostChanged: switchServer()	  onGitlabHostChanged: {}	qml
+q-switch-keeps-session	Board.qml	    feed.setHost(gitlabHost)\n    session++	    feed.setHost(gitlabHost)	qml
+q-switch-keeps-account	Board.qml	cached = false; account = ""; accountError = ""\n	cached = false; accountError = ""\n	qml
+q-switch-keeps-projects	Board.qml	    columns = []; projects = []; pickerBoards = []; cached = false; account = ""; accountError = ""	    columns = []; pickerBoards = []; cached = false; account = ""; accountError = ""	qml
+q-switch-keeps-project	Board.qml	    project = Qt.binding(function() { return root.defaultProject })	    project = project	qml
+q-switch-no-account-check	Board.qml	      if (view === "settings") checkAccount()	      if (false) checkAccount()	qml
+q-switch-no-load	Board.qml	      if (opened) refresh()\n      else readCache()	      if (false) refresh()	qml
+q-service-not-told	Board.qml	  function switchServer() {\n    if (gitlabHost === shownHost) return\n    shownHost = gitlabHost\n    feed.setHost(gitlabHost)	  function switchServer() {\n    if (gitlabHost === shownHost) return\n    shownHost = gitlabHost	qml
+q-watch-no-host	Board.qml	base: refreshIntervalSec, host: gitlabHost }	base: refreshIntervalSec }	qml
+s-sethost-keeps	BoardService.qml	host = h; forget() }	host = h }	qml
+s-no-hostname-arg	BoardService.qml	concat(args, ["--hostname", host])	concat(args)	qml
+s-fetch-no-host	BoardService.qml	fetch.command = helperCommand(job.args)	fetch.command = [helperPath()].concat(job.args)	qml
+s-mrs-no-host	BoardService.qml	mrFetch.command = helperCommand(Logic.mrsArgs(scope))	mrFetch.command = [helperPath()].concat(Logic.mrsArgs(scope))	qml
+s-access-no-host	BoardService.qml	accessFetch.command = helperCommand(["access", "--project", project])	accessFetch.command = [helperPath(), "access", "--project", project]	qml
+s-alert-no-host	BoardService.qml	m.iid }), host: cfg.host })	m.iid }) })	qml
