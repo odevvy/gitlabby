@@ -23,7 +23,11 @@ boxes = lambda: sorted([it for it in h.visible(lambda it: it.property("clickable
 bx = boxes()
 ok("A1 Alerts: two check boxes, both off by default", [b.property("modelData")["label"] for b in bx] == ["A card enters review", "A bot stops working"] and not any(b.property("on") for b in bx), [b.property("modelData") for b in bx])
 ok("A2 nothing watched, no background refresh", h.ev("root.feed.watchedKeys") == [])
-ok("A3 Settings still fits his screen (no scroll)", h.ev("panel.contentHeight") == round(h.ev("keyCatcher.implicitHeight") + h.ev("panel.verticalContentInset")) and h.ev("panel.contentHeight") < DESK, h.ev("panel.contentHeight"))
+# Settings may scroll inside the popup: bring Alerts into view first.
+sf = next(it for it in h.walk(h.ev("settingsView")) if it.metaObject().className().startswith("QQuickFlickable"))
+sf.setProperty("contentY", max(0, min(bx[0].mapToItem(sf.property("contentItem"), QPointF(0, 0)).y() - 60, sf.property("contentHeight") - sf.height()))); h.spin(120)
+pc = h.cls("KeyboardPanel"); top, bottom = pc.mapToScene(QPointF(0, 0)).y(), pc.mapToScene(QPointF(0, pc.height())).y()
+ok("A3 the Alerts boxes are in view inside the popup (scrolled to if needed)", all(top <= b.mapToScene(QPointF(0, 0)).y() and b.mapToScene(QPointF(0, b.height())).y() <= bottom for b in boxes()), [b.mapToScene(QPointF(0, 0)).y() for b in boxes()])
 def shot(name): QTest.mouseMove(h.win, QPoint(1, 1)); h.spin(80); out and h.grab_card(os.path.join(out, name + ".png"))
 shot("settings-alerts")
 h.click(bx[0]); h.spin(60)

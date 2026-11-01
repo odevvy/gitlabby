@@ -91,8 +91,11 @@ ok("M5 Board's tip: back, with its key, off the board only", bt.property("tip") 
 h.key(Qt.Key_Escape, ""); h.spin(80)
 ok("M6 Esc still goes back from the MRs view", h.ev("root.view") == "board")
 shot("header")
-# --- a narrow board: Updated gives way, then "MRs" ---------------------------------
-h.ev("root.refresh()"); h.spin(60); h.answer("board", board(["todo", "review"])); h.spin(250); rest()
+# --- a narrow popup: Updated gives way, then "MRs" ---------------------------------
+# (A two-column board on a narrow screen: the popup is the board's width with
+# a floor, so the screen is what makes it narrow.)
+h.ev("root.refresh()"); h.spin(60); h.answer("board", board(["todo", "review"])); h.spin(250)
+h.ev("panel.availableCardWidth = Math.max(Style.space(520), root.shownBoardWidth + panel.padding * 2 + Style.space(4))"); h.spin(250); rest()
 ok("N1 a narrow board: the Merge requests tab reads 'MRs' (tip in full)", hd("compactTabs") and glyph(mt).property("text") == "MRs" and mt.property("tip") == "Merge requests (m)", (hd("width"), hd("freeWidth")))
 ok("N2 ... Updated shrinks to 48 points and the title gets all the rest", hd("status.width") <= S(48) + S(4) and title.width() >= hd("freeWidth") - S(48) - S(12) - 1, (title.width(), hd("status.width"), hd("freeWidth")))
 shot("header-narrow")
