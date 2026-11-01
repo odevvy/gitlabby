@@ -64,3 +64,7 @@ i-state-no-host	IssueView.qml	stateProcess.command = host.helperCommand([op	stat
 i-comment-no-host	IssueView.qml	commentProcess.command = host.helperCommand(["comment"	commentProcess.command = [host.helperPath()].concat(["comment"	qml
 i-recent-shared	IssueView.qml	key: visible && issue.iid ? host.projectKey + "#"	key: visible && issue.iid ? host.project + "#"	qml
 i-recent-kept	IssueView.qml	    function onGitlabHostChanged() { view.recent = ({}); view.recentOrder = [] } }	    function onGitlabHostChanged() {} }	qml
+t-labels-no-host	SettingsView.qml	labelsProcess.command = host.helperCommand(["labels", "--project", host.project])	labelsProcess.command = [host.helperPath(), "labels", "--project", host.project]	qml
+t-labels-shared	SettingsView.qml	(labelsFor === host.projectKey && labelsState === "ready")) return\n    labelsFor = host.projectKey	(labelsFor === host.project && labelsState === "ready")) return\n    labelsFor = host.project	qml
+t-account-fixed	SettingsView.qml	" on " + view.host.gitlabHost : "Checking	" on gitlab.com" : "Checking	qml
+t-signout-fixed	SettingsView.qml	"Sign out of glab on " + view.host.gitlabHost + "? This	"Sign out of glab on gitlab.com? This	qml
