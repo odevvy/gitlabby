@@ -1,8 +1,8 @@
 # v0.1.56: smooth fold. Folding or hiding a column keeps the board state in
 # memory and saves it once: when the popup closes, or 2 s after the last fold
 # (each save rewrites shell.json, which made Omarchy reload mid-animation).
-# For 200 ms after a fold (root.folding) the column width, the popup width and
-# its height animate 150 ms ease-out together, cards and strip fade in turns,
+# For 200 ms after a fold (root.folding) the column width and the popup width
+# animate 150 ms ease-out together (the height is fixed since 0.1.64), cards and strip fade in turns,
 # and a board answer waits; board and view switches stay instant.
 # Usage: run156.py <src> [outdir]   (outdir: frame PNGs of a fold and an unfold)
 import sys, os, time; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -51,7 +51,7 @@ h.ok("F4 the fold ends at the strip width within 200 ms", fold[-1][1] == sw and 
 h.ok("F5 cards fade first, the strip after: never both half-shown", max(min(r[4], r[5]) for r in fold) < 0.45 and all(r[4] < 0.1 for r in fold if r[0] < 40) and fold[-1][4] == 1 and fold[-1][5] == 0,
      [(int(r[0]), round(r[4], 2), round(r[5], 2)) for r in fold][:8])
 hs = [r[3] for r in fold]
-h.ok("F6 the height animates too (the tallest column folded)", fold[-1][3] < h0 - 4 and any(fold[-1][3] + 2 < x < h0 - 2 for x in hs), (h0, sorted(set(int(x) for x in hs))))
+h.ok("F6 the height stays put (one fixed frame since 0.1.64)", all(x == h0 for x in hs), (h0, sorted(set(int(x) for x in hs))))
 h.ok("F7 folding is over after 200 ms", not h.ev("root.folding"))
 # --- unfold ----------------------------------------------------------------------
 h.ev("root.toggleCollapsed('todo')"); unfold = sample("todo", "unfold")
@@ -94,8 +94,8 @@ c = column("approved"); was = c.width(); bw = h.ev("root.boardWidth")
 h.ev("(function(){ var s = {}; s[root.stateKey] = { collapsed: [], hidden: [] }; root.boardStates = s })()"); app.processEvents()
 h.ok("I1 a board switch (states replaced, no fold) resizes columns at once", column("approved").width() == cw and was == sw, (was, column("approved").width()))
 h.ok("I2 and the popup width at once", h.ev("root.shownBoardWidth") == h.ev("root.boardWidth") != bw)
-hh = h.ev("root.shownHeight"); h.ev("root.showView('settings')"); app.processEvents()
-h.ok("I3 a view switch sizes the popup at once", h.ev("root.shownHeight") == h.ev("keyCatcher.implicitHeight") and h.ev("root.shownHeight") != hh)
+hw, hh = card.width(), card.height(); h.ev("root.showView('settings')"); app.processEvents()
+h.ok("I3 a view switch keeps the popup's size", card.width() == hw and card.height() == hh, (hw, hh, card.width(), card.height()))
 h.ev("root.showView('board')"); h.spin(200)
 h.finish()
 fails = [n for n, c in h.results if not c]

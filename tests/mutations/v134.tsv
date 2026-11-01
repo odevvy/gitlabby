@@ -1,8 +1,3 @@
-cap-everywhere	logic/board.js	return view === "settings" || view === "keys" ? 0 : cap	return cap	qml
-cap-nowhere	logic/board.js	return view === "settings" || view === "keys" ? 0 : cap	return 0	qml
-cap-settings-only	logic/board.js	view === "settings" || view === "keys"	view === "settings"	qml
-cap-keys-only	logic/board.js	view === "settings" || view === "keys"	view === "keys"	qml
-board-ignores-cap	Board.qml	Logic.heightCap(root.view, Style.space(640))	Style.space(640)	node
 refresh-two-lines	SettingsView.qml	readonly property bool oneLine: refreshHeading.implicitWidth + Style.space(12) + segPane.implicitWidth <= width	readonly property bool oneLine: false	qml
 refresh-always-one	SettingsView.qml	readonly property bool oneLine: refreshHeading.implicitWidth + Style.space(12) + segPane.implicitWidth <= width	readonly property bool oneLine: true	qml
 refresh-stack-overlaps	SettingsView.qml	y: refreshRow.oneLine ? 0 : refreshHeading.implicitHeight + Style.space(6)	y: 0	qml

@@ -49,8 +49,8 @@ the picker's board step. The header shows a star on the default board and a
   refresh, keyboard and settings buttons. Buttons and tabs are 28-point targets
   with a faint fill on hover, and every tip names its key. Tips come after
   half a second of hovering, and never while a column folds, so a strip or
-  header that slides under the cursor doesn't flash one. On a narrow board
-  `Updated` shrinks first, then the tab reads `MRs`.
+  header that slides under the cursor doesn't flash one. When the screen is
+  too narrow for that, `Updated` shrinks first, then the tab reads `MRs`.
 - Click a column header to collapse it to a narrow strip (count, colour dot,
   name). The columns button in the header (the columns icon left of refresh, with
   a number when columns are hidden) opens a row of chips under the bots: click one to hide or show
@@ -62,11 +62,12 @@ the picker's board step. The header shows a star on the default board and a
   General (the refresh interval, and which columns start collapsed), Bots
   (the bots of the project on screen, see [Who's busy](#whos-busy)), Alerts,
   and Account (who is signed in). A ticked box has an orange outline and tick.
-- The popup is as tall as the board needs, up to 640 points (at your Omarchy
-  scale). Settings and the keyboard shortcuts aren't held to that: they grow
-  to their full height when the screen has room under the bar, and scroll
-  only when it doesn't, as on a short laptop screen. Going back to the board
-  returns the popup to the board's height.
+- The popup keeps one size in every view: the board's width (at least 760
+  points, at your Omarchy scale) and 640 points tall, or less when the screen
+  has less room under the bar. The board, an issue, the merge requests,
+  Settings and the keyboard shortcuts fit inside it or scroll inside it, so
+  switching views never resizes the popup. Only folding or hiding columns
+  changes its width.
 - Every icon button says what it does when you point at it, with its key in
   brackets when it has one: `Refresh (r)`, `Settings (s)`,
   `Keyboard shortcuts (?)`, `Switch project or board (p)`,

@@ -9,8 +9,6 @@ f-never-ends	Board.qml	onTriggered: root.folding = false	onTriggered: root.foldi
 f-answers-not-held	Board.qml	bulkBar.armed || folding	bulkBar.armed	qml
 w-popup-snaps	Board.qml	: root.shownBoardWidth) + panel.padding	: root.boardWidth) + panel.padding	qml
 w-popup-always	Board.qml	Behavior on shownBoardWidth { enabled: root.folding;	Behavior on shownBoardWidth { enabled: true;	qml
-h-height-snaps	Board.qml	fittedContentHeight(root.shownHeight,	fittedContentHeight(keyCatcher.implicitHeight,	qml
-h-height-always	Board.qml	Behavior on shownHeight { enabled: root.folding;	Behavior on shownHeight { enabled: true;	qml
 c-column-always	BoardView.qml	Behavior on width { enabled: view.host.folding;	Behavior on width { enabled: true;	qml
 c-column-slow	BoardView.qml	enabled: view.host.folding; NumberAnimation { duration: 150	enabled: view.host.folding; NumberAnimation { duration: 400	qml
 c-column-snaps	BoardView.qml	Behavior on width { enabled: view.host.folding;	Behavior on width { enabled: false;	qml

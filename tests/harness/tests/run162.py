@@ -2,7 +2,7 @@
 # cards (Board's four on the left), each with a caption heading; the title as
 # in Settings; every shortcut one 26 px line: compact caps (a chord's caps
 # joined, a quiet "/" between choices), short words and a quiet note, nothing
-# wrapped or clipped at the popup's 760 px.
+# wrapped or clipped at the popup's width (760 px or more).
 # Usage: run162.py <src>
 import sys, os; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from lib import *
@@ -15,7 +15,7 @@ kv = h.cls("KeysView"); kev = lambda code, it=kv: h.ev(code, QQmlEngine.contextF
 S = lambda n: h.ev("Style.space(%d)" % n)
 named = lambda n: [it for it in h.walk(kv) if it.objectName() == n and it.isVisible()]
 ok = h.ok
-ok("K0 two columns at the popup's 760", kev("twoColumns") and abs(h.ev("panel.contentWidth") - S(760)) < 1, h.ev("panel.contentWidth"))
+ok("K0 two columns at the popup's width (760 or more)", kev("twoColumns") and h.ev("panel.contentWidth") >= S(760) - 1, h.ev("panel.contentWidth"))
 title = [it for it in h.walk(kv) if it.property("text") == "Keyboard shortcuts"]
 ok("K1 the title is Settings' (subtitle, bold)", title and title[0].property("font").pixelSize() == h.ev("Style.font.subtitle") and title[0].property("font").bold())
 cards = named("keyGroup")
@@ -34,9 +34,13 @@ ok("K6 Shift H / L: Shift and H joined (2 px), then a quiet /, then L", [c.child
    and [(s.property("text"), s.property("color").name()) for s in h.walk(mv) if s.objectName() == "keySep" and s.isVisible()] == [("/", h.ev("root.quiet").name())], [gap(cs[0], cs[1]), gap(cs[1], cs[2])])
 ok("K7 h j k l is one cap", [c.childItems()[0].property("text") for c in caps(row("Move between cards"))] == ["h j k l", "← ↓ ↑ →"])
 notes = [n for n in h.walk(mv) if n.objectName() == "keyNote" and n.isVisible()]
-ok("K8 the note after the words, quiet", notes and notes[0].property("text") == "asks first" and notes[0].property("color").name() == h.ev("root.quiet").name(), notes and (notes[0].property("text"), notes[0].property("color").name(), h.ev("root.quiet").name()))
+words = [n for n in h.walk(mv) if n.objectName() == "keyWhat" and n.isVisible()]
+ok("K8 the note after the words, quiet", words and words[0].property("text") == "Move left / right" and notes and notes[0].property("text") == "asks first" and notes[0].property("color").name() == h.ev("root.quiet").name(), notes and (notes[0].property("text"), notes[0].property("color").name(), h.ev("root.quiet").name()))
 fl = next(it for it in h.walk(kv) if it.metaObject().className() == "QQuickFlickable")
-ok("K9 nothing clipped: everything fits without scrolling on a tall screen", fl.property("contentHeight") <= fl.height() + 0.5, (fl.property("contentHeight"), fl.height()))
+fl.setProperty("contentY", max(0, fl.property("contentHeight") - fl.height())); h.spin(100)
+last = max(cards, key=lambda c: c.mapToItem(fl, QPointF(0, c.height())).y())
+ok("K9 nothing out of reach: what doesn't fit scrolls, and the last card ends inside the view", fl.property("interactive") is not False and last.mapToItem(fl, QPointF(0, last.height())).y() <= fl.height() + 0.5, (fl.property("contentHeight"), fl.height()))
+fl.setProperty("contentY", 0); h.spin(60)
 for c in cards:
     p = c.mapToItem(fl, QPointF(0, 0))
     if p.x() < -0.5 or p.x() + c.width() > fl.width() + 0.5: ok("K10 card inside the view", False, p.x()); break
