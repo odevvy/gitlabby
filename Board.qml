@@ -665,10 +665,11 @@ Panel {
     id: panel
     anchorItem: button; owner: root; bar: root.bar
     open: root.opened; focusTarget: keyCatcher
-    // fittedContentWidth caps at availableCardWidth (screen minus margins);
-    // anything wider scrolls horizontally inside the board.
-    contentWidth: panel.fittedContentWidth(Math.max(Style.space(520), (root.view === "keys" || root.view === "mrs") ? Style.space(760) : root.view !== "board" ? 0
-      : (root.setup !== "" || root.failed || root.boardState === "loading" ? skeleton.implicitWidth : root.shownBoardWidth) + panel.padding * 2 + Style.space(4)))
+    // Every view gets the board's width (760 at least), so switching views
+    // never changes it; only folding columns does. fittedContentWidth caps at
+    // availableCardWidth (screen minus margins); anything wider scrolls inside.
+    contentWidth: panel.fittedContentWidth(Math.max(Style.space(760),
+      (root.setup !== "" || root.failed || root.boardState === "loading" ? skeleton.implicitWidth : root.shownBoardWidth) + panel.padding * 2 + Style.space(4)))
     // fittedContentHeight caps at the free screen height (availableCardHeight)
     // and at heightCap: none for Settings and Keys, 640 for the board and an issue.
     contentHeight: panel.fittedContentHeight(root.shownHeight, Logic.heightCap(root.view, Style.space(640)))
