@@ -661,6 +661,13 @@ test("alerts: settings per project, events between two good answers, the notify 
   const c = ans([col("todo", [row(1, ["todo"]), row(2, ["todo", "app-ui"])]), col("in progress", []), col("Review", [row(4, ["review"]), row(3, ["review", "api"])])])
   assert.deepEqual(L.alertEvents(a, c, { idle: true, bots: on.bots }), [{ headline: "Stopped working: API", body: "On g/p: API is waiting in Review", url: "https://gitlab.com/g/p/-/boards/7" }])
   assert.deepEqual(L.alertEvents(a, c, { idle: false, bots: on.bots }), [])
+  // Another server (v0.1.65): its board link, and its own bots (gitlab.com's same path doesn't count).
+  const there = { "gitlab.example.com:g/p": on.bots["g/p"] }
+  assert.deepEqual(L.alertEvents(a, c, { idle: true, bots: there, host: "gitlab.example.com" }), [{ headline: "Stopped working: API", body: "On g/p: API is waiting in Review", url: "https://gitlab.example.com/g/p/-/boards/7" }])
+  assert.deepEqual(L.alertEvents(a, c, { idle: true, bots: on.bots, host: "gitlab.example.com" }), [], "gitlab.com's bots aren't this server's")
+  assert.deepEqual(L.alertEvents(a, c, { idle: true, bots: there }), [], "nor the other way round")
+  assert.deepEqual(L.alertEvents(a, c, { idle: true, bots: on.bots, host: "gitlab.com" }), L.alertEvents(a, c, { idle: true, bots: on.bots }))
+  assert.equal(L.alertEvents(ans([col("Review", [row(4, ["review"])])]), many, { review: true, host: "gitlab.example.com" })[0].url, "https://gitlab.example.com/g/p/-/boards/7")
   // Only https links; a bad project path: no board link.
   assert.equal(L.httpsUrl("http://x"), "")
   assert.equal(L.httpsUrl("https://gitlab.com/a b"), "")
@@ -669,6 +676,8 @@ test("alerts: settings per project, events between two good answers, the notify 
   assert.equal(L.httpsUrl("https://gitlab.com/g/p/-/issues/1?x=it's"), "https://gitlab.com/g/p/-/issues/1?x=it's")
   assert.equal(L.boardUrl({ project: "g/p;rm", board: { id: 7 } }), "")
   assert.equal(L.boardUrl({ project: "g/sub/p", board: { id: "x" } }), "https://gitlab.com/g/sub/p/-/boards")
+  assert.equal(L.boardUrl({ project: "g/p", board: { id: 7 } }, "https://Git.Example.org/"), "https://git.example.org/g/p/-/boards/7")
+  for (const bad of ["evil.com/x?", "x.com:8443", "http://x.com", "x.com\"@y", ""]) assert.equal(L.boardUrl({ project: "g/p", board: { id: 7 } }, bad), "https://gitlab.com/g/p/-/boards/7", bad)
   // The command (Omarchy bin/omarchy-notification-send): our app name, low urgency, the
   // body escaped for StyledText, --exec last with separate words, https only.
   assert.deepEqual(L.notifyArgv({ headline: "#2 is in review", body: "#2 Fix <b> & co · g/p", url: "https://gitlab.com/g/p/-/issues/2" }),
@@ -688,7 +697,7 @@ test("alerts wiring: Settings saves settings.alerts per project; each copy hands
   const fs = require("node:fs"), path = require("node:path"), dir = path.join(__dirname, "..")
   const board = fs.readFileSync(path.join(dir, "Board.qml"), "utf8")
   const settings = fs.readFileSync(path.join(dir, "SettingsView.qml"), "utf8")
-  assert.match(board, /readonly property var alerts: Logic\.alertsFor\(saved\("alerts", null\), project\)/)
+  assert.match(board, /readonly property var alerts: Logic\.alertsFor\(saved\("alerts", null\), project(Key)?\)/)
   assert.match(board, /onWatchCfgChanged: feed\.watch\(watchOwner, watchCfg\)/)
   assert.match(board, /Component\.onDestruction: \{ saveFolds\(\); feed\.watch\(watchOwner, null\) \}/)
   assert.match(board, /if \(nextAlerts !== undefined\) entry\.alerts = nextAlerts/)
@@ -746,7 +755,7 @@ test("merge requests: the answer checked, status pills, reviewer marks, sublines
   const fs = require("node:fs"), path = require("node:path")
   const svc = fs.readFileSync(path.join(__dirname, "..", "BoardService.qml"), "utf8")
   assert.equal((svc.match(/requestMrs\(/g) || []).length, 2, "defined once, called once (the pending one)")
-  assert.match(svc, /mrFetch\.command = \[helperPath\(\)\]\.concat\(Logic\.mrsArgs\(scope\)\)/)
+  assert.match(svc, /mrFetch\.command = (\[helperPath\(\)\]\.concat|helperCommand)\(Logic\.mrsArgs\(scope\)\)/)
   assert.match(svc, /Date\.now\(\) - last\.startedAt < 60000/)
 })
 
@@ -856,10 +865,10 @@ test("bulk bar wiring: only the single-card writes, one at a time, picks from v 
   const bar = fs.readFileSync(path.join(dir, "BulkBar.qml"), "utf8")
   const board = fs.readFileSync(path.join(dir, "Board.qml"), "utf8")
   const view = fs.readFileSync(path.join(dir, "BoardView.qml"), "utf8")
-  // Writes: one board-fetch bulk process for the project; each card is one
-  // stdin line, Logic.bulkPlan's arguments (move, relabel, close, reopen).
+  // Writes: one board-fetch bulk process for the project, on the board's
+  // server (helperCommand: --hostname); each card is one stdin line, Logic.bulkPlan's arguments (move, relabel, close, reopen).
   assert.deepEqual([...bar.matchAll(/\.command = (.*)/g)].map(m => m[1]),
-    ["[host.helperPath(), \"labels\", \"--project\", host.project]", "[host.helperPath(), \"bulk\", \"--project\", host.project]"])
+    ["host.helperCommand([\"labels\", \"--project\", host.project])", "host.helperCommand([\"bulk\", \"--project\", host.project])"])
   assert.doesNotMatch(bar, /execDetached/)
   assert.deepEqual([...bar.matchAll(/write\((.*?)\)( \+ "\\n")?;/g)].map(m => m[1]),
     ["JSON.stringify(plan[i].args) + \"\\n\"", "bar.pendingLine"])
@@ -919,10 +928,32 @@ test("access hint: the words, glab login only, the token page over https with re
   assert.doesNotMatch(url, /scopes=[^&]*\bapi\b(?!_)/, "never the write scope")
 })
 
+test("server host: a bare name glab takes; https:// and a trailing / dropped; http, ports and paths refused", () => {
+  assert.equal(L.serverHost("gitlab.com"), "gitlab.com")
+  assert.equal(L.serverHost(" https://GitLab.Example.com/ "), "gitlab.example.com")
+  assert.equal(L.serverHost("gitlab.example.com//"), "gitlab.example.com")
+  assert.equal(L.serverHost("localhost"), "localhost")
+  assert.equal(L.serverHost("10.0.0.5"), "10.0.0.5")
+  assert.equal(L.serverHost("my-git.corp.example"), "my-git.corp.example")
+  for (const bad of ["http://gitlab.example.com", "gitlab.example.com:8443", "https://gitlab.example.com:8443/",
+    "gitlab.example.com/gitlab", "https://gitlab.example.com/group/app", "ftp://x", "-x.com", "x-.com", "a..b", "x.com.",
+    "", "  ", "a b", "x_y.com", "x.com;id", "$(id)", "x.com --hostname y", "https://", "a".repeat(254), null, undefined])
+    assert.equal(L.serverHost(bad), "", String(bad).slice(0, 30))
+  assert.equal(L.serverHost("a".repeat(63) + "." + "b".repeat(63)), "a".repeat(63) + "." + "b".repeat(63))
+})
+
+test("server key: gitlab.com's settings keep their bare project key; another server's are its own", () => {
+  assert.equal(L.serverKey("gitlab.com", "group/app"), "group/app")
+  assert.equal(L.serverKey("", "group/app"), "group/app")
+  assert.equal(L.serverKey("gitlab.example.com", "group/app"), "gitlab.example.com:group/app")
+  assert.notEqual(L.serverKey("a.example", "group/app"), L.serverKey("b.example", "group/app"))
+  assert.equal(L.serverKey("gitlab.example.com", ""), "gitlab.example.com:")
+})
+
 test("access in the service: asked once per project, its own process, forgotten on sign out", () => {
   const fs = require("node:fs"), path = require("node:path")
   const svc = fs.readFileSync(path.join(__dirname, "..", "BoardService.qml"), "utf8")
-  assert.match(svc, /accessFetch\.command = \[helperPath\(\), "access", "--project", project\]/)
+  assert.match(svc, /accessFetch\.command = (\[helperPath\(\), "access", "--project", project\]|helperCommand\(\["access", "--project", project\]\))/)
   assert.match(svc, /if \(project === "" \|\| access\[project\] !== undefined \|\| accessWaiting\.indexOf\(project\) !== -1\) return/)
   assert.match(svc, /function forget\(\) \{(?:(?!\n  \})[\s\S])*\n    access = \(\{\}\)/)
   assert.doesNotMatch(svc, /Timer \{[^}]*requestAccess/)
@@ -934,7 +965,7 @@ test("view-only wiring: the hint opens only GitLab's token page; writes off whil
   const board = fs.readFileSync(path.join(dir, "Board.qml"), "utf8")
   // No process, no text field, no clipboard: one link, through openUrl (https only).
   assert.doesNotMatch(hint, /Process|execDetached|TextField|TextInput|wl-copy|helperPath/)
-  assert.deepEqual([...hint.matchAll(/openUrl\(([^)]*\))\)/g)].map(m => m[1]), ["Logic.patUrl(\"gitlab.com\")"])
+  assert.deepEqual([...hint.matchAll(/openUrl\(([^)]*\))\)/g)].map(m => m[1]), ["Logic.patUrl(hint.host.gitlabHost)"])
   assert.match(board, /readonly property bool canMove: .* && writable$/m)
   assert.match(board, /if \(boardState === "ready" && !cached\) feed\.requestAccess\(project\)/)
   assert.match(board, /feed\.noteRefused\(project, data\.message\)/)

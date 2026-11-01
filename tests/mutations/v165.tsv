@@ -1,0 +1,78 @@
+host-port-allowed	board-fetch	[A-Za-z0-9])?)*$ && ${#hostname}	[A-Za-z0-9])?)*(:[0-9]+)?$ && ${#hostname}	sh
+host-path-allowed	board-fetch	[A-Za-z0-9])?)*$ && ${#hostname}	[A-Za-z0-9])?)*(/.*)?$ && ${#hostname}	sh
+host-no-length-cap	board-fetch	 && ${#hostname} -le 253 ]]	 ]]	sh
+host-cache-shared	board-fetch	host_tag="$hostname~"	true	sh
+host-cache-tag-on-gitlab	board-fetch	[[ $hostname == gitlab.com ]] || host_tag=	[[ $hostname == nothing ]] || host_tag=	sh
+host-hint-missing	board-fetch	glab auth login${host_tag:+ --hostname $hostname}	glab auth login	sh
+host-hint-always	board-fetch	glab auth login${host_tag:+ --hostname $hostname}	glab auth login --hostname $hostname	sh
+host-graphql-default	board-fetch	bounded api --hostname "$hostname" graphql	bounded api --hostname gitlab.com graphql	sh
+host-post-default	board-fetch	bounded api --hostname "$hostname" --method POST	bounded api --hostname gitlab.com --method POST	sh
+srv-keeps-scheme	logic/core.js	if (h.indexOf("https://") === 0) h = h.slice(8)	if (false) h = h.slice(8)	node
+srv-keeps-slash	logic/core.js	h = h.replace(/\/+$/, "")	h = h	node
+srv-one-slash	logic/core.js	h = h.replace(/\/+$/, "")	h = h.replace(/\/$/, "")	node
+srv-case-kept	logic/core.js	.trim().toLowerCase()	.trim()	node
+srv-port-ok	logic/core.js	"(\\." + label + ")*$"	"(\\." + label + ")*(:[0-9]+)?$"	node
+srv-path-ok	logic/core.js	"(\\." + label + ")*$"	"(\\." + label + ")*(/.*)?$"	node
+srv-unanchored	logic/core.js	new RegExp("^" + label	new RegExp(label	node
+srv-no-cap	logic/core.js	h.length <= 253 && 	true && 	node
+key-tagged-gitlab	logic/core.js	!host || host === "gitlab.com" ? project	!host ? project	node
+key-shared	logic/core.js	host + ":" + project\n	project\n	node
+url-host-ignored	logic/alerts.js	"https://" + (Core.serverHost(host) || "gitlab.com") + "/"	"https://gitlab.com/"	node
+url-host-raw	logic/alerts.js	(Core.serverHost(host) || "gitlab.com")	(host || "gitlab.com")	node
+alert-host-dropped	logic/alerts.js	host = Core.serverHost(opts.host) || "gitlab.com"	host = "gitlab.com"	node
+alert-bots-shared	logic/alerts.js	botsConfig(opts.bots, Core.serverKey(host, project))	botsConfig(opts.bots, project)	node
+alert-review-url-default	logic/alerts.js	came.length + " cards entered review", body: shown.join(", ") + (came.length > 3 ? " +" + (came.length - 3) + " more" : "") + " · " + project, url: boardUrl(next, host)	came.length + " cards entered review", body: shown.join(", ") + (came.length > 3 ? " +" + (came.length - 3) + " more" : "") + " · " + project, url: boardUrl(next)	node
+q-host-ignored	Board.qml	readonly property string gitlabHost: Logic.serverHost(saved("gitlabHost", "gitlab.com")) || "gitlab.com"	readonly property string gitlabHost: "gitlab.com"	qml
+q-host-raw	Board.qml	Logic.serverHost(saved("gitlabHost", "gitlab.com")) || "gitlab.com"	String(saved("gitlabHost", "gitlab.com"))	qml
+q-key-bare	Board.qml	readonly property string projectKey: Logic.serverKey(gitlabHost, project)	readonly property string projectKey: project	qml
+q-bots-shared	Board.qml	Logic.botsConfig(saved("bots", null), projectKey)	Logic.botsConfig(saved("bots", null), project)	qml
+q-alerts-shared	Board.qml	Logic.alertsFor(saved("alerts", null), projectKey)	Logic.alertsFor(saved("alerts", null), project)	qml
+q-setalert-shared	Board.qml	Logic.withAlert(saved("alerts", null), projectKey, kind, on)	Logic.withAlert(saved("alerts", null), project, kind, on)	qml
+q-confirm-shared	Board.qml	Logic.lowerList(saved("confirmMoves", [])), projectKey)	Logic.lowerList(saved("confirmMoves", [])), project)	qml
+q-statekey-shared	Board.qml	stateKey: projectKey + "#"	stateKey: project + "#"	qml
+q-default-shared	Board.qml	  readonly property var hostDefault: onGitlabCom\n	  readonly property var hostDefault: true\n	qml
+q-default-overwrites	Board.qml	    if (onGitlabCom) {\n      entry.defaultProject	    if (true) {\n      entry.defaultProject	qml
+q-default-not-saved	Board.qml	    } else if (nextDefault) {	    } else if (false) {	qml
+q-default-written-always	Board.qml	    } else if (nextDefault) {	    } else {	qml
+q-no-hostname-arg	Board.qml	concat(args, ["--hostname", gitlabHost])	concat(args)	qml
+q-cache-no-host	Board.qml	cacheProcess.command = helperCommand(["cached", "--project", project, "--board", boardId])	cacheProcess.command = [helperPath(), "cached", "--project", project, "--board", boardId]	qml
+q-login-plain	Board.qml	"glab auth login" + (onGitlabCom ? "" : " --hostname " + gitlabHost)	"glab auth login"	qml
+q-login-always	Board.qml	"glab auth login" + (onGitlabCom ? "" : " --hostname " + gitlabHost)	"glab auth login --hostname " + gitlabHost	qml
+q-signin-fixed	Board.qml	"omarchy-launch-floating-terminal-with-presentation", loginCommand]	"omarchy-launch-floating-terminal-with-presentation", "glab auth login"]	qml
+q-no-switch	Board.qml	  onGitlabHostChanged: switchServer()	  onGitlabHostChanged: {}	qml
+q-switch-keeps-session	Board.qml	    feed.setHost(gitlabHost)\n    session++	    feed.setHost(gitlabHost)	qml
+q-switch-keeps-account	Board.qml	cached = false; account = ""; accountError = ""\n	cached = false; accountError = ""\n	qml
+q-switch-keeps-projects	Board.qml	    columns = []; projects = []; pickerBoards = []; cached = false; account = ""; accountError = ""	    columns = []; pickerBoards = []; cached = false; account = ""; accountError = ""	qml
+q-switch-keeps-project	Board.qml	    project = Qt.binding(function() { return root.defaultProject })	    project = project	qml
+q-switch-no-account-check	Board.qml	      if (view === "settings") checkAccount()	      if (false) checkAccount()	qml
+q-switch-no-load	Board.qml	      if (opened) refresh()\n      else readCache()	      if (false) refresh()	qml
+q-service-not-told	Board.qml	  function switchServer() {\n    if (gitlabHost === shownHost) return\n    shownHost = gitlabHost\n    feed.setHost(gitlabHost)	  function switchServer() {\n    if (gitlabHost === shownHost) return\n    shownHost = gitlabHost	qml
+q-watch-no-host	Board.qml	base: refreshIntervalSec, host: gitlabHost }	base: refreshIntervalSec }	qml
+s-sethost-keeps	BoardService.qml	host = h; forget() }	host = h }	qml
+s-no-hostname-arg	BoardService.qml	concat(args, ["--hostname", host])	concat(args)	qml
+s-fetch-no-host	BoardService.qml	fetch.command = helperCommand(job.args)	fetch.command = [helperPath()].concat(job.args)	qml
+s-mrs-no-host	BoardService.qml	mrFetch.command = helperCommand(Logic.mrsArgs(scope))	mrFetch.command = [helperPath()].concat(Logic.mrsArgs(scope))	qml
+s-access-no-host	BoardService.qml	accessFetch.command = helperCommand(["access", "--project", project])	accessFetch.command = [helperPath(), "access", "--project", project]	qml
+s-alert-no-host	BoardService.qml	m.iid }), host: cfg.host })	m.iid }) })	qml
+b-labels-no-host	BulkBar.qml	labelsProcess.command = host.helperCommand(["labels", "--project", host.project])	labelsProcess.command = [host.helperPath(), "labels", "--project", host.project]	qml
+b-bulk-no-host	BulkBar.qml	runProcess.command = host.helperCommand(["bulk", "--project", host.project])	runProcess.command = [host.helperPath(), "bulk", "--project", host.project]	qml
+i-issue-no-host	IssueView.qml	issueProcess.command = host.helperCommand(["issue"	issueProcess.command = [host.helperPath()].concat(["issue"	qml
+i-notes-no-host	IssueView.qml	notesProcess.command = host.helperCommand(["notes"	notesProcess.command = [host.helperPath()].concat(["notes"	qml
+i-labels-no-host	IssueView.qml	labelsProcess.command = host.helperCommand(["labels"	labelsProcess.command = [host.helperPath()].concat(["labels"	qml
+i-relabel-no-host	IssueView.qml	relabelProcess.command = host.helperCommand(["relabel"	relabelProcess.command = [host.helperPath()].concat(["relabel"	qml
+i-state-no-host	IssueView.qml	stateProcess.command = host.helperCommand([op	stateProcess.command = [host.helperPath()].concat([op	qml
+i-comment-no-host	IssueView.qml	commentProcess.command = host.helperCommand(["comment"	commentProcess.command = [host.helperPath()].concat(["comment"	qml
+i-recent-shared	IssueView.qml	key: visible && issue.iid ? host.projectKey + "#"	key: visible && issue.iid ? host.project + "#"	qml
+i-recent-kept	IssueView.qml	    function onGitlabHostChanged() { view.recent = ({}); view.recentOrder = [] } }	    function onGitlabHostChanged() {} }	qml
+t-labels-no-host	SettingsView.qml	labelsProcess.command = host.helperCommand(["labels", "--project", host.project])	labelsProcess.command = [host.helperPath(), "labels", "--project", host.project]	qml
+t-labels-shared	SettingsView.qml	(labelsFor === host.projectKey && labelsState === "ready")) return\n    labelsFor = host.projectKey	(labelsFor === host.project && labelsState === "ready")) return\n    labelsFor = host.project	qml
+t-account-fixed	SettingsView.qml	" on " + view.host.gitlabHost : "Checking	" on gitlab.com" : "Checking	qml
+t-signout-fixed	SettingsView.qml	"Sign out of glab on " + view.host.gitlabHost + "? This	"Sign out of glab on gitlab.com? This	qml
+h-words-fixed	AccessHint.qml	host.accessEntry, host.project, host.gitlabHost)	host.accessEntry, host.project, "gitlab.com")	qml
+h-page-fixed	AccessHint.qml	Logic.patUrl(hint.host.gitlabHost)	Logic.patUrl("gitlab.com")	qml
+h-dismiss-shared	Board.qml	Logic.has(Logic.lowerList(saved("accessHintDismissed", [])), projectKey)	Logic.has(Logic.lowerList(saved("accessHintDismissed", [])), project)	qml
+h-dismiss-saved-bare	Board.qml	.concat([projectKey.toLowerCase()])	.concat([project.toLowerCase()])	qml
+o-found-shared	BotsSection.qml	Logic.botsEntry(raw, host.projectKey)	Logic.botsEntry(raw, host.project)	qml
+o-remove-shared	BotsSection.qml	Logic.withoutBot(raw, host.projectKey, index)	Logic.withoutBot(raw, host.project, index)	qml
+o-busy-shared	BotsSection.qml	Logic.withBusy(raw, host.projectKey, column	Logic.withBusy(raw, host.project, column	qml
+o-add-for-bare	BotsSection.qml	addFor = host.projectKey;	addFor = host.project;	qml

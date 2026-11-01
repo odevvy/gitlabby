@@ -63,7 +63,7 @@ Item {
     if (accessFetch.running) { if (accessFetch.project !== project) accessWaiting = accessWaiting.concat([project]); return }
     accessFetch.project = project
     accessFetch.generation = generation
-    accessFetch.command = [helperPath(), "access", "--project", project]
+    accessFetch.command = helperCommand(["access", "--project", project])
     accessFetch.running = true
   }
   function accessDone(raw) { if (accessFetch.generation === generation) setAccess(accessFetch.project, Logic.accessEntry(raw)) }
@@ -78,6 +78,12 @@ Item {
     var kind = Logic.writeRefusal(message)
     if (kind !== "" && project !== "") setAccess(project, Logic.refusedEntry(access[project], kind))
   }
+
+  // The GitLab server every board-fetch here runs against (--hostname), from
+  // the widget's setting. Another one forgets everything from the last.
+  property string host: "gitlab.com"
+  function setHost(h) { if (h === host) return; host = h; forget() }
+  function helperCommand(args) { return [helperPath()].concat(args, ["--hostname", host]) }
 
   function keyOf(project, boardId) { return project + "#" + boardId }
   function busy(key) { return runningKey === key || queuedKeys.indexOf(key) !== -1 }
@@ -108,7 +114,7 @@ Item {
     fetch.ticket = tickets
     fetch.generation = generation
     fetch.startedAt = Date.now()
-    fetch.command = [helperPath()].concat(job.args)
+    fetch.command = helperCommand(job.args)
     queue = queue.slice(1)
     fetch.running = true
   }
@@ -172,7 +178,7 @@ Item {
     if (!cfg) return
     if (!data || data.state !== "ready") { dropBaseline(key); return }
     var moved = ownMoves[key] || []
-    var events = baselines[key] ? Logic.alertEvents(baselines[key], data, { review: cfg.review, idle: cfg.idle, bots: cfg.bots, ignore: moved.map(function(m) { return m.iid }) }) : []
+    var events = baselines[key] ? Logic.alertEvents(baselines[key], data, { review: cfg.review, idle: cfg.idle, bots: cfg.bots, ignore: moved.map(function(m) { return m.iid }), host: cfg.host }) : []
     events.forEach(function(ev) { Quickshell.execDetached(Logic.notifyArgv(ev)) })
     var b = {}, k
     for (k in baselines) b[k] = baselines[k]
@@ -212,7 +218,7 @@ Item {
     mrFetch.scope = scope
     mrFetch.generation = generation
     mrFetch.startedAt = Date.now()
-    mrFetch.command = [helperPath()].concat(Logic.mrsArgs(scope))
+    mrFetch.command = helperCommand(Logic.mrsArgs(scope))
     mrFetch.running = true
   }
   function mrsDone(raw) {
@@ -229,7 +235,7 @@ Item {
     if (p) requestMrs(p.scope, p.force)
   }
 
-  // Sign out: forget every answer and drop the ones on their way.
+  // Sign out, or another server: forget every answer and drop the ones on their way.
   function forget() {
     generation++
     answers = ({})

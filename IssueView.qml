@@ -22,7 +22,7 @@ Item {
   // The host sets the card's row; the full issue replaces it once loaded.
   property var issue: ({})
   // The issue on screen ("" when hidden); it and its comments reload whenever it opens.
-  readonly property string key: visible && issue.iid ? host.project + "#" + issue.iid : ""
+  readonly property string key: visible && issue.iid ? host.projectKey + "#" + issue.iid : ""
   property string shownKey: ""
   property string issueFor: ""
   property string issueReadyFor: ""
@@ -82,7 +82,9 @@ Item {
     while (order.length > 10) delete next[order.shift()]
     recent = next; recentOrder = order
   }
-  Connections { target: view.host; function onSigningOutChanged() { view.recent = ({}); view.recentOrder = [] } }
+  // Signing out, or another server: none of these issues stay.
+  Connections { target: view.host; function onSigningOutChanged() { view.recent = ({}); view.recentOrder = [] }
+    function onGitlabHostChanged() { view.recent = ({}); view.recentOrder = [] } }
 
   // Styles for the description, which Logic.markdown turns into Text.RichText HTML.
   readonly property string css: "<style>"
@@ -125,7 +127,7 @@ Item {
     if (key === "") return
     if (issueProcess.running) { issueQueued = true; return }
     issueFor = key
-    issueProcess.command = [host.helperPath(), "issue", "--project", host.project, "--iid", String(issue.iid)]
+    issueProcess.command = host.helperCommand(["issue", "--project", host.project, "--iid", String(issue.iid)])
     issueProcess.running = true
   }
   function issueDone(raw) {
@@ -141,7 +143,7 @@ Item {
     if (notesProcess.running) { reloadQueued = true; return }
     notesFor = key
     notesLoading = true
-    notesProcess.command = [host.helperPath(), "notes", "--project", host.project, "--iid", String(issue.iid)]
+    notesProcess.command = host.helperCommand(["notes", "--project", host.project, "--iid", String(issue.iid)])
     notesProcess.running = true
   }
   function notesDone(raw) {
@@ -167,15 +169,15 @@ Item {
   }
   // The project's labels, reused across its issues for 5 minutes (BulkBar keeps its own).
   function loadLabels() {
-    if (labelsFor === host.project && labelsState === "ready" && Date.now() - labelsAt < 300000) return
+    if (labelsFor === host.projectKey && labelsState === "ready" && Date.now() - labelsAt < 300000) return
     if (labelsProcess.running) return
-    labelsFor = host.project
+    labelsFor = host.projectKey
     labelsState = "loading"
-    labelsProcess.command = [host.helperPath(), "labels", "--project", host.project]
+    labelsProcess.command = host.helperCommand(["labels", "--project", host.project])
     labelsProcess.running = true
   }
   function labelsDone(raw) {
-    if (labelsFor !== host.project) { labelsState = ""; return }
+    if (labelsFor !== host.projectKey) { labelsState = ""; return }
     var data = host.parse(raw)
     labelsState = data.state === "ready" ? "ready" : "error"
     labelsError = data.state === "ready" ? "" : String(data.message || "Could not load labels.")
@@ -188,7 +190,7 @@ Item {
     labelBusy = name
     relabelFor = key
     labelError = ""
-    relabelProcess.command = [host.helperPath(), "relabel", "--project", host.project, "--iid", String(issue.iid), op === "add" ? "--add" : "--remove", name]
+    relabelProcess.command = host.helperCommand(["relabel", "--project", host.project, "--iid", String(issue.iid), op === "add" ? "--add" : "--remove", name])
     relabelProcess.running = true
   }
   function relabelDone(raw) {
@@ -214,7 +216,7 @@ Item {
     stateBusy = op
     stateFor = key
     stateError = ""
-    stateProcess.command = [host.helperPath(), op, "--project", host.project, "--iid", String(issue.iid)]
+    stateProcess.command = host.helperCommand([op, "--project", host.project, "--iid", String(issue.iid)])
     stateProcess.running = true
   }
   function stateDone(raw) {
@@ -243,7 +245,7 @@ Item {
     postError = ""
     commentProcess.body = box.text
     commentProcess.stdinEnabled = true
-    commentProcess.command = [host.helperPath(), "comment", "--project", host.project, "--iid", String(issue.iid)]
+    commentProcess.command = host.helperCommand(["comment", "--project", host.project, "--iid", String(issue.iid)])
     commentProcess.running = true
   }
   function postDone(raw) {

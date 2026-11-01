@@ -34,14 +34,14 @@ Item {
   property var allLabels: []
   property var fetchedStatus: []
   function loadLabels() {
-    if (labelsProcess.running || (labelsFor === host.project && labelsState === "ready")) return
-    labelsFor = host.project
+    if (labelsProcess.running || (labelsFor === host.projectKey && labelsState === "ready")) return
+    labelsFor = host.projectKey
     labelsState = "loading"
-    labelsProcess.command = [host.helperPath(), "labels", "--project", host.project]
+    labelsProcess.command = host.helperCommand(["labels", "--project", host.project])
     labelsProcess.running = true
   }
   function labelsDone(raw) {
-    if (labelsFor !== host.project) {  // the project changed meanwhile
+    if (labelsFor !== host.projectKey) {  // the project (or server) changed meanwhile
       labelsState = ""
       if (botsSection.adding) Qt.callLater(loadLabels)
       return
@@ -192,7 +192,7 @@ Item {
       BotsSection {
         id: botsSection
         host: view.host
-        readonly property bool mine: view.labelsFor === view.host.project
+        readonly property bool mine: view.labelsFor === view.host.projectKey
         labels: mine ? view.allLabels : []
         fetchedStatus: mine ? view.fetchedStatus : []
         labelsState: mine ? view.labelsState : ""
@@ -251,9 +251,9 @@ Item {
           wrapMode: Text.Wrap
           color: view.host.accountError !== "" && !view.confirming ? view.host.urgent : view.confirming ? view.host.foreground : view.host.dim
           text: view.host.signingOut ? "Signing out…"
-            : view.confirming ? "Sign out of glab on gitlab.com? This also signs glab out in your terminal and scripts on this computer."
+            : view.confirming ? "Sign out of glab on " + view.host.gitlabHost + "? This also signs glab out in your terminal and scripts on this computer."
             : view.host.accountError !== "" ? view.host.accountError
-            : view.host.account !== "" ? "Signed in as " + view.host.account + " on gitlab.com" : "Checking your GitLab account…"
+            : view.host.account !== "" ? "Signed in as " + view.host.account + " on " + view.host.gitlabHost : "Checking your GitLab account…"
         }
         BoardText {
           id: signOutLink

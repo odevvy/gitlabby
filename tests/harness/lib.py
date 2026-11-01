@@ -50,9 +50,12 @@ class Harness:
     PROCS = "(function(){ var r = []; function scan(o){ if (!o || !o.data) return; for (var i = 0; i < o.data.length; i++) { var c = o.data[i]; if (c && c.command !== undefined && c.stdout !== undefined) r.push(c) } } scan(root); if (root.feed) scan(root.feed); [issueView, settingsView, picker].forEach(scan); try { scan(bulkBar) } catch (e) {} return r })()"
     # A running board-fetch bulk process lists itself (kind "bulk") and, while
     # its last stdin line is unanswered, that card as the command it stands for.
-    def running(self, kind=None):
+    # gitlab.com's --hostname (v0.1.65: every command ends with the server) is
+    # left off, so older tests read as before; raw=True keeps it (run165).
+    def running(self, kind=None, raw=False):
         cs = self.ev(self.PROCS + ".reduce(function(r, p){ if (!p.running) return r; r.push(p.command);"
                      " if (p.command[1] === 'bulk' && p.written.length > p.readCount) r.push([p.command[0]].concat(JSON.parse(p.written[p.written.length - 1]))); return r }, [])") or []
+        if not raw: cs = [c[:-2] if c and c[-2:] == ["--hostname", "gitlab.com"] else c for c in cs]
         return [c for c in cs if c and (kind is None or c[1] == kind)]
     def stop_all(self): self.ev(self.PROCS + ".forEach(function(p){ p.running = false })")
     def answer(self, kind, data):

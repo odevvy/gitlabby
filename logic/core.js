@@ -48,5 +48,21 @@ function oneLine(text, max) {
   var t = String(text || "").replace(/\s+/g, " ").trim()
   return t.length > max ? t.slice(0, max - 1) + "…" : t
 }
+// The GitLab server setting, as glab's --hostname takes it: a bare name, any
+// case, with https:// and a trailing / dropped. "" when it is not one: http,
+// a port or a path (those belong in glab's own config for the host).
+function serverHost(raw) {
+  var h = String(raw === undefined || raw === null ? "" : raw).trim().toLowerCase()
+  if (h.indexOf("https://") === 0) h = h.slice(8)
+  h = h.replace(/\/+$/, "")
+  var label = "[a-z0-9]([a-z0-9-]*[a-z0-9])?"
+  return h.length <= 253 && new RegExp("^" + label + "(\\." + label + ")*$").test(h) ? h : ""
+}
+// The key a project's own settings (bots, alerts, confirm moves, column
+// state) are saved under: gitlab.com's stay as the bare path, as before; on
+// another server, its name and a colon first (a name never has a colon).
+function serverKey(host, project) {
+  return !host || host === "gitlab.com" ? project : host + ":" + project
+}
 
-if (typeof module !== "undefined") module.exports = { plainJson: plainJson, lowerList: lowerList, has: has, toggled: toggled, countLabel: countLabel, escaped: escaped, plain: plain, copied: copied, age: age, savedNote: savedNote, httpsUrl: httpsUrl, oneLine: oneLine }
+if (typeof module !== "undefined") module.exports = { plainJson: plainJson, lowerList: lowerList, has: has, toggled: toggled, countLabel: countLabel, escaped: escaped, plain: plain, copied: copied, age: age, savedNote: savedNote, httpsUrl: httpsUrl, oneLine: oneLine, serverHost: serverHost, serverKey: serverKey }

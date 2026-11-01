@@ -5,13 +5,13 @@ import "components"
 
 // Says why writes are off on this project (Board.qml accessNote) and, when
 // the account is view-only there, how to sign glab in with a token that can
-// only read: GitLab's own token page (https, read_api prefilled), then
+// only read: the server's own token page (https, read_api prefilled), then
 // glab auth login in a terminal. This plugin never asks for, stores or shows a
 // token. Not now hides it for this project (settings.accessHintDismissed).
 Rectangle {
   id: hint
   required property var host
-  readonly property var words: Logic.accessHint(host.accessNote, host.accessEntry, host.project, "gitlab.com")
+  readonly property var words: Logic.accessHint(host.accessNote, host.accessEntry, host.project, host.gitlabHost)
   visible: host.view === "board" && host.setup === "" && host.boardState === "ready" && host.accessNote !== "" && !host.hintDismissed
   implicitHeight: column.implicitHeight + Style.space(20)
   color: "transparent"
@@ -41,7 +41,7 @@ Rectangle {
         objectName: "accessTokenPage"
         visible: hint.words.link; host: hint.host; small: true; main: true
         label: "Open GitLab's token page"
-        onClicked: hint.host.openUrl(Logic.patUrl("gitlab.com"))
+        onClicked: hint.host.openUrl(Logic.patUrl(hint.host.gitlabHost))
       }
       ActionButton { objectName: "accessNotNow"; host: hint.host; small: true; label: "Not now"; onClicked: hint.host.dismissHint() }
       BoardText {

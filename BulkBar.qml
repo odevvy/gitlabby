@@ -94,16 +94,16 @@ Rectangle {
     Qt.callLater(function() { if (labelsState === "ready") labelPicker.field.forceActiveFocus() })
   }
   function loadLabels() {
-    if (labelsFor === host.project && labelsState === "ready") return
+    if (labelsFor === host.projectKey && labelsState === "ready") return
     if (labelsProcess.running) return
-    labelsFor = host.project
+    labelsFor = host.projectKey
     labelsState = "loading"
-    labelsProcess.command = [host.helperPath(), "labels", "--project", host.project]
+    labelsProcess.command = host.helperCommand(["labels", "--project", host.project])
     labelsProcess.running = true
   }
   function labelsDone(raw) {
     var data = host.parse(raw)
-    if (labelsFor !== host.project) { labelsState = ""; return }
+    if (labelsFor !== host.projectKey) { labelsState = ""; return }
     labelsState = data.state === "ready" ? "ready" : "error"
     labelsError = data.state === "ready" ? "" : String(data.message || "Could not load labels.")
     if (data.state === "ready") { allLabels = data.labels || []; fetchedStatus = data.status || [] }
@@ -135,7 +135,7 @@ Rectangle {
     watchdog.restart()
     if (runProcess.running) { runProcess.write(JSON.stringify(plan[i].args) + "\n"); return }
     pendingLine = JSON.stringify(plan[i].args) + "\n"  // written once it has started
-    runProcess.command = [host.helperPath(), "bulk", "--project", host.project]
+    runProcess.command = host.helperCommand(["bulk", "--project", host.project])
     runProcess.stdinEnabled = true
     runProcess.running = true
   }

@@ -59,7 +59,9 @@
 # the widget's 50 s watchdogs never give up on a command that may still write.
 #
 # P is a project path (group/name) or numeric id; every command but projects,
-# whoami, mrs and logout needs one. --hostname defaults to gitlab.com.
+# whoami, mrs and logout needs one. --hostname: the GitLab server, by its bare
+# name (gitlab.com by default; glab refuses a scheme, path or port here: those
+# live in glab's own config for the host, api_protocol, subfolder and api_host).
 # Before any GitLab call: state "no-glab" if glab is missing, "logged-out" if
 # glab has no login for the host (or GitLab refuses it).
 set -uo pipefail
@@ -118,7 +120,8 @@ if [[ $cmd == comment ]]; then
   ! jq -e '.body | test("(^|[\r\n])[ \t]*/")' <<<"$note" >/dev/null ||
     emit error "A line starts with /, which GitLab runs as a quick action. Wrap it in \`backticks\` or use GitLab for quick actions."
 fi
-[[ $hostname =~ ^[A-Za-z0-9][A-Za-z0-9.-]*(:[0-9]+)?$ ]] || emit error "Invalid GitLab hostname."
+[[ $hostname =~ ^[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)*$ && ${#hostname} -le 253 ]] ||
+  emit error "Invalid GitLab server: give just its name, like gitlab.example.com (no https://, path or port)."
 }
 check_args
 
@@ -126,11 +129,15 @@ check_args
 # one loads. It holds the same JSON the widget gets (no auth data); dir 0700,
 # file 0600. The account is the username glab saved at login (glab config get
 # user: a local read, no GitLab call, never the token), so signing glab in as
-# someone else never shows the other account's saved board.
+# someone else never shows the other account's saved board. Another server
+# than gitlab.com gets its own files (its name first), so the same project path
+# on two servers never shares one; gitlab.com's names are as before.
 cache_root=${XDG_CACHE_HOME:-}
 [[ $cache_root == /* ]] || cache_root=${HOME:+$HOME/.cache}
 cache_dir=$cache_root/odevvy.gitlab-board
-cache_base=$cache_dir/$(jq -rn --arg p "$project" '$p | @uri')-${board_id:-first}
+host_tag=""
+[[ $hostname == gitlab.com ]] || host_tag="$hostname~"
+cache_base=$cache_dir/$host_tag$(jq -rn --arg p "$project" '$p | @uri')-${board_id:-first}
 cache_file() {
   local account=""
   IFS= read -r account < <(timeout 5 glab config get user --host "$hostname" 2>/dev/null)
@@ -193,7 +200,7 @@ check_auth() {
     0) ;;
     124) emit error "$slow" ;;
     *) grep -qE 'authenticated with glab|API call failed: .*: 401( |$)' "$tmp/auth" &&
-         emit logged-out "Not signed in to $hostname. Run: glab auth login"
+         emit logged-out "Not signed in to $hostname. Run: glab auth login${host_tag:+ --hostname $hostname}"
        emit error "Could not check your GitLab sign-in. Check your connection and try again." ;;
   esac
 }
