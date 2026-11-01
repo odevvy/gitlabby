@@ -31,7 +31,7 @@ Column {
   readonly property bool typing: nameField.activeFocus || picker.field.activeFocus
 
   readonly property var raw: host.saved("bots", null)
-  readonly property var found: Logic.botsEntry(raw, host.project)
+  readonly property var found: Logic.botsEntry(raw, host.projectKey)  // this server's project
   readonly property var bots: found.entry ? found.entry.bots : []
   readonly property var busy: found.entry ? Logic.lowerList(found.entry.busyLists || []) : []
   readonly property var labelColumns: host.columns.filter(function(c) { return c.kind === "label" }).map(function(c) { return String(c.name) })
@@ -58,7 +58,7 @@ Column {
   function isList(b) { return typeof b.list === "string" && b.list.trim() !== "" }
   function knownLabel(name) { return labels.some(function(l) { return String(l.name).toLowerCase() === String(name).toLowerCase() }) }
   function open() {
-    adding = true; addFor = host.project; kind = "label"; pick = ""; menuOpen = false; nameField.text = ""; picker.filter = ""
+    adding = true; addFor = host.projectKey; kind = "label"; pick = ""; menuOpen = false; nameField.text = ""; picker.filter = ""
     wantLabels()
     nameField.forceActiveFocus()
   }
@@ -67,14 +67,14 @@ Column {
   function choose(k) { if (kind !== k) { kind = k; pick = ""; menuOpen = k === "list" } }
   function pickColumn(name) { pick = name; menuOpen = false }
   function add() {
-    if (!ready || addFor !== host.project) return
+    if (!ready || addFor !== host.projectKey) return
     var bot = kind === "list" ? { name: newName, list: pick } : { name: newName, label: pick }  // pick is "" for none (choose)
-    host.saveBots(Logic.withBot(raw, host.project, bot, labelColumns))
+    host.saveBots(Logic.withBot(raw, host.projectKey, bot, labelColumns))
     cancel()
   }
-  function remove(index) { host.saveBots(Logic.withoutBot(raw, host.project, index)) }
-  function toggleBusy(column) { host.saveBots(Logic.withBusy(raw, host.project, column, !Logic.has(busy, column))) }
-  Connections { target: sec.host; function onProjectChanged() { sec.cancel() } }
+  function remove(index) { host.saveBots(Logic.withoutBot(raw, host.projectKey, index)) }
+  function toggleBusy(column) { host.saveBots(Logic.withBusy(raw, host.projectKey, column, !Logic.has(busy, column))) }
+  Connections { target: sec.host; function onProjectKeyChanged() { sec.cancel() } }
 
   // The section heading, like Omarchy's PanelSectionHeader (as SettingsView's).
   component Heading: BoardText {

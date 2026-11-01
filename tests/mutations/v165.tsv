@@ -72,3 +72,7 @@ h-words-fixed	AccessHint.qml	host.accessEntry, host.project, host.gitlabHost)	ho
 h-page-fixed	AccessHint.qml	Logic.patUrl(hint.host.gitlabHost)	Logic.patUrl("gitlab.com")	qml
 h-dismiss-shared	Board.qml	Logic.has(Logic.lowerList(saved("accessHintDismissed", [])), projectKey)	Logic.has(Logic.lowerList(saved("accessHintDismissed", [])), project)	qml
 h-dismiss-saved-bare	Board.qml	.concat([projectKey.toLowerCase()])	.concat([project.toLowerCase()])	qml
+o-found-shared	BotsSection.qml	Logic.botsEntry(raw, host.projectKey)	Logic.botsEntry(raw, host.project)	qml
+o-remove-shared	BotsSection.qml	Logic.withoutBot(raw, host.projectKey, index)	Logic.withoutBot(raw, host.project, index)	qml
+o-busy-shared	BotsSection.qml	Logic.withBusy(raw, host.projectKey, column	Logic.withBusy(raw, host.project, column	qml
+o-add-for-bare	BotsSection.qml	addFor = host.projectKey;	addFor = host.project;	qml
