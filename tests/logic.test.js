@@ -865,10 +865,10 @@ test("bulk bar wiring: only the single-card writes, one at a time, picks from v 
   const bar = fs.readFileSync(path.join(dir, "BulkBar.qml"), "utf8")
   const board = fs.readFileSync(path.join(dir, "Board.qml"), "utf8")
   const view = fs.readFileSync(path.join(dir, "BoardView.qml"), "utf8")
-  // Writes: one board-fetch bulk process for the project; each card is one
-  // stdin line, Logic.bulkPlan's arguments (move, relabel, close, reopen).
+  // Writes: one board-fetch bulk process for the project, on the board's
+  // server (helperCommand: --hostname); each card is one stdin line, Logic.bulkPlan's arguments (move, relabel, close, reopen).
   assert.deepEqual([...bar.matchAll(/\.command = (.*)/g)].map(m => m[1]),
-    ["[host.helperPath(), \"labels\", \"--project\", host.project]", "[host.helperPath(), \"bulk\", \"--project\", host.project]"])
+    ["host.helperCommand([\"labels\", \"--project\", host.project])", "host.helperCommand([\"bulk\", \"--project\", host.project])"])
   assert.doesNotMatch(bar, /execDetached/)
   assert.deepEqual([...bar.matchAll(/write\((.*?)\)( \+ "\\n")?;/g)].map(m => m[1]),
     ["JSON.stringify(plan[i].args) + \"\\n\"", "bar.pendingLine"])

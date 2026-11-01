@@ -95,7 +95,7 @@ w = writes()[-1]
 h.ok("K2 the first board here becomes this server's default; gitlab.com's stays",
      w.get("serverDefaults") == {H: {"project": P, "id": "7", "name": "Development"}} and w["defaultProject"] == P and w["defaultBoardId"] == "7", w.get("serverDefaults"))
 h.ok("K3 key: the server's name first", h.ev("root.projectKey") == H + ":" + P and h.ev("root.stateKey") == H + ":" + P + "#7")
-cmds = [c for c in h.running(raw=True) if c[1] != "labels"]  # Settings' label list: v0.1.65's next commit
+cmds = [c for c in h.running(raw=True) if c[1] != "labels"]  # Settings' label list: a later v0.1.65 commit
 h.ok("K4 board and saved copy from this server", tail_ok(cmds, H) and {c[1] for c in cmds} >= {"board"}, cmds)
 drain("cached", {"state": "none"}); h.answer("board", A(H))
 h.ok("K5 gitlab.com's bots for the same path don't show here", h.ev("root.boardState") == "ready" and h.ev("root.botStates").__len__() == 0)
@@ -122,6 +122,16 @@ h.ev("root.requestMove(root.columns[3].issues[0], root.columns[3], root.columns[
 mv = h.running("move", raw=True)
 h.ok("K14 a move goes to this server", tail_ok(mv, H) and mv[0][1:13] == ["move", "--project", P, "--board", "7", "--iid", "4", "--from", "13", "--to", "12", "--hostname"], mv)
 h.answer("move", {"state": "ready"})
+drain("board", C(H))
+# Bulk actions (BulkBar.qml): the label list and the one bulk process, on this server.
+h.ev("root.picked = [root.columns[3].kind + ':' + root.columns[3].listId + '|4']"); h.spin(40)
+h.ev("bulkBar.loadLabels()"); h.spin(40)
+h.ok("U1 the bulk label list from this server", [c[1:] for c in h.running("labels", raw=True) if "--hostname" in c] == [["labels", "--project", P, "--hostname", H]], h.running(raw=True))
+h.answer("labels", {"state": "ready", "labels": [{"name": "ux"}]})
+h.ev("bulkBar.armClose('')"); h.spin(40); h.ev("bulkBar.confirm()"); h.spin(40)
+bk = [c for c in h.running(raw=True) if c[1] == "bulk"]
+h.ok("U2 the bulk run on this server", len(bk) == 1 and bk[0][1:] == ["bulk", "--project", P, "--hostname", H], h.running(raw=True))
+h.answer("close", {"state": "ready"}); h.spin(80); h.ev("bulkBar.done()"); drain("board", C(H))
 h.ev("root.refreshIntervalSec = 120; root.persist()"); w = writes()[-1]
 h.ok("K15 another write here keeps both defaults as saved", w["defaultProject"] == P and w["defaultBoardId"] == "7" and w.get("serverDefaults", {}).get(H, {}).get("id") == "7", w.get("serverDefaults"))
 
@@ -130,7 +140,7 @@ h.answer("board", A(H)) if h.running("board") else None
 setting(gitlabHost="gitlab.com")
 h.ok("B1 back: gitlab.com's default board, its bots and alerts", h.ev("root.project") == P and h.ev("root.boardId") == "7" and h.ev("root.projectKey") == P
      and h.ev("root.alerts.review") is True and h.ev("root.feed.host") == "gitlab.com")
-cmds = [c for c in h.running(raw=True) if c[1] != "labels"]  # Settings' label list: v0.1.65's next commit
+cmds = [c for c in h.running(raw=True) if c[1] != "labels"]  # Settings' label list: a later v0.1.65 commit
 cmds = [c for c in cmds if c[1] in ("board", "cached")]  # the other server's last answer may still be on its way (dropped: W5)
 h.ok("B2 its board loads from gitlab.com", tail_ok(cmds, "gitlab.com") and "board" in [c[1] for c in cmds], cmds)
 drain("cached", {"state": "none"}); h.answer("board", A())

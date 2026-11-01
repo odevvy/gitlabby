@@ -54,3 +54,5 @@ s-fetch-no-host	BoardService.qml	fetch.command = helperCommand(job.args)	fetch.c
 s-mrs-no-host	BoardService.qml	mrFetch.command = helperCommand(Logic.mrsArgs(scope))	mrFetch.command = [helperPath()].concat(Logic.mrsArgs(scope))	qml
 s-access-no-host	BoardService.qml	accessFetch.command = helperCommand(["access", "--project", project])	accessFetch.command = [helperPath(), "access", "--project", project]	qml
 s-alert-no-host	BoardService.qml	m.iid }), host: cfg.host })	m.iid }) })	qml
+b-labels-no-host	BulkBar.qml	labelsProcess.command = host.helperCommand(["labels", "--project", host.project])	labelsProcess.command = [host.helperPath(), "labels", "--project", host.project]	qml
+b-bulk-no-host	BulkBar.qml	runProcess.command = host.helperCommand(["bulk", "--project", host.project])	runProcess.command = [host.helperPath(), "bulk", "--project", host.project]	qml
