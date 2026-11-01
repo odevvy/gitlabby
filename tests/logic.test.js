@@ -697,7 +697,7 @@ test("alerts wiring: Settings saves settings.alerts per project; each copy hands
   const fs = require("node:fs"), path = require("node:path"), dir = path.join(__dirname, "..")
   const board = fs.readFileSync(path.join(dir, "Board.qml"), "utf8")
   const settings = fs.readFileSync(path.join(dir, "SettingsView.qml"), "utf8")
-  assert.match(board, /readonly property var alerts: Logic\.alertsFor\(saved\("alerts", null\), project\)/)
+  assert.match(board, /readonly property var alerts: Logic\.alertsFor\(saved\("alerts", null\), project(Key)?\)/)
   assert.match(board, /onWatchCfgChanged: feed\.watch\(watchOwner, watchCfg\)/)
   assert.match(board, /Component\.onDestruction: \{ saveFolds\(\); feed\.watch\(watchOwner, null\) \}/)
   assert.match(board, /if \(nextAlerts !== undefined\) entry\.alerts = nextAlerts/)
@@ -755,7 +755,7 @@ test("merge requests: the answer checked, status pills, reviewer marks, sublines
   const fs = require("node:fs"), path = require("node:path")
   const svc = fs.readFileSync(path.join(__dirname, "..", "BoardService.qml"), "utf8")
   assert.equal((svc.match(/requestMrs\(/g) || []).length, 2, "defined once, called once (the pending one)")
-  assert.match(svc, /mrFetch\.command = \[helperPath\(\)\]\.concat\(Logic\.mrsArgs\(scope\)\)/)
+  assert.match(svc, /mrFetch\.command = (\[helperPath\(\)\]\.concat|helperCommand)\(Logic\.mrsArgs\(scope\)\)/)
   assert.match(svc, /Date\.now\(\) - last\.startedAt < 60000/)
 })
 
@@ -953,7 +953,7 @@ test("server key: gitlab.com's settings keep their bare project key; another ser
 test("access in the service: asked once per project, its own process, forgotten on sign out", () => {
   const fs = require("node:fs"), path = require("node:path")
   const svc = fs.readFileSync(path.join(__dirname, "..", "BoardService.qml"), "utf8")
-  assert.match(svc, /accessFetch\.command = \[helperPath\(\), "access", "--project", project\]/)
+  assert.match(svc, /accessFetch\.command = (\[helperPath\(\), "access", "--project", project\]|helperCommand\(\["access", "--project", project\]\))/)
   assert.match(svc, /if \(project === "" \|\| access\[project\] !== undefined \|\| accessWaiting\.indexOf\(project\) !== -1\) return/)
   assert.match(svc, /function forget\(\) \{(?:(?!\n  \})[\s\S])*\n    access = \(\{\}\)/)
   assert.doesNotMatch(svc, /Timer \{[^}]*requestAccess/)

@@ -21,6 +21,8 @@
     "allowMultiple": false,
     "defaultSection": "right",
     "defaults": {
+      "gitlabHost": "gitlab.com",
+      "serverDefaults": {},
       "defaultProject": "",
       "defaultBoardId": "",
       "defaultBoardName": "",
