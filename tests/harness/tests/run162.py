@@ -34,7 +34,8 @@ ok("K6 Shift H / L: Shift and H joined (2 px), then a quiet /, then L", [c.child
    and [(s.property("text"), s.property("color").name()) for s in h.walk(mv) if s.objectName() == "keySep" and s.isVisible()] == [("/", h.ev("root.quiet").name())], [gap(cs[0], cs[1]), gap(cs[1], cs[2])])
 ok("K7 h j k l is one cap", [c.childItems()[0].property("text") for c in caps(row("Move between cards"))] == ["h j k l", "← ↓ ↑ →"])
 notes = [n for n in h.walk(mv) if n.objectName() == "keyNote" and n.isVisible()]
-ok("K8 the note after the words, quiet", notes and notes[0].property("text") == "asks first" and notes[0].property("color").name() == h.ev("root.quiet").name(), notes and (notes[0].property("text"), notes[0].property("color").name(), h.ev("root.quiet").name()))
+words = [n for n in h.walk(mv) if n.objectName() == "keyWhat" and n.isVisible()]
+ok("K8 the note after the words, quiet", words and words[0].property("text") == "Move left / right" and notes and notes[0].property("text") == "asks first" and notes[0].property("color").name() == h.ev("root.quiet").name(), notes and (notes[0].property("text"), notes[0].property("color").name(), h.ev("root.quiet").name()))
 fl = next(it for it in h.walk(kv) if it.metaObject().className() == "QQuickFlickable")
 fl.setProperty("contentY", max(0, fl.property("contentHeight") - fl.height())); h.spin(100)
 last = max(cards, key=lambda c: c.mapToItem(fl, QPointF(0, c.height())).y())
