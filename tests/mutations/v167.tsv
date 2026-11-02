@@ -1,0 +1,6 @@
+# v0.1.67: calm loading, Updating…, the bottom fade (qml: tests/harness/tests/run167.py)
+lr-spinner-off	components/LoadingRow.qml	running: row.spinning && row.visible	running: false	qml
+lr-not-italic	components/LoadingRow.qml	color: row.host.dim; font.italic: true	color: row.host.dim; font.italic: false	qml
+lr-not-dim	components/LoadingRow.qml	color: row.host.dim; font.italic	color: row.host.foreground; font.italic	qml
+picker-spins-on-error	Picker.qml	spinning: view.host.auxLoading	spinning: true	qml
+picker-no-reason	Picker.qml	text: view.host.auxLoading ? "Loading…" : view.host.auxError	text: view.host.auxLoading ? "Loading…" : "x"	qml
