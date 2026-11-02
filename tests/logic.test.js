@@ -219,7 +219,7 @@ test("the README's Keyboard section lists exactly the keys the popup shows, grou
 test("the key groups: every view's keys, the setup panel's, no key twice in a group, Board's four on the left", () => {
   const group = title => (L.keyGroups.find(g => g.title === title) || { keys: [] }).keys
   const action = (title, key) => (group(title).find(([k]) => k === key) || [])[1] || ""
-  assert.deepEqual(L.keyGroups.map(g => g.title), ["Board", "Picked cards", "Confirm a move or a close", "Setup panel", "Anywhere", "Issue", "Comment box", "Merge requests", "Pickers and filters"])
+  assert.deepEqual(L.keyGroups.map(g => g.title), ["Board", "Picked cards", "Confirm a move or a close", "Setup panel", "Anywhere", "Issue", "Comment box", "Merge requests", "Scrolling", "Pickers and filters"])
   assert.match(action("Setup panel", "Enter / Space"), /main button/)
   assert.match(action("Setup panel", "r"), /Try again/)
   assert.match(action("Anywhere", "?"), /shortcuts/)
@@ -231,7 +231,12 @@ test("the key groups: every view's keys, the setup panel's, no key twice in a gr
   for (const k of ["Shift+H / L", "x", "e", "Enter / Space", "Esc"]) assert.ok(action("Picked cards", k), k)
   for (const g of L.keyGroups) assert.equal(new Set(g.keys.map(([k]) => k)).size, g.keys.length, g.title)
   // Every shortcut the popup had before 0.1.62's shorter rows is still listed.
-  assert.equal(L.keyGroups.reduce((n, g) => n + g.keys.length, 0), 33)
+  assert.equal(L.keyGroups.reduce((n, g) => n + g.keys.length, 0), 35)
+  // v0.1.68: every arrow has its vim key next to it; typing in a filter, Ctrl+j / k.
+  assert.match(action("Scrolling", "j_k / ↓_↑"), /settings, shortcuts, an issue/)
+  assert.match(action("Pickers and filters", "j_k / ↓_↑"), /Move up \/ down/)
+  assert.match(action("Pickers and filters", "Ctrl+j / k"), /typing a filter/)
+  for (const g of L.keyGroups) for (const [k] of g.keys) if (/[↓↑←→]/.test(k)) assert.match(k, /[hjkl]/, g.title + ": " + k)
 })
 
 test("keycaps: a chord's caps are joined, / splits choices, _ keeps one cap", () => {

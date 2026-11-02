@@ -563,11 +563,18 @@ each shortcut on one line, with a quiet note after some (`asks first`).
 | `Enter` / `o` | Open in the browser |
 | `r` | Refresh the lists |
 
+**Scrolling**
+
+| Key | Action |
+| --- | --- |
+| `j k` / `↓ ↑` | Scroll · settings, shortcuts, an issue |
+
 **Pickers and filters**
 
 | Key | Action |
 | --- | --- |
-| `↑ ↓` | Move up / down · j k for boards |
+| `j k` / `↓ ↑` | Move up / down |
+| `Ctrl+j` / `k` | The same while typing a filter · or Ctrl+n / p |
 | `Enter` | Pick the row or first match |
 | `Esc` | Close the picker or form |
 

@@ -1,0 +1,18 @@
+# v0.1.68: vim keys beside the arrows: scrolling, Ctrl+j/k in the filter, the shortcuts list (node rows: tests/logic.test.js; qml: tests/harness/tests/run168.py)
+scroll-branch-gone	BoardKeys.qml	    else if (dy !== 0) host.scrollView(dy)  // j/k	    else if (false) host.scrollView(dy)  // j/k	qml
+scroll-on-dx	BoardKeys.qml	    else if (dy !== 0) host.scrollView(dy)  // j/k	    else host.scrollView(dy !== 0 ? dy : 1)  // j/k	qml
+scroll-not-settings	Board.qml	var v = view === "settings" ? settingsView :	var v = view === "nope" ? settingsView :	qml
+scroll-not-keys	Board.qml	view === "keys" ? keysView :	view === "nope" ? keysView :	qml
+scroll-not-issue	Board.qml	view === "issue" ? issueView : null	view === "nope" ? issueView : null	qml
+scroll-backwards	Board.qml	from + dy * Style.space(56)	from - dy * Style.space(56)	qml
+scroll-step-zero	Board.qml	from + dy * Style.space(56)	from + dy * 0	qml
+scroll-past-end	Board.qml	Math.min(f.contentHeight - f.height, from	Math.min(1e9, from	qml
+scroll-past-top	Board.qml	var to = Math.max(0, Math.min(	var to = Math.max(-1e9, Math.min(	qml
+filter-ctrl-off	Picker.qml	if (!(event.modifiers & Qt.ControlModifier)) return	return	qml
+filter-no-n	Picker.qml	event.key === Qt.Key_J || event.key === Qt.Key_N ? 1	event.key === Qt.Key_J ? 1	qml
+filter-no-p	Picker.qml	event.key === Qt.Key_K || event.key === Qt.Key_P ? -1	event.key === Qt.Key_K ? -1	qml
+filter-j-up	Picker.qml	event.key === Qt.Key_N ? 1	event.key === Qt.Key_N ? -1	qml
+filter-plain-j-moves	Picker.qml	if (!(event.modifiers & Qt.ControlModifier)) return	if (event.text !== "j" && !(event.modifiers & Qt.ControlModifier)) return	qml
+keys-no-scrolling	logic/board.js	  { title: "Scrolling", keys: [	  { title: "Scrollin", keys: [	node
+keys-no-ctrl-row	logic/board.js	    ["Ctrl+j / k", "The same while typing a filter · or Ctrl+n / p"],\n	\n	node
+keys-arrows-alone	logic/board.js	    ["j_k / ↓_↑", "Move up / down"],	    ["↑_↓", "Move up / down"],	node

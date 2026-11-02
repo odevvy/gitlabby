@@ -615,6 +615,21 @@ Panel {
     close()
   }
   function copyInstall() { Quickshell.execDetached(["wl-copy", installCommand]) }
+  // j/k or ↓/↑ in Settings, the shortcuts and an issue (BoardKeys.qml): about
+  // three lines down or up, eased, never past either end. The view's
+  // ScrollHint knows its Flickable. Not while typing: fields get every key.
+  function scrollView(dy) {
+    var v = view === "settings" ? settingsView : view === "keys" ? keysView : view === "issue" ? issueView : null
+    var hint = null
+    if (v) for (var i = 0; i < v.children.length; i++) if (v.children[i].objectName === "scrollHint") hint = v.children[i]
+    if (!hint) return false
+    var f = hint.flick
+    var from = scrollAnim.running && scrollAnim.target === f ? scrollAnim.to : f.contentY
+    var to = Math.max(0, Math.min(f.contentHeight - f.height, from + dy * Style.space(56)))
+    scrollAnim.stop(); scrollAnim.target = f; scrollAnim.to = to; scrollAnim.start()
+    return true
+  }
+  NumberAnimation { id: scrollAnim; property: "contentY"; duration: 120; easing.type: Easing.OutCubic }
   function copyLogin() { Quickshell.execDetached(["wl-copy", loginCommand]) }
 
   function cadenceText() { return "Refreshes every " + Logic.durationText(cadence.sec) + " while open · " + cadence.why }
