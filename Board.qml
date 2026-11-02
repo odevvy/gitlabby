@@ -58,6 +58,19 @@ Panel {
   readonly property bool onGitlabCom: gitlabHost === "gitlab.com"
   readonly property string projectKey: Logic.serverKey(gitlabHost, project)
   readonly property string loginCommand: "glab auth login" + (onGitlabCom ? "" : " --hostname " + gitlabHost)
+  // The setting as saved: Settings shows it, with the error, when it isn't a
+  // bare name (the board then uses gitlab.com until it is fixed there).
+  readonly property string savedHost: String(saved("gitlabHost", "gitlab.com"))
+  readonly property bool hostInvalid: savedHost.trim() !== "" && Logic.serverHost(savedHost) === ""
+  // Settings > GitLab server's Use: saves a bare name (switchServer follows).
+  function useServer(raw) {
+    var h = Logic.serverHost(raw)
+    if (h === "") return false
+    if (h !== gitlabHost || hostInvalid) persist(undefined, undefined, undefined, { gitlabHost: h })
+    return true
+  }
+  // The setup panel's Change server: Settings, with the server field focused.
+  function changeServer() { showView("settings"); Qt.callLater(settingsView.focusServer) }
   // Saved default board (empty id = the project's first board). The only
   // place the default project is set: none, so a new install starts in the
   // picker, and the first board opened there becomes the default. gitlab.com's
@@ -593,6 +606,7 @@ Panel {
     close()
   }
   function copyInstall() { Quickshell.execDetached(["wl-copy", installCommand]) }
+  function copyLogin() { Quickshell.execDetached(["wl-copy", loginCommand]) }
 
   function cadenceText() { return "Refreshes every " + Logic.durationText(cadence.sec) + " while open · " + cadence.why }
   function statusText() {

@@ -3,6 +3,7 @@ import QtQuick.Controls
 import Quickshell.Io
 import qs.Commons
 import qs.Ui
+import "Logic.js" as Logic
 import "components"
 
 // In-popup settings in four sections, each under a thin rule and a small
@@ -22,8 +23,20 @@ Item {
     confirming = false
     botsSection.cancel()
     if (visible && botsSection.bots.length > 0) loadLabels()  // to flag a bot label the project no longer has
+    resetServer()
   }
-  readonly property bool typing: botsSection.typing
+  readonly property bool typing: botsSection.typing || hostField.activeFocus
+
+  // General > GitLab server: a plain field. Use (or Enter) saves a bare name
+  // and switches; typing alone does nothing. Anything else (http, a port, a
+  // path) gets the error under it, and Use stays hidden.
+  readonly property string hostCandidate: hostField.text.trim() === "" ? "gitlab.com" : Logic.serverHost(hostField.text)
+  readonly property bool hostBad: hostCandidate === ""
+  readonly property bool hostNew: !hostBad && (hostCandidate !== host.gitlabHost || host.hostInvalid)
+  function resetServer() { hostField.text = host.savedHost }
+  function useServer() { if (hostNew && host.useServer(hostCandidate)) hostField.text = hostCandidate }
+  function focusServer() { flick.contentY = 0; hostField.forceActiveFocus(); hostField.selectAll() }
+  Connections { target: view.host; function onSavedHostChanged() { view.resetServer() } }
   readonly property bool adding: botsSection.adding
   function cancelAdd() { botsSection.cancel() }
 
@@ -88,6 +101,7 @@ Item {
   }
 
   Flickable {
+    id: flick
     anchors { top: top.bottom; topMargin: Style.space(6); left: parent.left; right: parent.right; bottom: parent.bottom }
     contentWidth: width; contentHeight: content.implicitHeight
     clip: true; boundsBehavior: Flickable.StopAtBounds
@@ -100,6 +114,43 @@ Item {
 
       Item { width: 1; height: Style.space(2) }
       Heading { text: "General" }
+      Item {
+        id: hostRow
+        objectName: "hostRow"
+        width: parent.width
+        implicitHeight: Math.max(hostLabel.implicitHeight, hostField.implicitHeight)
+        Label { id: hostLabel; y: (parent.implicitHeight - implicitHeight) / 2; text: "GitLab server" }
+        Row {
+          anchors.right: parent.right
+          spacing: Style.space(8)
+          TextField {
+            id: hostField
+            objectName: "hostField"
+            width: Style.space(244); verticalPadding: Style.space(3)
+            font.pixelSize: Style.font.bodySmall; foreground: view.host.foreground
+            placeholderText: "gitlab.com"
+            onAccepted: view.useServer()
+            Keys.onEscapePressed: { view.resetServer(); view.host.focusBoard() }
+          }
+          ActionButton {
+            objectName: "hostUse"
+            anchors.verticalCenter: parent.verticalCenter
+            host: view.host; small: true; main: true; label: "Use"
+            visible: view.hostNew
+            onClicked: view.useServer()
+          }
+        }
+      }
+      Help {
+        objectName: "hostHelp"
+        color: view.hostBad ? view.host.urgent : view.host.quiet
+        text: view.hostBad ? "Just the server's name, like gitlab.example.com: no https://, no path, no port (glab keeps those)."
+            + (view.host.hostInvalid && hostField.text === view.host.savedHost ? " Until then the board uses gitlab.com." : "")
+          : view.hostNew ? "Use switches to " + view.hostCandidate + ": you pick a project there. Your boards and settings on "
+            + view.host.gitlabHost + " stay for when you come back. glab must be signed in there."
+          : "gitlab.com, or your company's own GitLab. glab must be signed in there: glab auth login --hostname <server>."
+      }
+      Item { width: 1; height: Style.space(4) }
       // Refresh every: the name and the segments on one line, or the
       // segments under it when the popup is too narrow for both.
       Item {
