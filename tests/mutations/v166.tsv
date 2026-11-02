@@ -12,3 +12,13 @@ host-enter-unwired	SettingsView.qml	onAccepted: view.useServer()	onAccepted: voi
 host-help-quiet	SettingsView.qml	color: view.hostBad ? view.host.urgent : view.host.quiet	color: view.host.quiet	qml
 host-until-always	SettingsView.qml	view.host.hostInvalid && hostField.text === view.host.savedHost	true	qml
 host-switch-text	SettingsView.qml	"Use switches to "	"Use moves to "	qml
+setup-own-never	SetupView.qml	step === "logged-out" && !host.onGitlabCom	step === "logged-out" && false	qml
+setup-own-gitlab-com	SetupView.qml	step === "logged-out" && !host.onGitlabCom	step === "logged-out" && true	qml
+setup-copy-install	SetupView.qml	if (ownServer) host.copyLogin(); else	if (false) host.copyLogin(); else	qml
+copy-login-install	Board.qml	["wl-copy", loginCommand]	["wl-copy", installCommand]	qml
+setup-copy-main	SetupView.qml	main: !setupView.ownServer	main: true	qml
+setup-command-install	SetupView.qml	setupView.ownServer ? setupView.host.loginCommand : 	false ? setupView.host.loginCommand : 	qml
+setup-no-change-server	SetupView.qml	visible: setupView.ownServer\n        label: "Change server"	visible: false\n        label: "Change server"	qml
+change-server-no-focus	Board.qml	Qt.callLater(settingsView.focusServer)	Qt.callLater(function() {})	qml
+setup-signin-label	SetupView.qml	setupView.ownServer ? "Sign in" : "Sign in to GitLab"	"Sign in to GitLab"	qml
+setup-small-print	SetupView.qml	"Sign in opens a terminal with that command. 	"A terminal opens. 	qml

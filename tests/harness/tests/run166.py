@@ -62,4 +62,31 @@ h.ok("F16 ...and gitlab.com can be used to fix it", len(use()) == 1)
 click_use(); h.spin(80)
 h.ok("F17 fixed: gitlab.com saved, no error", writes()[-1].get("gitlabHost") == "gitlab.com" and h.ev("root.hostInvalid") is False and not help_urgent())
 drain("whoami", {"state": "ready", "user": "dev1"})
+# --- the setup panel, signed out ------------------------------------------------------------
+first = lambda n: (shown(n) or [None])[0]
+setup_texts = lambda: [it.property("text") for it in h.visible(lambda it: it.metaObject().className().startswith("BoardText")) if it.property("text")]
+labels = lambda: [it.property("label") for it in h.visible(lambda it: it.metaObject().className().startswith("ActionButton"))]
+h.ev("root.showView('board')"); h.spin(40)
+h.ev("root.boardState = 'logged-out'"); h.spin(80)
+h.ok("P1 gitlab.com: the panel as before", "Sign in to GitLab" in setup_texts() and "This board reads your issues through glab. Sign in once and you're set." in setup_texts()
+     and not shown("setupCommand") and sorted(labels()) == ["Sign in to GitLab", "Try again"], (labels()))
+setting(gitlabHost=H); h.spin(60)
+for k in ("cached", "board", "projects"):
+    while h.running(k): h.answer(k, {"state": "logged-out", "message": "Not signed in"} if k != "cached" else {"state": "none"})
+h.spin(120)
+h.ok("P2 another server: Sign in to it, why, the exact command", h.ev("root.boardState") == "logged-out" and "Sign in to " + H in setup_texts()
+     and "glab isn't signed in to %s yet. Sign in once in a terminal with:" % H in setup_texts() and first("setupCommand") is not None and first("setupCommand").property("text") == "glab auth login --hostname " + H, setup_texts())
+h.ok("P3 buttons: Copy (not main), Sign in (main), Try again, Change server", sorted(labels()) == ["Change server", "Copy", "Sign in", "Try again"], labels())
+h.ok("P3b Sign in is the main one, Copy is not", (first("setupCopy") is not None and first("setupCopy").property("main") is False))
+h.ok("P4 the small print", any(t.startswith("Sign in opens a terminal with that command. Your token stays with glab") and "ca_cert or subfolder" in t for t in setup_texts()))
+n = len(h.launched()); first("setupCopy") and h.click(first("setupCopy"))
+h.ok("P5 Copy copies that command (wl-copy), and says so", h.launched()[n:] == [["wl-copy", "glab auth login --hostname " + H]] and (first("setupCopy") is not None and first("setupCopy").property("label") == "Copied"), h.launched()[n:])
+n = len(h.launched()); h.key(Qt.Key_Return, "\r")
+h.ok("P6 Enter signs in: a terminal with that command", h.launched()[n:] == [["omarchy-launch-floating-terminal-with-presentation", "glab auth login --hostname " + H]], h.launched()[n:])
+h.ev("root.opened = true"); h.spin(60)
+for k in ("cached", "board", "projects"):
+    while h.running(k): h.answer(k, {"state": "logged-out", "message": "Not signed in"} if k != "cached" else {"state": "none"})
+cs = [it for it in h.visible(lambda it: it.metaObject().className().startswith("ActionButton") and it.property("label") == "Change server")]
+if cs: h.click(cs[0]); h.spin(150)
+h.ok("P7 Change server: Settings, the field focused", bool(cs) and h.ev("root.view") == "settings" and h.ev("hostField.activeFocus", sv) is True)
 sys.exit(h.finish())
