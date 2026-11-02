@@ -75,6 +75,11 @@ Item {
   property var recentOrder: []
   property bool fromCache: false
   readonly property bool described: issueReady || fromCache
+  // Loading says so only after 250 ms (a quick answer shows nothing in
+  // between), in one place: the picker's spinner row (LoadingRow), where the
+  // description goes, then under Comments until they are in.
+  property bool waited: false
+  Timer { id: grace; interval: 250; onTriggered: view.waited = true }
   function remember(k, part) {
     var next = Object.assign({}, recent)
     next[k] = Object.assign({}, next[k] || {}, part)
@@ -119,6 +124,7 @@ Item {
     }
     // (Re)opened: lock the box until this visit's issue and notes arrive.
     issueReadyFor = ""; issueError = ""; notesReadyFor = ""
+    waited = false; grace.restart()
     loadIssue()
     loadNotes()
   }
@@ -308,6 +314,7 @@ Item {
   }
 
   Flickable {
+    id: flick
     anchors { top: top.bottom; topMargin: Style.space(8); left: parent.left; right: parent.right; bottom: parent.bottom }
     contentWidth: width; contentHeight: content.implicitHeight
     clip: true; boundsBehavior: Flickable.StopAtBounds
@@ -325,26 +332,11 @@ Item {
         font { pixelSize: Style.font.title; bold: true }
       }
 
-      // Loading: a short accent bar sliding under the title until the issue
-      // and its comments are in (the gate that unlocks the comment box). Its
-      // row stays when it hides, so nothing moves.
-      Item {
-        width: parent.width; height: Style.space(2)
-        clip: true
-        Rectangle { anchors.fill: parent; visible: loadingBar.visible; color: view.host.faint }
-        Rectangle {
-          id: loadingBar
-          visible: !view.loaded
-          width: parent.width / 4; height: parent.height; radius: height / 2
-          color: view.host.accent
-          NumberAnimation on x { running: loadingBar.visible; loops: Animation.Infinite; from: -loadingBar.width; to: loadingBar.parent.width; duration: 1100; easing.type: Easing.InOutQuad }
-        }
-      }
-
       // One row: the state, the labels, then Edit labels as an accent text
       // action (Done editing while the editor is open); Close or Reopen issue
       // as a quiet text action at its right. Neither moves when the editor or
-      // the close question opens below.
+      // the close question opens below. While the issue loads, the state and
+      // both actions keep their place, unseen, and fade in: nothing jumps.
       Item {
         id: labelRow
         width: parent.width
@@ -355,7 +347,8 @@ Item {
           spacing: Style.space(4)
           Pill {
             id: statePill
-            visible: !!view.issue.state
+            opacity: view.issue.state ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 150 } }
             label: view.issue.state === "closed" ? "Closed" : "Open"
             textColor: view.issue.state === "closed" ? view.host.dim : view.host.accent
             border.color: textColor
@@ -377,7 +370,10 @@ Item {
           }
           BoardText {
             id: editAction
-            visible: view.issueReady && view.issueError === "" && view.host.writable
+            objectName: "editAction"
+            visible: view.issueError === "" && view.host.writable
+            opacity: view.issueReady ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 150 } }
             height: Math.max(implicitHeight, statePill.height)
             verticalAlignment: Text.AlignVCenter
             leftPadding: Style.space(4)
@@ -385,7 +381,7 @@ Item {
             text: view.editing ? "\uf00c  Done editing" : "\uf040  Edit labels"
             color: view.host.accent
             font.pixelSize: Style.font.bodySmall
-            MouseArea { id: editMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: view.editing ? view.doneEditing() : view.editLabels() }
+            MouseArea { id: editMouse; anchors.fill: parent; enabled: view.issueReady; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: view.editing ? view.doneEditing() : view.editLabels() }
             IconTip { host: view.host; shown: editMouse.containsMouse; text: view.editing ? "Done editing (Esc)" : "Edit labels (e)" }
           }
         }
@@ -394,8 +390,11 @@ Item {
           anchors.right: parent.right
           height: Math.max(implicitHeight, statePill.height)
           verticalAlignment: Text.AlignVCenter
-          visible: view.issueReady && view.issueError === "" && view.host.writable
-          enabled: view.stateBusy === ""
+          objectName: "stateAction"
+          visible: view.issueError === "" && view.host.writable
+          opacity: view.issueReady ? 1 : 0
+          Behavior on opacity { NumberAnimation { duration: 150 } }
+          enabled: view.issueReady && view.stateBusy === ""
           text: view.stateBusy === "close" ? "Closing…" : view.stateBusy === "reopen" ? "Reopening…"
             : view.issue.state === "closed" ? "Reopen issue" : "Close issue"
           color: stateMouse.containsMouse && enabled ? view.host.foreground : view.host.dim
@@ -456,16 +455,19 @@ Item {
 
       BoardText {
         width: parent.width; wrapMode: Text.Wrap
-        visible: !view.described || view.issueError !== "" || !view.issue.description
-        text: !view.described ? "Loading…" : (view.issueError || "No description.")
+        visible: view.described && (view.issueError !== "" || !view.issue.description)
+        text: view.issueError || "No description."
         color: view.host.dim; font.italic: true
       }
+      LoadingRow { objectName: "issueLoading"; width: parent.width; host: view.host; visible: view.waited && !view.described }
 
       FontMetrics { id: metrics; font: description.font }
       Text {
         id: description
         width: parent.width; wrapMode: Text.Wrap
         visible: view.described && !!view.issue.description
+        opacity: visible ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: 150 } }
         textFormat: Text.RichText
         text: visible ? view.css + Logic.markdown(view.issue.description, function(t) { return metrics.advanceWidth(t) }, function(px) { return Style.space(px) }) : ""
         color: view.host.foreground
@@ -490,4 +492,6 @@ Item {
       IssueComments { id: comments; owner: view; width: parent.width }
     }
   }
+  // More below: the bottom edge fades (ScrollHint.qml).
+  ScrollHint { flick: flick; host: view.host }
 }

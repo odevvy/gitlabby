@@ -23,9 +23,11 @@ h.ok("N0 a loaded board: no spinner anywhere", spinners() == [])
 h.ev("root.openIssue(root.columns[1].issues[0])"); h.spin(80)
 ISSUE = {"iid": 2, "title": "Header palette button: label it \"Edit background\" like Edit cover", "state": "opened", "labels": ["todo", "frontend"], "url": "https://gitlab.com/group/app/-/issues/2",
          "description": "Hovering the palette button shows \"Background\". It should say \"Edit background\".", "author": "o_devvy", "milestone": "", "assignees": [], "createdAt": "2026-10-29T12:00:00Z", "updatedAt": "2026-10-29T12:00:00Z"}
-h.answer("issue", {"state": "ready", "message": "", "issue": ISSUE}); h.spin(60)
+h.answer("issue", {"state": "ready", "message": "", "issue": ISSUE}); h.spin(300)
 cm = text("Comments")
-h.ok("C1 comments loading: a spinner beside the Comments heading", len(spinners()) == 1 and len(cm) == 1 and abs(mid(spinners()[0]) - mid(cm[0])) < 2 and box(spinners()[0])[0] > box(cm[0])[2])
+# One spinner for the comments, on the heading's line or the line under it
+# (v0.1.67: the loading row under the heading).
+h.ok("C1 comments loading: one spinner at the Comments heading", len(spinners()) == 1 and len(cm) == 1 and box(cm[0])[1] - 2 <= mid(spinners()[0]) <= box(cm[0])[3] + (box(cm[0])[3] - box(cm[0])[1]) * 2.5)
 h.answer("notes", {"state": "ready", "message": "", "iid": 2, "more": False, "notes": []}); h.spin(60)
 h.ok("C2 comments in: no spinner", spinners() == [])
 

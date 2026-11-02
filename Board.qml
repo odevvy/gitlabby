@@ -124,13 +124,21 @@ Panel {
   // Any refresh on its way while the popup is open, manual or automatic: the
   // board, or the merge-request list on screen. The header bar slides and the
   // refresh icon spins on it; the cards stay.
-  readonly property bool refreshActive: opened && (loading || (view === "mrs" && mrsView.loading))
+  readonly property bool refreshActive: opened && (loading || (view === "mrs" && mrsView.loading) || updating)
   // A refresh you asked for (Refresh, r, a click on the icon), not the timer's
   // or the one opening the popup runs: set by each refresh(). It, the first
   // load and the merge-request list loading are "loud": the icon spins and
   // the status dot is accent. A background refresh only breathes the dot, grey.
   property bool manualRefresh: false
-  readonly property bool loudRefresh: refreshActive && ((loading && (manualRefresh || boardState !== "ready")) || (view === "mrs" && mrsView.loading))
+  readonly property bool loudNow: opened && ((loading && (manualRefresh || boardState !== "ready")) || (view === "mrs" && mrsView.loading))
+  // A refresh you asked for on a loaded board says "Updating…" for at least
+  // half a second (with the dot and the icon), so a quick answer reads as
+  // Updating… then Updated, not a flicker. Not the first load, not closed.
+  readonly property bool updatingNow: loudNow && boardState === "ready"
+  property bool refreshHeld: false
+  Timer { id: refreshHold; interval: 500; onTriggered: root.refreshHeld = false }
+  readonly property bool updating: updatingNow || (refreshHeld && opened && boardState === "ready")
+  readonly property bool loudRefresh: loudNow || updating
   property string boardState: "loading"
   property string message: ""
   property string updatedAt: ""
@@ -338,6 +346,7 @@ Panel {
     // A refresh you asked for stays loud until its answer, even if the
     // popup opening (or the timer) joins it meanwhile.
     manualRefresh = ifDue !== true || (manualRefresh && loading)
+    if (ifDue !== true && boardState === "ready" && opened) { refreshHeld = true; refreshHold.restart() }  // "Updating…" at least 500 ms
     var last = feed.request(project, boardId, ifDue === true, cadence.sec * 1000 - 2000, moveFloor)
     if (last) apply(last.raw, false, last.ticket)
   }
@@ -612,13 +621,14 @@ Panel {
   function statusText() {
     if (moveError !== "") return moveError
     if (move) return "Moving #" + move.iid + "…"
-    // While a refresh runs the status keeps its time (the dot before it says
-    // a refresh is on), and a last failure gives way to it.
+    // While the timer's refresh runs the status keeps its time (the dot before
+    // it says a refresh is on), and a last failure gives way to it.
     if (boardState === "ready" && refreshError !== "" && !refreshing)
       return "Couldn't refresh · showing " + (updatedAt !== "" ? new Date(updatedAt).toLocaleTimeString(Qt.locale(), "HH:mm") : "the last board")
     if (boardState === "ready" && cached) return Logic.savedNote(updatedAt)
     if (boardState === "ready") {
-      var time = updatedAt !== "" ? "Updated " + new Date(updatedAt).toLocaleTimeString(Qt.locale(), "HH:mm") : ""
+      // A refresh you asked for says so; the timer's keeps the time.
+      var time = updating ? "Updating…" : updatedAt !== "" ? "Updated " + new Date(updatedAt).toLocaleTimeString(Qt.locale(), "HH:mm") : ""
       if (!writable) time = "View-only  " + time
       return message !== "" ? message + "  " + time : time
     }

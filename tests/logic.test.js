@@ -976,7 +976,8 @@ test("view-only in the issue view and bulk runs: actions hidden, refused writes 
   const fs = require("node:fs"), path = require("node:path"), dir = path.join(__dirname, "..")
   const issue = fs.readFileSync(path.join(dir, "IssueView.qml"), "utf8")
   const bar = fs.readFileSync(path.join(dir, "BulkBar.qml"), "utf8")
-  assert.equal((issue.match(/visible: view\.issueReady && view\.issueError === "" && view\.host\.writable/g) || []).length, 2)
+  // Edit labels and Close issue: only when writable (v0.1.67: unseen, not gone, while the issue loads).
+  assert.equal((issue.match(/visible: (view\.issueReady && )?view\.issueError === "" && view\.host\.writable/g) || []).length, 2)
   assert.match(issue, /function editLabels\(\) \{\n    if \(!issueReady \|\| issueError !== "" \|\| !host\.writable\) return/)
   assert.match(issue, /function toggleState\(\) \{\n    if \(!host\.writable\) return/)
   assert.equal((issue.match(/host\.feed\.noteRefused\(host\.project, data\.message\)/g) || []).length, 2)

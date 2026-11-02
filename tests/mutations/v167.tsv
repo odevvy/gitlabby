@@ -1,0 +1,34 @@
+# v0.1.67: calm loading, Updating…, the bottom fade (qml: tests/harness/tests/run167.py)
+lr-spinner-off	components/LoadingRow.qml	running: row.spinning && row.visible	running: false	qml
+lr-not-italic	components/LoadingRow.qml	color: row.host.dim; font.italic: true	color: row.host.dim; font.italic: false	qml
+lr-not-dim	components/LoadingRow.qml	color: row.host.dim; font.italic	color: row.host.foreground; font.italic	qml
+picker-spins-on-error	Picker.qml	spinning: view.host.auxLoading	spinning: true	qml
+picker-no-reason	Picker.qml	text: view.host.auxLoading ? "Loading…" : view.host.auxError	text: view.host.auxLoading ? "Loading…" : "x"	qml
+grace-zero	IssueView.qml	interval: 250; onTriggered	interval: 1; onTriggered	qml
+never-waited	IssueView.qml	onTriggered: view.waited = true	onTriggered: view.waited = false	qml
+desc-row-no-grace	IssueView.qml	visible: view.waited && !view.described	visible: !view.described	qml
+notes-row-before-desc	IssueComments.qml	owner.waited && owner.described && owner.notesReadyFor	owner.waited && owner.notesReadyFor	qml
+notes-row-no-grace	IssueComments.qml	visible: owner.waited && owner.described	visible: owner.described	qml
+box-says-loading	IssueComments.qml	placeholderText: "Write a comment…  (Ctrl+Enter to post)"	placeholderText: owner.loaded ? "Write a comment…  (Ctrl+Enter to post)" : "Loading…"	qml
+comments-loading-text	IssueComments.qml	owner.notesLoading && owner.notes.length === 0 ? ""	owner.notesLoading && owner.notes.length === 0 ? "Loading comments…"	qml
+desc-text-while-loading	IssueView.qml	visible: view.described && (view.issueError !== ""	visible: !view.described || (view.issueError !== ""	qml
+edit-hidden-while-loading	IssueView.qml	objectName: "editAction"\n            visible: view.issueError === ""	objectName: "editAction"\n            visible: view.issueReady && view.issueError === ""	qml
+state-hidden-while-loading	IssueView.qml	objectName: "stateAction"\n          visible: view.issueError === ""	objectName: "stateAction"\n          visible: view.issueReady && view.issueError === ""	qml
+edit-shown-while-loading	IssueView.qml	opacity: view.issueReady ? 1 : 0	opacity: 1	qml
+state-shown-while-loading	IssueView.qml	opacity: view.issueReady ? 1 : 0\n          Behavior on opacity { NumberAnimation { duration: 150 } }\n          enabled:	opacity: 1\n          Behavior on opacity { NumberAnimation { duration: 150 } }\n          enabled:	qml
+no-updating	Board.qml	var time = updating ? "Updating…" :	var time = false ? "Updating…" :	qml
+updating-on-timer	Board.qml	readonly property bool updatingNow: loudNow && boardState === "ready"	readonly property bool updatingNow: loading && boardState === "ready"	qml
+updating-first-load	Board.qml	if (ifDue !== true && boardState === "ready" && opened)	if (ifDue !== true && opened)	qml
+no-hold	Board.qml	{ refreshHeld = true;	{ refreshHeld = false;	qml
+hold-forever	Board.qml	onTriggered: root.refreshHeld = false	onTriggered: root.refreshHeld = true	qml
+hold-short	Board.qml	id: refreshHold; interval: 500	id: refreshHold; interval: 50	qml
+held-not-shown	Board.qml	readonly property bool updating: updatingNow || (refreshHeld && opened && boardState === "ready")	readonly property bool updating: updatingNow	qml
+held-when-closed	Board.qml	(refreshHeld && opened && boardState	(refreshHeld && boardState	qml
+dot-not-held	Board.qml	|| (view === "mrs" && mrsView.loading) || updating)	|| (view === "mrs" && mrsView.loading))	qml
+hint-never	components/ScrollHint.qml	opacity: more ? 1 : 0	opacity: 0	qml
+hint-always	components/ScrollHint.qml	opacity: more ? 1 : 0	opacity: 1	qml
+hint-wrong-color	components/ScrollHint.qml	readonly property color bg: host.background	readonly property color bg: host.foreground	qml
+hint-at-top	components/ScrollHint.qml	right: flick.right; bottom: flick.bottom	right: flick.right; top: flick.top	qml
+settings-no-hint	SettingsView.qml	ScrollHint { flick: flick; host: view.host }	Item { }	qml
+keys-no-hint	KeysView.qml	ScrollHint { flick: flick; host: view.host }	Item { }	qml
+issue-no-hint	IssueView.qml	ScrollHint { flick: flick; host: view.host }	Item { }	qml

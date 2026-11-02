@@ -1,7 +1,7 @@
-# v0.1.30: while a refresh of the board on screen is in flight (button, r, the
-# timer) the header keeps "Updated HH:MM" in the same quiet color (since
-# v0.1.63 a breathing dot before it says a refresh runs, not "Refreshing…"),
-# and the header doesn't move. A failed
+# v0.1.30: while a refresh of the board on screen is in flight the header
+# stays quiet and doesn't move: the timer's keeps "Updated HH:MM" (a breathing
+# dot before it says a refresh runs, v0.1.63); one you ask for (button, r)
+# says "Updating…" for at least half a second (v0.1.67). A failed
 # refresh still says "Couldn't refresh · showing HH:MM" (urgent) and keeps the
 # board; a saved copy keeps its own "· updating…"; a move's text wins.
 # Usage: run130.py <src> [outdir]   (previews: header-refreshing, header-updated, header-error)
@@ -20,15 +20,15 @@ hhmm = h.ev("new Date(root.updatedAt).toLocaleTimeString(Qt.locale(), 'HH:mm')")
 h.ok("U0 loaded: 'Updated HH:MM'", status() == "Updated " + hhmm, status())
 g0 = geom(); shot("header-updated")
 h.click(h.ev("header.refreshButton")); h.spin(60)
-h.ok("F1 the refresh button: 'Updated HH:MM' stays while board-fetch runs, quiet", status() == "Updated " + hhmm and bool(h.running("board")) and same(h.ev("header.status.color"), h.ev("root.quiet")), status())
+h.ok("F1 the refresh button: 'Updating…' while board-fetch runs, quiet", status() == "Updating…" and bool(h.running("board")) and same(h.ev("header.status.color"), h.ev("root.quiet")), status())
 h.ok("F2 the header doesn't move or resize", geom() == g0, [g0, geom()])
 h.ok("F3 the board stays on screen and usable", h.ev("boardView.visible") and h.ev("root.canMove"))
 shot("header-refreshing")
-h.answer("board", BOARD); h.spin(80)
+h.answer("board", BOARD); h.spin(600)
 h.ok("F4 done: 'Updated HH:MM' again", status().startswith("Updated ") and not h.running("board"), status())
 h.key(Qt.Key_R, "r"); h.spin(60)
-h.ok("K1 r: 'Updated HH:MM' stays", status() == "Updated " + hhmm and bool(h.running("board")), status())
-h.answer("board", BOARD); h.spin(80)
+h.ok("K1 r: 'Updating…'", status() == "Updating…" and bool(h.running("board")), status())
+h.answer("board", BOARD); h.spin(600)
 h.ev("refreshTimer.triggered()"); h.spin(60)
 h.ok("T0 (v0.1.33) a tick less than an interval after the last fetch: no fetch, 'Updated' stays", status().startswith("Updated ") and not h.running("board"), status())
 h.age_feed(); h.ev("refreshTimer.triggered()"); h.spin(60)
@@ -38,20 +38,20 @@ h.answer("board", {"state": "error", "message": "GitLab did not answer within 30
 h.ok("E1 a failed refresh: board kept, 'Couldn't refresh · showing HH:MM' in urgent", status().startswith("Couldn't refresh · showing ") and h.ev("boardView.visible") and same(h.ev("header.status.color"), h.ev("root.urgent")), status())
 shot("header-error")
 h.ev("root.refresh()"); h.spin(60)
-h.ok("E2 trying again: back to 'Updated HH:MM', quiet (not the old error in red)", status() == "Updated " + hhmm and same(h.ev("header.status.color"), h.ev("root.quiet")), status())
+h.ok("E2 trying again: 'Updating…', quiet (not the old error in red)", status() == "Updating…" and same(h.ev("header.status.color"), h.ev("root.quiet")), status())
 h.answer("board", {"state": "error", "message": "offline"}); h.spin(80)
 h.ok("E3 failing again: the error is back, board still there", status().startswith("Couldn't refresh") and h.ev("boardView.visible") and h.ev("root.refreshError") == "offline", status())
-h.ev("root.refresh()"); h.answer("board", BOARD); h.spin(80)
+h.ev("root.refresh()"); h.answer("board", BOARD); h.spin(600)
 h.ok("E4 then a good refresh clears it", status().startswith("Updated ") and h.ev("root.refreshError") == "", status())
 # --- a board with a note (e.g. the fallback board) keeps it -------------------------
 h.ev("root.refresh()"); h.answer("board", dict(BOARD, message="No board named Dev; showing Development.")); h.spin(80)
 h.ev("root.refresh()"); h.spin(60)
-h.ok("M1 a board's note stays while refreshing", status() == "No board named Dev; showing Development.  Updated " + hhmm, status())
+h.ok("M1 a board's note stays while refreshing", status() == "No board named Dev; showing Development.  Updating…", status())
 h.answer("board", BOARD); h.spin(80)
 # --- a saved copy keeps its own note ------------------------------------------------
 h.stop_all(); h.ev("root.switchTo('group/app', '7', 'Development')"); h.spin(40)
 h.answer("cached", dict(BOARD, cached=True)); h.spin(60)
 h.ok("S1 a saved copy while the first fetch runs: 'Saved … · updating…', not 'Refreshing…'", status().endswith("· updating…") and bool(h.running("board")), status())
-h.answer("board", BOARD); h.spin(80)
+h.answer("board", BOARD); h.spin(600)
 h.ok("S2 fresh board: 'Updated HH:MM'", status().startswith("Updated "), status())
 h.finish()

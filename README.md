@@ -67,7 +67,9 @@ the picker's board step. The header shows a star on the default board and a
   has less room under the bar. The board, an issue, the merge requests,
   Settings and the keyboard shortcuts fit inside it or scroll inside it, so
   switching views never resizes the popup. Only folding or hiding columns
-  changes its width.
+  changes its width. When Settings, the shortcuts or an issue go on below
+  the popup's edge, that edge fades into the background; at the end the fade
+  is gone.
 - Every icon button says what it does when you point at it, with its key in
   brackets when it has one: `Refresh (r)`, `Settings (s)`,
   `Keyboard shortcuts (?)`, `Switch project or board (p)`,
@@ -93,11 +95,12 @@ an `in progress` (or `doing`) column it never slows past your setting.
 Pointing at `Updated 14:05` says the current pace and why, e.g.
 `Refreshes every 30 s while open · cards moved recently`. Refresh, `r` and a
 right-click always fetch at once.
-While a refresh runs, a small dot breathes before `Updated 14:05` in the
-header and the board stays usable, in every view. The dot is grey for the
-timer's refresh in the background and orange for one you asked for (Refresh,
-`r`, a right-click, or the merge-request list loading in its view); only
-then does the refresh icon spin too. The first load shows the skeleton
+While a refresh runs, a small dot breathes in the header and the board stays
+usable, in every view. For the timer's refresh in the background the dot is
+grey and the status keeps `Updated 14:05`. For one you asked for (Refresh,
+`r`, a right-click, or the merge-request list loading in its view) the dot is
+orange, the refresh icon spins and the status says `Updating…`, for at least
+half a second, then `Updated` with the new time. The first load shows the skeleton
 board and the spinning icon. A refresh
 that comes due while you hold a card waits until you let go.
 
@@ -246,6 +249,13 @@ opened stay in memory: reopening one shows its description and comments at
 once (the card's own title, labels and state win), while the fresh copies load;
 editing, commenting and moving wait for those. Nothing is written to disk, and
 signing out forgets them.
+
+While an issue loads, its title, labels and age show at once from the card;
+the state, Edit labels and Close issue keep their place and fade in once the
+issue is in, so nothing jumps. A load that takes longer than a quarter
+second shows one quiet line, the project picker's spinner and `Loading…`:
+where the description goes, then under Comments until they are in. A
+quicker one shows nothing in between.
 
 Under the thread is a box for a new comment: **Post** or `Ctrl+Enter` sends
 it, `Enter` or `Shift+Enter` adds a line, and `Escape` leaves the box.
