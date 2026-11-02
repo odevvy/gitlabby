@@ -5,8 +5,8 @@ import "components"
 
 // The board's top row (Board.qml): project and board name (opens the picker),
 // the default star, the Board and Merge requests tabs, the status ("Updated
-// …"), then the icon buttons: columns (board only), refresh, keyboard
-// shortcuts and settings. Buttons and tabs are 28 px targets with a faint fill
+// …"), then the icon buttons: refresh, columns (board only), keyboard
+// shortcuts and settings (v0.1.69: refresh first, next to the status). Buttons and tabs are 28 px targets with a faint fill
 // on hover (v155 design B), so they are easy to hit with a mouse.
 Item {
   id: header
@@ -184,7 +184,7 @@ Item {
   }
   BoardText {
     id: status
-    anchors { left: header.tabsShown ? tabs.right : defaultMark.right; leftMargin: Style.space(12); right: columnsButton.visible ? columnsButton.left : refreshButton.left; rightMargin: Style.space(8); verticalCenter: parent.verticalCenter }
+    anchors { left: header.tabsShown ? tabs.right : defaultMark.right; leftMargin: Style.space(12); right: refreshButton.left; rightMargin: Style.space(8); verticalCenter: parent.verticalCenter }
     horizontalAlignment: Text.AlignRight
     elide: Text.ElideLeft
     text: host.statusText()
@@ -215,21 +215,9 @@ Item {
       NumberAnimation { from: 1; to: 0.25; duration: 700; easing.type: Easing.InOutSine }
     }
   }
-  // Show or hide columns: opens the column row under the bots (board only).
-  // Shows how many are hidden, so a hidden column is never forgotten.
-  HeadButton {
-    id: columnsButton
-    readonly property int hiddenCount: host.availableColumns.length - host.shownColumns.length
-    visible: host.view === "board" && host.boardState === "ready" && host.setup === ""
-    anchors { right: refreshButton.left; rightMargin: visible ? Style.space(4) : 0; verticalCenter: parent.verticalCenter }
-    text: "\uf0db" + (hiddenCount > 0 ? " " + hiddenCount : "")
-    active: host.columnChips
-    tip: hiddenCount > 0 ? "Show or hide columns (" + hiddenCount + " hidden)" : "Show or hide columns"
-    onClicked: host.columnChips = !host.columnChips
-  }
   HeadButton {
     id: refreshButton
-    anchors { right: keysButton.left; rightMargin: Style.space(4); verticalCenter: parent.verticalCenter }
+    anchors { right: columnsButton.visible ? columnsButton.left : keysButton.left; rightMargin: Style.space(4); verticalCenter: parent.verticalCenter }
     text: "\uf021"
     tip: "Refresh (r)"
     // Spins while a refresh you asked for runs with the popup open
@@ -238,6 +226,18 @@ Item {
     // turn it is on, so it always stops upright. The timer's doesn't spin it.
     RotationAnimation on rotation { running: host.loudRefresh; alwaysRunToEnd: true; loops: Animation.Infinite; from: 0; to: 360; duration: 900 }
     onClicked: host.refresh()
+  }
+  // Show or hide columns: opens the column row under the bots (board only).
+  // Shows how many are hidden, so a hidden column is never forgotten.
+  HeadButton {
+    id: columnsButton
+    readonly property int hiddenCount: host.availableColumns.length - host.shownColumns.length
+    visible: host.view === "board" && host.boardState === "ready" && host.setup === ""
+    anchors { right: keysButton.left; rightMargin: Style.space(4); verticalCenter: parent.verticalCenter }
+    text: "\uf0db" + (hiddenCount > 0 ? " " + hiddenCount : "")
+    active: host.columnChips
+    tip: hiddenCount > 0 ? "Show or hide columns (" + hiddenCount + " hidden)" : "Show or hide columns"
+    onClicked: host.columnChips = !host.columnChips
   }
   // The keyboard shortcuts (KeysView), like ? does.
   HeadButton {
