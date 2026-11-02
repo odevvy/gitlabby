@@ -45,14 +45,14 @@ the picker's board step. The header shows a star on the default board and a
   to filter your projects, up to 500, most recently active first), then one of its boards.
 - After the title, the **Board** and **Merge requests** tabs switch between the
   two views (the current one is underlined; the Merge requests tab shows how many
-  wait on your review). On the right: `Updated`, then the columns (board only),
-  refresh, keyboard and settings buttons. Buttons and tabs are 28-point targets
+  wait on your review). On the right: `Updated`, then the refresh, columns
+  (board only), keyboard and settings buttons. Buttons and tabs are 28-point targets
   with a faint fill on hover, and every tip names its key. Tips come after
   half a second of hovering, and never while a column folds, so a strip or
   header that slides under the cursor doesn't flash one. When the screen is
   too narrow for that, `Updated` shrinks first, then the tab reads `MRs`.
 - Click a column header to collapse it to a narrow strip (count, colour dot,
-  name). The columns button in the header (the columns icon left of refresh, with
+  name). The columns button in the header (the columns icon right of refresh, with
   a number when columns are hidden) opens a row of chips under the bots: click one to hide or show
   that column. The row stays closed until you open it.
 - Click an issue for its details: state, labels, author, ages, assignees,
