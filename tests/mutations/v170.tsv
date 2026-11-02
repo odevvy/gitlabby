@@ -1,0 +1,7 @@
+# v0.1.70: the refresh pace in plain words (node rows: tests/logic.test.js; qml: tests/harness/tests/run170.py)
+pace-words-slowed	logic/board.js	t += " · slowed to "	t += " · now "	node
+pace-words-sped	logic/board.js	t += " · sped up to "	t += " · slowed to "	node
+pace-words-no-progress	logic/board.js	else if (cad.why === "cards in progress")	else if (false)	node
+pace-words-no-why	logic/board.js	durationText(cad.sec) + ", " + cad.why\n  else if (cad.sec < base)	durationText(cad.sec)\n  else if (cad.sec < base)	node
+pace-words-pace-first	logic/board.js	t = "Every " + durationText(base)	t = "Every " + durationText(cad.sec)	node
+pace-words-no-alerts	logic/board.js	return t + (closedToo ? " · also while closed, for alerts" : "")	return t	node
