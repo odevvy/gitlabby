@@ -8,3 +8,8 @@ scroll-backwards	Board.qml	from + dy * Style.space(56)	from - dy * Style.space(5
 scroll-step-zero	Board.qml	from + dy * Style.space(56)	from + dy * 0	qml
 scroll-past-end	Board.qml	Math.min(f.contentHeight - f.height, from	Math.min(1e9, from	qml
 scroll-past-top	Board.qml	var to = Math.max(0, Math.min(	var to = Math.max(-1e9, Math.min(	qml
+filter-ctrl-off	Picker.qml	if (!(event.modifiers & Qt.ControlModifier)) return	return	qml
+filter-no-n	Picker.qml	event.key === Qt.Key_J || event.key === Qt.Key_N ? 1	event.key === Qt.Key_J ? 1	qml
+filter-no-p	Picker.qml	event.key === Qt.Key_K || event.key === Qt.Key_P ? -1	event.key === Qt.Key_K ? -1	qml
+filter-j-up	Picker.qml	event.key === Qt.Key_N ? 1	event.key === Qt.Key_N ? -1	qml
+filter-plain-j-moves	Picker.qml	if (!(event.modifiers & Qt.ControlModifier)) return	if (event.text !== "j" && !(event.modifiers & Qt.ControlModifier)) return	qml

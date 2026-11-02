@@ -58,6 +58,13 @@ Item {
       foreground: view.host.foreground
       placeholderText: "Filter projects"
       onAccepted: view.activate()
+      // While typing: Ctrl+j / Ctrl+n down, Ctrl+k / Ctrl+p up (before the
+      // field's own Ctrl+K, delete to the end of the line, here only).
+      Keys.onPressed: function(event) {
+        if (!(event.modifiers & Qt.ControlModifier)) return
+        var dy = event.key === Qt.Key_J || event.key === Qt.Key_N ? 1 : event.key === Qt.Key_K || event.key === Qt.Key_P ? -1 : 0
+        if (dy !== 0) { view.moveCursor(dy); event.accepted = true }
+      }
       Keys.onUpPressed: view.moveCursor(-1)
       Keys.onDownPressed: view.moveCursor(1)
       Keys.onEscapePressed: view.host.back()
