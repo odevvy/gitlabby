@@ -110,7 +110,7 @@ ok("R1 Refresh on screen 2 fetches although the last one is fresh", tickets() ==
 ev("a", "root.refresh()"); spin(40)
 QTest.keyClick(wins["w1"], Qt.Key_R, Qt.NoModifier); spin(40)
 ok("R2 Refresh and r on screen 1 meanwhile join it: still one", tickets() == 3 and len(running()) == 1, (tickets(), running()))
-ok("R3 refreshing on both, 'Updated' stays", ev("a", "root.refreshing") and ev("b", "root.refreshing") and status("a").startswith("Updated ") and status("a") == status("b"))
+ok("R3 refreshing on both, 'Updated' stays", ev("a", "root.refreshing") and ev("b", "root.refreshing") and all(status(x).startswith("Updated ") or status(x) == "Updating…" for x in "ab"), (status("a"), status("b")))  # a refresh asked for says "Updating…" since v0.1.67
 answer(B1); ok("R4 both done, same board", iids("a") == iids("b") and status("a") == status("b") and not ev("a", "root.loading") and not ev("b", "root.loading"))
 # --- a move on screen 1 ------------------------------------------------------------
 ev("a", "root.moveIssue(root.columns[1].issues[0], root.columns[1], root.columns[2])"); spin(60)
@@ -119,7 +119,7 @@ ev("b", "root.refresh()"); spin(40)
 ok("M2 screen 2 refreshes meanwhile: one fetch", tickets() == 4)
 moved = copy.deepcopy(B1); moved["columns"][2]["issues"] = moved["columns"][1]["issues"]; moved["columns"][1]["issues"] = []
 answer_proc("a", "move", {"state": "ready", "message": "Moved #2 to review."}); spin(120)
-ok("M3 move done while that fetch (started before the write) is out: screen 1 is refreshing, no second fetch yet", tickets() == 4 and ev("a", "root.refreshing") and status("a").startswith("Updated "), (tickets(), status("a")))
+ok("M3 move done while that fetch (started before the write) is out: screen 1 is refreshing, no second fetch yet", tickets() == 4 and ev("a", "root.refreshing") and (status("a").startswith("Updated ") or status("a") == "Updating…"), (tickets(), status("a")))
 ev("a", "root.refresh()"); spin(40)
 ok("M3 Refresh on screen 1 now doesn't join that older fetch: a newer one waits", tickets() == 4 and ev("a", "root.feed.queue.length") == 1, (tickets(), ev("a", "root.feed.queue.length")))
 answer(B1); spin(60)

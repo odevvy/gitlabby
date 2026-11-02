@@ -27,7 +27,7 @@ h.ok("R1 failed refresh: same board, still on screen", board_iids() == before an
 h.ok("R2 header: Couldn't refresh · showing HH:MM, in the urgent color", status() == "Couldn't refresh · showing " + hhmm and h.ev("root.refreshError") == "GitLab did not answer within 30 seconds.", status())
 h.ok("R3 cards can still move (a move rechecks GitLab itself)", h.ev("root.canMove"))
 shot("refresh")
-h.ev("root.refresh()"); h.answer("board", BOARD); h.spin(60)
+h.ev("root.refresh()"); h.answer("board", BOARD); h.spin(600)  # past a refresh's "Updating…" (v0.1.67)
 h.ok("R4 the next good refresh clears it", h.ev("root.refreshError") == "" and status().startswith("Updated"))
 h.ev("root.refresh()"); h.answer("board", {"state": "logged-out", "message": "Not signed in to gitlab.com. Run: glab auth login"}); h.spin(60)
 h.ok("R5 signed out on refresh: still the sign-in panel", h.ev("root.setup") == "logged-out" and h.ev("setupView.visible"))
