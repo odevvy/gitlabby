@@ -135,4 +135,6 @@ Item {
       }
     }
   }
+  // More below: the bottom edge fades (ScrollHint.qml).
+  ScrollHint { flick: flick; host: view.host }
 }

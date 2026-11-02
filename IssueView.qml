@@ -314,6 +314,7 @@ Item {
   }
 
   Flickable {
+    id: flick
     anchors { top: top.bottom; topMargin: Style.space(8); left: parent.left; right: parent.right; bottom: parent.bottom }
     contentWidth: width; contentHeight: content.implicitHeight
     clip: true; boundsBehavior: Flickable.StopAtBounds
@@ -491,4 +492,6 @@ Item {
       IssueComments { id: comments; owner: view; width: parent.width }
     }
   }
+  // More below: the bottom edge fades (ScrollHint.qml).
+  ScrollHint { flick: flick; host: view.host }
 }

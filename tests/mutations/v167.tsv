@@ -30,3 +30,5 @@ hint-always	components/ScrollHint.qml	opacity: more ? 1 : 0	opacity: 1	qml
 hint-wrong-color	components/ScrollHint.qml	readonly property color bg: host.background	readonly property color bg: host.foreground	qml
 hint-at-top	components/ScrollHint.qml	right: flick.right; bottom: flick.bottom	right: flick.right; top: flick.top	qml
 settings-no-hint	SettingsView.qml	ScrollHint { flick: flick; host: view.host }	Item { }	qml
+keys-no-hint	KeysView.qml	ScrollHint { flick: flick; host: view.host }	Item { }	qml
+issue-no-hint	IssueView.qml	ScrollHint { flick: flick; host: view.host }	Item { }	qml
