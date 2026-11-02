@@ -19,12 +19,14 @@ ok("K0 two columns at the popup's width (760 or more)", kev("twoColumns") and h.
 title = [it for it in h.walk(kv) if it.property("text") == "Keyboard shortcuts"]
 ok("K1 the title is Settings' (subtitle, bold)", title and title[0].property("font").pixelSize() == h.ev("Style.font.subtitle") and title[0].property("font").bold())
 cards = named("keyGroup")
-ok("K2 nine groups, each a soft card with Settings' pane fill", len(cards) == 9 and all(abs(c.property("color").alphaF() - 0.035) < 0.01 and c.property("radius") == S(8) for c in cards), len(cards))
+groups = kev("Logic.keyGroups.length")  # the list itself: tests/logic.test.js
+ok("K2 every group (nine or more), each a soft card with Settings' pane fill", len(cards) == groups >= 9 and all(abs(c.property("color").alphaF() - 0.035) < 0.01 and c.property("radius") == S(8) for c in cards), len(cards))
 left = sorted([c for c in cards if c.mapToItem(kv, QPointF(0, 0)).x() < kv.width() / 2], key=lambda c: c.mapToItem(kv, QPointF(0, 0)).y())
 ltitles = [h.ev("modelData.title", QQmlEngine.contextForObject(c), c) for c in left]
 ok("K3 the board's four groups on the left, in order", ltitles == ["Board", "Picked cards", "Confirm a move or a close", "Setup panel"], ltitles)
 rows = named("keyRow")
-ok("K4 all 33 shortcuts, one row each", len(rows) == 33, len(rows))
+total = kev("Logic.keyGroups.reduce(function(n, g) { return n + g.keys.length }, 0)")
+ok("K4 every shortcut (33 or more), one row each", len(rows) == total >= 33, (len(rows), total))
 ok("K5 every row one line (26 px), its caps and words fit", all(r.height() == S(26) and r.property("fits") for r in rows), [h.ev("modelData[1]", QQmlEngine.contextForObject(r), r) for r in rows if not r.property("fits")])
 def row(text): return next(r for r in rows if h.ev("modelData[1]", QQmlEngine.contextForObject(r), r) == text)
 def caps(r): return sorted([c for c in h.walk(r) if c.objectName() == "keyCap" and c.isVisible()], key=lambda c: c.mapToItem(r, QPointF(0, 0)).x())
