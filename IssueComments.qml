@@ -22,17 +22,23 @@ Column {
       color: owner.host.dim
       font { pixelSize: Style.font.bodySmall; bold: true }
     }
-    Spinner { running: owner.notesLoading }
   }
   BoardText {
     width: parent.width; wrapMode: Text.Wrap
     visible: text !== ""
     text: owner.notesError !== "" ? owner.notesError
-      : owner.notesLoading && owner.notes.length === 0 ? "Loading comments…"
+      : owner.notesLoading && owner.notes.length === 0 ? ""
       : owner.notes.length === 0 ? "No comments yet."
       : owner.more ? "Showing the latest 100 notes. Older ones are on GitLab." : ""
     color: owner.notesError !== "" ? owner.host.urgent : owner.host.dim
     font.italic: true
+  }
+  // Still waiting for the comments once the description is in: the one
+  // loading row (the issue view's), here.
+  LoadingRow {
+    objectName: "notesLoading"
+    width: parent.width; host: owner.host
+    visible: owner.waited && owner.described && owner.notesReadyFor !== owner.key && owner.notes.length === 0
   }
 
   Repeater {
@@ -40,6 +46,7 @@ Column {
     delegate: Row {
       id: note
       required property var modelData
+      NumberAnimation on opacity { from: 0; to: 1; duration: 150 }
       width: parent.width
       spacing: Style.space(8)
       Avatar { host: owner.host; person: note.modelData.author || ({}) }
@@ -66,7 +73,7 @@ Column {
     width: parent.width
     enabled: owner.loaded && !owner.posting
     wrapMode: TextEdit.Wrap
-    placeholderText: owner.loaded ? "Write a comment…  (Ctrl+Enter to post)" : "Loading…"
+    placeholderText: "Write a comment…  (Ctrl+Enter to post)"
     placeholderTextColor: owner.host.dim
     color: owner.host.foreground
     selectionColor: owner.host.accent
