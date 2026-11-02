@@ -92,9 +92,12 @@ labels, it refreshes twice as often (never under 30 s); once two refreshes in
 a row bring no change it is back at your setting, and after every two more
 quiet ones it waits twice as long, up to 4x your setting. While cards sit in
 an `in progress` (or `doing`) column it never slows past your setting.
-Pointing at `Updated 14:05` says the current pace and why, e.g.
-`Refreshes every 30 s while open · cards moved recently`. Refresh, `r` and a
-right-click always fetch at once.
+Pointing at `Updated 14:05` names your setting, then what the pace did to it
+and why, e.g. `Every 2 min · slowed to 4 min, nothing changed lately` or
+`Every 2 min · sped up to 1 min, cards moved recently`; at your setting it says
+just `Every 2 min`. With an alert on it adds `also while closed, for alerts`.
+Settings notes the slowdown under **Refresh every**. Refresh, `r` and a right-click
+always fetch at once.
 While a refresh runs, a small dot breathes in the header and the board stays
 usable, in every view. For the timer's refresh in the background the dot is
 grey and the status keeps `Updated 14:05`. For one you asked for (Refresh,

@@ -161,6 +161,17 @@ function adaptiveInterval(baseSec, pace) {
   if (slow > base && pace.active) return { sec: base, why: "cards in progress" }
   return { sec: slow, why: slow > base ? "nothing changed lately" : "your setting" }
 }
+// The pace in words, for the tip on "Updated": the setting first, then what
+// the pace did to it and why ("Every 2 min · slowed to 4 min, nothing changed
+// lately"); just the setting when it holds. closedToo: an alert also has it
+// refresh with the popup closed, at the same pace (BoardService.background).
+function cadenceText(baseSec, cad, closedToo) {
+  var base = Math.max(paceFloorSec, Number(baseSec) || 60), t = "Every " + durationText(base)
+  if (cad.sec > base) t += " · slowed to " + durationText(cad.sec) + ", " + cad.why
+  else if (cad.sec < base) t += " · sped up to " + durationText(cad.sec) + ", " + cad.why
+  else if (cad.why === "cards in progress") t += " · not slowed, cards in progress"
+  return t + (closedToo ? " · also while closed, for alerts" : "")
+}
 function durationText(sec) {
   sec = Math.round(Number(sec) || 0)
   if (sec < 60) return sec + " s"
@@ -185,4 +196,4 @@ function keyOps(have, want) {
   return ops
 }
 
-if (typeof module !== "undefined") module.exports = { pipelineMarks: pipelineMarks, pipelineMark: pipelineMark, columnKey: columnKey, listSpec: listSpec, movedColumns: movedColumns, cursorMove: cursorMove, cursorFix: cursorFix, cursorAt: cursorAt, keyGroups: keyGroups, keyParts: keyParts, boardSig: boardSig, boardActive: boardActive, nextPace: nextPace, paceFloorSec: paceFloorSec, adaptiveInterval: adaptiveInterval, durationText: durationText, keyOps: keyOps }
+if (typeof module !== "undefined") module.exports = { pipelineMarks: pipelineMarks, pipelineMark: pipelineMark, columnKey: columnKey, listSpec: listSpec, movedColumns: movedColumns, cursorMove: cursorMove, cursorFix: cursorFix, cursorAt: cursorAt, keyGroups: keyGroups, keyParts: keyParts, boardSig: boardSig, boardActive: boardActive, nextPace: nextPace, paceFloorSec: paceFloorSec, adaptiveInterval: adaptiveInterval, durationText: durationText, cadenceText: cadenceText, keyOps: keyOps }

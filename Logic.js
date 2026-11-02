@@ -83,6 +83,7 @@ var nextPace = BoardLogic.nextPace
 var paceFloorSec = BoardLogic.paceFloorSec
 var adaptiveInterval = BoardLogic.adaptiveInterval
 var durationText = BoardLogic.durationText
+var cadenceText = BoardLogic.cadenceText
 var keyOps = BoardLogic.keyOps
 // alerts.js
 var alertsFor = Alerts.alertsFor

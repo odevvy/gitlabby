@@ -628,6 +628,17 @@ test("adaptive refresh: pace from answers, interval from pace", () => {
   assert.equal(L.adaptiveInterval(900, { calm: 99 }).sec, 3600)
   assert.equal(L.adaptiveInterval(900, { calm: 0 }).sec, 450)
   assert.deepEqual([30, 60, 450, 3600].map(L.durationText), ["30 s", "1 min", "7 min 30 s", "60 min"])
+  // v0.1.70: the tip names the setting first, then what the pace did to it.
+  const words = (base, calm, active, closed) => L.cadenceText(base, L.adaptiveInterval(base, calm === null ? null : { calm, active: !!active }), closed)
+  assert.equal(words(120, null), "Every 2 min")
+  assert.equal(words(120, 2), "Every 2 min")
+  assert.equal(words(120, 6), "Every 2 min · slowed to 8 min, nothing changed lately")
+  assert.equal(words(120, 4), "Every 2 min · slowed to 4 min, nothing changed lately")
+  assert.equal(words(120, 0), "Every 2 min · sped up to 1 min, cards moved recently")
+  assert.equal(words(120, 6, true), "Every 2 min · not slowed, cards in progress")
+  assert.equal(words(30, 0), "Every 30 s", "at the floor nothing speeds up")
+  assert.equal(words(120, 4, false, true), "Every 2 min · slowed to 4 min, nothing changed lately · also while closed, for alerts")
+  assert.equal(words(60, 2, false, true), "Every 1 min · also while closed, for alerts")
   // Board.qml paces its timer and the due check from the shared cadence.
   const fs = require("node:fs"), path = require("node:path"), dir = path.join(__dirname, "..")
   const board = fs.readFileSync(path.join(dir, "Board.qml"), "utf8")

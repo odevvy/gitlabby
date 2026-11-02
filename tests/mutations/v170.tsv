@@ -1,0 +1,13 @@
+# v0.1.70: the refresh pace in plain words (node rows: tests/logic.test.js; qml: tests/harness/tests/run170.py)
+pace-words-slowed	logic/board.js	t += " · slowed to "	t += " · now "	node
+pace-words-sped	logic/board.js	t += " · sped up to "	t += " · slowed to "	node
+pace-words-no-progress	logic/board.js	else if (cad.why === "cards in progress")	else if (false)	node
+pace-words-no-why	logic/board.js	durationText(cad.sec) + ", " + cad.why\n  else if (cad.sec < base)	durationText(cad.sec)\n  else if (cad.sec < base)	node
+pace-words-pace-first	logic/board.js	t = "Every " + durationText(base)	t = "Every " + durationText(cad.sec)	node
+pace-words-no-alerts	logic/board.js	return t + (closedToo ? " · also while closed, for alerts" : "")	return t	node
+tip-alerts-ignored	Board.qml	Logic.cadenceText(refreshIntervalSec, cadence, watchCfg !== null)	Logic.cadenceText(refreshIntervalSec, cadence, false)	qml
+tip-alerts-always	Board.qml	Logic.cadenceText(refreshIntervalSec, cadence, watchCfg !== null)	Logic.cadenceText(refreshIntervalSec, cadence, true)	qml
+tip-old-words	Board.qml	return Logic.cadenceText(refreshIntervalSec, cadence, watchCfg !== null)	return "Refreshes every " + Logic.durationText(cadence.sec) + " while open · " + cadence.why	qml
+note-gone	SettingsView.qml	      Help { text: "Slows down, up to 4x	      BoardText { visible: false; text: "Slows down, up to 4x	qml
+note-loud	SettingsView.qml	      Help { text: "Slows down, up to 4x	      Label { text: "Slows down, up to 4x	qml
+note-dropped	SettingsView.qml	      Help { text: "Slows down, up to 4x, while the board stays quiet; any change brings it back." }\n	\n	qml

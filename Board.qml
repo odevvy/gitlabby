@@ -632,7 +632,9 @@ Panel {
   NumberAnimation { id: scrollAnim; property: "contentY"; duration: 120; easing.type: Easing.OutCubic }
   function copyLogin() { Quickshell.execDetached(["wl-copy", loginCommand]) }
 
-  function cadenceText() { return "Refreshes every " + Logic.durationText(cadence.sec) + " while open · " + cadence.why }
+  // The tip on "Updated": the setting, then the pace and why; with an alert on
+  // it also refreshes while closed (watchCfg, BoardService.background).
+  function cadenceText() { return Logic.cadenceText(refreshIntervalSec, cadence, watchCfg !== null) }
   function statusText() {
     if (moveError !== "") return moveError
     if (move) return "Moving #" + move.iid + "…"
