@@ -13,3 +13,6 @@ filter-no-n	Picker.qml	event.key === Qt.Key_J || event.key === Qt.Key_N ? 1	even
 filter-no-p	Picker.qml	event.key === Qt.Key_K || event.key === Qt.Key_P ? -1	event.key === Qt.Key_K ? -1	qml
 filter-j-up	Picker.qml	event.key === Qt.Key_N ? 1	event.key === Qt.Key_N ? -1	qml
 filter-plain-j-moves	Picker.qml	if (!(event.modifiers & Qt.ControlModifier)) return	if (event.text !== "j" && !(event.modifiers & Qt.ControlModifier)) return	qml
+keys-no-scrolling	logic/board.js	  { title: "Scrolling", keys: [	  { title: "Scrollin", keys: [	node
+keys-no-ctrl-row	logic/board.js	    ["Ctrl+j / k", "The same while typing a filter · or Ctrl+n / p"],\n	\n	node
+keys-arrows-alone	logic/board.js	    ["j_k / ↓_↑", "Move up / down"],	    ["↑_↓", "Move up / down"],	node

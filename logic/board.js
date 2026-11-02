@@ -106,8 +106,11 @@ var keyGroups = [
     ["j_k / ↓_↑", "Move between them"],
     ["Enter / o", "Open in the browser"],
     ["r", "Refresh the lists"]] },
+  { title: "Scrolling", keys: [
+    ["j_k / ↓_↑", "Scroll · settings, shortcuts, an issue"]] },
   { title: "Pickers and filters", keys: [
-    ["↑_↓", "Move up / down · j k for boards"],
+    ["j_k / ↓_↑", "Move up / down"],
+    ["Ctrl+j / k", "The same while typing a filter · or Ctrl+n / p"],
     ["Enter", "Pick the row or first match"],
     ["Esc", "Close the picker or form"]] }
 ]
