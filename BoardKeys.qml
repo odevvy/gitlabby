@@ -34,6 +34,7 @@ PanelKeyCatcher {
     if (host.view === "board") host.moveCursor(dx, dy)
     else if (host.view === "picker" && dy !== 0) picker.moveCursor(dy)
     else if (host.view === "mrs" && dy !== 0) mrsView.moveCursor(dy)
+    else if (dy !== 0) host.scrollView(dy)  // j/k, ↓/↑: Settings, the shortcuts, an issue
   }
   onActivateRequested: {
     if (host.pendingMove) host.confirmMove()

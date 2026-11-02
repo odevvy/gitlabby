@@ -1,0 +1,10 @@
+# v0.1.68: vim keys beside the arrows: scrolling, Ctrl+j/k in the filter, the shortcuts list (node rows: tests/logic.test.js; qml: tests/harness/tests/run168.py)
+scroll-branch-gone	BoardKeys.qml	    else if (dy !== 0) host.scrollView(dy)  // j/k	    else if (false) host.scrollView(dy)  // j/k	qml
+scroll-on-dx	BoardKeys.qml	    else if (dy !== 0) host.scrollView(dy)  // j/k	    else host.scrollView(dy !== 0 ? dy : 1)  // j/k	qml
+scroll-not-settings	Board.qml	var v = view === "settings" ? settingsView :	var v = view === "nope" ? settingsView :	qml
+scroll-not-keys	Board.qml	view === "keys" ? keysView :	view === "nope" ? keysView :	qml
+scroll-not-issue	Board.qml	view === "issue" ? issueView : null	view === "nope" ? issueView : null	qml
+scroll-backwards	Board.qml	from + dy * Style.space(56)	from - dy * Style.space(56)	qml
+scroll-step-zero	Board.qml	from + dy * Style.space(56)	from + dy * 0	qml
+scroll-past-end	Board.qml	Math.min(f.contentHeight - f.height, from	Math.min(1e9, from	qml
+scroll-past-top	Board.qml	var to = Math.max(0, Math.min(	var to = Math.max(-1e9, Math.min(	qml
