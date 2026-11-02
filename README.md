@@ -567,7 +567,7 @@ Settings live on the widget's entry in `~/.config/omarchy/shell.json`:
 
 | Key | Meaning |
 | --- | --- |
-| `gitlabHost` | The GitLab server, by its bare name (default `gitlab.com`; `https://` and a trailing `/` are dropped). `http://`, a port or a path aren't accepted here (the server is then `gitlab.com`): set those in glab's own config for the host (`api_protocol`, `api_host`, `subfolder`). Every `board-fetch` call gets it as `--hostname` |
+| `gitlabHost` | The GitLab server, by its bare name (default `gitlab.com`; `https://` and a trailing `/` are dropped). `http://`, a port or a path aren't accepted here (the server is then `gitlab.com`, and Settings shows the value with its error until you fix it): set those in glab's own config for the host (`api_protocol`, `api_host`, `subfolder`). Every `board-fetch` call gets it as `--hostname` |
 | `defaultProject` | Default project: path or numeric id. Empty (the default): the first board you open |
 | `defaultBoardId`, `defaultBoardName` | Default board; empty means the project's first board |
 | `refreshIntervalSec` | Refresh interval in seconds |
@@ -606,6 +606,24 @@ start with its name (`gitlab.example.com~group%2Fapp-7@me.json`), so the same
 project path on two servers never shares one. It is readable only by you.
 Clear it with
 `rm -rf ~/.cache/odevvy.gitlab-board`.
+
+## Your own GitLab
+
+Settings > General starts with **GitLab server**: `gitlab.com`, or your
+company's own GitLab by its bare name (`gitlab.example.com`). Typing changes
+nothing yet: when the name differs from the server in use, **Use** appears
+(Enter does the same) and the line under the field says where you'll go.
+`https://` and a trailing `/` are dropped. `http://`, a port or a path get an
+error under the field instead, and no Use: the board talks https only, and
+glab keeps those details for the host (`ca_cert`, `api_host`, `subfolder`).
+Esc puts the server in use back. Each server keeps its own default board,
+bots, alerts and folds, so switching back finds them as they were.
+
+When glab isn't signed in to that server, the popup says so and shows the
+exact command, `glab auth login --hostname gitlab.example.com`, with
+**Copy**. **Sign in** opens a terminal with it, **Try again** reloads after
+you've signed in elsewhere, and **Change server** opens Settings with the
+field focused. Your token stays with glab; the board never sees it.
 
 ## GitLab access
 
