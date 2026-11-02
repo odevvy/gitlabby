@@ -1,7 +1,7 @@
 # v0.1.55: header buttons and view tabs (v155 design B, keyboard button kept).
 # Board · Merge requests are tabs after the star (hairline before them, accent
 # underline on the current one, 28 px high, a faint fill on hover), shown on
-# those two views only. Right: Updated, then columns (board only), refresh,
+# those two views only. Right: Updated, then refresh, columns (board only),
 # keyboard and settings as 28 px buttons with 14 px glyphs, 4 apart, a faint
 # fill on hover and the accent tint while their view is open. The header keeps
 # its height; the title is never cut more than before (Updated gives way first,
@@ -56,15 +56,15 @@ hover(bt)
 ok("T7 the current tab gets no hover fill", fill(bt).property("color").alphaF() == 0)
 rest()
 # --- buttons -------------------------------------------------------------------
-btns = [hd(n) for n in ("columnsButton", "refreshButton", "keysButton", "gear")]
-ok("B1 four buttons on the board: columns, refresh, keyboard, settings", all(b.isVisible() for b in btns) and [glyph(b).property("text") for b in btns] == ["\uf0db", "\uf021", "\uf11c", "\uf013"])
+btns = [hd(n) for n in ("refreshButton", "columnsButton", "keysButton", "gear")]  # v0.1.69: refresh first
+ok("B1 four buttons on the board: refresh, columns, keyboard, settings", all(b.isVisible() for b in btns) and [glyph(b).property("text") for b in btns] == ["\uf021", "\uf0db", "\uf11c", "\uf013"])
 ok("B2 each at least 28 x 28, glyphs at the title size (14)", all(b.width() >= S(28) and b.height() == S(28) and glyph(b).property("font").pixelSize() == h.ev("Style.font.title") for b in btns), [(b.width(), b.height()) for b in btns])
 gaps = [round(b.x() - (a.x() + a.width())) for a, b in zip(btns, btns[1:])]
 ok("B3 4 apart, the gear at the right edge", gaps == [S(4)] * 3 and abs(btns[-1].x() + btns[-1].width() - hd("width")) < 1, gaps)
 ok("B4 at rest: no fill, dim glyphs", all(fill(b).property("color").alphaF() == 0 and same(glyph(b).property("color"), col("dim")) for b in btns))
 hover(hd("gear"))
 ok("B5 hovering a button: a faint fill, the glyph in the foreground", same(fill(hd("gear")).property("color"), hd("hoverFill")) and same(glyph(hd("gear")).property("color"), col("foreground")))
-ok("B6 tips keep their keys", [b.property("tip") for b in btns[1:]] == ["Refresh (r)", "Keyboard shortcuts (?)", "Settings (s)"])
+ok("B6 tips keep their keys", [b.property("tip") for b in btns if b is not btns[1]] == ["Refresh (r)", "Keyboard shortcuts (?)", "Settings (s)"])
 shot("header-hover")
 h.click(hd("gear")); h.spin(100); rest()
 ok("B7 Settings open: the gear in the accent tint", h.ev("root.view") == "settings" and same(fill(hd("gear")).property("color"), hd("activeFill")) and same(glyph(hd("gear")).property("color"), col("accent")))

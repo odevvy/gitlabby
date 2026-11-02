@@ -1,0 +1,6 @@
+# v0.1.69: refresh next to the status, then columns (qml: tests/harness/tests/run169.py)
+refresh-ignores-columns	BoardHeader.qml	right: columnsButton.visible ? columnsButton.left : keysButton.left; rightMargin	right: keysButton.left; rightMargin	qml
+refresh-to-hidden-columns	BoardHeader.qml	right: columnsButton.visible ? columnsButton.left : keysButton.left; rightMargin	right: columnsButton.left; rightMargin	qml
+columns-before-refresh	BoardHeader.qml	anchors { right: keysButton.left; rightMargin: Style.space(4); verticalCenter: parent.verticalCenter }\n    text: "\uf0db"	anchors { right: refreshButton.left; rightMargin: Style.space(4); verticalCenter: parent.verticalCenter }\n    text: "\uf0db"	qml
+status-under-buttons	BoardHeader.qml	right: refreshButton.left; rightMargin: Style.space(8)	right: keysButton.left; rightMargin: Style.space(8)	qml
+refresh-no-gap	BoardHeader.qml	columnsButton.left : keysButton.left; rightMargin: Style.space(4)	columnsButton.left : keysButton.left; rightMargin: 0	qml
