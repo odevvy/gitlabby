@@ -8,3 +8,6 @@ pace-words-no-alerts	logic/board.js	return t + (closedToo ? " · also while clos
 tip-alerts-ignored	Board.qml	Logic.cadenceText(refreshIntervalSec, cadence, watchCfg !== null)	Logic.cadenceText(refreshIntervalSec, cadence, false)	qml
 tip-alerts-always	Board.qml	Logic.cadenceText(refreshIntervalSec, cadence, watchCfg !== null)	Logic.cadenceText(refreshIntervalSec, cadence, true)	qml
 tip-old-words	Board.qml	return Logic.cadenceText(refreshIntervalSec, cadence, watchCfg !== null)	return "Refreshes every " + Logic.durationText(cadence.sec) + " while open · " + cadence.why	qml
+note-gone	SettingsView.qml	      Help { text: "Slows down, up to 4x	      BoardText { visible: false; text: "Slows down, up to 4x	qml
+note-loud	SettingsView.qml	      Help { text: "Slows down, up to 4x	      Label { text: "Slows down, up to 4x	qml
+note-dropped	SettingsView.qml	      Help { text: "Slows down, up to 4x, while the board stays quiet; any change brings it back." }\n	\n	qml

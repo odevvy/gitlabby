@@ -203,6 +203,9 @@ Item {
           }
         }
       }
+      // The adaptive pace (Logic.adaptiveInterval), so the tip on "Updated"
+      // saying more than the setting is no surprise.
+      Help { text: "Slows down, up to 4x, while the board stays quiet; any change brings it back." }
       Item { width: 1; height: Style.space(2) }
       Label { text: "Start collapsed" }
       Help { text: "New boards fold these. Your per-board choice wins." }

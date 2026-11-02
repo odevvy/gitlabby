@@ -21,4 +21,24 @@ watched = h.ev("root.feed.watchedKeys.indexOf(root.fetchKey) >= 0")
 h.ok("A2 an alert on: the board is refreshed while closed too, and the tip says so", watched and tip() == ["Every 2 min · also while closed, for alerts"], (watched, tip()))
 h.ev("root.setAlert('review', false)"); h.spin(100)
 h.ok("A3 alert off: not watched, the tip drops it", not h.ev("root.feed.watchedKeys.indexOf(root.fetchKey) >= 0") and tip() == ["Every 2 min"], tip())
+# --- Settings: a note under "Refresh every" ------------------------------------------------
+NOTE = "Slows down, up to 4x, while the board stays quiet; any change brings it back."
+h.ev("root.showView('settings')"); h.spin(60)
+while h.running("whoami"): h.answer("whoami", {"state": "ready", "user": "dev1"})
+h.spin(300)
+sv = h.cls("SettingsView")
+def texts(t): return [it for it in h.walk(sv) if it.property("text") == t and it.isVisible()]
+note, row, nxt = texts(NOTE), h.ev("refreshRow", h.ctx_of(sv), sv), texts("Start collapsed")
+y = lambda it: it.mapToItem(sv, QPointF(0, 0)).y()
+h.ok("B1 the note sits between 'Refresh every' and 'Start collapsed'", len(note) == 1 and nxt and y(row) + row.height() <= y(note[0]) < y(nxt[0]), [y(n) for n in note])
+if note:
+    help_ = [it for it in h.walk(sv) if it.property("text") == "New boards fold these. Your per-board choice wins."][0]
+    same = note[0].property("color") == help_.property("color") and note[0].property("font").pixelSize() == help_.property("font").pixelSize()
+    h.ok("B2 in the other notes' style (quiet, caption size)", same, (note[0].property("color"), help_.property("color")))
+    h.ok("B3 fitted: one line at this width", note[0].property("lineCount") == 1, note[0].property("lineCount"))
+h.ev("panel.availableCardWidth = 760"); h.spin(300)
+note = texts(NOTE)
+h.ok("B4 still one line in the narrowest popup (760)", note and note[0].property("lineCount") == 1 and h.ev("panel.contentWidth") <= h.ev("Style.space(800)"), (note and note[0].property("lineCount"), h.ev("panel.contentWidth")))
+h.ev("panel.availableCardWidth = 1460"); h.spin(200)
+h.ev("root.showView('board')"); h.spin(100)
 sys.exit(h.finish())
