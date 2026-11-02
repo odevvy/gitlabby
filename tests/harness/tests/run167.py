@@ -101,4 +101,21 @@ h.stop_all(); h.ev("root.switchTo('group/app', '7', 'Development')"); h.spin(40)
 while h.running("cached"): h.answer("cached", {"state": "none"})
 h.answer("board", BOARD); h.spin(80)
 h.ok("U8 a first load: straight to Updated HH:MM (no Updating… after it)", status().startswith("Updated "), status())
+# --- the fade at the bottom edge --------------------------------------------------------------
+def fade_check(cls, tag):
+    v = h.cls(cls); ctx = h.ctx_of(v); hs = [it for it in named("scrollHint") if it.parentItem() == v]
+    if not hs: h.ok("%s0 the view has a ScrollHint" % tag, False); return
+    hint = hs[0]
+    h.ev("flick.contentY = 0", ctx, v); h.spin(300)
+    over = h.ev("flick.contentHeight > flick.height + 1", ctx, v)
+    h.ok("%s1 more below: the bottom edge fades into the popup's background" % tag, over and hint.isVisible() and hint.opacity() == 1
+         and same(hint.property("bg"), h.ev("root.background")) and abs(hint.mapToScene(QPointF(0, hint.height())).y() - h.ev("flick.mapToItem(null, 0, flick.height).y", ctx, v)) < 1, over)
+    h.ev("flick.contentY = flick.contentHeight - flick.height", ctx, v); h.spin(300)
+    h.ok("%s2 at the end: no fade" % tag, not hint.isVisible())
+    h.ev("flick.contentY = 0", ctx, v); h.spin(300)
+h.ev("panel.availableCardHeight = 520"); h.spin(100)
+h.ev("root.showView('settings')"); h.spin(100)
+while h.running("whoami"): h.answer("whoami", {"state": "ready", "user": "dev1"})
+h.spin(200)
+fade_check("SettingsView", "S")
 sys.exit(h.finish())

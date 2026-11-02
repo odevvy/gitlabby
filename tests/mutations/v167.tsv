@@ -25,3 +25,8 @@ hold-short	Board.qml	id: refreshHold; interval: 500	id: refreshHold; interval: 5
 held-not-shown	Board.qml	readonly property bool updating: updatingNow || (refreshHeld && opened && boardState === "ready")	readonly property bool updating: updatingNow	qml
 held-when-closed	Board.qml	(refreshHeld && opened && boardState	(refreshHeld && boardState	qml
 dot-not-held	Board.qml	|| (view === "mrs" && mrsView.loading) || updating)	|| (view === "mrs" && mrsView.loading))	qml
+hint-never	components/ScrollHint.qml	opacity: more ? 1 : 0	opacity: 0	qml
+hint-always	components/ScrollHint.qml	opacity: more ? 1 : 0	opacity: 1	qml
+hint-wrong-color	components/ScrollHint.qml	readonly property color bg: host.background	readonly property color bg: host.foreground	qml
+hint-at-top	components/ScrollHint.qml	right: flick.right; bottom: flick.bottom	right: flick.right; top: flick.top	qml
+settings-no-hint	SettingsView.qml	ScrollHint { flick: flick; host: view.host }	Item { }	qml
