@@ -5,3 +5,6 @@ pace-words-no-progress	logic/board.js	else if (cad.why === "cards in progress")	
 pace-words-no-why	logic/board.js	durationText(cad.sec) + ", " + cad.why\n  else if (cad.sec < base)	durationText(cad.sec)\n  else if (cad.sec < base)	node
 pace-words-pace-first	logic/board.js	t = "Every " + durationText(base)	t = "Every " + durationText(cad.sec)	node
 pace-words-no-alerts	logic/board.js	return t + (closedToo ? " · also while closed, for alerts" : "")	return t	node
+tip-alerts-ignored	Board.qml	Logic.cadenceText(refreshIntervalSec, cadence, watchCfg !== null)	Logic.cadenceText(refreshIntervalSec, cadence, false)	qml
+tip-alerts-always	Board.qml	Logic.cadenceText(refreshIntervalSec, cadence, watchCfg !== null)	Logic.cadenceText(refreshIntervalSec, cadence, true)	qml
+tip-old-words	Board.qml	return Logic.cadenceText(refreshIntervalSec, cadence, watchCfg !== null)	return "Refreshes every " + Logic.durationText(cadence.sec) + " while open · " + cadence.why	qml
