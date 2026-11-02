@@ -16,3 +16,12 @@ edit-hidden-while-loading	IssueView.qml	objectName: "editAction"\n            vi
 state-hidden-while-loading	IssueView.qml	objectName: "stateAction"\n          visible: view.issueError === ""	objectName: "stateAction"\n          visible: view.issueReady && view.issueError === ""	qml
 edit-shown-while-loading	IssueView.qml	opacity: view.issueReady ? 1 : 0	opacity: 1	qml
 state-shown-while-loading	IssueView.qml	opacity: view.issueReady ? 1 : 0\n          Behavior on opacity { NumberAnimation { duration: 150 } }\n          enabled:	opacity: 1\n          Behavior on opacity { NumberAnimation { duration: 150 } }\n          enabled:	qml
+no-updating	Board.qml	var time = updating ? "Updating…" :	var time = false ? "Updating…" :	qml
+updating-on-timer	Board.qml	readonly property bool updatingNow: loudNow && boardState === "ready"	readonly property bool updatingNow: loading && boardState === "ready"	qml
+updating-first-load	Board.qml	if (ifDue !== true && boardState === "ready" && opened)	if (ifDue !== true && opened)	qml
+no-hold	Board.qml	{ refreshHeld = true;	{ refreshHeld = false;	qml
+hold-forever	Board.qml	onTriggered: root.refreshHeld = false	onTriggered: root.refreshHeld = true	qml
+hold-short	Board.qml	id: refreshHold; interval: 500	id: refreshHold; interval: 50	qml
+held-not-shown	Board.qml	readonly property bool updating: updatingNow || (refreshHeld && opened && boardState === "ready")	readonly property bool updating: updatingNow	qml
+held-when-closed	Board.qml	(refreshHeld && opened && boardState	(refreshHeld && boardState	qml
+dot-not-held	Board.qml	|| (view === "mrs" && mrsView.loading) || updating)	|| (view === "mrs" && mrsView.loading))	qml
