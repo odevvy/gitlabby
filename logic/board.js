@@ -72,6 +72,7 @@ var keyGroups = [
     ["h_j_k_l / ←_↓_↑_→", "Move between cards"],
     ["Enter / Space", "Open the issue"],
     ["o", "Open in the browser"],
+    ["y", "Copy the link · or right-click"],
     ["Shift+H / L", "Move left / right · asks first"],
     ["v", "Pick for bulk · or Ctrl+click"],
     ["r", "Refresh"]] },
@@ -96,6 +97,7 @@ var keyGroups = [
     ["Esc", "Back to the board, then close"]] },
   { title: "Issue", keys: [
     ["o", "Open in the browser"],
+    ["y", "Copy the link"],
     ["c", "Write a comment"],
     ["e", "Edit labels"],
     ["x", "Close or reopen · asks first"]] },
@@ -105,6 +107,7 @@ var keyGroups = [
   { title: "Merge requests", keys: [
     ["j_k / ↓_↑", "Move between them"],
     ["Enter / o", "Open in the browser"],
+    ["y", "Copy the link · or right-click"],
     ["r", "Refresh the lists"]] },
   { title: "Scrolling", keys: [
     ["j_k / ↓_↑", "Scroll · settings, shortcuts, an issue"]] },

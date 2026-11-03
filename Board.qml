@@ -632,6 +632,21 @@ Panel {
   NumberAnimation { id: scrollAnim; property: "contentY"; duration: 120; easing.type: Easing.OutCubic }
   function copyLogin() { Quickshell.execDetached(["wl-copy", loginCommand]) }
 
+  // y, or a right-click on a card or a merge request (BoardKeys, BoardView,
+  // MrsView): its link to the clipboard with wl-copy, as the setup panel does.
+  // https only (Logic.httpsUrl), the same as openUrl. The status then reads
+  // "Copied #N" (an issue) or "Copied !N" (a merge request) for a moment.
+  property string copiedNote: ""
+  Timer { id: copiedTimer; interval: 1500; onTriggered: root.copiedNote = "" }
+  function copyLink(row, sign) {
+    var link = row ? Logic.httpsUrl(row.url) : ""
+    if (link === "") return false
+    Quickshell.execDetached(["wl-copy", link])
+    copiedNote = "Copied " + sign + row.iid
+    copiedTimer.restart()
+    return true
+  }
+
   // The tip on "Updated": the setting, then the pace and why; with an alert on
   // it also refreshes while closed (watchCfg, BoardService.background).
   function cadenceText() { return Logic.cadenceText(refreshIntervalSec, cadence, watchCfg !== null) }
@@ -647,7 +662,7 @@ Panel {
       // A refresh you asked for says so; the timer's keeps the time.
       // On Merge requests, when the lists were read (MrsView.entry), not the board.
       var at = view !== "mrs" ? updatedAt : mrsView.entry && mrsView.entry.startedAt > 0 ? new Date(mrsView.entry.startedAt).toISOString() : ""
-      var time = updating ? "Updating…" : at !== "" ? "Updated " + new Date(at).toLocaleTimeString(Qt.locale(), "HH:mm") : ""
+      var time = copiedNote !== "" ? copiedNote : updating ? "Updating…" : at !== "" ? "Updated " + new Date(at).toLocaleTimeString(Qt.locale(), "HH:mm") : ""
       if (!writable) time = "View-only  " + time
       return message !== "" ? message + "  " + time : time
     }

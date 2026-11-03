@@ -65,6 +65,8 @@ PanelKeyCatcher {
       var row = host.view === "issue" ? issueView.issue : host.view === "board" ? host.cursorIssue() : null
       if (row) host.openUrl(row.url)
     }
+    else if (key === "y" && host.view === "mrs") host.copyLink(mrsView.rows[mrsView.cursor], "!")
+    else if (key === "y") host.copyLink(host.view === "issue" ? issueView.issue : host.view === "board" ? host.cursorIssue() : null, "#")
     else if (key === "c" && host.view === "issue") issueView.focusBox()
     else if (key === "e" && host.view === "issue") issueView.editLabels()
     else if (key === "p") host.openPicker()
