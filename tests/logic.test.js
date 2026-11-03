@@ -231,7 +231,11 @@ test("the key groups: every view's keys, the setup panel's, no key twice in a gr
   for (const k of ["Shift+H / L", "x", "e", "Enter / Space", "Esc"]) assert.ok(action("Picked cards", k), k)
   for (const g of L.keyGroups) assert.equal(new Set(g.keys.map(([k]) => k)).size, g.keys.length, g.title)
   // Every shortcut the popup had before 0.1.62's shorter rows is still listed.
-  assert.equal(L.keyGroups.reduce((n, g) => n + g.keys.length, 0), 35)
+  assert.equal(L.keyGroups.reduce((n, g) => n + g.keys.length, 0), 38)
+  // v0.1.72: y copies the link on the board, in an issue and on Merge requests.
+  assert.match(action("Board", "y"), /^Copy the link · or right-click$/)
+  assert.match(action("Issue", "y"), /^Copy the link$/)
+  assert.match(action("Merge requests", "y"), /^Copy the link · or right-click$/)
   // v0.1.68: every arrow has its vim key next to it; typing in a filter, Ctrl+j / k.
   assert.match(action("Scrolling", "j_k / ↓_↑"), /settings, shortcuts, an issue/)
   assert.match(action("Pickers and filters", "j_k / ↓_↑"), /Move up \/ down/)

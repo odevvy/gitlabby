@@ -55,6 +55,11 @@ the picker's board step. The header shows a star on the default board and a
   name). The columns button in the header (the columns icon right of refresh, with
   a number when columns are hidden) opens a row of chips under the bots: click one to hide or show
   that column. The row stays closed until you open it.
+- `y` copies the link of the focused card, the open issue or the focused
+  merge request; a right-click on a card or a merge request does the same.
+  It goes to the clipboard with `wl-copy` (Omarchy installs `wl-clipboard`),
+  https links only, and `Updated` reads `Copied #12` (`Copied !34` for a merge
+  request) for a moment. Only the left button drags, opens or picks a card.
 - Click an issue for its details: state, labels, author, ages, assignees,
   milestone, the description, the comments and a box to add one, and an
   "Open in browser" link. A thin bar slides under the title while it loads.
@@ -430,7 +435,7 @@ tabs, and the header's `Updated 14:05` says when the lists were read
 a faint fill and a short orange bar on its left edge.
 
 It is read-only: `Enter`, `o` or a click opens the merge request in the
-browser. The lists load when you open the view, switch its scope, or press
+browser; `y` or a right-click copies its link. The lists load when you open the view, switch its scope, or press
 `r`; nothing loads them in the background. An answer under a minute old is
 reused, so a second monitor shows the same lists without asking GitLab again.
 The badge on the button is how many waited on your review at the last look.
@@ -505,6 +510,7 @@ each shortcut on one line, with a quiet note after some (`asks first`).
 | `h j k l` / `← ↓ ↑ →` | Move between cards |
 | `Enter` / `Space` | Open the issue |
 | `o` | Open in the browser |
+| `y` | Copy the link · or right-click |
 | `Shift+H` / `L` | Move left / right · asks first |
 | `v` | Pick for bulk · or Ctrl+click |
 | `r` | Refresh |
@@ -549,6 +555,7 @@ each shortcut on one line, with a quiet note after some (`asks first`).
 | Key | Action |
 | --- | --- |
 | `o` | Open in the browser |
+| `y` | Copy the link |
 | `c` | Write a comment |
 | `e` | Edit labels |
 | `x` | Close or reopen · asks first |
@@ -566,6 +573,7 @@ each shortcut on one line, with a quiet note after some (`asks first`).
 | --- | --- |
 | `j k` / `↓ ↑` | Move between them |
 | `Enter` / `o` | Open in the browser |
+| `y` | Copy the link · or right-click |
 | `r` | Refresh the lists |
 
 **Scrolling**

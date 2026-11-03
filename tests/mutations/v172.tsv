@@ -17,3 +17,6 @@ card-left-copies	BoardView.qml	if (mouse.button === Qt.RightButton) { view.host.
 mr-right-off	MrsView.qml	acceptedButtons: Qt.LeftButton | Qt.RightButton\n              onClicked	onClicked	qml
 mr-right-opens	MrsView.qml	if (mouse.button === Qt.RightButton) view.host.copyLink	if (mouse.button === Qt.NoButton) view.host.copyLink	qml
 mr-left-copies	MrsView.qml	if (mouse.button === Qt.RightButton) view.host.copyLink(mr.row, "!"); else view.host.openUrl(mr.row.url)	view.host.copyLink(mr.row, "!")	qml
+keys-no-board-y	logic/board.js	    ["y", "Copy the link · or right-click"],\n    ["Shift+H / L"	    ["Shift+H / L"	node
+keys-no-issue-y	logic/board.js	    ["y", "Copy the link"],\n	\n	node
+keys-mr-no-right	logic/board.js	    ["y", "Copy the link · or right-click"],\n    ["r", "Refresh the lists"]	    ["y", "Copy the link"],\n    ["r", "Refresh the lists"]	node
