@@ -103,13 +103,15 @@ Panel {
   // Busy markers (settings.bots, keyed by projectKey; none by default), from the board on screen.
   readonly property var botStates: Logic.botStates(Logic.botsConfig(saved("bots", null), projectKey), columns)
   // Desktop alerts for the project on screen (settings.alerts; off by default).
-  // While one is on, the shared service watches this board, refreshes it with
-  // the popup closed and notifies (BoardService.qml watch); one per event.
+  // While one is on, the shared service watches this board and notifies
+  // (BoardService.qml watch); one per event. A card or bot alert refreshes the
+  // board with the popup closed; the pipeline one (v0.1.76) asks only for your
+  // open MRs there (board-fetch pipes).
   // A click on one opens its link as Settings > Open links in says (links).
   readonly property var alerts: Logic.alertsFor(saved("alerts", null), projectKey)
   readonly property string watchOwner: "w" + Math.floor(Math.random() * 1e9)
-  readonly property var watchCfg: project !== "" && setup === "" && (alerts.review || alerts.idle)
-    ? { key: fetchKey, project: project, boardId: boardId, review: alerts.review, idle: alerts.idle, bots: saved("bots", null), base: refreshIntervalSec, host: gitlabHost, links: linkMode } : null
+  readonly property var watchCfg: project !== "" && setup === "" && (alerts.review || alerts.idle || alerts.pipeline)
+    ? { key: fetchKey, project: project, boardId: boardId, review: alerts.review, idle: alerts.idle, pipeline: alerts.pipeline, bots: saved("bots", null), base: refreshIntervalSec, host: gitlabHost, links: linkMode } : null
   onWatchCfgChanged: feed.watch(watchOwner, watchCfg)
   Component.onDestruction: { saveFolds(); feed.watch(watchOwner, null) }
   function setAlert(kind, on) { persist(undefined, undefined, Logic.withAlert(saved("alerts", null), projectKey, kind, on)) }
@@ -657,9 +659,9 @@ Panel {
     return true
   }
 
-  // The tip on "Updated": the setting, then the pace and why; with an alert on
-  // it also refreshes while closed (watchCfg, BoardService.background).
-  function cadenceText() { return Logic.cadenceText(refreshIntervalSec, cadence, watchCfg !== null) }
+  // The tip on "Updated": the setting, then the pace and why; with a card or
+  // bot alert on it also refreshes while closed (watchCfg, BoardService.background).
+  function cadenceText() { return Logic.cadenceText(refreshIntervalSec, cadence, watchCfg !== null && (alerts.review || alerts.idle)) }
   function statusText() {
     if (moveError !== "") return moveError
     if (move) return "Moving #" + move.iid + "…"

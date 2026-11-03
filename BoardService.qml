@@ -36,6 +36,14 @@ Item {
   function seenAlerts() { unseenAlerts = 0 }
   property var baselines: ({})
   property var ownMoves: ({})
+  // The pipeline alert (v0.1.76), per project: pipeBaselines { project: the
+  // last good board-fetch pipes answer (your open MRs there, each with its head
+  // pipeline) }, pipeAt { project: when it was last asked }. Asked only for a
+  // watched board with pipeline on, at that board's pace (background()): one
+  // GraphQL query, and the board itself only if a card or bot alert is on too.
+  property var pipeBaselines: ({})
+  property var pipeAt: ({})
+  property var pipeWaiting: []  // projects asked for while another one loads
   readonly property var watchedKeys: Object.keys(watchers)
   // Boards waiting while another one loads, next first: [{ key, args }].
   property var queue: []
@@ -152,12 +160,25 @@ Item {
       for (var o in watchers[key]) if (o !== owner) { owners[o] = watchers[key][o]; any = true }
       if (any) next[key] = owners
     }
-    if (cfg && (cfg.review || cfg.idle)) {
+    if (cfg && (cfg.review || cfg.idle || cfg.pipeline)) {
       if (!next[cfg.key]) next[cfg.key] = {}
       next[cfg.key][owner] = cfg
     }
     for (key in baselines) if (!next[key]) dropBaseline(key)
     watchers = next
+    // A project no longer watched for pipelines loses its baseline: a fresh start when it is again.
+    var piped = pipedProjects(), pb = {}
+    for (var p in pipeBaselines) if (piped[p]) pb[p] = pipeBaselines[p]
+    pipeBaselines = pb
+  }
+  // { project: a cfg with pipeline on } over every watched board.
+  function pipedProjects() {
+    var out = {}
+    for (var key in watchers) for (var o in watchers[key]) {
+      var cfg = watchers[key][o]
+      if (cfg.pipeline && !out[cfg.project]) out[cfg.project] = cfg
+    }
+    return out
   }
   function dropBaseline(key) {
     var b = {}
@@ -183,8 +204,7 @@ Item {
     if (!data || data.state !== "ready") { dropBaseline(key); return }
     var moved = ownMoves[key] || []
     var events = baselines[key] ? Logic.alertEvents(baselines[key], data, { review: cfg.review, idle: cfg.idle, bots: cfg.bots, ignore: moved.map(function(m) { return m.iid }), host: cfg.host }) : []
-    events.forEach(function(ev) { Quickshell.execDetached(Logic.notifyArgv(ev, cfg.links)) })
-    unseenAlerts += events.length
+    notify(events, cfg)
     var b = {}, k
     for (k in baselines) b[k] = baselines[k]
     b[key] = data
@@ -195,6 +215,48 @@ Item {
     ownMoves = m
   }
 
+  // The only notifier: each event as an Omarchy notification, a click opening
+  // its link as cfg.links says; each lights the bar icon's dot.
+  function notify(events, cfg) {
+    events.forEach(function(ev) { Quickshell.execDetached(Logic.notifyArgv(ev, cfg.links)) })
+    unseenAlerts += events.length
+  }
+
+  // The pipeline alert: board-fetch pipes for project, unless asked under
+  // maxAgeMs ago, already loading or waiting. One at a time.
+  function requestPipes(project, maxAgeMs) {
+    if (!Logic.pipesArgs(project)) return
+    if ((pipeFetch.running && pipeFetch.project === project) || pipeWaiting.indexOf(project) !== -1) return
+    if (pipeAt[project] && Date.now() - pipeAt[project] < maxAgeMs) return
+    if (pipeFetch.running) { pipeWaiting = pipeWaiting.concat([project]); return }
+    startPipes(project)
+  }
+  function startPipes(project) {
+    var a = {}
+    for (var k in pipeAt) a[k] = pipeAt[k]
+    a[project] = Date.now()
+    pipeAt = a
+    pipeFetch.project = project
+    pipeFetch.generation = generation
+    pipeFetch.command = helperCommand(Logic.pipesArgs(project))
+    pipeFetch.running = true
+  }
+  function pipesNext() { var w = pipeWaiting; if (w.length > 0) { pipeWaiting = w.slice(1); startPipes(w[0]) } }
+  // A good answer after a good one: what finished, notified. The first one,
+  // or the one after a failure, is a baseline only.
+  function pipesDone(raw) {
+    if (pipeFetch.generation !== generation) return
+    var project = pipeFetch.project, cfg = pipedProjects()[project]
+    if (!cfg) return
+    var data = Logic.pipesAnswer(raw), b = {}
+    for (var k in pipeBaselines) if (k !== project) b[k] = pipeBaselines[k]
+    if (data.state === "ready") {
+      if (pipeBaselines[project]) notify(Logic.pipelineEvents(pipeBaselines[project], data, { host: cfg.host }), cfg)
+      b[project] = data
+    }
+    pipeBaselines = b
+  }
+
   // With the popup closed nothing else refreshes: a watched board is fetched
   // here when due at its pace (Logic.adaptiveInterval), as the timer would.
   // Not while signed out or without glab: the popup's setup panel handles that.
@@ -203,7 +265,8 @@ Item {
       var cfg = cfgOf(key), last = answers[key]
       if (!cfg || (last && (last.state === "logged-out" || last.state === "no-glab"))) return
       var cad = Logic.adaptiveInterval(cfg.base, paces[key])
-      request(cfg.project, cfg.boardId, true, cad.sec * 1000 - 2000, 0)
+      if (cfg.review || cfg.idle) request(cfg.project, cfg.boardId, true, cad.sec * 1000 - 2000, 0)
+      if (cfg.pipeline) requestPipes(cfg.project, cad.sec * 1000 - 2000)
     })
   }
   Timer {
@@ -247,6 +310,9 @@ Item {
     paces = ({})
     baselines = ({})
     ownMoves = ({})
+    pipeBaselines = ({})
+    pipeAt = ({})
+    pipeWaiting = []
     queue = []
     mrAnswers = ({})
     mrPending = null
@@ -274,6 +340,13 @@ Item {
     property real startedAt: 0
     onRunningChanged: if (!running) Qt.callLater(service.mrsNext)
     stdout: StdioCollector { waitForEnd: true; onStreamFinished: service.mrsDone(text) }
+  }
+  Process {
+    id: pipeFetch
+    property string project: ""
+    property int generation: 0
+    onRunningChanged: if (!running) Qt.callLater(service.pipesNext)
+    stdout: StdioCollector { waitForEnd: true; onStreamFinished: service.pipesDone(text) }
   }
   Process {
     id: accessFetch

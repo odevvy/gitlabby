@@ -23,3 +23,17 @@ n-status-any	logic/alerts.js	pipeStates.indexOf(String(m.pipeline.status)) !== -
 n-args-loose	logic/alerts.js	|| /^[1-9][0-9]*$/.test(p) ? ["pipes"	|| true ? ["pipes"	node
 n-max3	logic/alerts.js	ended.slice(0, 3)	ended.slice(0, 5)	node
 n-listurl-loose	logic/alerts.js	  if (!/^[A-Za-z0-9_.-]+(\/[A-Za-z0-9_.-]+)+$/.test(p)) return ""\n  return "https://" + (Core.serverHost(host) || "gitlab.com") + "/" + p + "/-/merge_requests"	  return "https://" + (Core.serverHost(host) || "gitlab.com") + "/" + p + "/-/merge_requests"	node
+q-watch-pipeline-ignored	BoardService.qml	if (cfg && (cfg.review || cfg.idle || cfg.pipeline)) {	if (cfg && (cfg.review || cfg.idle)) {	qml
+q-board-always	BoardService.qml	if (cfg.review || cfg.idle) request(	request(	qml
+q-no-pipes	BoardService.qml	if (cfg.pipeline) requestPipes(	if (false) requestPipes(	qml
+q-never-due	BoardService.qml	if (pipeAt[project] && Date.now() - pipeAt[project] < maxAgeMs) return	var due = true	qml
+q-keep-old-baseline	BoardService.qml	      b[project] = data\n	      b[project] = pipeBaselines[project] || data\n	qml
+q-error-baseline	BoardService.qml	if (data.state === "ready") {	if (true) {	qml
+q-off-keeps-baseline	BoardService.qml	for (var p in pipeBaselines) if (piped[p]) pb[p]	for (var p in pipeBaselines) if (true) pb[p]	qml
+q-forget-keeps	BoardService.qml	    pipeBaselines = ({})\n    pipeAt = ({})	    pipeAt = ({})	qml
+q-no-dot	BoardService.qml	unseenAlerts += events.length	var n = events.length	qml
+q-links-ignored	BoardService.qml	data, { host: cfg.host }), cfg)	data, { host: cfg.host }), {})	qml
+q-wrong-args	BoardService.qml	pipeFetch.command = helperCommand(Logic.pipesArgs(project))	pipeFetch.command = helperCommand(["pipes"])	qml
+q-cfg-no-flag	Board.qml	pipeline: alerts.pipeline, bots	bots	qml
+q-cfg-alone-off	Board.qml	(alerts.review || alerts.idle || alerts.pipeline)\n    ?	(alerts.review || alerts.idle)\n    ?	qml
+q-cadence-closed	Board.qml	watchCfg !== null && (alerts.review || alerts.idle))	watchCfg !== null)	qml
