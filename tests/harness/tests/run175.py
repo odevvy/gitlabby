@@ -104,6 +104,25 @@ ok("D7 closing it: still none", dots() == [False, False])
 age(); bg(); feed_answer(D)
 ok("D8 the next alert with the popups closed: the dot again", len(notes()) == 3 and dots() == [True, True], (len(notes()), dots()))
 ev("a", "root.opened = true"); spin(120); settle(); ev("a", "root.opened = false"); spin(80)
+# --- Keep the bar icon unlit (iconUnlit) ------------------------------------------------------------
+age(); bg(); feed_answer(E)
+ok("U0 lit again after the next alert", len(notes()) == 4 and dots() == [True, True], (len(notes()), dots()))
+w0 = len(ev("a", "root.bar.shell.writes") or []); ev("a", "root.setIconUnlit(true)"); spin(60)
+wr = (ev("a", "root.bar.shell.writes") or [])[w0:]
+ok("U1 setIconUnlit(true) saves iconUnlit: true with the rest", wr and wr[-1].get("iconUnlit") is True and wr[-1].get("alerts") == SETTINGS["alerts"] and wr[-1].get("defaultProject") == P, wr and wr[-1])
+for k in ("a", "b"): ev(k, "root.settings = Object.assign({}, root.settings, { iconUnlit: true })")
+spin(60)
+ok("U2 kept unlit: no dot on either screen, the plain tip, the alert still sent", dots() == [False, False] and tips() == ["GitLab board · group/app"] * 2 and len(notes()) == 4, (dots(), tips()))
+odd = []
+for v in ["true", 1, "yes"]:
+    for k in ("a", "b"): ev(k, "root.settings = Object.assign({}, root.settings, { iconUnlit: %s })" % json.dumps(v))
+    spin(40)
+    if dots() != [True, True]: odd.append(v)
+ok("U3 only true keeps it unlit", odd == [], odd)
+ev("a", "root.setIconUnlit('yes')"); spin(40)
+ok("U4 setIconUnlit saves only true or false", (ev("a", "root.bar.shell.writes") or [])[-1].get("iconUnlit") is False)
+for k in ("a", "b"): ev(k, "root.settings = Object.assign({}, root.settings, { iconUnlit: false })")
+spin(40)
 loops = [w for w in warnings if "oop" in w]
 ok("Z no binding-loop warnings", not loops, loops)
 ok("Z no QML warnings", not warnings, warnings[:3])

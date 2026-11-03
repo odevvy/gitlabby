@@ -91,7 +91,9 @@ Panel {
   // Settings > Open links in: "browser" (a tab, omarchy-launch-browser, the
   // default) or "app" (its own window, omarchy-launch-webapp). See openUrl.
   // The bar icon's dot after an alert (alertDot), unless Settings keeps it unlit.
-  readonly property bool iconLit: !!feed && feed.unseenAlerts > 0
+  readonly property bool iconUnlit: saved("iconUnlit", false) === true
+  readonly property bool iconLit: !iconUnlit && !!feed && feed.unseenAlerts > 0
+  function setIconUnlit(on) { persist(undefined, undefined, undefined, { iconUnlit: on === true }) }
   readonly property string linkMode: String(saved("openLinks", "browser")) === "app" ? "app" : "browser"
   function setLinkMode(mode) { persist(undefined, undefined, undefined, { openLinks: mode === "app" ? "app" : "browser" }) }
   // The interval actually used: the setting, faster while cards move, slower

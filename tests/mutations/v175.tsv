@@ -10,3 +10,7 @@ dot-left	Board.qml	x: Math.round(button.width / 2 + Style.space(4))	x: Math.roun
 dot-low	Board.qml	y: Math.round(button.height / 2 - Style.space(9))	y: Math.round(button.height / 2 + Style.space(2))	qml
 dot-loud	Board.qml	    color: root.accent\n  }\n  Connections	    color: "red"\n  }\n  Connections	qml
 tip-always	Board.qml	(root.iconLit ? " · an alert came" : "")	" · an alert came"	qml
+unlit-ignored	Board.qml	!iconUnlit && !!feed	!!feed	qml
+unlit-loose	Board.qml	saved("iconUnlit", false) === true	!!saved("iconUnlit", false)	qml
+unlit-default-on	Board.qml	saved("iconUnlit", false) === true	saved("iconUnlit", true) !== false	qml
+unlit-save-raw	Board.qml	{ iconUnlit: on === true }	{ iconUnlit: on }	qml

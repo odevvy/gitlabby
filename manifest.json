@@ -28,6 +28,7 @@
       "defaultBoardName": "",
       "refreshIntervalSec": 60,
       "openLinks": "browser",
+      "iconUnlit": false,
       "defaultCollapsed": [
         "closed",
         "research",
