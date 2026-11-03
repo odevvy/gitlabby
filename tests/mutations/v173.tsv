@@ -6,3 +6,9 @@ open-modes-swapped	Board.qml	linkMode === "app" ? "omarchy-launch-webapp" : "oma
 open-stays	Board.qml	"omarchy-launch-browser", link])\n    close()	"omarchy-launch-browser", link])	qml
 save-drops-others	Board.qml	persist(undefined, undefined, undefined, { openLinks	bar.shell.updateEntryInline(moduleName, { id: moduleName, openLinks	qml
 save-raw	Board.qml	{ openLinks: mode === "app" ? "app" : "browser" }	{ openLinks: "app" }	qml
+seg-current-wrong	SettingsView.qml	readonly property bool current: view.host.linkMode === modelData.mode	readonly property bool current: modelData.mode === "browser"	qml
+seg-order	SettingsView.qml	model: [{ mode: "browser", label: "Browser tab" }, { mode: "app", label: "App window" }]	model: [{ mode: "app", label: "App window" }, { mode: "browser", label: "Browser tab" }]	qml
+row-left	SettingsView.qml	x: linkRow.oneLine ? linkRow.width - width : 0	x: 0	qml
+note-gone	SettingsView.qml	Help { objectName: "linkNote"; text: "App window: its own window, no tabs. Needs a Chromium-based browser." }	Item { objectName: "linkNote" }	qml
+note-loud	SettingsView.qml	Help { objectName: "linkNote"	Label { objectName: "linkNote"	qml
+row-no-gap	SettingsView.qml	      Item { width: 1; height: Style.space(2) }\n      // Open links in	      // Open links in	qml
