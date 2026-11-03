@@ -68,7 +68,7 @@ the picker's board step. The header shows a star on the default board and a
   `omarchy-launch-browser`, App window `omarchy-launch-webapp`, which needs a
   Chromium-based browser (Chrome, Brave, Edge, Opera, Vivaldi, Helium; with
   another default it uses Chromium). Either way only `https://` links open,
-  and the popup closes.
+  and the popup closes. Alert notifications open theirs the same way.
 - The gear opens the settings in four sections split by thin lines:
   General (the refresh interval, and which columns start collapsed), Bots
   (the bots of the project on screen, see [Who's busy](#whos-busy)), Alerts,
@@ -407,7 +407,9 @@ default and saved per project (`alerts` in the widget's settings):
 They come as Omarchy notifications under the app name `GitLab board`, low
 urgency, so Do Not Disturb holds them (they wait in the notification
 history). Clicking one opens the issue, or the board for several cards or a
-bot, in the browser. Your own moves aren't announced back to you. Nothing is
+bot, as Settings > **Open links in** says: a browser tab
+(`omarchy-launch-browser`) or an app window (`omarchy-launch-webapp`); https
+links only. Your own moves aren't announced back to you. Nothing is
 announced on the first load after a shell start, after switching boards, or
 for the first good refresh after a failed one (changes in between are only
 compared from then on).

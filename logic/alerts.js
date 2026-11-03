@@ -75,9 +75,12 @@ function alertEvents(prev, next, opts) {
 // escaped; it never starts with "-", so it can't be read as an option), and
 // --exec last with the click command as separate words. Low urgency under
 // our own app name: Do Not Disturb holds it (only critical notify-send passes).
-function notifyArgv(ev) {
+// A click opens the link as the popup's do (Settings > Open links in, links):
+// "app" an app window (omarchy-launch-webapp), anything else a browser tab
+// (omarchy-launch-browser). https only.
+function notifyArgv(ev, links) {
   var argv = ["omarchy-notification-send", "--app-name", "GitLab board", "-u", "low", "-g", "\uf296", oneLine(ev.headline, 120), escaped(oneLine(ev.body, 300))]
-  if (httpsUrl(ev.url)) argv = argv.concat(["--exec", "xdg-open", ev.url])
+  if (httpsUrl(ev.url)) argv = argv.concat(["--exec", links === "app" ? "omarchy-launch-webapp" : "omarchy-launch-browser", ev.url])
   return argv
 }
 

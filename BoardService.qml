@@ -179,7 +179,7 @@ Item {
     if (!data || data.state !== "ready") { dropBaseline(key); return }
     var moved = ownMoves[key] || []
     var events = baselines[key] ? Logic.alertEvents(baselines[key], data, { review: cfg.review, idle: cfg.idle, bots: cfg.bots, ignore: moved.map(function(m) { return m.iid }), host: cfg.host }) : []
-    events.forEach(function(ev) { Quickshell.execDetached(Logic.notifyArgv(ev)) })
+    events.forEach(function(ev) { Quickshell.execDetached(Logic.notifyArgv(ev, cfg.links)) })
     var b = {}, k
     for (k in baselines) b[k] = baselines[k]
     b[key] = data

@@ -701,8 +701,14 @@ test("alerts: settings per project, events between two good answers, the notify 
   // The command (Omarchy bin/omarchy-notification-send): our app name, low urgency, the
   // body escaped for StyledText, --exec last with separate words, https only.
   assert.deepEqual(L.notifyArgv({ headline: "#2 is in review", body: "#2 Fix <b> & co · g/p", url: "https://gitlab.com/g/p/-/issues/2" }),
-    ["omarchy-notification-send", "--app-name", "GitLab board", "-u", "low", "-g", "\uf296", "#2 is in review", "#2 Fix &lt;b&gt; &amp; co · g/p", "--exec", "xdg-open", "https://gitlab.com/g/p/-/issues/2"])
+    ["omarchy-notification-send", "--app-name", "GitLab board", "-u", "low", "-g", "\uf296", "#2 is in review", "#2 Fix &lt;b&gt; &amp; co · g/p", "--exec", "omarchy-launch-browser", "https://gitlab.com/g/p/-/issues/2"])
   assert.equal(L.notifyArgv({ headline: "h", body: "b", url: "javascript:x" }).indexOf("--exec"), -1)
+  // v0.1.74: a click opens the link as Settings > Open links in says.
+  const link = (links) => L.notifyArgv({ headline: "h", body: "b", url: "https://gitlab.com/g/p/-/issues/2" }, links).slice(-3)
+  assert.deepEqual(link("app"), ["--exec", "omarchy-launch-webapp", "https://gitlab.com/g/p/-/issues/2"])
+  for (const other of ["browser", undefined, "APP", "webapp", ""]) assert.deepEqual(link(other), ["--exec", "omarchy-launch-browser", "https://gitlab.com/g/p/-/issues/2"], String(other))
+  for (const links of ["app", "browser"]) for (const u of ["javascript:x", "file:///etc/passwd", "--x", "http://gitlab.com/x", ""])
+    assert.equal(L.notifyArgv({ headline: "h", body: "b", url: u }, links).indexOf("--exec"), -1, links + " " + u)
   // Headlines and bodies start with our own text, never "-": not read as options.
   for (const ev of [...L.alertEvents(a, b, on), ...L.alertEvents(a, c, on)]) {
     assert.ok(!ev.headline.startsWith("-") && !ev.body.startsWith("-"))
@@ -710,7 +716,7 @@ test("alerts: settings per project, events between two good answers, the notify 
   const svc = require("node:fs").readFileSync(require("node:path").join(__dirname, "..", "BoardService.qml"), "utf8")
   // The only notifier, in the shared service.
   assert.equal((svc.match(/execDetached\(/g) || []).length, 1)
-  assert.match(svc, /Quickshell\.execDetached\(Logic\.notifyArgv\(ev\)\)/)
+  assert.match(svc, /Quickshell\.execDetached\(Logic\.notifyArgv\(ev(, cfg\.links)?\)\)/)
 })
 
 test("alerts wiring: Settings saves settings.alerts per project; each copy hands its board to the service", () => {
