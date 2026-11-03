@@ -6,6 +6,15 @@
 # bots-filled, bots-560, busy-row, header, keys)
 import sys, os, json; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from lib import *
+# Settings grows over time: scroll its list so a click's target is on screen first.
+_click = Harness.click
+def _click_seen(self, it):
+    if self.ev("root.view") == "settings":
+        sv = self.ev("settingsView"); c = self.ctx_of(sv); fl = self.ev("flick", c, sv)
+        top = it.mapToItem(fl.property("contentItem"), QPointF(0, 0)).y()
+        self.ev("flick.contentY = Math.max(0, Math.min(flick.contentHeight - flick.height, %f - flick.height / 3))" % top, c, sv); self.spin(60)
+    _click(self, it)
+Harness.click = _click_seen
 from PySide6.QtGui import QColor
 src = sys.argv[1]; out = sys.argv[2] if len(sys.argv) > 2 else None
 P = "firelink21/phrase41"

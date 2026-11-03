@@ -56,8 +56,13 @@ x2 = lambda it: it.mapToItem(sv, QPointF(it.width(), 0)).x()
 ctx = h.ctx_of(sv); row, ref = h.ev("linkRow", ctx, sv), h.ev("refreshRow", ctx, sv)
 pace = texts("Slows down, up to 4x, while the board stays quiet; any change brings it back."); note = texts(NOTE); nxt = texts("Start collapsed")
 h.ok("B1 under Refresh every and its note, then its own note, then Start collapsed", pace and note and nxt and y(ref) < y(pace[0]) < y(row) and y(row) + row.height() <= y(note[0]) < y(nxt[0]), [y(ref), pace and y(pace[0]), y(row), note and y(note[0])])
-gap_a = y(row) - (y(pace[0]) + pace[0].height()) if pace else -1; gap_b = y(nxt[0]) - (y(note[0]) + note[0].height()) if note and nxt else -1
-h.ok("B2 the same space around it as around Start collapsed", pace and abs(gap_a - gap_b) < 1, (gap_a, gap_b))
+# The row after the note, whatever it is (spacers, one point wide, are part of the gap).
+def after(it):
+    kids = [k for k in it.parentItem().childItems() if k.isVisible()]
+    return next((k for k in kids[kids.index(it) + 1:] if k.width() > 1), None)
+below = after(note[0]) if note else None
+gap_a = y(row) - (y(pace[0]) + pace[0].height()) if pace else -1; gap_b = y(below) - (y(note[0]) + note[0].height()) if below is not None else -1
+h.ok("B2 the same space above it as below its note", pace and abs(gap_a - gap_b) < 1, (gap_a, gap_b))
 help_ = texts("New boards fold these. Your per-board choice wins.")
 h.ok("B3 the note is quiet, caption size, one line", note and help_ and note[0].property("color") == help_[0].property("color") and note[0].property("font").pixelSize() == help_[0].property("font").pixelSize() and note[0].property("lineCount") == 1)
 pane = h.ev("linkPane", ctx, sv); seg = h.ev("segPane", ctx, sv)

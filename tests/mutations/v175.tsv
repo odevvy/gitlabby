@@ -1,0 +1,21 @@
+count-none	BoardService.qml	unseenAlerts += events.length	var none = events.length	qml
+count-once-per-answer	BoardService.qml	unseenAlerts += events.length	unseenAlerts = 1	qml
+seen-noop	BoardService.qml	function seenAlerts() { unseenAlerts = 0 }	function seenAlerts() {}	qml
+open-keeps-dot	Board.qml	if (opened) { feed.seenAlerts(); view	if (opened) { view	qml
+open-popup-lights	Board.qml	function onUnseenAlertsChanged() { if (root.opened && root.feed.unseenAlerts > 0) root.feed.seenAlerts() }	function onUnseenAlertsChanged() {}	qml
+dot-always	Board.qml	visible: root.iconLit	visible: true	qml
+dot-big	Board.qml	width: Style.space(5); height: width; radius: width / 2	width: Style.space(9); height: width; radius: width / 2	qml
+dot-square	Board.qml	width: Style.space(5); height: width; radius: width / 2	width: Style.space(5); height: width; radius: 0	qml
+dot-left	Board.qml	x: Math.round(button.width / 2 + Style.space(4))	x: Math.round(button.width / 2 - Style.space(9))	qml
+dot-low	Board.qml	y: Math.round(button.height / 2 - Style.space(9))	y: Math.round(button.height / 2 + Style.space(2))	qml
+dot-loud	Board.qml	    color: root.accent\n  }\n  Connections	    color: "red"\n  }\n  Connections	qml
+tip-always	Board.qml	(root.iconLit ? " · an alert came" : "")	" · an alert came"	qml
+unlit-ignored	Board.qml	!iconUnlit && !!feed	!!feed	qml
+unlit-loose	Board.qml	saved("iconUnlit", false) === true	!!saved("iconUnlit", false)	qml
+unlit-default-on	Board.qml	saved("iconUnlit", false) === true	saved("iconUnlit", true) !== false	qml
+unlit-save-raw	Board.qml	{ iconUnlit: on === true }	{ iconUnlit: on }	qml
+box-ignores-setting	SettingsView.qml	on: view.host.iconUnlit; hot	on: false; hot	qml
+click-always-true	SettingsView.qml	view.host.setIconUnlit(!view.host.iconUnlit)	view.host.setIconUnlit(true)	qml
+click-box-only	SettingsView.qml	width: unlitLine.width + Style.space(8)	width: Style.space(14)	qml
+unlit-note-loud	SettingsView.qml	Help { objectName: "unlitNote"	Label { objectName: "unlitNote"	qml
+unlit-note-words	SettingsView.qml	Otherwise a small dot on it after an alert, until you open the board.	A dot after an alert.	qml

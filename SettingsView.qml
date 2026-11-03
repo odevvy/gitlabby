@@ -259,6 +259,27 @@ Item {
       }
       Help { objectName: "linkNote"; text: "App window: its own window, no tabs. Needs a Chromium-based browser." }
       Item { width: 1; height: Style.space(2) }
+      // The bar icon's dot after an alert (Board.iconLit), unless kept unlit.
+      Item {
+        id: unlitRow
+        objectName: "unlitRow"
+        width: parent.width; implicitHeight: Style.space(22)
+        Row {
+          id: unlitLine
+          anchors.verticalCenter: parent.verticalCenter
+          spacing: Style.space(8)
+          CheckBox { objectName: "unlitCheck"; anchors.verticalCenter: parent.verticalCenter; on: view.host.iconUnlit; hot: unlitMouse.containsMouse }
+          Label { anchors.verticalCenter: parent.verticalCenter; text: "Keep the bar icon unlit" }
+        }
+        MouseArea {
+          id: unlitMouse
+          width: unlitLine.width + Style.space(8); height: parent.height
+          hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+          onClicked: view.host.setIconUnlit(!view.host.iconUnlit)
+        }
+      }
+      Help { objectName: "unlitNote"; text: "Otherwise a small dot on it after an alert, until you open the board." }
+      Item { width: 1; height: Style.space(2) }
       Label { text: "Start collapsed" }
       Help { text: "New boards fold these. Your per-board choice wins." }
       // The same check boxes as the busy columns, wrapping, in columns of a
