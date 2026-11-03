@@ -13,10 +13,10 @@ function escaped(text) { return Core.escaped(text) }
 function botsConfig(all, project) { return Bots.botsConfig(all, project) }
 function botStates(config, columns) { return Bots.botStates(config, columns) }
 
-// Desktop alerts (settings.alerts, keyed by project like bots): { review, idle }.
+// Desktop alerts (settings.alerts, keyed by project like bots): { review, idle, pipeline }.
 function alertsFor(raw, project) {
   var e = raw && typeof raw === "object" && !Array.isArray(raw) ? raw[project] : null
-  return { review: !!(e && e.review === true), idle: !!(e && e.idle === true) }
+  return { review: !!(e && e.review === true), idle: !!(e && e.idle === true), pipeline: !!(e && e.pipeline === true) }
 }
 function withAlert(raw, project, kind, on) {
   var all = plainJson(raw), cur = alertsFor(all, project)
@@ -70,6 +70,59 @@ function alertEvents(prev, next, opts) {
   }
   return out
 }
+// The pipeline alert (v0.1.76): board-fetch pipes, your own open merge
+// requests in one project with their head pipelines. Its arguments, or null
+// for a project path or id board-fetch would refuse.
+function pipesArgs(project) {
+  var p = String(project || "")
+  return (/^[A-Za-z0-9][A-Za-z0-9_.-]*(\/[A-Za-z0-9_.-]+)+$/.test(p) && p.indexOf("..") === -1) || /^[1-9][0-9]*$/.test(p) ? ["pipes", "--project", p] : null
+}
+// Its answer, checked: { state, message, project, mrs: [{ iid, title, url, pipeline: { status, url, id } or null }] }.
+var pipeStates = ["passed", "failed", "running", "pending", "canceled"]
+function pipesAnswer(raw) {
+  var data = null
+  try { data = JSON.parse(String(raw || "")) } catch (error) {}
+  if (!data || typeof data !== "object" || Array.isArray(data)) return { state: "error", message: "GitLab returned an unreadable response.", project: "", mrs: [] }
+  var state = String(data.state || "error")
+  if (state !== "ready" || !Array.isArray(data.mrs)) return { state: state === "ready" ? "error" : state, message: String(data.message || ""), project: "", mrs: [] }
+  var mrs = data.mrs.filter(function(m) { return m && typeof m === "object" && /^[1-9][0-9]*$/.test(String(m.iid)) }).map(function(m) {
+    var p = m.pipeline && typeof m.pipeline === "object" && pipeStates.indexOf(String(m.pipeline.status)) !== -1 ? m.pipeline : null
+    return { iid: Number(m.iid), title: String(m.title || ""), url: httpsUrl(m.url),
+      pipeline: p ? { status: String(p.status), url: httpsUrl(p.url), id: typeof p.id === "string" ? p.id : "" } : null }
+  })
+  return { state: "ready", message: "", project: String(data.project || ""), mrs: mrs }
+}
+// The project's merge requests on its server, or "" for a path that isn't one.
+function mrListUrl(project, host) {
+  var p = String(project || "")
+  if (!/^[A-Za-z0-9_.-]+(\/[A-Za-z0-9_.-]+)+$/.test(p)) return ""
+  return "https://" + (Core.serverHost(host) || "gitlab.com") + "/" + p + "/-/merge_requests"
+}
+// What finished between two good pipes answers, as notifications. An MR's
+// head pipeline ended (passed or failed) if it was running or pending at the
+// last look, or if it is another pipeline (its id) than the last look's; an MR
+// that wasn't there last time, or canceled, says nothing. opts: { host }.
+function pipelineEvents(prev, next, opts) {
+  var out = []
+  if (!prev || !next || prev.state !== "ready" || next.state !== "ready" || prev.project !== next.project) return out
+  var project = String(next.project), host = Core.serverHost(opts && opts.host) || "gitlab.com", before = {}
+  ;(prev.mrs || []).forEach(function(m) { before[m.iid] = m })
+  var ended = (next.mrs || []).filter(function(m) {
+    var p = m.pipeline, was = before[m.iid]
+    if (!was || !p || (p.status !== "passed" && p.status !== "failed")) return false
+    var q = was.pipeline
+    if (q && (q.status === "running" || q.status === "pending")) return true
+    return p.id !== "" && (!q || (q.id !== "" && q.id !== p.id))
+  })
+  if (ended.length === 1) {
+    var m = ended[0]
+    out.push({ headline: "Pipeline " + m.pipeline.status + " on !" + m.iid, body: "!" + m.iid + " " + oneLine(m.title, 80) + " · " + project, url: httpsUrl(m.url) || mrListUrl(project, host) })
+  } else if (ended.length > 1) {
+    var shown = ended.slice(0, 3).map(function(x) { return "!" + x.iid + " " + x.pipeline.status })
+    out.push({ headline: ended.length + " pipelines finished", body: shown.join(", ") + (ended.length > 3 ? " +" + (ended.length - 3) + " more" : "") + " · " + project, url: mrListUrl(project, host) })
+  }
+  return out
+}
 // The command for one notification (bin/omarchy-notification-send in Omarchy
 // 4.0.6): options, then the headline (plain text) and the body (StyledText, so
 // escaped; it never starts with "-", so it can't be read as an option), and
@@ -84,4 +137,4 @@ function notifyArgv(ev, links) {
   return argv
 }
 
-if (typeof module !== "undefined") module.exports = { alertsFor: alertsFor, withAlert: withAlert, reviewRows: reviewRows, boardUrl: boardUrl, alertEvents: alertEvents, notifyArgv: notifyArgv }
+if (typeof module !== "undefined") module.exports = { alertsFor: alertsFor, withAlert: withAlert, reviewRows: reviewRows, boardUrl: boardUrl, alertEvents: alertEvents, notifyArgv: notifyArgv, pipesArgs: pipesArgs, pipesAnswer: pipesAnswer, mrListUrl: mrListUrl, pipelineEvents: pipelineEvents }

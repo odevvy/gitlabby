@@ -28,7 +28,8 @@ txt = lambda t: bt(lambda it: str(it.property("text") or "") == t)
 pv = lambda it, k: h.ev(k, QQmlEngine.contextForObject(it), it)
 checks = lambda inside: sorted([it for it in h.visible(lambda it: it.property("clickable") is not None and it.property("on") is not None) if inside(it)], key=lambda it: (round(y_of(it)), x_of(it)))
 bs = h.cls("BotsSection")
-start = checks(lambda it: sv.isAncestorOf(it) and not bs.isAncestorOf(it) and not (isinstance(it.property("modelData"), dict) and it.property("modelData").get("kind") in ("review", "idle")))
+# Not the Alerts boxes (their model is {kind, label}), however many there are.
+start = checks(lambda it: sv.isAncestorOf(it) and not bs.isAncestorOf(it) and not (isinstance(it.property("modelData"), dict) and sorted(it.property("modelData")) == ["kind", "label"]))
 box = lambda it: next(c for c in h.walk(it) if c.inherits("QQuickRectangle") and abs(c.width() - h.ev("Style.space(14)")) < 0.5)
 def shot(name):
     if out: QTest.mouseMove(h.win, QPoint(1, 1)); h.spin(300); os.makedirs(out, exist_ok=True); h.grab_card(out + "/" + name + ".png")

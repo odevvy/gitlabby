@@ -92,6 +92,10 @@ var reviewRows = Alerts.reviewRows
 var boardUrl = Alerts.boardUrl
 var alertEvents = Alerts.alertEvents
 var notifyArgv = Alerts.notifyArgv
+var pipesArgs = Alerts.pipesArgs
+var pipesAnswer = Alerts.pipesAnswer
+var mrListUrl = Alerts.mrListUrl
+var pipelineEvents = Alerts.pipelineEvents
 // mrs.js
 var mrsAnswer = Mrs.mrsAnswer
 var reviewerStates = Mrs.reviewerStates

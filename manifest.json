@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "odevvy.gitlab-board",
   "name": "GitLab Board",
-  "version": "0.1.75",
+  "version": "0.1.76",
   "author": "o_devvy",
   "license": "MIT",
   "description": "A GitLab issue board in a bar popup: your project's real boards in their label colors, who's busy, issue details with comments, labels and close, drag-to-move and bulk actions, merge requests for review, desktop alerts, and a hint for view-only projects.",

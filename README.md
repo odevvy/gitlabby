@@ -106,7 +106,7 @@ an `in progress` (or `doing`) column it never slows past your setting.
 Pointing at `Updated 14:05` names your setting, then what the pace did to it
 and why, e.g. `Every 2 min · slowed to 4 min, nothing changed lately` or
 `Every 2 min · sped up to 1 min, cards moved recently`; at your setting it says
-just `Every 2 min`. With an alert on it adds `also while closed, for alerts`.
+just `Every 2 min`. With a card or bot alert on it adds `also while closed, for alerts`.
 Settings notes the slowdown under **Refresh every**. Refresh, `r` and a right-click
 always fetch at once.
 While a refresh runs, a small dot breathes in the header and the board stays
@@ -396,18 +396,30 @@ Remove it with `omarchy bar set odevvy.gitlab-board bots '{}' --json`.
 
 ## Alerts
 
-Settings > Alerts has two check boxes for the project on screen, both off by
+Settings > Alerts has three check boxes for the project on screen, all off by
 default and saved per project (`alerts` in the widget's settings):
 
 - **A card enters review**: a card appears in the board's `review` column.
   Several in one refresh make one notification (`3 cards entered review`).
 - **A bot stops working**: a bot of [Who's busy](#whos-busy) had a card in a
   working column and now has none there.
+- **A pipeline on my MR finishes**: the head pipeline of one of your open merge
+  requests in this project was running or pending at the last look and has now
+  passed or failed (`Pipeline passed on !42`, body `!42 <title> · <project>`),
+  or it is another pipeline than last time (GitLab's pipeline id, so a re-run
+  that ended the same way counts) that ended since. Canceled ones, and merge
+  requests new to the list, say nothing. Several in one refresh make one
+  (`2 pipelines finished`, `!42 passed, !44 failed · <project>`); a click opens
+  the merge request, or the project's merge requests for several. Each
+  background refresh asks for it with one small read-only GraphQL query
+  (`board-fetch pipes`: your open merge requests in the project, newest 20,
+  each with its head pipeline's id, status and link), only while the box is
+  on; with only this box on, that query is all that runs, not the board.
 
 They come as Omarchy notifications under the app name `GitLab board`, low
 urgency, so Do Not Disturb holds them (they wait in the notification
-history). Clicking one opens the issue, or the board for several cards or a
-bot, as Settings > **Open links in** says: a browser tab
+history). Clicking one opens the issue or merge request, or the board for
+several cards or a bot (the project's merge requests for several pipelines), as Settings > **Open links in** says: a browser tab
 (`omarchy-launch-browser`) or an app window (`omarchy-launch-webapp`); https
 links only. After one, the bar icon gets a small accent dot at its top right
 (the tip adds `an alert came`), on every screen, until you open the popup on
@@ -418,9 +430,10 @@ announced on the first load after a shell start, after switching boards, or
 for the first good refresh after a failed one (changes in between are only
 compared from then on).
 
-While an alert is on, the board also refreshes with the popup closed, at its
-adaptive pace (see [Popup](#popup)): up to 4x your interval when nothing
-changes. With both off there is no background refresh. However many monitors,
+While a card or bot alert is on, the board also refreshes with the popup
+closed, at its adaptive pace (see [Popup](#popup)): up to 4x your interval when
+nothing changes. The pipeline alert's query runs at the same pace, popup open
+or not. With all three off there is no background refresh. However many monitors,
 there is one refresh and one notification per event (the plugin's service).
 
 ## Merge requests
@@ -740,6 +753,7 @@ one left behind is removed at sign-out or after a failed read.)
 ./board-fetch projects                          # projects you are a member of (up to 500)
 ./board-fetch whoami                            # your username (not saved)
 ./board-fetch mrs [--project P]                 # open MRs for your review and yours, with reviewer state
+./board-fetch pipes --project P                 # your open MRs in P with their head pipelines (the pipeline alert)
 ./board-fetch logout                            # glab auth logout, then delete the saved boards
 ./board-fetch boards --project P                # boards of a project
 ./board-fetch issue --project P --iid N         # one issue with its description

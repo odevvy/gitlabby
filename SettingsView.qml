@@ -9,7 +9,7 @@ import "components"
 // In-popup settings in four sections, each under a thin rule and a small
 // heading (Omarchy's PanelSeparator and PanelSectionHeader): General (how often
 // to refresh, which columns new boards start with folded), Bots (BotsSection),
-// Alerts (two check boxes) and Account (who is signed in, Sign out). Help is one
+// Alerts (three check boxes) and Account (who is signed in, Sign out). Help is one
 // quiet line. Changes are saved to shell.json right away. The gear, ✕ or Esc
 // returns to the board.
 Item {
@@ -333,7 +333,7 @@ Item {
       Heading { visible: view.host.project !== ""; text: "Alerts" }
       Help {
         visible: view.host.project !== ""
-        text: "Desktop notifications for " + view.host.project + ". While one is on, the board refreshes in the background."
+        text: "Desktop notifications for " + view.host.project + ". While a card or bot one is on, the board refreshes in the background."
       }
       Flow {
         id: alertRow
@@ -341,7 +341,7 @@ Item {
         width: parent.width
         spacing: Style.space(6)
         Repeater {
-          model: [{ kind: "review", label: "A card enters review" }, { kind: "idle", label: "A bot stops working" }]
+          model: [{ kind: "review", label: "A card enters review" }, { kind: "idle", label: "A bot stops working" }, { kind: "pipeline", label: "A pipeline on my MR finishes" }]
           delegate: Item {
             id: alertCheck
             required property var modelData
@@ -358,6 +358,13 @@ Item {
             MouseArea { id: alertMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: view.host.setAlert(alertCheck.modelData.kind, !alertCheck.on) }
           }
         }
+      }
+
+      // The pipeline alert (v0.1.76): what it costs, under the boxes.
+      Help {
+        objectName: "pipeNote"
+        visible: view.host.project !== ""
+        text: "Your open MRs in this project: one small read per refresh, only while this is on."
       }
 
       Item { width: 1; height: Style.space(6) }

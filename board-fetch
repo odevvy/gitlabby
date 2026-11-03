@@ -19,6 +19,10 @@
 #                                                   each, newest change first, with each
 #                                                   one's pipeline and reviewers' state;
 #                                                   all projects, or only P
+#   board-fetch pipes --project P                   your own open merge requests in P (up
+#                                                   to 20, newest change first), each with
+#                                                   its head pipeline and that one's id: one
+#                                                   GraphQL query, for the pipeline alert
 #   board-fetch labels --project P                  the project's labels a person may edit:
 #                                                   every label but the status ones (below)
 #   board-fetch access --project P                  your access level on P (the higher of
@@ -67,7 +71,7 @@
 set -uo pipefail
 
 cmd=board project="" board_id="" iid="" from="" to="" add="" remove="" hostname="gitlab.com"
-case "${1:-}" in board|cached|projects|boards|issue|notes|move|comment|whoami|mrs|logout|labels|relabel|close|reopen|access|bulk) cmd=$1; shift ;; esac
+case "${1:-}" in board|cached|projects|boards|issue|notes|move|comment|whoami|mrs|pipes|logout|labels|relabel|close|reopen|access|bulk) cmd=$1; shift ;; esac
 parse_args() {
 while (($#)); do
   case "$1" in
@@ -277,7 +281,7 @@ mrs_graphql() { # writes $tmp/mrs-review, $tmp/mrs-mine, $tmp/mrd, $tmp/mrr.all 
   local -a pv=()
   if [[ $project =~ ^[1-9][0-9]*$ ]]; then pv=(-f "id=gid://gitlab/Project/$project")
   elif [[ -n $project ]]; then pv=(-f "p=$project"); fi
-  bounded api --hostname "$hostname" graphql -f "query=$q" "${pv[@]}" >"$tmp/gql" || return 1
+  gql >"$tmp/gql" || return 1
   jq -c --arg host "$hostname" "$DEFS"'
     def abs: if type == "string" and startswith("/") then "https://\($host)\(.)" else . end;
     def user: if type == "object" then {username, name, avatar_url: (.avatarUrl | abs)} else {} end;
@@ -299,6 +303,34 @@ mrs_graphql() { # writes $tmp/mrs-review, $tmp/mrs-mine, $tmp/mrd, $tmp/mrr.all 
   jq -c '.review' "$tmp/gql.conv" >"$tmp/mrs-review" && jq -c '.mine' "$tmp/gql.conv" >"$tmp/mrs-mine" &&
     jq -c '.mrd' "$tmp/gql.conv" >"$tmp/mrd" && jq -c '.mrr' "$tmp/gql.conv" >"$tmp/mrr.all" &&
     jq -r '.redo[]' "$tmp/gql.conv" >"$tmp/mrs-redo"
+}
+# The one GraphQL call (mrs_graphql, pipes_list): $q is a constant read-only
+# query, the project goes only in $pv as a variable.
+gql() { bounded api --hostname "$hostname" graphql -f "query=$q" "${pv[@]}"; }
+# Your open merge requests in $project with each head pipeline (status, link,
+# id), for the pipeline alert (BoardService): one query, no REST fallback. A
+# failed or unreadable one asks glab whether you are signed in, as get() does.
+pipes_list() {
+  local vars arg q rc; local -a pv
+  # shellcheck disable=SC2016  # GraphQL variables, not shell ones
+  if [[ $project =~ ^[1-9][0-9]*$ ]]; then vars='($id: ProjectID)' arg='projectId: $id, ' pv=(-f "id=gid://gitlab/Project/$project")
+  else vars='($p: String)' arg='projectPath: $p, ' pv=(-f "p=$project"); fi
+  q="query$vars { currentUser { mine: authoredMergeRequests(${arg}state: opened, sort: UPDATED_DESC, first: 20) { nodes { iid title webUrl headPipeline { id status path } } } } }"
+  gql >"$tmp/gql"; rc=$?
+  ((rc != 124)) || emit error "$slow"
+  if ((rc == 0)) && jq -ce --arg host "$hostname" --arg p "$project" "$DEFS"'
+      def abs: if type == "string" and startswith("/") then "https://\($host)\(.)" else . end;
+      select((.errors // null) == null) | .data.currentUser
+      | select(type == "object" and (.mine.nodes | type) == "array")
+      | {state: "ready", message: "", project: $p, updatedAt: (now | todateiso8601),
+         mrs: [.mine.nodes[] | objects | select((.iid | tostring) | test("^[1-9][0-9]*$"))
+           | {iid: (.iid | tostring | tonumber), title: ((.title | strings) // ""), url: (.webUrl | https),
+              pipeline: (.headPipeline | if type == "object"
+                then ({status: ((.status | strings | ascii_downcase) // ""), web_url: (.path | abs)} | pipeline) as $s
+                  | if $s then $s + {id: ((.id | strings) // "")} else null end
+                else null end)}]}' "$tmp/gql" 2>/dev/null; then return 0; fi
+  auth_skipped=0; forget_auth; check_auth
+  emit error "Could not load your merge requests."
 }
 mrs_list() {
   local prefix="" kind pid miid
@@ -395,6 +427,9 @@ case $cmd in
     exit 0 ;;
   mrs)
     mrs_list
+    exit 0 ;;
+  pipes)
+    pipes_list
     exit 0 ;;
   access)
     # The project (GET, not simple: only the full answer has permissions) and,

@@ -1,0 +1,45 @@
+# v0.1.76: the pipeline alert. kinds: sh (tests/run.sh), node (tests/logic.test.js), qml (run176)
+pp-first-10	board-fetch	first: 20) { nodes { iid title webUrl headPipeline	first: 10) { nodes { iid title webUrl headPipeline	sh
+pp-no-id	board-fetch	if $s then $s + {id: ((.id | strings) // "")} else null end	if $s then $s else null end	sh
+pp-all-projects	board-fetch	arg='projectPath: $p, ' pv=(-f "p=$project")	arg='' pv=(-f "p=$project")	sh
+pp-errors-ok	board-fetch	select((.errors // null) == null) | .data.currentUser\n      | select(type == "object" and (.mine.nodes	true | .data.currentUser\n      | select(type == "object" and (.mine.nodes	sh
+pp-no-auth-check	board-fetch	  auth_skipped=0; forget_auth; check_auth\n  emit error "Could not load your merge requests."	  emit error "Could not load your merge requests."	sh
+pp-no-slow	board-fetch	((rc != 124)) || emit error "$slow"\n  if ((rc == 0))	if ((rc == 0))	sh
+pp-https-off	board-fetch	url: (.webUrl | https),\n              pipeline:	url: .webUrl,\n              pipeline:	sh
+n-alerts-no-pipe	logic/alerts.js	pipeline: !!(e && e.pipeline === true) }	pipeline: false }	node
+n-loose-true	logic/alerts.js	e.pipeline === true	!!e.pipeline	node
+n-canceled-alerts	logic/alerts.js	(p.status !== "passed" && p.status !== "failed")	(p.status !== "passed" && p.status !== "failed" && p.status !== "canceled")	node
+n-no-id	logic/alerts.js	return p.id !== "" && (!q || (q.id !== "" && q.id !== p.id))	return false	node
+n-id-always	logic/alerts.js	return p.id !== "" && (!q || (q.id !== "" && q.id !== p.id))	return true	node
+n-id-blank-ok	logic/alerts.js	return p.id !== "" && (!q ||	return (!q ||	node
+n-new-mr	logic/alerts.js	if (!was || !p ||	if (!p ||	node
+n-pending-not	logic/alerts.js	(q.status === "running" || q.status === "pending")	q.status === "running"	node
+n-no-link	logic/alerts.js	url: httpsUrl(m.url) || mrListUrl(project, host) })	url: mrListUrl(project, host) })	node
+n-batch-each	logic/alerts.js	} else if (ended.length > 1) {	} else if (ended.length > 99) {	node
+n-batch-nolink	logic/alerts.js	url: mrListUrl(project, host) })\n  }\n  return out	url: "" })\n  }\n  return out	node
+n-prev-project	logic/alerts.js	prev.state !== "ready" || next.state !== "ready" || prev.project !== next.project) return out\n  var project = String(next.project), host = Core.serverHost(opts && opts.host)	prev.state !== "ready" || next.state !== "ready") return out\n  var project = String(next.project), host = Core.serverHost(opts && opts.host)	node
+n-https-pipes	logic/alerts.js	title: String(m.title || ""), url: httpsUrl(m.url),	title: String(m.title || ""), url: String(m.url || ""),	node
+n-status-any	logic/alerts.js	pipeStates.indexOf(String(m.pipeline.status)) !== -1 ? m.pipeline : null	true ? m.pipeline : null	node
+n-args-loose	logic/alerts.js	|| /^[1-9][0-9]*$/.test(p) ? ["pipes"	|| true ? ["pipes"	node
+n-max3	logic/alerts.js	ended.slice(0, 3)	ended.slice(0, 5)	node
+n-listurl-loose	logic/alerts.js	  if (!/^[A-Za-z0-9_.-]+(\/[A-Za-z0-9_.-]+)+$/.test(p)) return ""\n  return "https://" + (Core.serverHost(host) || "gitlab.com") + "/" + p + "/-/merge_requests"	  return "https://" + (Core.serverHost(host) || "gitlab.com") + "/" + p + "/-/merge_requests"	node
+q-watch-pipeline-ignored	BoardService.qml	if (cfg && (cfg.review || cfg.idle || cfg.pipeline)) {	if (cfg && (cfg.review || cfg.idle)) {	qml
+q-board-always	BoardService.qml	if (cfg.review || cfg.idle) request(	request(	qml
+q-no-pipes	BoardService.qml	if (cfg.pipeline) requestPipes(	if (false) requestPipes(	qml
+q-never-due	BoardService.qml	if (pipeAt[project] && Date.now() - pipeAt[project] < maxAgeMs) return	var due = true	qml
+q-keep-old-baseline	BoardService.qml	      b[project] = data\n	      b[project] = pipeBaselines[project] || data\n	qml
+q-error-baseline	BoardService.qml	if (data.state === "ready") {	if (true) {	qml
+q-off-keeps-baseline	BoardService.qml	for (var p in pipeBaselines) if (piped[p]) pb[p]	for (var p in pipeBaselines) if (true) pb[p]	qml
+q-forget-keeps	BoardService.qml	    pipeBaselines = ({})\n    pipeAt = ({})	    pipeAt = ({})	qml
+q-no-dot	BoardService.qml	unseenAlerts += events.length	var n = events.length	qml
+q-links-ignored	BoardService.qml	data, { host: cfg.host }), cfg)	data, { host: cfg.host }), {})	qml
+q-wrong-args	BoardService.qml	pipeFetch.command = helperCommand(Logic.pipesArgs(project))	pipeFetch.command = helperCommand(["pipes"])	qml
+q-cfg-no-flag	Board.qml	pipeline: alerts.pipeline, bots	bots	qml
+q-cfg-alone-off	Board.qml	(alerts.review || alerts.idle || alerts.pipeline)\n    ?	(alerts.review || alerts.idle)\n    ?	qml
+q-cadence-closed	Board.qml	watchCfg !== null && (alerts.review || alerts.idle))	watchCfg !== null)	qml
+s-no-box	SettingsView.qml	, { kind: "pipeline", label: "A pipeline on my MR finishes" }]	]	qml
+s-box-words	SettingsView.qml	label: "A pipeline on my MR finishes" }	label: "Pipeline alerts" }	qml
+s-note-old	SettingsView.qml	While a card or bot one is on, the board refreshes	While one is on, the board refreshes	qml
+s-pipenote-gone	SettingsView.qml	visible: view.host.project !== ""\n        text: "Your open MRs	visible: false\n        text: "Your open MRs	qml
+s-pipenote-words	SettingsView.qml	one small read per refresh, only while this is on.	no extra reads.	qml
+s-box-default-on	SettingsView.qml	readonly property bool on: view.host.alerts[modelData.kind] === true	readonly property bool on: view.host.alerts[modelData.kind] === true || modelData.kind === "pipeline"	qml

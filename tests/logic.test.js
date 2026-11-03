@@ -569,11 +569,14 @@ test("shared refresh: one BoardService for every screen; Board.qml fetches board
   // No board fetch of its own: "board" appears in no command the widget builds.
   assert.doesNotMatch(board, /helperPath\(\), "board"/)
   assert.match(service, /args: \["board", "--project", project, "--board", boardId\]/)
-  // Three Processes in the service: one board fetch at a time for the whole shell
-  // (fetch), one merge-request list (mrFetch) and one access check (accessFetch);
-  // only fetch runs "board".
-  assert.equal((service.match(/^\s*Process \{/gm) || []).length, 3)
-  assert.deepEqual([...service.matchAll(/^\s*Process \{\s*\n\s*id: (\w+)/gm)].map(m => m[1]), ["fetch", "mrFetch", "accessFetch"])
+  // The service's Processes, each with its own id: one board fetch at a time for
+  // the whole shell (fetch), one merge-request list (mrFetch) and one access
+  // check (accessFetch), in that order; only fetch runs "board".
+  const procs = [...service.matchAll(/^\s*Process \{\s*\n\s*id: (\w+)/gm)].map(m => m[1])
+  assert.equal((service.match(/^\s*Process \{/gm) || []).length, procs.length)
+  assert.deepEqual(procs.filter(p => ["fetch", "mrFetch", "accessFetch"].includes(p)), ["fetch", "mrFetch", "accessFetch"])
+  // v0.1.76: and one pipes query (pipeFetch), nothing else.
+  assert.deepEqual(procs, ["fetch", "mrFetch", "pipeFetch", "accessFetch"])
 })
 
 test("popup size: one frame for every view, the board's width (760 at least) and a fixed 640 height", () => {
@@ -653,11 +656,15 @@ test("adaptive refresh: pace from answers, interval from pace", () => {
 
 test("alerts: settings per project, events between two good answers, the notify command", () => {
   // Settings: off by default; per project; other keys kept.
-  assert.deepEqual(L.alertsFor(null, "a/b"), { review: false, idle: false })
-  assert.deepEqual(L.alertsFor({ "a/b": { review: true } }, "a/b"), { review: true, idle: false })
-  assert.deepEqual(L.alertsFor({ "a/b": { review: "yes" } }, "a/b"), { review: false, idle: false }, "only true counts")
-  assert.deepEqual(L.withAlert({ "x/y": { idle: true } }, "a/b", "review", true), { "x/y": { idle: true }, "a/b": { review: true, idle: false } })
-  assert.deepEqual(L.withAlert("junk", "a/b", "idle", true), { "a/b": { review: false, idle: true } })
+  assert.deepEqual(L.alertsFor(null, "a/b"), { review: false, idle: false, pipeline: false })
+  assert.deepEqual(L.alertsFor({ "a/b": { review: true } }, "a/b"), { review: true, idle: false, pipeline: false })
+  assert.deepEqual(L.alertsFor({ "a/b": { review: "yes" } }, "a/b"), { review: false, idle: false, pipeline: false }, "only true counts")
+  assert.deepEqual(L.withAlert({ "x/y": { idle: true } }, "a/b", "review", true), { "x/y": { idle: true }, "a/b": { review: true, idle: false, pipeline: false } })
+  assert.deepEqual(L.withAlert("junk", "a/b", "idle", true), { "a/b": { review: false, idle: true, pipeline: false } })
+  // v0.1.76: the pipeline alert, saved beside them, off by default.
+  assert.deepEqual(L.alertsFor({ "a/b": { pipeline: true } }, "a/b"), { review: false, idle: false, pipeline: true })
+  assert.deepEqual(L.alertsFor({ "a/b": { pipeline: 1 } }, "a/b").pipeline, false, "only true counts")
+  assert.deepEqual(L.withAlert({ "a/b": { review: true } }, "a/b", "pipeline", true), { "a/b": { review: true, idle: false, pipeline: true } })
   const row = (iid, labels, title) => ({ iid, title: title || "Card " + iid, labels, url: "https://gitlab.com/g/p/-/issues/" + iid })
   const ans = (cols, extra) => Object.assign({ state: "ready", project: "g/p", board: { id: 7 }, columns: cols }, extra || {})
   const col = (name, rows) => ({ name, kind: "label", listId: name.length, issues: rows })
@@ -717,6 +724,62 @@ test("alerts: settings per project, events between two good answers, the notify 
   // The only notifier, in the shared service.
   assert.equal((svc.match(/execDetached\(/g) || []).length, 1)
   assert.match(svc, /Quickshell\.execDetached\(Logic\.notifyArgv\(ev(, cfg\.links)?\)\)/)
+})
+
+test("pipeline alert (v0.1.76): board-fetch pipes, its answer, what finished, the notification", () => {
+  assert.deepEqual(L.pipesArgs("g/p41"), ["pipes", "--project", "g/p41"])
+  assert.deepEqual(L.pipesArgs("42"), ["pipes", "--project", "42"])
+  for (const bad of ["", "g", "g/../p", "-x/y", "g/p;rm", "0", null]) assert.equal(L.pipesArgs(bad), null, String(bad))
+  // The answer, checked: only known statuses, https links, string ids.
+  const raw = (mrs, extra) => JSON.stringify(Object.assign({ state: "ready", project: "g/p", mrs }, extra || {}))
+  const got = L.pipesAnswer(raw([{ iid: 42, title: "A", url: "https://gitlab.com/g/p/-/merge_requests/42", pipeline: { status: "running", url: "https://gitlab.com/g/p/-/pipelines/1", id: "gid://gitlab/Ci::Pipeline/1" } },
+    { iid: 43, title: 5, url: "javascript:x", pipeline: { status: "skipped", id: "x" } }, { iid: "x" }, { iid: 44, pipeline: { status: "passed", url: "http://x", id: 7 } }]))
+  assert.deepEqual(got, { state: "ready", message: "", project: "g/p", mrs: [
+    { iid: 42, title: "A", url: "https://gitlab.com/g/p/-/merge_requests/42", pipeline: { status: "running", url: "https://gitlab.com/g/p/-/pipelines/1", id: "gid://gitlab/Ci::Pipeline/1" } },
+    { iid: 43, title: "5", url: "", pipeline: null }, { iid: 44, title: "", url: "", pipeline: { status: "passed", url: "", id: "" } }] })
+  assert.equal(L.pipesAnswer("junk").state, "error")
+  assert.equal(L.pipesAnswer(JSON.stringify({ state: "ready" })).state, "error", "no list: not ready")
+  assert.equal(L.pipesAnswer(JSON.stringify({ state: "logged-out", message: "m" })).state, "logged-out")
+  // What finished.
+  const mr = (iid, status, id, title) => ({ iid, title: title || "MR " + iid, url: "https://gitlab.com/g/p/-/merge_requests/" + iid, pipeline: status ? { status, url: "", id: id === undefined ? "p" + iid : id } : null })
+  const ans = (mrs, project) => ({ state: "ready", message: "", project: project || "g/p", mrs })
+  const ev = (a, b) => L.pipelineEvents(ans(a), ans(b), {})
+  assert.deepEqual(ev([mr(42, "running")], [mr(42, "passed", "p42", "Fix <b> & co")]),
+    [{ headline: "Pipeline passed on !42", body: "!42 Fix <b> & co · g/p", url: "https://gitlab.com/g/p/-/merge_requests/42" }])
+  assert.deepEqual(ev([mr(42, "pending")], [mr(42, "failed")]),
+    [{ headline: "Pipeline failed on !42", body: "!42 MR 42 · g/p", url: "https://gitlab.com/g/p/-/merge_requests/42" }])
+  assert.deepEqual(ev([mr(42, "running")], [mr(42, "canceled")]), [], "canceled: nothing")
+  assert.deepEqual(ev([mr(42, "running")], [mr(42, "running")]), [])
+  assert.deepEqual(ev([mr(42, "passed")], [mr(42, "passed")]), [], "the same finished pipeline: nothing")
+  assert.deepEqual(ev([mr(42, "failed")], [mr(42, "failed")]), [])
+  assert.equal(ev([mr(42, "passed", "p1")], [mr(42, "passed", "p2")]).length, 1, "a re-run that ended the same way: its id tells")
+  assert.equal(ev([mr(42, "failed", "p1")], [mr(42, "passed", "p2")])[0].headline, "Pipeline passed on !42")
+  assert.equal(ev([mr(42, null)], [mr(42, "failed", "p2")]).length, 1, "no pipeline at the last look, one ended since")
+  assert.deepEqual(ev([mr(42, "passed", "")], [mr(42, "passed", "")]), [], "no ids: only running -> done counts")
+  assert.deepEqual(ev([mr(42, "passed", "p1")], [mr(42, "passed", "")]), [])
+  assert.deepEqual(ev([mr(42, "passed", "")], [mr(42, "passed", "p2")]), [], "the last look had no id: can't tell")
+  assert.deepEqual(ev([], [mr(42, "passed")]), [], "an MR new to the list: nothing")
+  assert.deepEqual(ev([mr(42, "running")], []), [], "gone (merged, closed): nothing")
+  assert.deepEqual(L.pipelineEvents(null, ans([mr(42, "passed")]), {}), [], "the first look: a baseline only")
+  assert.deepEqual(L.pipelineEvents({ state: "error" }, ans([mr(42, "passed")]), {}), [])
+  assert.deepEqual(L.pipelineEvents(ans([mr(42, "running")]), ans([mr(42, "passed")], "o/q"), {}), [], "another project: a fresh start")
+  // A link only if https; else the project's merge requests.
+  const bare = Object.assign(mr(42, "passed"), { url: "" })
+  assert.equal(ev([mr(42, "running")], [bare])[0].url, "https://gitlab.com/g/p/-/merge_requests")
+  // Several in one refresh: one notification, at most three named, the project's merge requests.
+  assert.deepEqual(ev([mr(42, "running"), mr(44, "pending")], [mr(42, "passed"), mr(44, "failed")]),
+    [{ headline: "2 pipelines finished", body: "!42 passed, !44 failed · g/p", url: "https://gitlab.com/g/p/-/merge_requests" }])
+  assert.deepEqual(ev([1, 2, 3, 4, 5].map(i => mr(i, "running")), [1, 2, 3, 4, 5].map(i => mr(i, i % 2 ? "passed" : "failed"))),
+    [{ headline: "5 pipelines finished", body: "!1 passed, !2 failed, !3 passed +2 more · g/p", url: "https://gitlab.com/g/p/-/merge_requests" }])
+  assert.equal(L.pipelineEvents(ans([mr(1, "running"), mr(2, "running")]), ans([mr(1, "passed"), mr(2, "passed")]), { host: "gitlab.example.com" })[0].url, "https://gitlab.example.com/g/p/-/merge_requests")
+  assert.equal(L.mrListUrl("g/p;rm"), "")
+  assert.equal(L.mrListUrl("42"), "", "a numeric id has no such page")
+  assert.equal(L.mrListUrl("g/sub/p", "https://Git.Example.org/"), "https://git.example.org/g/sub/p/-/merge_requests")
+  // The same command as the other alerts: a click opens it as Open links in says.
+  const one = ev([mr(42, "running")], [mr(42, "failed")])[0]
+  assert.deepEqual(L.notifyArgv(one, "app").slice(-3), ["--exec", "omarchy-launch-webapp", "https://gitlab.com/g/p/-/merge_requests/42"])
+  assert.deepEqual(L.notifyArgv(one, "browser").slice(-3), ["--exec", "omarchy-launch-browser", "https://gitlab.com/g/p/-/merge_requests/42"])
+  assert.ok(!one.headline.startsWith("-") && !one.body.startsWith("-"))
 })
 
 test("alerts wiring: Settings saves settings.alerts per project; each copy hands its board to the service", () => {
