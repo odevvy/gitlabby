@@ -12,12 +12,14 @@ import "components"
 // "+N" (hover: the rest); the column is said once when they all share it. Shown only when
 // settings.bots has an entry for this project. The height follows the Flow
 // live (wrapping, refreshes, config edits); Board.qml makes it 0 when hidden.
+// No space of its own under it (v0.1.71, design 1A): the popup's 10 px gaps
+// above and below keep title, bots, chips and columns evenly apart.
 Item {
   id: row
   required property var host
   property var states: []
   readonly property int shown: 2  // issue numbers per bot before "+N"
-  implicitHeight: flow.implicitHeight + Style.space(10)
+  implicitHeight: flow.implicitHeight
   // A tooltip's x under item, kept inside the row (so inside the popup card).
   function tipX(item, width) {
     var at = item.mapToItem(row, 0, 0).x

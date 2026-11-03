@@ -645,7 +645,9 @@ Panel {
     if (boardState === "ready" && cached) return Logic.savedNote(updatedAt)
     if (boardState === "ready") {
       // A refresh you asked for says so; the timer's keeps the time.
-      var time = updating ? "Updating…" : updatedAt !== "" ? "Updated " + new Date(updatedAt).toLocaleTimeString(Qt.locale(), "HH:mm") : ""
+      // On Merge requests, when the lists were read (MrsView.entry), not the board.
+      var at = view !== "mrs" ? updatedAt : mrsView.entry && mrsView.entry.startedAt > 0 ? new Date(mrsView.entry.startedAt).toISOString() : ""
+      var time = updating ? "Updating…" : at !== "" ? "Updated " + new Date(at).toLocaleTimeString(Qt.locale(), "HH:mm") : ""
       if (!writable) time = "View-only  " + time
       return message !== "" ? message + "  " + time : time
     }

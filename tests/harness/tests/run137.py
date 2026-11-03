@@ -100,7 +100,8 @@ h.key(Qt.Key_R, "r")
 ok("M17 r fetches again", len(mrs_runs()) == 1)
 h.key(Qt.Key_R, "r")
 ok("M18 r again while loading: still one", len(mrs_runs()) == 1)
-ok("M19 refreshing keeps the rows and says so", len(rows()) == 5 and any("refreshing" in str(it.property("text")) for it in h.visible(lambda it: it.objectName() == "mrsNote")))
+# Says so: the note under the header, or (v0.1.71) the header's "Updating…" alone.
+ok("M19 refreshing keeps the rows and says so", len(rows()) == 5 and (any("refreshing" in str(it.property("text")) for it in h.visible(lambda it: it.objectName() == "mrsNote")) or h.ev("header.status.text") == "Updating\u2026"), h.ev("header.status.text"))
 # --- scope: This project (asked while All projects still loads: it waits) ----------
 pill = next(it for it in h.visible(lambda it: it.property("label") == "This project"))
 h.click(pill); h.spin(60)

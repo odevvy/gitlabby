@@ -4,7 +4,8 @@ import "Logic.js" as Logic
 import "components"
 
 // The board's top row (Board.qml): project and board name (opens the picker),
-// the default star, the Board and Merge requests tabs, the status ("Updated
+// the default star, the Board and Merge requests tabs (on Merge requests a
+// quiet "read-only" chip after them, v0.1.71), the status ("Updated
 // …"), then the icon buttons: refresh, columns (board only), keyboard
 // shortcuts and settings (v0.1.69: refresh first, next to the status). Buttons and tabs are 28 px targets with a faint fill
 // on hover (v155 design B), so they are easy to hit with a mouse.
@@ -24,6 +25,7 @@ Item {
   readonly property alias columnsButton: columnsButton
   readonly property alias boardTab: boardTab
   readonly property alias tabs: tabs
+  readonly property alias readOnlyChip: readOnlyChip
   // The row keeps the title's height: the 28 px buttons and tabs reach a few
   // points into the gap above and below it, so nothing under the header moves.
   implicitHeight: Math.max(title.implicitHeight, status.implicitHeight)
@@ -36,14 +38,17 @@ Item {
   TextMetrics { id: mrsLong; font { pixelSize: Style.font.body; bold: true } text: "Merge requests" }
   TextMetrics { id: mrsShort; font { pixelSize: Style.font.body; bold: true } text: "MRs" }
   // Everything but the title and the status.
-  readonly property real fixedWidth: chevron.implicitWidth + defaultMark.implicitWidth + Style.space(8 + 12 + 8)
+  // Merge requests are read-only here: a quiet chip after the tabs (v0.1.71),
+  // the first thing to go when the row is short (with the long tab name).
+  readonly property real chipRoom: host.view === "mrs" ? readOnlyChip.implicitWidth + Style.space(10) : 0
+  readonly property real fixedWidth: chipRoom + chevron.implicitWidth + defaultMark.implicitWidth + Style.space(8 + 12 + 8)
     + (tabsShown ? 1 + Style.space(12 + 6) + boardTab.implicitWidth + mrsLong.advanceWidth + Style.space(20) + mrsButton.badgeRoom : 0)
     + (columnsButton.visible ? columnsButton.implicitWidth + Style.space(4) : 0) + refreshButton.implicitWidth + keysButton.implicitWidth + gear.implicitWidth + Style.space(4 + 4)
   readonly property bool compactTabs: tabsShown && width - fixedWidth - title.implicitWidth - Style.space(48) < 0
   // The status gets what the full title leaves (at least 48 points, so a
   // message still shows its end; at most 40%), and elides from the left; the
   // title gets the rest.
-  readonly property real freeWidth: width - fixedWidth + (compactTabs ? mrsLong.advanceWidth - mrsShort.advanceWidth : 0)
+  readonly property real freeWidth: width - fixedWidth + (compactTabs ? mrsLong.advanceWidth - mrsShort.advanceWidth + chipRoom : 0)
   readonly property real titleRoom: freeWidth - Math.min(status.implicitWidth, width * 0.4, Math.max(Style.space(48), freeWidth - title.implicitWidth))
 
   // An icon button: a 28 px target, the glyph at 14 px, a faint fill on hover
@@ -182,9 +187,18 @@ Item {
       onClicked: host.showView("mrs")
     }
   }
+  Pill {
+    id: readOnlyChip
+    objectName: "readOnlyChip"
+    visible: host.view === "mrs" && header.tabsShown && !header.compactTabs
+    anchors { left: tabs.right; leftMargin: Style.space(10); verticalCenter: parent.verticalCenter }
+    label: "read-only"
+    textColor: host.quiet
+    border.color: Qt.rgba(host.quiet.r, host.quiet.g, host.quiet.b, 0.4)
+  }
   BoardText {
     id: status
-    anchors { left: header.tabsShown ? tabs.right : defaultMark.right; leftMargin: Style.space(12); right: refreshButton.left; rightMargin: Style.space(8); verticalCenter: parent.verticalCenter }
+    anchors { left: readOnlyChip.visible ? readOnlyChip.right : header.tabsShown ? tabs.right : defaultMark.right; leftMargin: Style.space(12); right: refreshButton.left; rightMargin: Style.space(8); verticalCenter: parent.verticalCenter }
     horizontalAlignment: Text.AlignRight
     elide: Text.ElideLeft
     text: host.statusText()
