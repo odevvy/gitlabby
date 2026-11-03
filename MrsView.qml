@@ -173,7 +173,9 @@ Item {
               hoverEnabled: true
               cursorShape: mr.row.url ? Qt.PointingHandCursor : Qt.ArrowCursor
               onEntered: view.cursor = item.rowIndex
-              onClicked: view.host.openUrl(mr.row.url)
+              // A right-click copies its link (Board.copyLink); a click opens it.
+              acceptedButtons: Qt.LeftButton | Qt.RightButton
+              onClicked: function(mouse) { if (mouse.button === Qt.RightButton) view.host.copyLink(mr.row, "!"); else view.host.openUrl(mr.row.url) }
             }
             Column {
               id: lines

@@ -319,9 +319,12 @@ Item {
                   // The Flickable must not take the press over; a drag starts
                   // once the pointer has moved past the threshold.
                   preventStealing: true
-                  onPressed: function(mouse) { pressedAt = Qt.point(mouse.x, mouse.y); dragged = false; card.pressing = true; view.holding = true }
+                  // A right-click copies the card's link (Board.copyLink); only
+                  // the left button drags, opens or picks.
+                  acceptedButtons: Qt.LeftButton | Qt.RightButton
+                  onPressed: function(mouse) { if (mouse.button !== Qt.LeftButton) return; pressedAt = Qt.point(mouse.x, mouse.y); dragged = false; card.pressing = true; view.holding = true }
                   onPositionChanged: function(mouse) {
-                    if (!pressed) return
+                    if (!(pressedButtons & Qt.LeftButton)) return
                     if (!dragged) {
                       if (!card.movable || Math.abs(mouse.x - pressedAt.x) + Math.abs(mouse.y - pressedAt.y) < Style.space(8)) return
                       dragged = true
@@ -335,10 +338,11 @@ Item {
                     ghost.y = p.y - pressedAt.y
                     ghost.Drag.active = true
                   }
-                  onReleased: { if (dragged && ghost.Drag.active) ghost.Drag.drop(); card.pressing = false; view.endDrag() }
+                  onReleased: function(mouse) { if (mouse.button !== Qt.LeftButton) return; if (dragged && ghost.Drag.active) ghost.Drag.drop(); card.pressing = false; view.endDrag() }
                   onCanceled: { card.pressing = false; view.endDrag() }
                   // Ctrl+click picks the card for a bulk action (BulkBar.qml).
                   onClicked: function(mouse) {
+                    if (mouse.button === Qt.RightButton) { view.host.copyLink(card.modelData, "#"); return }
                     if (dragged) return
                     if (mouse.modifiers & Qt.ControlModifier) view.host.togglePick(column.modelData, card.modelData.iid)
                     else view.host.openIssue(card.modelData)
