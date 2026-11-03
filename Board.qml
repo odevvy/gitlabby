@@ -90,6 +90,8 @@ Panel {
   property int refreshIntervalSec: Math.max(30, parseInt(String(saved("refreshIntervalSec", 60)), 10) || 60)
   // Settings > Open links in: "browser" (a tab, omarchy-launch-browser, the
   // default) or "app" (its own window, omarchy-launch-webapp). See openUrl.
+  // The bar icon's dot after an alert (alertDot), unless Settings keeps it unlit.
+  readonly property bool iconLit: !!feed && feed.unseenAlerts > 0
   readonly property string linkMode: String(saved("openLinks", "browser")) === "app" ? "app" : "browser"
   function setLinkMode(mode) { persist(undefined, undefined, undefined, { openLinks: mode === "app" ? "app" : "browser" }) }
   // The interval actually used: the setting, faster while cards move, slower
@@ -709,7 +711,7 @@ Panel {
       else readCache()
     })
   }
-  onOpenedChanged: if (opened) { view = "board"; cursor = null; refresh(true) } else { boardView.endDrag(); pendingMove = null; if (!bulkBar.busy && bulkBar.mode !== "results") dropPicks(); saveFolds() }
+  onOpenedChanged: if (opened) { feed.seenAlerts(); view = "board"; cursor = null; refresh(true) } else { boardView.endDrag(); pendingMove = null; if (!bulkBar.busy && bulkBar.mode !== "results") dropPicks(); saveFolds() }
 
   // Only while the popup is open; opening it refreshes if due (onOpenedChanged).
   // A copy on another screen that fetched meanwhile makes the tick a no-op.
@@ -765,11 +767,26 @@ Panel {
     id: button
     anchors.fill: parent; bar: root.bar
     text: root.icon
-    tooltipText: "GitLab board" + (root.project !== "" ? " · " + root.project : "")
+    tooltipText: "GitLab board" + (root.project !== "" ? " · " + root.project : "") + (root.iconLit ? " · an alert came" : "")
     onPressed: function(buttonCode) {
       if (buttonCode === Qt.RightButton || buttonCode === Qt.MiddleButton) root.refresh()
       else root.toggle()
     }
+  }
+
+  // A small accent dot at the icon's top right while an alert waits unseen
+  // (BoardService.unseenAlerts), on every screen; gone when a popup opens.
+  Rectangle {
+    id: alertDot
+    objectName: "alertDot"
+    visible: root.iconLit
+    width: Style.space(5); height: width; radius: width / 2
+    x: Math.round(button.width / 2 + Style.space(4)); y: Math.round(button.height / 2 - Style.space(9))
+    color: root.accent
+  }
+  Connections {
+    target: root.feed
+    function onUnseenAlertsChanged() { if (root.opened && root.feed.unseenAlerts > 0) root.feed.seenAlerts() }
   }
 
   KeyboardPanel {

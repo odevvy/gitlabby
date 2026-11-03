@@ -30,6 +30,10 @@ Item {
   // per event however many screens. ownMoves: { key: [{ iid, after }] } cards
   // this user moved, not announced back to him.
   property var watchers: ({})
+  // Alerts sent since a popup was last open, on any screen: the bar icon's
+  // dot (Board.iconLit). seenAlerts() when a popup opens, or is open.
+  property int unseenAlerts: 0
+  function seenAlerts() { unseenAlerts = 0 }
   property var baselines: ({})
   property var ownMoves: ({})
   readonly property var watchedKeys: Object.keys(watchers)
@@ -180,6 +184,7 @@ Item {
     var moved = ownMoves[key] || []
     var events = baselines[key] ? Logic.alertEvents(baselines[key], data, { review: cfg.review, idle: cfg.idle, bots: cfg.bots, ignore: moved.map(function(m) { return m.iid }), host: cfg.host }) : []
     events.forEach(function(ev) { Quickshell.execDetached(Logic.notifyArgv(ev, cfg.links)) })
+    unseenAlerts += events.length
     var b = {}, k
     for (k in baselines) b[k] = baselines[k]
     b[key] = data
