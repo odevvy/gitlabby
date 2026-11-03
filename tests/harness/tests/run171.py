@@ -28,4 +28,21 @@ top = min(Y(c) for c in chips) if chips else -1; low = max(Y(c) + c.height() for
 fl = h.ev("flick", h.ctx_of(bv), bv)
 h.ok("A4 chips open: bots → chips 10, chips → columns 10", chips and round(top - (Y(bots) + bots.height())) == S(10) and round(Y(fl) - low) == S(10), (Y(bots) + bots.height(), top, low, Y(fl)))
 h.ev("root.columnChips = false"); h.spin(300)
+# --- 2: one Updated on Merge requests ----------------------------------------------------------
+board_time = h.ev("header.status.text")
+h.ev("root.showView('mrs')"); h.spin(100)
+while h.running("mrs"): h.answer("mrs", {"state": "ready", "message": "", "review": [], "mine": []})
+h.spin(700)
+mv = h.cls("MrsView")
+said = [str(it.property("text")) for it in h.walk(mv) if it.inherits("QQuickText") and it.isVisible() and ("updated" in str(it.property("text")).lower() or "refreshing" in str(it.property("text")))]
+h.ok("B1 Merge requests: no second 'updated' under the header", said == [], said)
+want = "Updated " + h.ev("Qt.formatTime(new Date(mrsView.entry.startedAt), 'HH:mm')")
+h.ok("B2 the header's Updated is when the lists were read", h.ev("header.status.text") == want and want != board_time, (h.ev("header.status.text"), want, board_time))
+h.key(Qt.Key_R, "r"); h.spin(60)
+said = [str(it.property("text")) for it in h.walk(mv) if it.inherits("QQuickText") and it.isVisible() and "refreshing" in str(it.property("text"))]
+h.ok("B3 r: the header alone says Updating…", h.ev("header.status.text") == "Updating\u2026" and said == [], (h.ev("header.status.text"), said))
+while h.running("mrs"): h.answer("mrs", {"state": "ready", "message": "", "review": [], "mine": []})
+h.spin(800)
+h.ev("root.showView('board')"); h.spin(150)
+h.ok("B4 back on the board: the board's time", h.ev("header.status.text") == board_time, (h.ev("header.status.text"), board_time))
 sys.exit(h.finish())

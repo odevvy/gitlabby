@@ -63,7 +63,7 @@ Item {
     id: top
     width: parent.width
     implicitHeight: tabs.implicitHeight
-    // "read-only", and when the lists were read (or that they are reloading).
+    // "read-only" (when the lists were read, or that they reload: the header).
     BoardText {
       id: note
       objectName: "mrsNote"
@@ -71,8 +71,7 @@ Item {
       elide: Text.ElideRight
       color: view.host.quiet
       font.pixelSize: Style.font.caption
-      text: "read-only"
-        + (view.loading && view.entry ? "  \u00b7  refreshing\u2026" : view.entry ? "  \u00b7  updated " + view.stamp(view.entry.startedAt) : "")
+      text: "read-only"  // when the lists were read: the header's Updated (v0.1.71)
     }
     // The scope: two text tabs, the current one underlined in the accent.
     Row {
