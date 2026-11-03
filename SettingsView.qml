@@ -207,6 +207,58 @@ Item {
       // saying more than the setting is no surprise.
       Help { text: "Slows down, up to 4x, while the board stays quiet; any change brings it back." }
       Item { width: 1; height: Style.space(2) }
+      // Open links in: a browser tab or an app window (Board.linkMode), the
+      // same segments as Refresh every, on one line or the segments under it.
+      Item {
+        id: linkRow
+        objectName: "linkRow"
+        width: parent.width
+        readonly property bool oneLine: linkHeading.implicitWidth + Style.space(12) + linkPane.implicitWidth <= width
+        implicitHeight: oneLine ? linkPane.implicitHeight : linkHeading.implicitHeight + Style.space(6) + linkPane.implicitHeight
+        Label { id: linkHeading; y: linkRow.oneLine ? (linkPane.implicitHeight - implicitHeight) / 2 : 0; text: "Open links in" }
+        Rectangle {
+          id: linkPane
+          x: linkRow.oneLine ? linkRow.width - width : 0
+          y: linkRow.oneLine ? 0 : linkHeading.implicitHeight + Style.space(6)
+          implicitWidth: linkSegs.implicitWidth + Style.space(4)
+          implicitHeight: linkSegs.implicitHeight + Style.space(4)
+          radius: Style.space(8)
+          color: view.pane
+          border.width: 0
+          Row {
+            id: linkSegs
+            anchors.centerIn: parent
+            spacing: Style.space(2)
+            Repeater {
+              model: [{ mode: "browser", label: "Browser tab" }, { mode: "app", label: "App window" }]
+              delegate: Rectangle {
+                id: linkSeg
+                objectName: "linkSegment"
+                required property var modelData
+                readonly property bool current: view.host.linkMode === modelData.mode
+                implicitWidth: linkText.implicitWidth + Style.space(16)
+                implicitHeight: linkText.implicitHeight + Style.space(8)
+                radius: Style.space(6)
+                color: current ? Qt.rgba(view.host.accent.r, view.host.accent.g, view.host.accent.b, 0.18) : linkMouse.containsMouse ? Qt.rgba(view.fg.r, view.fg.g, view.fg.b, 0.06) : "transparent"
+                Behavior on color { ColorAnimation { duration: 100 } }
+                BoardText {
+                  id: linkText
+                  anchors.centerIn: parent
+                  text: linkSeg.modelData.label
+                  color: linkSeg.current ? view.host.accent : linkMouse.containsMouse ? view.host.foreground : view.host.dim
+                  font { pixelSize: Style.font.bodySmall; bold: linkSeg.current }
+                }
+                MouseArea {
+                  id: linkMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                  onClicked: view.host.setLinkMode(linkSeg.modelData.mode)
+                }
+              }
+            }
+          }
+        }
+      }
+      Help { objectName: "linkNote"; text: "App window: its own window, no tabs. Needs a Chromium-based browser." }
+      Item { width: 1; height: Style.space(2) }
       Label { text: "Start collapsed" }
       Help { text: "New boards fold these. Your per-board choice wins." }
       // The same check boxes as the busy columns, wrapping, in columns of a

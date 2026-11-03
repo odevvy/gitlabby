@@ -63,6 +63,12 @@ the picker's board step. The header shows a star on the default board and a
 - Click an issue for its details: state, labels, author, ages, assignees,
   milestone, the description, the comments and a box to add one, and an
   "Open in browser" link. A thin bar slides under the title while it loads.
+- Links open in a browser tab, or in an app window of their own (no tabs or
+  address bar): Settings > **Open links in**. Browser tab runs
+  `omarchy-launch-browser`, App window `omarchy-launch-webapp`, which needs a
+  Chromium-based browser (Chrome, Brave, Edge, Opera, Vivaldi, Helium; with
+  another default it uses Chromium). Either way only `https://` links open,
+  and the popup closes.
 - The gear opens the settings in four sections split by thin lines:
   General (the refresh interval, and which columns start collapsed), Bots
   (the bots of the project on screen, see [Who's busy](#whos-busy)), Alerts,
@@ -601,6 +607,7 @@ Settings live on the widget's entry in `~/.config/omarchy/shell.json`:
 | `defaultProject` | Default project: path or numeric id. Empty (the default): the first board you open |
 | `defaultBoardId`, `defaultBoardName` | Default board; empty means the project's first board |
 | `refreshIntervalSec` | Refresh interval in seconds |
+| `openLinks` | Where links open: `browser` (the default; a tab, `omarchy-launch-browser`) or `app` (its own window, `omarchy-launch-webapp`; needs a Chromium-based browser). Anything else is `browser` |
 | `defaultCollapsed` | Columns that start collapsed on a board you have not changed yet. Default `["closed","research","open"]`; matched case-insensitively |
 | `boardStates` | Collapsed and hidden columns for each project and board, keyed `project#boardId`. Saved when the popup closes, or 2 s after the last fold |
 | `confirmMoves` | Projects whose card moves ask first (see [Ask before moving](#ask-before-moving)). Default `[]` |
@@ -618,6 +625,7 @@ and loads that server's default board (or the picker).
 ```bash
 omarchy bar set odevvy.gitlab-board defaultProject group/project
 omarchy bar set odevvy.gitlab-board refreshIntervalSec 120
+omarchy bar set odevvy.gitlab-board openLinks app
 omarchy bar set odevvy.gitlab-board gitlabHost gitlab.example.com   # then: glab auth login --hostname gitlab.example.com
 ```
 

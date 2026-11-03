@@ -88,6 +88,10 @@ Panel {
   property string boardName: defaultBoardName
   // Saved preferences.
   property int refreshIntervalSec: Math.max(30, parseInt(String(saved("refreshIntervalSec", 60)), 10) || 60)
+  // Settings > Open links in: "browser" (a tab, omarchy-launch-browser, the
+  // default) or "app" (its own window, omarchy-launch-webapp). See openUrl.
+  readonly property string linkMode: String(saved("openLinks", "browser")) === "app" ? "app" : "browser"
+  function setLinkMode(mode) { persist(undefined, undefined, undefined, { openLinks: mode === "app" ? "app" : "browser" }) }
   // The interval actually used: the setting, faster while cards move, slower
   // while nothing changes (Logic.adaptiveInterval), from the shared pace.
   readonly property var cadence: Logic.adaptiveInterval(refreshIntervalSec, feed.paces[fetchKey])
@@ -571,10 +575,11 @@ Panel {
   }
 
   // https only (Logic.httpsUrl), so no file:, javascript: or --flag value reaches the browser.
+  // A browser tab or an app window, as Settings says (linkMode).
   function openUrl(url) {
     var link = Logic.httpsUrl(url)
     if (link === "") return
-    Quickshell.execDetached(["omarchy-launch-browser", link])
+    Quickshell.execDetached([linkMode === "app" ? "omarchy-launch-webapp" : "omarchy-launch-browser", link])
     close()
   }
 
