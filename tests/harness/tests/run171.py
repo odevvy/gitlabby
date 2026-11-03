@@ -1,0 +1,31 @@
+# v0.1.71 (v171 design 1A, 2, 3A): even 10 px gaps between the title, the
+# bots, the column chips and the columns; one "Updated" on Merge requests
+# (the header's, with the lists' read time); a quiet "read-only" chip after
+# the tabs there, the row under it only the scope.
+# Usage: run171.py <src>
+import sys, os; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from lib import *
+from fixtures import BOARD
+P = "group/app"
+BOTS = {P: {"busyLists": ["in progress", "review"], "bots": [{"name": "App UI", "label": "app-ui"}, {"name": "Spec QA", "list": "review"}]}}
+h = Harness(sys.argv[1], {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": [], "boardStates": {}, "refreshIntervalSec": 60, "bots": BOTS})
+h.ev("panel.availableCardHeight = 620; panel.availableCardWidth = 1020")
+h.ev("root.opened = true"); h.spin(60); h.answer("board", BOARD); h.spin(400)
+S = lambda n: h.ev("Style.space(%d)" % n)
+card = h.cls("KeyboardPanel")
+Y = lambda it: it.mapToItem(card, QPointF(0, 0)).y()
+# --- 1A: even gaps ---------------------------------------------------------------------------
+bots = h.cls("BotsRow"); bv = h.cls("BoardView"); hd = h.ev("header")
+texts = [it for it in h.walk(bots) if it.inherits("QQuickText") and it.isVisible() and it.property("text")]
+bot_bottom = max(Y(t) + t.height() for t in texts) if texts else -1
+h.ok("A0 the bots row shows", bots.isVisible() and texts != [], len(texts))
+h.ok("A1 title → bots 10", round(Y(bots) - (Y(hd) + hd.height())) == S(10), (Y(hd) + hd.height(), Y(bots)))
+h.ok("A2 no empty space under the bots: the row ends with its text", abs(Y(bots) + bots.height() - bot_bottom) < 1, (Y(bots) + bots.height(), bot_bottom))
+h.ok("A3 bots → columns 10, the same", round(Y(bv) - (Y(bots) + bots.height())) == S(10), (Y(bots) + bots.height(), Y(bv)))
+h.ev("root.columnChips = true"); h.spin(300)
+chips = [it for it in h.walk(bv) if it.metaObject().className().startswith("Pill") and it.isVisible()]
+top = min(Y(c) for c in chips) if chips else -1; low = max(Y(c) + c.height() for c in chips) if chips else -1
+fl = h.ev("flick", h.ctx_of(bv), bv)
+h.ok("A4 chips open: bots → chips 10, chips → columns 10", chips and round(top - (Y(bots) + bots.height())) == S(10) and round(Y(fl) - low) == S(10), (Y(bots) + bots.height(), top, low, Y(fl)))
+h.ev("root.columnChips = false"); h.spin(300)
+sys.exit(h.finish())

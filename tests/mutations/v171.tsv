@@ -1,0 +1,3 @@
+# v0.1.71 (v171 design 1A, 2, 3A): even gaps, one Updated on Merge requests, the read-only chip (qml: tests/harness/tests/run171.py)
+bots-padding-back	BotsRow.qml	implicitHeight: flow.implicitHeight	implicitHeight: flow.implicitHeight + Style.space(10)	qml
+bots-padding-small	BotsRow.qml	implicitHeight: flow.implicitHeight	implicitHeight: flow.implicitHeight + Style.space(3)	qml
