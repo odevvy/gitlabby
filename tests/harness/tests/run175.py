@@ -123,6 +123,35 @@ ev("a", "root.setIconUnlit('yes')"); spin(40)
 ok("U4 setIconUnlit saves only true or false", (ev("a", "root.bar.shell.writes") or [])[-1].get("iconUnlit") is False)
 for k in ("a", "b"): ev(k, "root.settings = Object.assign({}, root.settings, { iconUnlit: false })")
 spin(40)
+# --- Settings > General: the check box ----------------------------------------------------------------
+from PySide6.QtTest import QTest
+ev("a", "root.opened = true"); spin(120); settle(); ev("a", "root.showView('settings')"); spin(300)
+for _ in range(3): answer_proc("a", "whoami", {"state": "ready", "user": "dev1"})
+spin(200)
+def walk(it):
+    yield it
+    for c in it.childItems(): yield from walk(c)
+items = list(walk(wins["w1"].contentItem()))
+by = lambda n: next((it for it in items if it.objectName() == n and it.isVisible()), None)
+row, check, note, link = by("unlitRow"), by("unlitCheck"), by("unlitNote"), by("linkNote")
+sv = next(it for it in items if it.metaObject().className().startswith("SettingsView"))
+y = lambda it: it.mapToItem(sv, QPointF(0, 0)).y()
+start = next((it for it in items if it.property("text") == "Start collapsed" and it.isVisible()), None)
+help_ = next((it for it in items if it.property("text") == "New boards fold these. Your per-board choice wins." and it.isVisible()), None)
+ok("S1 under Open links in and its note: the box, 'Keep the bar icon unlit', its note, then Start collapsed", row and note and link and start and y(link) < y(row) and y(row) + row.height() <= y(note) < y(start),
+   [row is not None, note is not None])
+ok("S2 the note: quiet, caption size, one line, the words", note and help_ and note.property("text") == "Otherwise a small dot on it after an alert, until you open the board." and note.property("color") == help_.property("color") and note.property("font").pixelSize() == help_.property("font").pixelSize() and note.property("lineCount") == 1)
+ok("S3 off by default: the box unticked", check and check.property("on") is False)
+w0 = len(ev("a", "root.bar.shell.writes") or [])
+c = check.mapToScene(QPointF(check.width() / 2, check.height() / 2)); QTest.mouseClick(wins["w1"], Qt.LeftButton, Qt.NoModifier, QPoint(int(c.x()), int(c.y()))); spin(120)
+wr = (ev("a", "root.bar.shell.writes") or [])[w0:]
+ok("S4 a click on the box saves iconUnlit: true", wr and wr[-1].get("iconUnlit") is True, wr and wr[-1])
+ev("a", "root.settings = Object.assign({}, root.settings, { iconUnlit: true })"); spin(80)
+ok("S5 ticked once saved", check.property("on") is True)
+lab = next(it for it in items if it.property("text") == "Keep the bar icon unlit" and it.isVisible())
+c = lab.mapToScene(QPointF(lab.width() / 2, lab.height() / 2)); QTest.mouseClick(wins["w1"], Qt.LeftButton, Qt.NoModifier, QPoint(int(c.x()), int(c.y()))); spin(120)
+ok("S6 a click on the words unticks it: iconUnlit: false", (ev("a", "root.bar.shell.writes") or [])[-1].get("iconUnlit") is False)
+ev("a", "root.settings = Object.assign({}, root.settings, { iconUnlit: false })"); ev("a", "root.opened = false"); spin(80)
 loops = [w for w in warnings if "oop" in w]
 ok("Z no binding-loop warnings", not loops, loops)
 ok("Z no QML warnings", not warnings, warnings[:3])

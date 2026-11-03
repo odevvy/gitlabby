@@ -14,3 +14,8 @@ unlit-ignored	Board.qml	!iconUnlit && !!feed	!!feed	qml
 unlit-loose	Board.qml	saved("iconUnlit", false) === true	!!saved("iconUnlit", false)	qml
 unlit-default-on	Board.qml	saved("iconUnlit", false) === true	saved("iconUnlit", true) !== false	qml
 unlit-save-raw	Board.qml	{ iconUnlit: on === true }	{ iconUnlit: on }	qml
+box-ignores-setting	SettingsView.qml	on: view.host.iconUnlit; hot	on: false; hot	qml
+click-always-true	SettingsView.qml	view.host.setIconUnlit(!view.host.iconUnlit)	view.host.setIconUnlit(true)	qml
+click-box-only	SettingsView.qml	width: unlitLine.width + Style.space(8)	width: Style.space(14)	qml
+unlit-note-loud	SettingsView.qml	Help { objectName: "unlitNote"	Label { objectName: "unlitNote"	qml
+unlit-note-words	SettingsView.qml	Otherwise a small dot on it after an alert, until you open the board.	A dot after an alert.	qml

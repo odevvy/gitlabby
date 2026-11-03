@@ -409,7 +409,11 @@ urgency, so Do Not Disturb holds them (they wait in the notification
 history). Clicking one opens the issue, or the board for several cards or a
 bot, as Settings > **Open links in** says: a browser tab
 (`omarchy-launch-browser`) or an app window (`omarchy-launch-webapp`); https
-links only. Your own moves aren't announced back to you. Nothing is
+links only. After one, the bar icon gets a small accent dot at its top right
+(the tip adds `an alert came`), on every screen, until you open the popup on
+any of them; an alert while a popup is open doesn't light it. Settings >
+General > **Keep the bar icon unlit** turns the dot off (the alerts still
+come). Your own moves aren't announced back to you. Nothing is
 announced on the first load after a shell start, after switching boards, or
 for the first good refresh after a failed one (changes in between are only
 compared from then on).
@@ -609,6 +613,7 @@ Settings live on the widget's entry in `~/.config/omarchy/shell.json`:
 | `defaultProject` | Default project: path or numeric id. Empty (the default): the first board you open |
 | `defaultBoardId`, `defaultBoardName` | Default board; empty means the project's first board |
 | `refreshIntervalSec` | Refresh interval in seconds |
+| `iconUnlit` | `true`: no dot on the bar icon after an alert (Settings > Keep the bar icon unlit). Default `false` |
 | `openLinks` | Where links open: `browser` (the default; a tab, `omarchy-launch-browser`) or `app` (its own window, `omarchy-launch-webapp`; needs a Chromium-based browser). Anything else is `browser` |
 | `defaultCollapsed` | Columns that start collapsed on a board you have not changed yet. Default `["closed","research","open"]`; matched case-insensitively |
 | `boardStates` | Collapsed and hidden columns for each project and board, keyed `project#boardId`. Saved when the popup closes, or 2 s after the last fold |
