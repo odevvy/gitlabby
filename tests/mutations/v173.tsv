@@ -1,0 +1,8 @@
+mode-always-app	Board.qml	String(saved("openLinks", "browser")) === "app" ? "app" : "browser"	"app"	qml
+mode-default-app	Board.qml	String(saved("openLinks", "browser")) === "app" ? "app" : "browser"	String(saved("openLinks", "app")) !== "browser" ? "app" : "browser"	qml
+mode-loose	Board.qml	String(saved("openLinks", "browser")) === "app"	String(saved("openLinks", "browser")).toLowerCase().indexOf("app") >= 0	qml
+open-ignores-mode	Board.qml	[linkMode === "app" ? "omarchy-launch-webapp" : "omarchy-launch-browser", link]	["omarchy-launch-browser", link]	qml
+open-modes-swapped	Board.qml	linkMode === "app" ? "omarchy-launch-webapp" : "omarchy-launch-browser"	linkMode === "app" ? "omarchy-launch-browser" : "omarchy-launch-webapp"	qml
+open-stays	Board.qml	"omarchy-launch-browser", link])\n    close()	"omarchy-launch-browser", link])	qml
+save-drops-others	Board.qml	persist(undefined, undefined, undefined, { openLinks	bar.shell.updateEntryInline(moduleName, { id: moduleName, openLinks	qml
+save-raw	Board.qml	{ openLinks: mode === "app" ? "app" : "browser" }	{ openLinks: "app" }	qml
