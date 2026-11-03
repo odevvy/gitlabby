@@ -101,10 +101,11 @@ Panel {
   // Desktop alerts for the project on screen (settings.alerts; off by default).
   // While one is on, the shared service watches this board, refreshes it with
   // the popup closed and notifies (BoardService.qml watch); one per event.
+  // A click on one opens its link as Settings > Open links in says (links).
   readonly property var alerts: Logic.alertsFor(saved("alerts", null), projectKey)
   readonly property string watchOwner: "w" + Math.floor(Math.random() * 1e9)
   readonly property var watchCfg: project !== "" && setup === "" && (alerts.review || alerts.idle)
-    ? { key: fetchKey, project: project, boardId: boardId, review: alerts.review, idle: alerts.idle, bots: saved("bots", null), base: refreshIntervalSec, host: gitlabHost } : null
+    ? { key: fetchKey, project: project, boardId: boardId, review: alerts.review, idle: alerts.idle, bots: saved("bots", null), base: refreshIntervalSec, host: gitlabHost, links: linkMode } : null
   onWatchCfgChanged: feed.watch(watchOwner, watchCfg)
   Component.onDestruction: { saveFolds(); feed.watch(watchOwner, null) }
   function setAlert(kind, on) { persist(undefined, undefined, Logic.withAlert(saved("alerts", null), projectKey, kind, on)) }

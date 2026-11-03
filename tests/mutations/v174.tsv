@@ -3,3 +3,6 @@ notify-xdg-again	logic/alerts.js	links === "app" ? "omarchy-launch-webapp" : "om
 notify-always-app	logic/alerts.js	links === "app" ? "omarchy-launch-webapp"	links !== "nope" ? "omarchy-launch-webapp"	node
 notify-loose	logic/alerts.js	links === "app" ?	String(links).toLowerCase() === "app" ?	node
 notify-any-url	logic/alerts.js	if (httpsUrl(ev.url)) argv	if (ev.url) argv	node
+watch-no-links	Board.qml	, links: linkMode } : null	 } : null	qml
+watch-links-fixed	Board.qml	links: linkMode }	links: "app" }	qml
+svc-ignores-links	BoardService.qml	Logic.notifyArgv(ev, cfg.links)	Logic.notifyArgv(ev)	qml
