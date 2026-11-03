@@ -1032,6 +1032,42 @@ check "MG a hung query: REST answers" '.state == "ready" and (input | del(.updat
 check "MG no token in output" '.' "$(grep -qiE 'glpat|bearer' <<<"$out" && echo false || echo true)"
 rm -f "$FAKE_DIR/graphql.json"
 
+# --- PP: pipes, your own open MRs' head pipelines (v0.1.76, the pipeline alert) ---
+# One GraphQL query, the project as a variable; nothing else is asked when it works.
+reset
+pn() { # iid status-or-null [webUrl] [pipeline id]
+  jq -cn --argjson i "$1" --arg st "$2" --arg u "${3:-https://gitlab.com/g/p41/-/merge_requests/$1}" --arg id "${4:-gid://gitlab/Ci::Pipeline/9$1}" \
+    '{iid: "\($i)", title: "MR \($i) <b>", webUrl: $u, headPipeline: (if $st == "null" then null else {id: $id, status: $st, path: "/g/p41/-/pipelines/9\($i)"} end)}'; }
+pq() { jq -cn --argjson m "$1" '{data: {currentUser: {mine: {nodes: $m}}}}' | fx graphql; }
+pq "[$(pn 42 RUNNING),$(pn 44 FAILED),$(pn 45 SKIPPED),$(pn 46 null),$(pn 47 SUCCESS http://gitlab.com/x)]"
+: >"$FAKE_LOG"; out=$("$fetch" pipes --project g/p41)
+check "PP ready: this project, each MR with its pipeline and that one's id" '.state == "ready" and .project == "g/p41" and [.mrs[].iid] == [42,44,45,46,47]
+  and .mrs[0] == {"iid":42,"title":"MR 42 <b>","url":"https://gitlab.com/g/p41/-/merge_requests/42","pipeline":{"status":"running","url":"https://gitlab.com/g/p41/-/pipelines/942","id":"gid://gitlab/Ci::Pipeline/942"}}' "$out"
+check "PP FAILED -> failed, SUCCESS -> passed; skipped or none: no pipeline; a link only if https" '.mrs[1].pipeline.status == "failed" and .mrs[4].pipeline.status == "passed"
+  and .mrs[2].pipeline == null and .mrs[3].pipeline == null and .mrs[4].url == ""' "$out"
+check "PP one call, the GraphQL query, nothing written" '.' "$([[ $(grep -c . "$FAKE_LOG") == 1 ]] && grep -q ' graphql -f query=query' "$FAKE_LOG" && ! grep -qE 'NON-GET|BAD-GRAPHQL' "$FAKE_LOG" && echo true || echo false)"
+# shellcheck disable=SC2016  # GraphQL variables in the pattern
+check "PP the query: my open MRs in this project, newest 20, head pipeline id, status, path; by path as a variable" '.' "$(grep ' graphql ' "$FAKE_LOG" |
+  grep -qF 'query=query($p: String) { currentUser { mine: authoredMergeRequests(projectPath: $p, state: opened, sort: UPDATED_DESC, first: 20) { nodes { iid title webUrl headPipeline { id status path } } } } } -f p=g/p41' && echo true || echo false)"
+: >"$FAKE_LOG"; "$fetch" pipes --project 42 >/dev/null
+# shellcheck disable=SC2016  # GraphQL variables in the pattern
+check "PP by numeric id, as a global id" '.' "$(grep ' graphql ' "$FAKE_LOG" | grep -q 'query=query($id: ProjectID) .*projectId: $id, .* -f id=gid://gitlab/Project/42$' && echo true || echo false)"
+check "PP no project: refused before any call" '.state == "error" and (.message | test("No project"))' "$("$fetch" pipes)"
+echo '{"errors":[{"message":"Field x does not exist"}],"data":null}' | fx graphql
+: >"$FAKE_LOG"; out=$("$fetch" pipes --project g/p41)
+check "PP GraphQL errors: an error, after asking glab about the sign-in; no REST" '.state == "error" and .message == "Could not load your merge requests."' "$out"
+check "PP ... no REST reads" '.' "$(grep -qE 'merge_requests|--method GET' "$FAKE_LOG" && echo false || echo true)"
+pq "[$(pn 42 RUNNING)]"; jq -c '. + {errors: [{message: "partial"}]}' "$FAKE_DIR/graphql.json" >"$FAKE_DIR/g.t" && mv "$FAKE_DIR/g.t" "$FAKE_DIR/graphql.json"
+check "PP data with errors (partial): an error, not half an answer" '.state == "error"' "$(FAKE_GQL_EXIT0=1 "$fetch" pipes --project g/p41)"
+echo '{"data":{"currentUser":null}}' | fx graphql
+check "PP no current user: an error" '.state == "error"' "$("$fetch" pipes --project g/p41)"
+pq "[$(pn 42 RUNNING)]"
+check "PP signed out: logged-out" '.state == "logged-out"' "$(FAKE_AUTH=no "$fetch" pipes --project g/p41)"
+out=$(FAKE_HANG=' graphql ' "$fetch" pipes --project g/p41)
+check "PP a hung query: the timeout error" '.state == "error" and (.message | test("30 seconds"))' "$out"
+check "PP no token in output" '.' "$(grep -qiE 'glpat|bearer' <<<"$out$("$fetch" pipes --project g/p41)" && echo false || echo true)"
+rm -f "$FAKE_DIR/graphql.json"
+
 # --- BK: bulk actions, one board-fetch process for the whole run ------------------
 # Each stdin line is one card: the same answer as the single-card command, one
 # line each; the sign-in check once, and a relabel run's status lists and

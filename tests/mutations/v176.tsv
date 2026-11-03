@@ -1,0 +1,8 @@
+# v0.1.76: the pipeline alert. kinds: sh (tests/run.sh), node (tests/logic.test.js), qml (run176)
+pp-first-10	board-fetch	first: 20) { nodes { iid title webUrl headPipeline	first: 10) { nodes { iid title webUrl headPipeline	sh
+pp-no-id	board-fetch	if $s then $s + {id: ((.id | strings) // "")} else null end	if $s then $s else null end	sh
+pp-all-projects	board-fetch	arg='projectPath: $p, ' pv=(-f "p=$project")	arg='' pv=(-f "p=$project")	sh
+pp-errors-ok	board-fetch	select((.errors // null) == null) | .data.currentUser\n      | select(type == "object" and (.mine.nodes	true | .data.currentUser\n      | select(type == "object" and (.mine.nodes	sh
+pp-no-auth-check	board-fetch	  auth_skipped=0; forget_auth; check_auth\n  emit error "Could not load your merge requests."	  emit error "Could not load your merge requests."	sh
+pp-no-slow	board-fetch	((rc != 124)) || emit error "$slow"\n  if ((rc == 0))	if ((rc == 0))	sh
+pp-https-off	board-fetch	url: (.webUrl | https),\n              pipeline:	url: .webUrl,\n              pipeline:	sh
