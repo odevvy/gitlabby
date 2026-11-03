@@ -45,4 +45,38 @@ while h.running("mrs"): h.answer("mrs", {"state": "ready", "message": "", "revie
 h.spin(800)
 h.ev("root.showView('board')"); h.spin(150)
 h.ok("B4 back on the board: the board's time", h.ev("header.status.text") == board_time, (h.ev("header.status.text"), board_time))
+# --- 3A: the read-only chip after the tabs ------------------------------------------------------
+chip = h.ev("header.readOnlyChip")
+h.ok("C0 the header has a read-only chip", chip is not None)
+if chip is not None:
+  h.ok("C1 the board: no chip", not chip.isVisible())
+  h.ev("root.showView('mrs')"); h.spin(100)
+  while h.running("mrs"): h.answer("mrs", {"state": "ready", "message": "", "review": [], "mine": []})
+  h.spin(400)
+  txt = [c for c in h.walk(chip) if c.inherits("QQuickText")][0]
+  quiet = h.ev("root.quiet")
+  near = lambda a, b: all(abs(x - y) < 0.01 for x, y in zip(a.getRgbF(), b.getRgbF()))
+  h.ok("C2 Merge requests: a quiet outlined 'read-only' chip", chip.isVisible() and txt.property("text") == "read-only" and near(txt.property("color"), quiet)
+       and chip.property("color").alphaF() == 0 and h.ev("header.readOnlyChip.border.width") == 1, (txt.property("text"), txt.property("color"), quiet))
+  tabs = h.ev("header.tabs"); hd = h.ev("header")
+  cy = lambda it: it.mapToItem(hd, QPointF(0, it.height() / 2)).y()
+  h.ok("C3 right after the tabs (10 apart), centred on them", round(chip.x() - (tabs.x() + tabs.width())) == S(10) and abs(cy(chip) - cy(tabs)) < 1, (chip.x(), tabs.x() + tabs.width()))
+  h.ok("C4 clear of the status and the buttons", chip.x() + chip.width() <= h.ev("header.status.x") + 0.5 and chip.x() + chip.width() < h.ev("header.refreshButton.x"))
+  mv = h.cls("MrsView")
+  ro = [it for it in h.walk(mv) if it.inherits("QQuickText") and it.isVisible() and "read-only" in str(it.property("text"))]
+  h.ok("C5 the row under the header holds only the scope", ro == [] and not any(it.objectName() == "mrsNote" for it in h.walk(mv)))
+  # Short of room the chip goes with the long tab name; the status keeps its 48 points.
+  title = [it for it in h.walk(hd) if it.inherits("QQuickText") and str(it.property("text")).startswith(P)][0]
+  seen, bad = set(), []
+  for w in (760, 700, 660, 640, 600, 560):
+      h.ev("panel.availableCardWidth = %d" % w); h.spin(200)
+      tight = h.ev("header.compactTabs"); seen.add(tight)
+      room = h.ev("header.refreshButton.x") - (chip.x() + chip.width() if chip.isVisible() else tabs.x() + tabs.width())
+      if chip.isVisible() == tight or room < S(12 + 48) - 0.5 or title.width() < min(title.property("implicitWidth"), h.ev("header.titleRoom")) - 0.5:
+          bad.append((w, tight, chip.isVisible(), room, title.width(), title.property("implicitWidth")))
+  h.ok("C6 narrower: the chip goes with the long tab name, the status keeps 48 points, the title its room", bad == [] and seen == {True, False}, bad)
+  h.ev("panel.availableCardWidth = 1020"); h.spin(300)
+  h.ev("root.showView('settings')"); h.spin(100)
+  h.ok("C7 Settings: no chip", not chip.isVisible())
+  h.ev("root.showView('board')"); h.spin(100)
 sys.exit(h.finish())

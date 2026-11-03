@@ -9,9 +9,9 @@ import "components"
 // Read-only: a row only opens the merge request in the browser. The lists come
 // from the shared service (BoardService.requestMrs), asked for when this view
 // opens, its scope changes, or r; never on a timer. m toggles it.
-// Quiet (v152 design A): a faint "read-only" note (with when the lists were
-// read) on the left (the header's Merge requests tab names the view, and Esc or the
-// Board tab goes back), the scope as two text tabs with an accent underline,
+// Quiet (v152 design A; v0.1.71: "read-only" is a chip after the header's tabs,
+// and the header's Updated says when the lists were read). The header's Merge
+// requests tab names the view, and Esc or the Board tab goes back; the scope as two text tabs with an accent underline,
 // plain counts, a faint fill and a short accent bar on the focused row, the
 // status as coloured text. No footer: the keys live behind the keyboard icon.
 Item {
@@ -63,16 +63,6 @@ Item {
     id: top
     width: parent.width
     implicitHeight: tabs.implicitHeight
-    // "read-only" (when the lists were read, or that they reload: the header).
-    BoardText {
-      id: note
-      objectName: "mrsNote"
-      anchors { left: parent.left; right: tabs.left; rightMargin: Style.space(12); verticalCenter: parent.verticalCenter }
-      elide: Text.ElideRight
-      color: view.host.quiet
-      font.pixelSize: Style.font.caption
-      text: "read-only"  // when the lists were read: the header's Updated (v0.1.71)
-    }
     // The scope: two text tabs, the current one underlined in the accent.
     Row {
       id: tabs
