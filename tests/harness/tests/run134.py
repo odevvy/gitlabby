@@ -47,7 +47,8 @@ need = lambda: round(h.ev("keyCatcher.implicitHeight") + h.ev("panel.verticalCon
 def flick(view): return next(it for it in h.walk(h.ev(view)) if cls_is(it, "QQuickFlickable"))
 scrolls = lambda f: f.property("contentHeight") > f.property("height") + 0.5
 vis_order = lambda its: sorted(its, key=lambda it: (round(it.mapToScene(QPointF(0, 0)).y()), it.mapToScene(QPointF(0, 0)).x()))
-sv_checks = lambda: vis_order([it for it in h.visible(lambda it: it.property("clickable") is not None and it.property("on") is not None) if h.ev("settingsView").isAncestorOf(it) and not h.cls("BotsSection").isAncestorOf(it) and not (isinstance(it.property("modelData"), dict) and it.property("modelData").get("kind") in ("review", "idle"))])
+# Not the Alerts boxes (their model is {kind, label}), however many there are.
+sv_checks = lambda: vis_order([it for it in h.visible(lambda it: it.property("clickable") is not None and it.property("on") is not None) if h.ev("settingsView").isAncestorOf(it) and not h.cls("BotsSection").isAncestorOf(it) and not (isinstance(it.property("modelData"), dict) and sorted(it.property("modelData")) == ["kind", "label"])])
 busy_checks = lambda: [it for it in h.visible(lambda it: it.property("clickable") is not None and it.property("on") is not None) if h.cls("BotsSection").isAncestorOf(it)]
 y_of = lambda it: it.mapToScene(QPointF(0, 0)).y()
 
