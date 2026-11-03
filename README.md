@@ -309,7 +309,8 @@ automations that watch the project see the close like any other.
 ## Who's busy
 
 If a team of bots (or people) works the board through owner labels, a row
-under the header can show who is busy. It's off until you add a bot for the
+under the header can show who is busy (10 points under the title and 10
+above the columns, or above the column chips when they're open). It's off until you add a bot for the
 project, and it reads only the board already on screen: no extra GitLab
 calls, no polling.
 
@@ -423,8 +424,9 @@ requested, a speech bubble for reviewed, a pencil while reviewing; hover for
 the words), and how long ago it changed. The second line has the project, the
 branch, and the author (or how many reviewers yours have). The `All projects`
 (the default) and `This project` (the board's) tabs pick the scope; the
-current one is underlined. Beside the title, `read-only · updated 14:05` says
-when the lists were read (`refreshing…` while they load). The focused row has
+current one is underlined. A quiet `read-only` chip follows the header's
+tabs, and the header's `Updated 14:05` says when the lists were read
+(`Updating…` while they load). The focused row has
 a faint fill and a short orange bar on its left edge.
 
 It is read-only: `Enter`, `o` or a click opens the merge request in the
