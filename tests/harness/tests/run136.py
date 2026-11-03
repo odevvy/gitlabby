@@ -90,8 +90,8 @@ ok("G3 a tick right after: not due, no fetch", not bg())
 age(); bg(); answer(B)
 n = notes()
 ok("N1 #2 entered review: exactly one notification for two screens", headlines(n) == ["#2 is in review"], headlines(n))
-ok("N2 the command: our app name, low urgency, glyph, headline, escaped body, --exec xdg-open with the issue link",
-   n and n[0] == ["omarchy-notification-send", "--app-name", "GitLab board", "-u", "low", "-g", "\uf296", "#2 is in review", "#2 Fix &lt;b&gt; &amp; co · group/app", "--exec", "xdg-open", "https://gitlab.com/group/app/-/issues/2"], n and n[0])
+ok("N2 the command: our app name, low urgency, glyph, headline, escaped body, --exec omarchy-launch-browser with the issue link",
+   n and n[0] == ["omarchy-notification-send", "--app-name", "GitLab board", "-u", "low", "-g", "\uf296", "#2 is in review", "#2 Fix &lt;b&gt; &amp; co · group/app", "--exec", "omarchy-launch-browser", "https://gitlab.com/group/app/-/issues/2"], n and n[0])
 age(); bg(); answer(B)
 ok("N3 the same board again: nothing new", len(notes()) == 1)
 age(); bg(); answer(C)
@@ -163,17 +163,17 @@ def run_send(argv):
     log = fake + "/log"; env = dict(os.environ, PATH=fake + ":" + os.environ["PATH"], BUSLOG=log)
     r = subprocess.run([O406 + "/bin/omarchy-notification-send"] + argv[1:], env=env, capture_output=True, text=True)
     return r.returncode, (open(log).read().split("\0")[:-1] if os.path.exists(log) else []), r.stderr
-argv = ["omarchy-notification-send", "--app-name", "GitLab board", "-u", "low", "-g", "\uf296", "#2 is in review", "#2 Fix &lt;b&gt; &amp; co · group/app", "--exec", "xdg-open", "https://gitlab.com/group/app/-/issues/2"]
+argv = ["omarchy-notification-send", "--app-name", "GitLab board", "-u", "low", "-g", "\uf296", "#2 is in review", "#2 Fix &lt;b&gt; &amp; co · group/app", "--exec", "omarchy-launch-browser", "https://gitlab.com/group/app/-/issues/2"]
 rc, bus, err = run_send(argv)
 i = bus.index("susssasa{sv}i") if "susssasa{sv}i" in bus else -1
 ok("R1 the real script takes our command: app name, summary, body in their D-Bus slots", rc == 0 and i > 0 and bus[i + 1:i + 6] == ["GitLab board", "0", "", "#2 is in review", "#2 Fix &lt;b&gt; &amp; co · group/app"], (rc, err, bus[i + 1:i + 6] if i > 0 else bus))
 hint = bus[bus.index("omarchy-exec-argv") + 2] if "omarchy-exec-argv" in bus else ""
-ok("R2 low urgency (byte 0), the glyph, and the click command as one JSON argv", "urgency" in bus and bus[bus.index("urgency") + 2] == "0" and "omarchy-glyph" in bus and json.loads(hint or "null") == ["xdg-open", "https://gitlab.com/group/app/-/issues/2"], (bus, hint))
+ok("R2 low urgency (byte 0), the glyph, and the click command as one JSON argv", "urgency" in bus and bus[bus.index("urgency") + 2] == "0" and "omarchy-glyph" in bus and json.loads(hint or "null") == ["omarchy-launch-browser", "https://gitlab.com/group/app/-/issues/2"], (bus, hint))
 nl = O406 + "/shell/plugins/notifications/NotificationLogic.js"
 js = "const N = require(%s); const n = { appName: 'GitLab board', urgency: 0 }; console.log(JSON.stringify([N.shouldBypassDnd(n, 2), N.isEphemeralApp('GitLab board'), N.parseExecArgv(%s), N.styledBody(%s, 'GitLab board', '')]))" % (json.dumps(nl), json.dumps(hint), json.dumps(argv[8]))
 res = json.loads(subprocess.run(["node", "-e", js], capture_output=True, text=True).stdout or "null")
 ok("D1 Omarchy's own rules: Do Not Disturb not bypassed; kept in history while silenced (not ephemeral)", res and res[0] is False and res[1] is False, res)
-ok("D2 the click command passes Omarchy's argv check; the body shows the title's <b> as text", res and res[2] == ["xdg-open", "https://gitlab.com/group/app/-/issues/2"] and res[3] == "#2 Fix &lt;b&gt; &amp; co · group/app", res)
+ok("D2 the click command passes Omarchy's argv check; the body shows the title's <b> as text", res and res[2] == ["omarchy-launch-browser", "https://gitlab.com/group/app/-/issues/2"] and res[3] == "#2 Fix &lt;b&gt; &amp; co · group/app", res)
 rc2, _, err2 = run_send(["x", "--app-name", "GitLab board", "-u", "low", "#1 is in review", "-u", "--exec", "xdg-open", "https://x"])
 ok("D3 (control) why bodies never start with '-': the script would read '-u' there as an option", rc2 != 0, (rc2, err2))
 loops = [w for w in warnings if "oop" in w]
