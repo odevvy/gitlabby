@@ -140,6 +140,40 @@ for k in ("a", "b"): ev(k, "root.settings = Object.assign({}, root.settings, { a
 spin(60); page(); ev("a", "root.feed.background()"); spin(40); answer_pipes(pans(mr(42, "running", pid=430)))
 ev("a", "root.feed.forget()"); spin(40)
 ok("P19 sign out (forget): the pipeline baselines and times go", ev("a", "Object.keys(root.feed.pipeBaselines).length + Object.keys(root.feed.pipeAt).length") == 0)
+# --- Settings > Alerts: the box, off by default, and the notes -------------------------------------
+for k in ("a", "b"): ev(k, "root.settings = Object.assign({}, root.settings, { alerts: {} })")
+spin(60); ev("a", "root.opened = true"); spin(120)
+while running(): answer(A); spin(40)
+ev("a", "root.showView('settings')"); spin(120)
+while running():
+    c = running()[0]
+    if c[1] == "whoami": answer({"state": "ready", "message": "", "user": "o_devvy"})
+    else: answer(A)
+    spin(40)
+def walk(it):
+    yield it
+    for c in it.childItems(): yield from walk(c)
+sv = ev("a", "settingsView"); items = list(walk(sv))
+boxes = lambda: sorted([it for it in walk(sv) if it.isVisible() and it.property("clickable") is not None and isinstance(it.property("modelData"), dict) and it.property("modelData").get("kind") in ("review", "idle", "pipeline")], key=lambda it: it.mapToScene(QPointF(0, 0)).x())
+bx = boxes()
+ok("S1 Alerts: three boxes, the pipeline one last, all off by default", [b.property("modelData")["label"] for b in bx] == ["A card enters review", "A bot stops working", "A pipeline on my MR finishes"] and not any(b.property("on") for b in bx), [b.property("modelData") for b in bx])
+helps = [it.property("text") for it in items if it.isVisible() and isinstance(it.property("text"), str) and it.property("text").startswith("Desktop notifications for")]
+ok("S2 the Alerts note: only a card or bot alert refreshes the board in the background", helps == ["Desktop notifications for %s. While a card or bot one is on, the board refreshes in the background." % P], helps)
+note = next((it for it in items if it.objectName() == "pipeNote"), None)
+ok("S3 under the boxes, what the pipeline one costs", note is not None and note.isVisible() and note.property("text") == "Your open MRs in this project: one small read per refresh, only while this is on."
+   and note.mapToScene(QPointF(0, 0)).y() >= bx[2].mapToScene(QPointF(0, bx[2].height())).y(), note and note.property("text"))
+fl = next(it for it in walk(sv) if it.metaObject().className().startswith("QQuickFlickable"))
+fl.setProperty("contentY", max(0, min(bx[2].mapToItem(fl.property("contentItem"), QPointF(0, 0)).y() - 80, fl.property("contentHeight") - fl.height()))); spin(120)
+def click(it):
+    c = it.mapToScene(QPointF(it.width() / 2, it.height() / 2)); QTest.mouseClick(wins["w1"], Qt.LeftButton, Qt.NoModifier, QPoint(int(c.x()), int(c.y()))); spin(120)
+w0 = len(ev("a", "root.bar.shell.writes") or []); click(boxes()[2])
+wr = (ev("a", "root.bar.shell.writes") or [])[w0:]
+ok("S4 a click saves pipeline: true for this project, with the other two off; the rest kept", wr and wr[-1].get("alerts") == {P: {"review": False, "idle": False, "pipeline": True}} and wr[-1].get("bots") == BOTS, wr and wr[-1].get("alerts"))
+for k in ("a", "b"): ev(k, "root.settings = Object.assign({}, root.settings, { alerts: %s })" % json.dumps(wr[-1].get("alerts")))
+spin(80)
+ok("S5 ticked once saved; the service watches the board for it", boxes()[2].property("on") is True and ev("a", "root.feed.watchedKeys.length") == 1 and ev("a", "root.watchCfg.pipeline") is True)
+click(boxes()[2])
+ok("S6 a click again: pipeline off", (ev("a", "root.bar.shell.writes") or [])[-1].get("alerts") == {P: {"review": False, "idle": False, "pipeline": False}})
 loops = [w for w in warnings if "oop" in w]
 ok("Z no binding-loop warnings", not loops, loops)
 ok("Z no QML warnings", not warnings, warnings[:3])

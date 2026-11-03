@@ -37,3 +37,9 @@ q-wrong-args	BoardService.qml	pipeFetch.command = helperCommand(Logic.pipesArgs(
 q-cfg-no-flag	Board.qml	pipeline: alerts.pipeline, bots	bots	qml
 q-cfg-alone-off	Board.qml	(alerts.review || alerts.idle || alerts.pipeline)\n    ?	(alerts.review || alerts.idle)\n    ?	qml
 q-cadence-closed	Board.qml	watchCfg !== null && (alerts.review || alerts.idle))	watchCfg !== null)	qml
+s-no-box	SettingsView.qml	, { kind: "pipeline", label: "A pipeline on my MR finishes" }]	]	qml
+s-box-words	SettingsView.qml	label: "A pipeline on my MR finishes" }	label: "Pipeline alerts" }	qml
+s-note-old	SettingsView.qml	While a card or bot one is on, the board refreshes	While one is on, the board refreshes	qml
+s-pipenote-gone	SettingsView.qml	visible: view.host.project !== ""\n        text: "Your open MRs	visible: false\n        text: "Your open MRs	qml
+s-pipenote-words	SettingsView.qml	one small read per refresh, only while this is on.	no extra reads.	qml
+s-box-default-on	SettingsView.qml	readonly property bool on: view.host.alerts[modelData.kind] === true	readonly property bool on: view.host.alerts[modelData.kind] === true || modelData.kind === "pipeline"	qml
