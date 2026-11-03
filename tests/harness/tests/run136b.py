@@ -32,11 +32,13 @@ def shot(name): QTest.mouseMove(h.win, QPoint(1, 1)); h.spin(80); out and h.grab
 shot("settings-alerts")
 h.click(bx[0]); h.spin(60)
 w = h.ev("root.bar.shell.writes")
-ok("A4 a click saves alerts for this project only (review on, idle off); other settings kept", w and w[-1].get("alerts") == {P: {"review": True, "idle": False}} and w[-1].get("bots") == FOUR, w and w[-1].get("alerts"))
+# The two card and bot flags (later versions save more alerts beside them, off).
+two = lambda a: {k: {x: y for x, y in v.items() if x in ("review", "idle") or y} for k, v in (a or {}).items()}
+ok("A4 a click saves alerts for this project only (review on, idle off); other settings kept", w and two(w[-1].get("alerts")) == {P: {"review": True, "idle": False}} and w[-1].get("bots") == FOUR, w and w[-1].get("alerts"))
 ok("A5 the box is ticked; the service watches this board", boxes()[0].property("on") and h.ev("root.feed.watchedKeys") == [P + "#"], h.ev("root.feed.watchedKeys"))
 shot("settings-alerts-on")
 h.click(boxes()[0]); h.spin(60)
-ok("A6 off again: nothing watched", h.ev("root.feed.watchedKeys") == [] and h.ev("root.bar.shell.writes")[-1].get("alerts") == {P: {"review": False, "idle": False}})
+ok("A6 off again: nothing watched", h.ev("root.feed.watchedKeys") == [] and two(h.ev("root.bar.shell.writes")[-1].get("alerts")) == {P: {"review": False, "idle": False}})
 h.stop_all()
 # --- notification mock renders ------------------------------------------------------
 NL = os.path.join(os.environ.get("OMARCHY_PATH", os.path.expanduser("~/.local/share/omarchy")), "shell/plugins/notifications/NotificationLogic.js")

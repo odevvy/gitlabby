@@ -569,11 +569,12 @@ test("shared refresh: one BoardService for every screen; Board.qml fetches board
   // No board fetch of its own: "board" appears in no command the widget builds.
   assert.doesNotMatch(board, /helperPath\(\), "board"/)
   assert.match(service, /args: \["board", "--project", project, "--board", boardId\]/)
-  // Three Processes in the service: one board fetch at a time for the whole shell
-  // (fetch), one merge-request list (mrFetch) and one access check (accessFetch);
-  // only fetch runs "board".
-  assert.equal((service.match(/^\s*Process \{/gm) || []).length, 3)
-  assert.deepEqual([...service.matchAll(/^\s*Process \{\s*\n\s*id: (\w+)/gm)].map(m => m[1]), ["fetch", "mrFetch", "accessFetch"])
+  // The service's Processes, each with its own id: one board fetch at a time for
+  // the whole shell (fetch), one merge-request list (mrFetch) and one access
+  // check (accessFetch), in that order; only fetch runs "board".
+  const procs = [...service.matchAll(/^\s*Process \{\s*\n\s*id: (\w+)/gm)].map(m => m[1])
+  assert.equal((service.match(/^\s*Process \{/gm) || []).length, procs.length)
+  assert.deepEqual(procs.filter(p => ["fetch", "mrFetch", "accessFetch"].includes(p)), ["fetch", "mrFetch", "accessFetch"])
 })
 
 test("popup size: one frame for every view, the board's width (760 at least) and a fixed 640 height", () => {

@@ -119,7 +119,8 @@ h.ok("K7e adding one is for this server's project", h.ev("sec.addFor", bctx) == 
 h.ev("sec.cancel()", bctx); drain("labels", {"state": "ready", "labels": []})
 h.ev("root.saveBots(%s)" % json.dumps({P: BOTS, H + ":" + P: BOTS})); h.spin(40)
 h.ev("root.setAlert('idle', true)"); h.spin(40)
-h.ok("K8 alerts saved under this server's key; gitlab.com's untouched", writes()[-1]["alerts"] == {P: {"review": True, "idle": True}, H + ":" + P: {"review": False, "idle": True}}, writes()[-1]["alerts"])
+two = lambda a: {k: {x: y for x, y in v.items() if x in ("review", "idle") or y} for k, v in (a or {}).items()}  # later versions save more flags, off
+h.ok("K8 alerts saved under this server's key; gitlab.com's untouched", two(writes()[-1]["alerts"]) == {P: {"review": True, "idle": True}, H + ":" + P: {"review": False, "idle": True}}, writes()[-1]["alerts"])
 h.ok("K9 the watch carries the server", (h.ev("root.watchCfg") or {}).get("host") == H)
 h.ok("K10 the service's access check names the server", tail_ok(h.running("access", raw=True), H), h.running(raw=True))
 h.answer("access", {"state": "ready", "project": P, "level": 40, "scopes": ["api"]})
