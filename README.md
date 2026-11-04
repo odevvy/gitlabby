@@ -881,10 +881,17 @@ PySide6, kept out of the system Python:
 ```bash
 python -m venv ~/.cache/ogb-tests && ~/.cache/ogb-tests/bin/pip install PySide6-Essentials==6.12.0
 export PYTHON=~/.cache/ogb-tests/bin/python
-tests/harness/all.sh                                  # every view test (about 3 min)
+tests/harness/all.sh                                  # every view test, 4 at a time (about 1.5 min)
 $PYTHON tests/harness/tests/run144.py .               # one of them
 tests/mutate.sh . tests/mutations/v144.tsv tests/harness/tests/run144.py
+tests/mutate.sh --check . tests/mutations/*.tsv       # rows whose pattern is gone (no tests run)
 ```
+
+`HARNESS_JOBS` sets how many view tests run at once. The tests on two
+screens (one service, two boards) share `tests/harness/two.py`; waits on
+an animation use `Harness.until`, not a fixed sleep. `tests/run.sh` fails
+when a mutation row no longer matches its file, apart from the ones listed
+in `tests/mutations/stale.known`.
 
 `run136.py` and `run136b.py` use Omarchy's own notification script and
 `NotificationLogic.js` from `~/.local/share/omarchy` (`OMARCHY_PATH` to
