@@ -14,6 +14,7 @@ Item {
   required property var host
   // The merge-request list the badge counts (MrsView.scope).
   property string mrsScope: ""
+  property string todoScope: ""  // TodoView.scope: the To-do tab's badge reads its last answer
   // For the harness (Board.qml reaches them as header.status and so on).
   readonly property alias status: status
   readonly property alias refreshButton: refreshButton
@@ -32,17 +33,20 @@ Item {
   // A faint fill: a hovered button or tab; the accent tint: an open view's button.
   readonly property color hoverFill: Qt.rgba(host.foreground.r, host.foreground.g, host.foreground.b, 0.08)
   readonly property color activeFill: Qt.rgba(host.accent.r, host.accent.g, host.accent.b, 0.18)
-  // Board · Merge requests show on those two views; the others have their own
-  // heading and ✕. Short of room, the Merge requests tab reads "MRs".
-  readonly property bool tabsShown: host.view === "board" || host.view === "mrs"
+  // Board · Merge requests · To-do show on those three views; the others have
+  // their own heading and ✕. Short of room, the Merge requests tab reads "MRs".
+  readonly property bool tabsShown: host.view === "board" || host.view === "mrs" || host.view === "todos"
   TextMetrics { id: mrsLong; font { pixelSize: Style.font.body; bold: true } text: "Merge requests" }
   TextMetrics { id: mrsShort; font { pixelSize: Style.font.body; bold: true } text: "MRs" }
+  TextMetrics { id: todoLong; font { pixelSize: Style.font.body; bold: true } text: "To-do" }
   // Everything but the title and the status.
-  // Merge requests are read-only here: a quiet chip after the tabs (v0.1.71),
-  // the first thing to go when the row is short (with the long tab name).
-  readonly property real chipRoom: host.view === "mrs" ? readOnlyChip.implicitWidth + Style.space(10) : 0
+  // Merge requests and to-dos are read-only here: a quiet chip after the tabs
+  // (v0.1.71), the first thing to go when the row is short (with the long tab name).
+  readonly property bool readOnlyView: host.view === "mrs" || host.view === "todos"
+  readonly property real chipRoom: readOnlyView ? readOnlyChip.implicitWidth + Style.space(10) : 0
   readonly property real fixedWidth: chipRoom + chevron.implicitWidth + defaultMark.implicitWidth + Style.space(8 + 12 + 8)
-    + (tabsShown ? 1 + Style.space(12 + 6) + boardTab.implicitWidth + mrsLong.advanceWidth + Style.space(20) + mrsButton.badgeRoom : 0)
+    + (tabsShown ? 1 + Style.space(12 + 6) + boardTab.implicitWidth + mrsLong.advanceWidth + Style.space(20) + mrsButton.badgeRoom
+      + todoLong.advanceWidth + Style.space(20) + todoTab.badgeRoom : 0)
     + (columnsButton.visible ? columnsButton.implicitWidth + Style.space(4) : 0) + refreshButton.implicitWidth + keysButton.implicitWidth + gear.implicitWidth + Style.space(4 + 4)
   readonly property bool compactTabs: tabsShown && width - fixedWidth - title.implicitWidth - Style.space(48) < 0
   // The status gets what the full title leaves (at least 48 points, so a
@@ -101,7 +105,7 @@ Item {
         font { pixelSize: Style.font.body; bold: ht.on }
       }
       Rectangle {
-        objectName: "mrsBadge"
+        objectName: ht.objectName === "todoTab" ? "todoBadge" : "mrsBadge"
         visible: ht.badge !== "" && !ht.on
         anchors.verticalCenter: parent.verticalCenter
         width: Math.max(height, badgeText.implicitWidth + Style.space(6)); height: badgeText.implicitHeight + Style.space(1)
@@ -186,11 +190,22 @@ Item {
       badge: Logic.mrBadge((host.feed.mrAnswers[mrsScope] || {}).data)
       onClicked: host.showView("mrs")
     }
+    // To-do (TodoView), like t does. The badge: pending to-dos at the last look
+    // (no fetch for it, as the Merge requests one).
+    HeadTab {
+      id: todoTab
+      objectName: "todoTab"
+      label: "To-do"
+      on: host.view === "todos"
+      tip: "To-do (t)"
+      badge: Logic.todoBadge((host.feed.todoAnswers[todoScope] || {}).data)
+      onClicked: host.showView("todos")
+    }
   }
   Pill {
     id: readOnlyChip
     objectName: "readOnlyChip"
-    visible: host.view === "mrs" && header.tabsShown && !header.compactTabs
+    visible: header.readOnlyView && header.tabsShown && !header.compactTabs
     anchors { left: tabs.right; leftMargin: Style.space(10); verticalCenter: parent.verticalCenter }
     label: "read-only"
     textColor: host.quiet

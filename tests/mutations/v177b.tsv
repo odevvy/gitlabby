@@ -1,0 +1,31 @@
+# v0.1.77 the To-do view (run177b.py): name, file, from, to, kind
+v-no-open	Board.qml	    if (name === "todos" && view !== "todos") todoView.open()\n	\n	qml
+v-reopen-forces	TodoView.qml	function open() { cursor = 0; host.feed.requestTodos(scope, false) }	function open() { cursor = 0; host.feed.requestTodos(scope, true) }	qml
+v-scope-ignored	TodoView.qml	readonly property string scope: mode === "project" && host.project !== "" ? host.project : "all"	readonly property string scope: "all"	qml
+v-r-soft	TodoView.qml	function refresh() { host.feed.requestTodos(scope, true) }	function refresh() { host.feed.requestTodos(scope, false) }	qml
+v-loading-loud	Board.qml	(view === "mrs" && mrsView.loading) || todosReloading)	(view === "mrs" && mrsView.loading) || (view === "todos" && todoView.loading))	qml
+v-reload-quiet	Board.qml	readonly property bool todosReloading: view === "todos" && todoView.loading && todoView.answer !== null	readonly property bool todosReloading: false	qml
+v-no-spinner-row	TodoView.qml	visible: !view.answer ? view.loading : view.answer.state !== "ready"	visible: view.answer !== null && view.answer.state !== "ready"	qml
+v-error-spins	TodoView.qml	        spinning: view.loading\n	        spinning: true\n	qml
+v-no-retry	TodoView.qml	view.answer.message + (view.loading ? "" : "  Press r to try again.")	view.answer.message	qml
+v-column-off	TodoView.qml	text: Logic.issueColumn(row, view.host.project, view.host.columns)	text: "open"	qml
+v-tone-off	TodoView.qml	color: rowBox.reason.color !== "" ? rowBox.reason.color : view.host.dim\n                    font.pixelSize: Style.font.caption\n                  }\n                  BoardText {\n                    anchors.verticalCenter	color: view.host.dim\n                    font.pixelSize: Style.font.caption\n                  }\n                  BoardText {\n                    anchors.verticalCenter	qml
+v-sub-swap	TodoView.qml	text: rowBox.isTodo ? Logic.todoSubline(rowBox.row) : Logic.issueSubline(rowBox.row)	text: Logic.issueSubline(rowBox.row)	qml
+v-right-opens	TodoView.qml	if (mouse.button === Qt.RightButton) view.host.copyLink(rowBox.row, view.refSign(rowBox.row)); else	if (false) ; else	qml
+v-sign	TodoView.qml	function refSign(r) { return r.kind === "mr" ? "!" : "#" }	function refSign(r) { return "!" }	qml
+v-click-raw	TodoView.qml	else view.host.openUrl(rowBox.row.url) }	else Qt.openUrlExternally(rowBox.row.url) }	qml
+v-status-board	Board.qml	var at = view !== "mrs" && view !== "todos" ? updatedAt	var at = view !== "mrs" ? updatedAt	qml
+v-counts	TodoView.qml	out.push({ kind: "head", title: s[1], count: s[2].length })	out.push({ kind: "head", title: s[1], count: 0 })	qml
+h-tabs-hidden	BoardHeader.qml	|| host.view === "todos"\n  TextMetrics	\n  TextMetrics	qml
+h-no-chip	BoardHeader.qml	readonly property bool readOnlyView: host.view === "mrs" || host.view === "todos"	readonly property bool readOnlyView: host.view === "mrs"	qml
+h-badge-off	BoardHeader.qml	badge: Logic.todoBadge((host.feed.todoAnswers[todoScope] || {}).data)	badge: ""	qml
+h-width-off	BoardHeader.qml	\n      + todoLong.advanceWidth + Style.space(20) + todoTab.badgeRoom : 0)	 : 0)	qml
+h-click-off	BoardHeader.qml	onClicked: host.showView("todos")	onClicked: {}	qml
+h-scope-off	Board.qml	        todoScope: todoView.scope\n	\n	qml
+k-t-off	BoardKeys.qml	    else if (key === "t") host.toggleView("todos")\n	\n	qml
+k-move-off	BoardKeys.qml	    else if (host.view === "todos" && dy !== 0) todoView.moveCursor(dy)\n	\n	qml
+k-enter-off	BoardKeys.qml	    else if (host.view === "todos") todoView.activate()\n	\n	qml
+k-r-off	BoardKeys.qml	    else if (key === "r" && host.view === "todos") todoView.refresh()\n	\n	qml
+k-o-off	BoardKeys.qml	    else if (key === "o" && host.view === "todos") todoView.activate()\n	\n	qml
+k-y-off	BoardKeys.qml	    else if (key === "y" && host.view === "todos") todoView.copyCurrent()\n	\n	qml
+v-order	TodoView.qml	answer.todos.concat(answer.assigned)	answer.assigned.concat(answer.todos)	qml

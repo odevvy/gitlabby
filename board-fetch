@@ -19,6 +19,10 @@
 #                                                   each, newest change first, with each
 #                                                   one's pipeline and reviewers' state;
 #                                                   all projects, or only P
+#   board-fetch todos [--project P]                 your pending GitLab to-dos (newest 30)
+#                                                   and open issues assigned to you (newest
+#                                                   20, with their labels): one GraphQL
+#                                                   query; all projects, or only P
 #   board-fetch pipes --project P                   your own open merge requests in P (up
 #                                                   to 20, newest change first), each with
 #                                                   its head pipeline and that one's id: one
@@ -71,7 +75,7 @@
 set -uo pipefail
 
 cmd=board project="" board_id="" iid="" from="" to="" add="" remove="" hostname="gitlab.com"
-case "${1:-}" in board|cached|projects|boards|issue|notes|move|comment|whoami|mrs|pipes|logout|labels|relabel|close|reopen|access|bulk) cmd=$1; shift ;; esac
+case "${1:-}" in board|cached|projects|boards|issue|notes|move|comment|whoami|mrs|todos|pipes|logout|labels|relabel|close|reopen|access|bulk) cmd=$1; shift ;; esac
 parse_args() {
 while (($#)); do
   case "$1" in
@@ -99,7 +103,7 @@ emit() { # state message
 }
 command -v jq >/dev/null 2>&1 || { printf '%s\n' '{"state":"error","message":"jq is required."}'; exit 0; }
 
-if [[ ! $cmd =~ ^(projects|whoami|logout)$ && ($cmd != mrs || -n $project) ]]; then
+if [[ ! $cmd =~ ^(projects|whoami|logout)$ && ($cmd != mrs && $cmd != todos || -n $project) ]]; then
   [[ -n $project ]] || emit error "No project given: pass --project group/name."
   [[ $project =~ ^[0-9]+$ || ($project =~ ^[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)+$ && $project != *..*) ]] ||
     emit error "Invalid project: $project"
@@ -142,10 +146,15 @@ cache_dir=$cache_root/odevvy.gitlab-board
 host_tag=""
 [[ $hostname == gitlab.com ]] || host_tag="$hostname~"
 cache_base=$cache_dir/$host_tag$(jq -rn --arg p "$project" '$p | @uri')-${board_id:-first}
+# The username glab saved at login for the host, or nothing.
+account() {
+  local a=""
+  IFS= read -r a < <(timeout 5 glab config get user --host "$hostname" 2>/dev/null)
+  [[ $a =~ ^[A-Za-z0-9_.-]{1,255}$ ]] && printf '%s' "$a"
+}
 cache_file() {
-  local account=""
-  IFS= read -r account < <(timeout 5 glab config get user --host "$hostname" 2>/dev/null)
-  [[ $account =~ ^[A-Za-z0-9_.-]{1,255}$ ]] || account=unknown
+  local account
+  account=$(account); [[ -n $account ]] || account=unknown
   printf '%s@%s.json' "$cache_base" "$account"
 }
 if [[ $cmd == cached ]]; then
@@ -332,6 +341,61 @@ pipes_list() {
   auth_skipped=0; forget_auth; check_auth
   emit error "Could not load your merge requests."
 }
+# --- to-dos (the To-do view) -------------------------------------------------------
+# Your pending to-dos and the open issues assigned to you, all projects or
+# $project's. One GraphQL query (a read: "query"; the username glab saved at
+# login and the project go in as variables); to-dos of other projects are left
+# out here. No username, a numeric project, or a failed, slow or unexpected
+# answer: two REST GETs instead (todos, then issues?scope=assigned_to_me).
+# Both ways give the same rows: a to-do's action, what it is about (issue, mr
+# or other), its link (https only), project and author; an issue's labels.
+TODO_FIELDS='todos(state: [pending], first: 50) { nodes { id action targetType createdAt author { username name } project { fullPath } target { webUrl ... on Issue { iid title } ... on MergeRequest { iid title } } } }'
+# shellcheck disable=SC2016  # a GraphQL variable, not a shell one
+ISSUE_FIELDS='issues(assigneeUsernames: [$u], state: opened, sort: UPDATED_DESC, first: 20) { nodes { iid title webUrl updatedAt userNotesCount reference(full: true) labels { nodes { title } } } }'
+todos_graphql() { # writes $tmp/todos.n ({todos, assigned}), or fails
+  local u q; local -a pv
+  u=$(account); [[ -n $u && ! $project =~ ^[0-9]+$ ]] || return 1
+  # shellcheck disable=SC2016  # GraphQL variables, not shell ones
+  if [[ -n $project ]]; then q="query(\$u: String!, \$p: ID!) { currentUser { $TODO_FIELDS } project(fullPath: \$p) { $ISSUE_FIELDS } }"; pv=(-f "u=$u" -f "p=$project")
+  else q="query(\$u: String!) { currentUser { $TODO_FIELDS } $ISSUE_FIELDS }"; pv=(-f "u=$u"); fi
+  gql >"$tmp/gql" || return 1
+  jq -ce --arg p "$project" "$DEFS"'
+    select((.errors // null) == null) | .data | select(type == "object")
+    | (if $p == "" then .issues else (.project // {}).issues end) as $is
+    | select((.currentUser.todos.nodes | type) == "array" and ($is.nodes | type) == "array")
+    | {todos: [.currentUser.todos.nodes[] | objects | {id: (.id | tostring), action: ((.action | strings | ascii_downcase) // ""),
+         kind: ({ISSUE: "issue", MERGEREQUEST: "mr"}[.targetType | strings] // "other"),
+         iid: ((.target // {}).iid | tostring | tonumber? // 0), title: (((.target // {}).title | strings) // ""), url: ((.target // {}).webUrl | https),
+         project: ((.project // {}).fullPath // "" | strings), author: {username: ((.author // {}).username // ""), name: ((.author // {}).name // (.author // {}).username // "")}, at: .createdAt}],
+       assigned: [$is.nodes[] | objects | {iid: (.iid | tostring | tonumber? // 0), title: ((.title | strings) // ""), url: (.webUrl | https),
+         project: ((.reference // "" | strings) | capture("^(?<p>.+)#\\d+$").p // ""), labels: [(.labels.nodes // [])[] | .title | strings],
+         updatedAt, notes: (.userNotesCount // 0)}]}' "$tmp/gql" >"$tmp/todos.n" 2>/dev/null
+}
+todos_rest() { # writes $tmp/todos.n, or emits an error
+  local tq="todos?state=pending&per_page=50" iq="issues?scope=assigned_to_me&state=opened&order_by=updated_at&sort=desc&per_page=20"
+  if [[ $project =~ ^[0-9]+$ ]]; then tq="$tq&project_id=$project"; fi
+  [[ -z $project ]] || iq="$base/$iq"
+  get "$tq" >"$tmp/todos.r" || emit error "Could not load your to-dos."
+  get "$iq" >"$tmp/issues.r" || emit error "Could not load your to-dos."
+  jq -ce --slurpfile i "$tmp/issues.r" "$DEFS"'
+    select(type == "array" and ($i[0] | type) == "array")
+    | {todos: [.[] | objects | {id: (.id | tostring), action: ((.action_name | strings | ascii_downcase) // ""),
+         kind: ({Issue: "issue", MergeRequest: "mr"}[.target_type | strings] // "other"),
+         iid: ((.target // {}).iid | tostring | tonumber? // 0), title: (((.target // {}).title | strings) // ""), url: (((.target // {}).web_url // .target_url) | https),
+         project: ((.project // {}).path_with_namespace // "" | strings), author: {username: ((.author // {}).username // ""), name: ((.author // {}).name // (.author // {}).username // "")}, at: .created_at}],
+       assigned: [$i[0][] | objects | {iid: (.iid | tostring | tonumber? // 0), title: ((.title | strings) // ""), url: (.web_url | https),
+         project: (((.references // {}).full // "" | strings) | capture("^(?<p>.+)#\\d+$").p // ""), labels: [(.labels // [])[] | if type == "object" then .name else . end | strings],
+         updatedAt: .updated_at, notes: (.user_notes_count // 0)}]}' "$tmp/todos.r" >"$tmp/todos.n" 2>/dev/null ||
+    emit error "GitLab returned an unreadable response."
+}
+todos_list() {
+  todos_graphql || todos_rest
+  # Only path scopes filter here (REST already asked by id for a numeric one).
+  local p=$project; [[ ! $p =~ ^[0-9]+$ ]] || p=""
+  jq -c --arg p "$p" --arg scope "${project:-all}" '{state: "ready", message: "", scope: $scope, updatedAt: (now | todateiso8601),
+    todos: ([.todos[] | select($p == "" or .project == $p)] | .[:30]), assigned: .assigned[:20]}' "$tmp/todos.n" 2>/dev/null ||
+    emit error "GitLab returned an unreadable response."
+}
 mrs_list() {
   local prefix="" kind pid miid
   [[ -z $project ]] || prefix="$base/"
@@ -430,6 +494,9 @@ case $cmd in
     exit 0 ;;
   pipes)
     pipes_list
+    exit 0 ;;
+  todos)
+    todos_list
     exit 0 ;;
   access)
     # The project (GET, not simple: only the full answer has permissions) and,

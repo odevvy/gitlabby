@@ -133,15 +133,17 @@ Panel {
   // copy says "updating…" itself.
   readonly property bool refreshing: loading && boardState === "ready" && !cached
   // Any refresh on its way while the popup is open, manual or automatic: the
-  // board, or the merge-request list on screen. The header bar slides and the
-  // refresh icon spins on it; the cards stay.
-  readonly property bool refreshActive: opened && (loading || (view === "mrs" && mrsView.loading) || updating)
+  // board, or the merge-request list on screen, or the to-dos already shown
+  // (their first load is TodoView's own spinner row). The header bar slides
+  // and the refresh icon spins on it; the cards stay.
+  readonly property bool todosReloading: view === "todos" && todoView.loading && todoView.answer !== null
+  readonly property bool refreshActive: opened && (loading || (view === "mrs" && mrsView.loading) || todosReloading || updating)
   // A refresh you asked for (Refresh, r, a click on the icon), not the timer's
   // or the one opening the popup runs: set by each refresh(). It, the first
   // load and the merge-request list loading are "loud": the icon spins and
   // the status dot is accent. A background refresh only breathes the dot, grey.
   property bool manualRefresh: false
-  readonly property bool loudNow: opened && ((loading && (manualRefresh || boardState !== "ready")) || (view === "mrs" && mrsView.loading))
+  readonly property bool loudNow: opened && ((loading && (manualRefresh || boardState !== "ready")) || (view === "mrs" && mrsView.loading) || todosReloading)
   // A refresh you asked for on a loaded board says "Updating…" for at least
   // half a second (with the dot and the icon), so a quick answer reads as
   // Updating… then Updated, not a flicker. Not the first load, not closed.
@@ -526,6 +528,7 @@ Panel {
   function showView(name) {
     if (name === "settings" && view !== "settings") checkAccount()
     if (name === "mrs" && view !== "mrs") mrsView.open()
+    if (name === "todos" && view !== "todos") todoView.open()
     view = name
     Qt.callLater(function() {
       if (name === "picker" && picker.filterField.visible) picker.filterField.forceActiveFocus()
@@ -672,8 +675,9 @@ Panel {
     if (boardState === "ready" && cached) return Logic.savedNote(updatedAt)
     if (boardState === "ready") {
       // A refresh you asked for says so; the timer's keeps the time.
-      // On Merge requests, when the lists were read (MrsView.entry), not the board.
-      var at = view !== "mrs" ? updatedAt : mrsView.entry && mrsView.entry.startedAt > 0 ? new Date(mrsView.entry.startedAt).toISOString() : ""
+      // On Merge requests or To-do, when the lists were read (their entry), not the board.
+      var listed = view === "mrs" ? mrsView.entry : view === "todos" ? todoView.entry : null
+      var at = view !== "mrs" && view !== "todos" ? updatedAt : listed && listed.startedAt > 0 ? new Date(listed.startedAt).toISOString() : ""
       var time = copiedNote !== "" ? copiedNote : updating ? "Updating…" : at !== "" ? "Updated " + new Date(at).toLocaleTimeString(Qt.locale(), "HH:mm") : ""
       if (!writable) time = "View-only  " + time
       return message !== "" ? message + "  " + time : time
@@ -811,11 +815,12 @@ Panel {
       id: keyCatcher
       host: root
       views: ({ issue: issueView, picker: picker, settings: settingsView, bulk: bulkBar, mrs: mrsView, setup: setupView })
+      todoList: todoView  // the To-do view (v0.1.77)
       anchors.fill: parent
       blocked: issueView.typing || picker.typing || settingsView.typing || bulkBar.typing  // text fields get every key (Omarchy PanelKeyCatcher.qml:26-29)
       implicitHeight: header.implicitHeight + root.gap + (botsRow.visible ? botsRow.height + root.gap : 0) + (accessHint.visible ? accessHint.height + root.gap : 0) + (moveConfirm.visible ? moveConfirm.height + root.gap : 0) + (bulkBar.visible ? bulkBar.height + root.gap : 0) + (root.view === "board" ? (root.setup !== "" || root.failed ? Math.max(setupView.implicitHeight, skeleton.implicitHeight) : root.boardState === "loading" ? skeleton.implicitHeight : boardView.implicitHeight)
         : root.view === "issue" ? issueView.implicitHeight : root.view === "picker" ? picker.implicitHeight
-        : root.view === "keys" ? keysView.implicitHeight : root.view === "mrs" ? mrsView.implicitHeight : settingsView.implicitHeight)
+        : root.view === "keys" ? keysView.implicitHeight : root.view === "mrs" ? mrsView.implicitHeight : root.view === "todos" ? todoView.implicitHeight : settingsView.implicitHeight)
       // One round mask for every avatar (Avatar.qml's maskSource): one
       // offscreen layer for the popup instead of one per avatar.
       Item {
@@ -842,6 +847,7 @@ Panel {
         id: header
         host: root
         mrsScope: mrsView.scope
+        todoScope: todoView.scope
         width: parent.width
       }
 
@@ -887,6 +893,7 @@ Panel {
         SettingsView { id: settingsView; host: root; anchors.fill: parent; visible: root.view === "settings" }
         KeysView { id: keysView; host: root; anchors.fill: parent; visible: root.view === "keys" }
         MrsView { id: mrsView; host: root; anchors.fill: parent; visible: root.view === "mrs" }
+        TodoView { id: todoView; host: root; anchors.fill: parent; visible: root.view === "todos" }
       }
     }
   }

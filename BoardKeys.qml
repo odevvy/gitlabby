@@ -6,13 +6,16 @@ import qs.Ui
 // children and passed in views, so their ids stay Board.qml's.
 PanelKeyCatcher {
   property Item host
-  // { issue, picker, settings, bulk, mrs, setup }: the views keys go to.
+  // { issue, picker, settings, bulk, mrs, setup }: the views keys go to; and
+  // todoList, the To-do view (v0.1.77).
   property var views: ({})
   readonly property Item issueView: views.issue || null
   readonly property Item picker: views.picker || null
   readonly property Item settingsView: views.settings || null
   readonly property Item bulkBar: views.bulk || null
   readonly property Item mrsView: views.mrs || null
+  property Item todoList: null
+  readonly property Item todoView: todoList
   readonly property Item setupView: views.setup || null
 
   onCloseRequested: {
@@ -34,6 +37,7 @@ PanelKeyCatcher {
     if (host.view === "board") host.moveCursor(dx, dy)
     else if (host.view === "picker" && dy !== 0) picker.moveCursor(dy)
     else if (host.view === "mrs" && dy !== 0) mrsView.moveCursor(dy)
+    else if (host.view === "todos" && dy !== 0) todoView.moveCursor(dy)
     else if (dy !== 0) host.scrollView(dy)  // j/k, ↓/↑: Settings, the shortcuts, an issue
   }
   onActivateRequested: {
@@ -44,6 +48,7 @@ PanelKeyCatcher {
     else if (host.view === "board" && host.cursorIssue()) host.openIssue(host.cursorIssue())
     else if (host.view === "picker") picker.activate()
     else if (host.view === "mrs") mrsView.activate()
+    else if (host.view === "todos") todoView.activate()
     else if (host.view === "board" && (host.setup !== "" || host.failed)) setupView.primary()
   }
   onTextKey: function(text) {
@@ -61,6 +66,9 @@ PanelKeyCatcher {
     if (key === "r" && host.view === "board") host.refresh()
     else if (key === "r" && host.view === "mrs") mrsView.refresh()
     else if (key === "o" && host.view === "mrs") mrsView.activate()
+    else if (key === "r" && host.view === "todos") todoView.refresh()
+    else if (key === "o" && host.view === "todos") todoView.activate()
+    else if (key === "y" && host.view === "todos") todoView.copyCurrent()
     else if (key === "o") {
       var row = host.view === "issue" ? issueView.issue : host.view === "board" ? host.cursorIssue() : null
       if (row) host.openUrl(row.url)
@@ -73,5 +81,6 @@ PanelKeyCatcher {
     else if (key === "s") host.toggleView("settings")
     else if (key === "?") host.toggleView("keys")
     else if (key === "m") host.toggleView("mrs")
+    else if (key === "t") host.toggleView("todos")
   }
 }

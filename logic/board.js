@@ -92,6 +92,7 @@ var keyGroups = [
     ["p", "Project and board"],
     ["s", "Settings"],
     ["m", "Merge requests"],
+    ["t", "To-do"],
     ["?", "These shortcuts"],
     ["Tab / Shift+Tab", "Next / previous bar panel"],
     ["Esc", "Back to the board, then close"]] },
@@ -105,6 +106,11 @@ var keyGroups = [
     ["Ctrl+Enter", "Post"],
     ["Esc", "Leave the box"]] },
   { title: "Merge requests", keys: [
+    ["j_k / ↓_↑", "Move between them"],
+    ["Enter / o", "Open in the browser"],
+    ["y", "Copy the link · or right-click"],
+    ["r", "Refresh the lists"]] },
+  { title: "To-do", keys: [
     ["j_k / ↓_↑", "Move between them"],
     ["Enter / o", "Open in the browser"],
     ["y", "Copy the link · or right-click"],

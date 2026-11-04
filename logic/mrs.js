@@ -80,4 +80,67 @@ function mrsArgs(scope) {
   return /^[A-Za-z0-9_.-]+(\/[A-Za-z0-9_.-]+)+$/.test(String(scope)) && String(scope).indexOf("..") === -1 ? ["mrs", "--project", String(scope)] : ["mrs"]
 }
 
-if (typeof module !== "undefined") module.exports = { mrsAnswer: mrsAnswer, reviewerStates: reviewerStates, mrPerson: mrPerson, mrRows: mrRows, mrStatuses: mrStatuses, toneColors: toneColors, mrStatus: mrStatus, reviewerMarks: reviewerMarks, reviewerMark: reviewerMark, mrSubline: mrSubline, mrBadge: mrBadge, mrsArgs: mrsArgs }
+
+// --- To-do view (board-fetch todos, v0.1.77) -------------------------------------
+// The answer, checked like mrsAnswer: { state, message, scope, updatedAt,
+// todos: [{ id, action, kind (issue, mr, other), iid, title, url, project, author, at }],
+// assigned: [{ iid, title, url, project, labels, updatedAt, notes }] }; links only https.
+function todosAnswer(raw) {
+  var data = null
+  try { data = JSON.parse(String(raw || "")) } catch (e) {}
+  if (!data || typeof data !== "object") return { state: "error", message: "board-fetch gave an unreadable answer.", todos: [], assigned: [] }
+  if (data.state !== "ready") return { state: String(data.state || "error"), message: String(data.message || "Could not load your to-dos."), todos: [], assigned: [] }
+  var objs = function(list) { return (Array.isArray(list) ? list : []).filter(function(r) { return r && typeof r === "object" }) }
+  return { state: "ready", message: "", scope: String(data.scope || "all"), updatedAt: String(data.updatedAt || ""),
+    todos: objs(data.todos).map(function(t) {
+      var kind = t.kind === "issue" || t.kind === "mr" ? t.kind : "other"
+      return { id: String(t.id || ""), action: String(t.action || ""), kind: kind, iid: Number(t.iid) > 0 ? Number(t.iid) : 0, title: String(t.title || ""),
+        url: httpsUrl(t.url), project: String(t.project || ""), author: mrPerson(t.author), at: String(t.at || "") }
+    }),
+    assigned: objs(data.assigned).filter(function(r) { return Number(r.iid) > 0 }).map(function(r) {
+      return { iid: Number(r.iid), title: String(r.title || ""), url: httpsUrl(r.url), project: String(r.project || ""),
+        labels: (Array.isArray(r.labels) ? r.labels : []).filter(function(l) { return typeof l === "string" }),
+        updatedAt: String(r.updatedAt || ""), notes: Number(r.notes) > 0 ? Number(r.notes) : 0 }
+    }) }
+}
+// A to-do's reason in a few words, its tone, and a glyph (GitLab's action names).
+var todoActions = {
+  mentioned: ["mentioned you", "", "\uf1fa"], directly_addressed: ["mentioned you", "", "\uf1fa"],
+  assigned: ["assigned you", "", "\uf007"], review_requested: ["review requested", "", "\uf06e"],
+  build_failed: ["pipeline failed", "bad", "\uf057"], unmergeable: ["can't merge", "bad", "\uf071"],
+  approval_required: ["approval required", "warn", "\uf058"], review_submitted: ["reviewed", "", "\uf075"],
+  merge_train_removed: ["left the merge train", "warn", "\uf071"], member_access_requested: ["access requested", "", "\uf007"],
+  marked: ["to-do added", "", "\uf02e"]
+}
+function todoAction(t) {
+  var a = t && Object.prototype.hasOwnProperty.call(todoActions, t.action) ? todoActions[t.action] : ["to-do", "", "\uf02e"]
+  return { text: a[0], color: toneColors[a[1]] || "", glyph: a[2] }
+}
+// #12 for an issue, !7 for a merge request, nothing for anything else.
+function todoRef(t) { return t && t.iid > 0 ? (t.kind === "issue" ? "#" : t.kind === "mr" ? "!" : "") + (t.kind === "other" ? "" : t.iid) : "" }
+function todoSubline(t) {
+  return [t.project, t.author && t.author.name ? "by " + t.author.name : ""].filter(function(x) { return x !== "" }).join("  \u00b7  ")
+}
+// An assigned issue's board column: on the board's own project, its first
+// label that names a label column there; else "open".
+function issueColumn(issue, project, columns) {
+  if (!issue || issue.project !== project) return "open"
+  var labels = (issue.labels || []).map(function(l) { return String(l).toLowerCase() })
+  var hit = (columns || []).filter(function(c) { return c && c.kind === "label" && labels.indexOf(String(c.name || "").toLowerCase()) !== -1 })[0]
+  return hit ? String(hit.name) : "open"
+}
+function issueSubline(issue) {
+  var n = issue.notes || 0
+  return [issue.project, n === 1 ? "1 comment" : n > 1 ? n + " comments" : ""].filter(function(x) { return x !== "" }).join("  \u00b7  ")
+}
+// The To-do tab's badge: pending to-dos at the last look ("" when unknown or none).
+function todoBadge(answer) {
+  var n = answer && answer.state === "ready" ? answer.todos.length : 0
+  return n <= 0 ? "" : n > 9 ? "9+" : String(n)
+}
+// board-fetch arguments for a scope: "all", or one project path.
+function todosArgs(scope) {
+  return /^[A-Za-z0-9_.-]+(\/[A-Za-z0-9_.-]+)+$/.test(String(scope)) && String(scope).indexOf("..") === -1 ? ["todos", "--project", String(scope)] : ["todos"]
+}
+
+if (typeof module !== "undefined") module.exports = { mrsAnswer: mrsAnswer, reviewerStates: reviewerStates, mrPerson: mrPerson, mrRows: mrRows, mrStatuses: mrStatuses, toneColors: toneColors, mrStatus: mrStatus, reviewerMarks: reviewerMarks, reviewerMark: reviewerMark, mrSubline: mrSubline, mrBadge: mrBadge, mrsArgs: mrsArgs, todosAnswer: todosAnswer, todoActions: todoActions, todoAction: todoAction, todoRef: todoRef, todoSubline: todoSubline, issueColumn: issueColumn, issueSubline: issueSubline, todoBadge: todoBadge, todosArgs: todosArgs }

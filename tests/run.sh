@@ -1068,6 +1068,63 @@ check "PP a hung query: the timeout error" '.state == "error" and (.message | te
 check "PP no token in output" '.' "$(grep -qiE 'glpat|bearer' <<<"$out$("$fetch" pipes --project g/p41)" && echo false || echo true)"
 rm -f "$FAKE_DIR/graphql.json"
 
+# --- TD: todos, your pending to-dos and open issues assigned to you (v0.1.77) -------------
+# One GraphQL query (the username glab saved and the project as variables);
+# REST (two GETs) without a username, for a numeric project, or when it fails.
+reset
+tn() { # id action targetType project iid [webUrl]
+  jq -cn --arg id "$1" --arg a "$2" --arg t "$3" --arg p "$4" --argjson i "$5" --arg u "${6:-}" \
+    '{id: "gid://gitlab/Todo/\($id)", action: $a, targetType: $t, createdAt: "2026-11-03T10:00:00Z", author: {username: "alice", name: "Alice"},
+      project: {fullPath: $p}, target: {webUrl: (if $u == "" then "https://gitlab.com/\($p)/-/\(if $t == "ISSUE" then "issues" else "merge_requests" end)/\($i)" else $u end), iid: "\($i)", title: "T \($i) <b>"}}'; }
+inode() { jq -cn --arg p "$1" --argjson i "$2" '{iid: "\($i)", title: "I \($i)", webUrl: "https://gitlab.com/\($p)/-/issues/\($i)", updatedAt: "2026-11-03T08:00:00Z",
+  userNotesCount: 5, reference: "\($p)#\($i)", labels: {nodes: [{title: "in progress"}, {title: "api"}]}}'; }
+tq() { jq -cn --argjson t "$1" --argjson i "$2" '{data: {currentUser: {todos: {nodes: $t}}, issues: {nodes: $i}, project: {issues: {nodes: $i}}}}' | fx graphql; }
+TD_T="[$(tn 9 MENTIONED ISSUE g/p41 31),$(tn 8 BUILD_FAILED MERGEREQUEST o/q 7),$(tn 7 MARKED EPIC g/p41 3 http://x/e)]"
+tq "$TD_T" "[$(inode g/p41 12)]"
+: >"$FAKE_LOG"; out=$("$fetch" todos)
+check "TD ready: to-dos with action, kind, link, project, author; assigned issues with labels" '.state == "ready" and .scope == "all"
+  and .todos[0] == {"id":"gid://gitlab/Todo/9","action":"mentioned","kind":"issue","iid":31,"title":"T 31 <b>","url":"https://gitlab.com/g/p41/-/issues/31","project":"g/p41","author":{"username":"alice","name":"Alice"},"at":"2026-11-03T10:00:00Z"}
+  and .todos[1].kind == "mr" and .todos[1].action == "build_failed" and .todos[2].kind == "other" and .todos[2].url == ""
+  and .assigned == [{"iid":12,"title":"I 12","url":"https://gitlab.com/g/p41/-/issues/12","project":"g/p41","labels":["in progress","api"],"updatedAt":"2026-11-03T08:00:00Z","notes":5}]' "$out"
+check "TD one query, nothing else asked of GitLab, nothing written" '.' "$([[ $(grep -c '^api ' "$FAKE_LOG") == 1 ]] && grep -q ' graphql -f query=query' "$FAKE_LOG" && ! grep -qE 'NON-GET|BAD-GRAPHQL' "$FAKE_LOG" && echo true || echo false)"
+# shellcheck disable=SC2016  # GraphQL variables in the pattern
+check "TD the query: pending to-dos (50) and open issues assigned to you (20); the username as a variable" '.' "$(grep ' graphql ' "$FAKE_LOG" |
+  grep -F 'query=query($u: String!) { currentUser { todos(state: [pending], first: 50) {' | grep -F 'issues(assigneeUsernames: [$u], state: opened, sort: UPDATED_DESC, first: 20)' | grep -q -- ' -f u=me$' && echo true || echo false)"
+: >"$FAKE_LOG"; out=$("$fetch" todos --project g/p41)
+# shellcheck disable=SC2016  # GraphQL variables in the pattern
+check "TD this project: its issues by path, as a variable" '.' "$(grep ' graphql ' "$FAKE_LOG" | grep -F 'project(fullPath: $p) { issues(assigneeUsernames: [$u]' | grep -q -- ' -f u=me -f p=g/p41$' && echo true || echo false)"
+check "TD this project: other projects' to-dos left out" '.scope == "g/p41" and [.todos[].iid] == [31, 3]' "$out"
+gq_out=$("$fetch" todos)
+fx todos <<J
+[{"id":9,"action_name":"mentioned","target_type":"Issue","created_at":"2026-11-03T10:00:00Z","author":{"username":"alice","name":"Alice"},"project":{"path_with_namespace":"g/p41"},
+  "target":{"iid":31,"title":"T 31 <b>","web_url":"https://gitlab.com/g/p41/-/issues/31"}},
+ {"id":8,"action_name":"build_failed","target_type":"MergeRequest","created_at":"2026-11-03T10:00:00Z","author":{"username":"alice","name":"Alice"},"project":{"path_with_namespace":"o/q"},
+  "target":{"iid":7,"title":"T 7 <b>","web_url":"https://gitlab.com/o/q/-/merge_requests/7"}},
+ {"id":7,"action_name":"marked","target_type":"Epic","created_at":"2026-11-03T10:00:00Z","author":{"username":"alice","name":"Alice"},"project":{"path_with_namespace":"g/p41"},
+  "target":{"iid":3,"title":"T 3 <b>","web_url":"http://x/e"},"target_url":"http://x/e"}]
+J
+fx assigned <<<'[{"iid":12,"title":"I 12","web_url":"https://gitlab.com/g/p41/-/issues/12","updated_at":"2026-11-03T08:00:00Z","user_notes_count":5,"references":{"full":"g/p41#12"},"labels":["in progress","api"]}]'
+: >"$FAKE_LOG"; out=$(FAKE_USER=none "$fetch" todos)
+check "TD no username saved: REST, the same rows (ids as numbers there)" '(input | del(.updatedAt) | .todos |= map(del(.id))) == (del(.updatedAt) | .todos |= map(del(.id)))' "$(printf '%s\n%s' "$gq_out" "$out")"
+check "TD ... two GETs, no query" '.' "$([[ $(grep -c '^api ' "$FAKE_LOG") == 2 ]] && grep -q 'todos?state=pending&per_page=50$' "$FAKE_LOG" &&
+  grep -q ' issues?scope=assigned_to_me&state=opened&order_by=updated_at&sort=desc&per_page=20$' "$FAKE_LOG" && ! grep -q graphql "$FAKE_LOG" && echo true || echo false)"
+echo '{"errors":[{"message":"Field x does not exist"}],"data":null}' | fx graphql
+: >"$FAKE_LOG"; out=$("$fetch" todos)
+check "TD GraphQL errors: REST answers" '.state == "ready" and (input | del(.updatedAt) | .todos |= map(del(.id))) == (del(.updatedAt) | .todos |= map(del(.id)))' "$(printf '%s\n%s' "$gq_out" "$out")"
+: >"$FAKE_LOG"; "$fetch" todos --project 42 >/dev/null
+check "TD a numeric project: REST by id" '.' "$(grep -q 'todos?state=pending&per_page=50&project_id=42$' "$FAKE_LOG" && grep -q ' projects/42/issues?scope=assigned_to_me' "$FAKE_LOG" && ! grep -q graphql "$FAKE_LOG" && echo true || echo false)"
+check "TD signed out: logged-out" '.state == "logged-out"' "$(FAKE_AUTH=no "$fetch" todos)"
+rm -f "$FAKE_DIR/assigned.json"
+check "TD a failed GET: an error" '.state == "error" and .message == "Could not load your to-dos."' "$(FAKE_USER=none "$fetch" todos)"
+jq -cn '[range(1; 41) | {id: ., action_name: "assigned", target_type: "Issue", project: {path_with_namespace: "g/p41"}, target: {iid: ., title: "t", web_url: "https://gitlab.com/g/p41/-/issues/\(.)"}}]' | fx todos
+echo '[]' | fx assigned
+check "TD at most 30 to-dos" '.todos | length == 30' "$(FAKE_USER=none "$fetch" todos)"
+tq "$TD_T" "[$(inode g/p41 12)]"
+out=$(FAKE_HANG=' graphql ' "$fetch" todos)
+check "TD a hung query: REST answers" '.state == "ready" and (.todos | length) == 30' "$out"
+check "TD no token in output" '.' "$(grep -qiE 'glpat|bearer' <<<"$out$gq_out" && echo false || echo true)"
+rm -f "$FAKE_DIR/graphql.json"
+
 # --- BK: bulk actions, one board-fetch process for the whole run ------------------
 # Each stdin line is one card: the same answer as the single-card command, one
 # line each; the sign-in check once, and a relabel run's status lists and
