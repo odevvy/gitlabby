@@ -909,10 +909,10 @@ test("merge requests view wiring: m and the header button open it; it loads on o
   assert.match(keys, /else if \(host\.view === "mrs"\) mrsView\.activate\(\)/)
   const header = fs.readFileSync(path.join(dir, "BoardHeader.qml"), "utf8")
   assert.match(board, /BoardHeader \{\s*id: header\s*host: root\s*mrsScope: mrsView\.scope/)
-  assert.match(header, /Logic\.mrBadge\(\(host\.feed\.mrAnswers\[mrsScope\] \|\| \{\}\)\.data\)/)
+  assert.match(header, /Logic\.mrBadge\(\(host\.feed\.mrs\.answers\[mrsScope\] \|\| \{\}\)\.data\)/)
   // Only the view asks for the lists, and only these three ways.
-  assert.deepEqual([...board.matchAll(/requestMrs\(/g)].length, 0)
-  assert.deepEqual([...view.matchAll(/host\.feed\.requestMrs\(([^)]*)\)/g)].map(m => m[1]), ["scope, false", "scope, true", "scope, false"])
+  assert.deepEqual([...board.matchAll(/mrs\.request\(|requestMrs\(/g)].length, 0)
+  assert.deepEqual([...view.matchAll(/host\.feed\.mrs\.request\(([^)]*)\)/g)].map(m => m[1]), ["scope, false", "scope, true", "scope, false"])
   // Read-only: a row opens its link and nothing else runs.
   assert.doesNotMatch(view, /execDetached|Process \{|helperPath/)
   assert.match(view, /host\.openUrl\(rows\[cursor\]\.url\)/)

@@ -20,9 +20,9 @@ Item {
   // "all" projects (the default), or "project": the board's project.
   property string mode: "all"
   readonly property string scope: mode === "project" && host.project !== "" ? host.project : "all"
-  readonly property var entry: host.feed.mrAnswers[scope] || null
+  readonly property var entry: host.feed.mrs.answers[scope] || null
   readonly property var answer: entry ? entry.data : null
-  readonly property bool loading: host.feed.mrRunning === scope
+  readonly property bool loading: host.feed.mrs.loading === scope
   readonly property var rows: answer && answer.state === "ready" ? answer.review.concat(answer.mine) : []
   property int cursor: 0
   // One flat list: headings, rows, and a line for an empty section.
@@ -38,10 +38,10 @@ Item {
     return out
   }
 
-  function open() { cursor = 0; host.feed.requestMrs(scope, false) }
-  function refresh() { host.feed.requestMrs(scope, true) }
+  function open() { cursor = 0; host.feed.mrs.request(scope, false) }
+  function refresh() { host.feed.mrs.request(scope, true) }
   function setMode(next) { if (next !== mode) { mode = next; cursor = 0 } }
-  onScopeChanged: if (visible) host.feed.requestMrs(scope, false)
+  onScopeChanged: if (visible) host.feed.mrs.request(scope, false)
   onRowsChanged: cursor = Math.max(0, Math.min(cursor, rows.length - 1))
   function moveCursor(dy) {
     if (rows.length === 0) return
