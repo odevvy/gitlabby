@@ -902,7 +902,10 @@ lands, ages, label text colors, the Markdown renderer) is in `logic/`, one
 file per concern (core, labels, bots, markdown, board, alerts, mrs, bulk,
 access). The Node tests load them through `logic/index.js`; the QML files
 import `Logic.js`, which imports each module, hands each the others it uses
-and re-exports every name, as Omarchy's panels do with their `Model.js`.
+and re-exports every name, as Omarchy's panels do with their `Model.js`
+(one `var` per name: a QML JavaScript import can't add names in a loop).
+Every settings write goes through `Board.persist(patch)`: the keys in `patch`
+are set, `patch.board` replaces the default board, the rest stay as saved.
 `BoardService.qml` holds what every screen shares (the board fetches, alerts, access); the Merge requests and To-do lists are each a `ScopedFetch.qml` there (fetched per scope on demand, an answer under a minute old reused). Both lists are drawn by `components/ScopedList.qml` (scope tabs, sections, cursor, open and copy); each view gives only its sections and row look, and `Board.qml` reaches them through its `lists` table. `Board.qml` keeps the board's state and its views; which key goes to which
 view is in `BoardKeys.qml`. `IssueView.qml` keeps an issue's state and its
 GitLab calls; `IssueLabels.qml` draws its label editor and `IssueComments.qml`
