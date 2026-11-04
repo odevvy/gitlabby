@@ -6,8 +6,10 @@
 # keeps the file order.
 H=$(cd "$(dirname "$0")" && pwd); S=${1:-$H/../..}
 jobs=${HARNESS_JOBS:-$(( $(nproc 2>/dev/null || echo 1) < 4 ? $(nproc 2>/dev/null || echo 1) : 4 ))}
-o=$(mktemp -d); trap 'rm -rf "$o"' EXIT
-export H S o
+# Each run gets its own TMPDIR, removed at the end with whatever a crashed or
+# killed test left there.
+o=$(mktemp -d); TMPDIR=$(mktemp -d -t ogb-run-XXXXXX); trap 'rm -rf "$o" "$TMPDIR"' EXIT
+export H S o TMPDIR
 printf '%s\0' "$H"/tests/*.py | xargs -0 -P "$jobs" -I{} bash -c '
   t={}; n=$(basename "$t")
   out=$("${PYTHON:-python3}" "$t" "$S" 2>&1); rc=$?

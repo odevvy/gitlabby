@@ -1,4 +1,4 @@
-gql-off	board-fetch	  if ! mrs_graphql; then	  if true; then	sh
+gql-off	board-fetch	  mrs_graphql || mrs_rest\n	  mrs_rest\n	sh
 gql-unknown-ok	board-fetch	type == "string" and known)	true)	sh
 gql-state-raw	board-fetch	state: (.mergeRequestInteraction.reviewState | ascii_downcase)	state: .mergeRequestInteraction.reviewState	sh
 gql-errors-ignored	board-fetch	select((.errors // null) == null) | 	 	sh

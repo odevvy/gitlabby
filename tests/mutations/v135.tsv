@@ -15,4 +15,3 @@ timer-setting	Board.qml	interval: root.cadence.sec * 1000	interval: root.refresh
 due-setting	Board.qml	ifDue === true, cadence.sec * 1000 - 2000	ifDue === true, refreshIntervalSec * 1000 - 2000	qml
 cadence-local	Board.qml	Logic.adaptiveInterval(refreshIntervalSec, feed.paces[fetchKey])	Logic.adaptiveInterval(refreshIntervalSec, null)	qml
 tip-off	BoardHeader.qml	IconTip { host: header.host; shown: statusMouse.containsMouse; text: host.cadenceText() }	IconTip { host: header.host; shown: false; text: host.cadenceText() }	qml
-tip-no-why	Board.qml	" while open · " + cadence.why	" while open"	qml

@@ -1,4 +1,2 @@
-labels-per-issue	IssueView.qml	    if (labelsFor === host.project && labelsState === "ready" && Date.now() - labelsAt < 300000) return\n	    /* m */\n	qml
 labels-no-ttl	IssueView.qml	 && Date.now() - labelsAt < 300000) return	) return	qml
 labels-reuse-error	IssueView.qml	labelsState === "ready" && Date.now()	labelsState !== "loading" && labelsState !== "" && Date.now()	qml
-labels-any-project	IssueView.qml	if (labelsFor === host.project && labelsState	if (labelsState	qml

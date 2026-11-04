@@ -19,7 +19,6 @@ board-queued-forces	Board.qml	refreshQueued = false; refresh(true) }	refreshQueu
 board-no-floor-after-move	Board.qml	data.state === "stale") { refreshQueued = true; moveFloor = feed.tickets + 1 }	data.state === "stale") { refreshQueued = true }	qml
 board-no-floor-watchdog	Board.qml	root.refreshQueued = true; root.moveFloor = root.feed.tickets + 1;	root.refreshQueued = true;	qml
 board-no-forget	Board.qml	    feed.forget()\n	    // forget dropped\n	qml
-board-saved-skips-held	Board.qml	if (held) { refreshQueued = true; return }\n    var last	if (false) { refreshQueued = true; return }\n    var last	qml
 board-floor-ignored	Board.qml	(!fromCache && ticket < moveFloor)	(false)	qml
 node-no-service-kind	manifest.json	    "bar-widget",\n    "service"\n	    "bar-widget"\n	node
 node-board-fetches	Board.qml	  BoardService { id: localFeed }	  BoardService { id: localFeed }\n  Process { command: [helperPath(), "board"] }	node

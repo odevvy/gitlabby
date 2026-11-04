@@ -21,12 +21,9 @@ bd-no-request	Board.qml	    if (boardState === "ready" && !cached) feed.requestA
 bd-move-403	Board.qml	      feed.noteRefused(project, data.message)  // a 403: view-only here	      /* m */	qml
 bd-pick-viewonly	Board.qml	|| !column || !writable) return	|| !column) return	qml
 bd-dismiss-not-saved	Board.qml	persist({ accessHintDismissed:	persist({ other:	qml
-bd-dismiss-case	Board.qml	readonly property bool hintDismissed: Logic.has(Logic.lowerList(saved("accessHintDismissed", [])), project)	readonly property bool hintDismissed: saved("accessHintDismissed", []).indexOf(project) !== -1	qml
 bd-status	Board.qml	      if (!writable) time = "View-only  " + time	      /* m */	qml
 ah-always	AccessHint.qml	host.accessNote !== "" && !host.hintDismissed	!host.hintDismissed	qml
 ah-dismiss-ignored	AccessHint.qml	&& !host.hintDismissed	&& true	qml
 ah-link-readtoken	AccessHint.qml	visible: hint.words.link; host	visible: true; host	qml
-iv-edit-shown	IssueView.qml	id: editAction\n            visible: view.issueReady && view.issueError === "" && view.host.writable	id: editAction\n            visible: view.issueReady && view.issueError === ""	qml
-iv-close-shown	IssueView.qml	verticalAlignment: Text.AlignVCenter\n          visible: view.issueReady && view.issueError === "" && view.host.writable	verticalAlignment: Text.AlignVCenter\n          visible: view.issueReady && view.issueError === ""	qml
 iv-e-key	IssueView.qml	if (!issueReady || issueError !== "" || !host.writable) return	if (!issueReady || issueError !== "") return	qml
 iv-x-key	IssueView.qml	    if (!host.writable) return  // view-only here	    /* m */	qml

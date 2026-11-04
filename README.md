@@ -889,9 +889,14 @@ tests/mutate.sh --check . tests/mutations/*.tsv       # rows whose pattern is go
 
 `HARNESS_JOBS` sets how many view tests run at once. The tests on two
 screens (one service, two boards) share `tests/harness/two.py`; waits on
-an animation use `Harness.until`, not a fixed sleep. `tests/run.sh` fails
+an animation use `Harness.until`, not a fixed sleep. A view test removes its temp copy
+even when it stops early, and `all.sh` runs them in a TMPDIR of its own that
+it deletes at the end. `tests/run.sh` fails
 when a mutation row no longer matches its file, apart from the ones listed
-in `tests/mutations/stale.known`.
+in `tests/mutations/stale.known` (none since 0.1.82: the 54 rows whose code
+was rewritten were dropped; they mutated nothing). In `board-fetch`, merge
+requests and to-dos read the same way: `mrs_graphql || mrs_rest`,
+`todos_graphql || todos_rest`.
 
 `run136.py` and `run136b.py` use Omarchy's own notification script and
 `NotificationLogic.js` from `~/.local/share/omarchy` (`OMARCHY_PATH` to

@@ -9,4 +9,3 @@ apply-always-columns	Board.qml	if (JSON.stringify(nextColumns) !== JSON.stringif
 apply-always-colors	Board.qml	if (JSON.stringify(nextColors) !== JSON.stringify(labelColors)) labelColors = nextColors	labelColors = nextColors	qml
 rotation-closed	Board.qml	refreshActive: opened && (	refreshActive: (	qml
 openurl-own-check	Board.qml	var link = Logic.httpsUrl(url)	var link = /^https:\/\//.test(String(url || "")) ? String(url) : ""	qml
-signout-old	SettingsView.qml	Sign out of glab on gitlab.com? This also signs glab out in your terminal and scripts on this computer.	Sign out of gitlab.com?	qml

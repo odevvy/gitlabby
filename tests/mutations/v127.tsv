@@ -10,7 +10,6 @@ offers-columns	BotsSection.qml	Logic.statusLabels(fetchedStatus, host.columns).c
 offers-taken	BotsSection.qml	.concat(ownerLabels)	.concat([])	qml
 dup-allowed	BotsSection.qml	readonly property bool ready: newName !== "" && !taken &&	readonly property bool ready: newName !== "" &&	qml
 no-owner-twice	BotsSection.qml	label: "cards no bot owns"; enabled: !sec.hasNoOwner;	label: "cards no bot owns"; enabled: true;	qml
-switch-keeps-form	BotsSection.qml	function onProjectChanged() { sec.cancel() }	function onProjectChanged() { sec.pick = sec.pick }	qml
 no-flag-label	BotsSection.qml	? "not a label here"	? ""	qml
 no-flag-column	BotsSection.qml	? "not a column here"	? ""	qml
 malformed-unsaid	BotsSection.qml	text: !bot.ok ? "ignored: needs a name and a label or a column"	text: !bot.ok ? ""	qml

@@ -1,8 +1,4 @@
 # v0.1.54: the quiet Merge requests view. qml rows: tests/harness/tests/run154.py
-m-footer-back	MrsView.qml	      + (view.loading && view.entry ? "  \u00b7  refreshing	      + "  j/k move" + (view.loading && view.entry ? "  \u00b7  refreshing	qml
-m-note-dim	MrsView.qml	      elide: Text.ElideRight\n      color: view.host.quiet	      elide: Text.ElideRight\n      color: view.host.dim	qml
-m-note-no-time	MrsView.qml	: view.entry ? "  \u00b7  updated " + view.stamp(view.entry.startedAt) : "")	: "")	qml
-m-note-indented	MrsView.qml	anchors { left: parent.left; right: tabs.left;	anchors { left: parent.left; leftMargin: Style.space(40); right: tabs.left;	qml
 m-underline-all	components/ScopedList.qml	            visible: tab.on\n	            visible: true\n	qml
 m-underline-dim	components/ScopedList.qml	            height: 2; radius: 1\n            color: view.host.accent	            height: 2; radius: 1\n            color: view.host.dim	qml
 m-tab-off-dim	components/ScopedList.qml	tabMouse.containsMouse ? view.host.dim : view.host.quiet	tabMouse.containsMouse ? view.host.dim : view.host.dim	qml

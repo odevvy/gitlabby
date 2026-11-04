@@ -1,9 +1,3 @@
-auth-never-skip	board-fetch	if auth_fresh; then auth_skipped=1; else check_auth; fi	check_auth	sh
-auth-always-skip	board-fetch	if auth_fresh; then auth_skipped=1; else check_auth; fi	auth_skipped=1	sh
-auth-ttl-long	board-fetch	EPOCHSECONDS - at < 600	EPOCHSECONDS - at < 6000	sh
-auth-future-ok	board-fetch	((EPOCHSECONDS - at >= 0 && 	((	sh
-auth-symlink-ok	board-fetch	-f $auth_mark && ! -L $auth_mark	-f $auth_mark	sh
-auth-garbled-ok	board-fetch	[[ $at =~ ^[0-9]{1,12}$ ]] && 		sh
 auth-no-recheck	board-fetch	if ((rc != 0 && auth_skipped)); then auth_skipped=0; forget_auth; check_auth; fi	true	sh
 auth-logout-keeps	board-fetch	  forget_auth\n  bounded auth logout	  bounded auth logout	sh
 auth-mark-in-tmp	board-fetch	[[ $runtime == "${XDG_RUNTIME_DIR:-}" ]] && auth_mark=	auth_mark=	sh
@@ -14,4 +8,3 @@ pc-reused-dropped	board-fetch	with_entries(select(.key | IN($reused[])))	with_en
 pc-at-leaks	board-fetch	{pipeline: ($all[.iid | tostring] | del(.at))}	{pipeline: $all[.iid | tostring]}	sh
 pc-at-renewed	board-fetch	($fresh | map_values(. + {at: $now}))	($fresh | map_values(. + {at: $now})) | map_values(.at = $now)	sh
 pc-symlink	board-fetch	-f $pipes_file && ! -L $pipes_file	-f $pipes_file	sh
-auth-no-mark	board-fetch	>"$auth_mark" 2>/dev/null ;;	>/dev/null 2>/dev/null ;;	sh
