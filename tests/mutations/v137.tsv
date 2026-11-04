@@ -18,7 +18,7 @@ svc-force-ignored	ScopedFetch.qml	if (!force && last &&	if (last &&	qml
 svc-no-pending	ScopedFetch.qml	if (p) request(p.scope, p.force)	/* m */	qml
 svc-forget-keeps	ScopedFetch.qml	function clear() { answers = ({}); pending = null }	function clear() { pending = null }	qml
 svc-dup-fetch	ScopedFetch.qml	    if (loading === next) return\n	/* m */\n	qml
-v-no-open-fetch	Board.qml	if (name === "mrs" && view !== "mrs") mrsView.open()	/* m */	qml
+v-no-open-fetch	Board.qml	if (lists[name] && view !== name) lists[name].open()	/* m */	qml
 v-r-ignored	BoardKeys.qml	else if (key === "r" && host.view === "mrs") mrsView.refresh()	/* m */	qml
 v-m-ignored	BoardKeys.qml	else if (key === "m") host.toggleView("mrs")	/* m */	qml
 v-enter-ignored	BoardKeys.qml	else if (host.view === "mrs") mrsView.activate()	/* m */	qml

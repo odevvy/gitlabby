@@ -1,10 +1,10 @@
 # v0.1.77 the To-do view (run177b.py): name, file, from, to, kind
-v-no-open	Board.qml	    if (name === "todos" && view !== "todos") todoView.open()\n	\n	qml
+v-no-open	Board.qml	if (lists[name] && view !== name) lists[name].open()	if (lists[name] && view !== name && name === "mrs") lists[name].open()	qml
 v-reopen-forces	components/ScopedList.qml	function open() { cursor = 0; fetch.request(scope, false) }	function open() { cursor = 0; fetch.request(scope, true) }	qml
 v-scope-ignored	components/ScopedList.qml	readonly property string scope: mode === "project" && host.project !== "" ? host.project : "all"	readonly property string scope: "all"	qml
 v-r-soft	components/ScopedList.qml	function refresh() { fetch.request(scope, true) }	function refresh() { fetch.request(scope, false) }	qml
-v-loading-loud	Board.qml	(view === "mrs" && mrsView.loading) || todosReloading)	(view === "mrs" && mrsView.loading) || (view === "todos" && todoView.loading))	qml
-v-reload-quiet	Board.qml	readonly property bool todosReloading: view === "todos" && todoView.loading && todoView.answer !== null	readonly property bool todosReloading: false	qml
+v-loading-loud	TodoView.qml	busy: loading && answer !== null	busy: loading	qml
+v-reload-quiet	TodoView.qml	busy: loading && answer !== null	busy: false	qml
 v-no-spinner-row	TodoView.qml	messageShown: !view.answer ? view.loading : view.answer.state !== "ready"	messageShown: view.answer !== null && view.answer.state !== "ready"	qml
 v-error-spins	TodoView.qml	      spinning: view.loading\n	      spinning: true\n	qml
 v-no-retry	TodoView.qml	view.answer.message + (view.loading ? "" : "  Press r to try again.")	view.answer.message	qml
@@ -14,7 +14,7 @@ v-sub-swap	TodoView.qml	text: rowBox.isTodo ? Logic.todoSubline(rowBox.row) : Lo
 v-right-opens	components/ScopedList.qml	if (mouse.button === Qt.RightButton) view.host.copyLink(rowBox.row, view.copySign(rowBox.row)); else	if (false) ; else	qml
 v-sign	TodoView.qml	function refSign(r) { return r.kind === "mr" ? "!" : "#" }	function refSign(r) { return "!" }	qml
 v-click-raw	components/ScopedList.qml	else view.host.openUrl(rowBox.row.url) }	else Qt.openUrlExternally(rowBox.row.url) }	qml
-v-status-board	Board.qml	var at = view !== "mrs" && view !== "todos" ? updatedAt	var at = view !== "mrs" ? updatedAt	qml
+v-status-board	Board.qml	var at = !shownList ? updatedAt	var at = view !== "mrs" ? updatedAt	qml
 v-counts	components/ScopedList.qml	out.push({ kind: "head", title: s[1], count: s[2].length, later: i > 0 })	out.push({ kind: "head", title: s[1], count: 0, later: i > 0 })	qml
 h-tabs-hidden	BoardHeader.qml	|| host.view === "todos"\n  TextMetrics	\n  TextMetrics	qml
 h-no-chip	BoardHeader.qml	readonly property bool readOnlyView: host.view === "mrs" || host.view === "todos"	readonly property bool readOnlyView: host.view === "mrs"	qml
