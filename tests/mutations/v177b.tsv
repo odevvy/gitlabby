@@ -22,3 +22,10 @@ h-badge-off	BoardHeader.qml	badge: Logic.todoBadge((host.feed.todoAnswers[todoSc
 h-width-off	BoardHeader.qml	\n      + todoLong.advanceWidth + Style.space(20) + todoTab.badgeRoom : 0)	 : 0)	qml
 h-click-off	BoardHeader.qml	onClicked: host.showView("todos")	onClicked: {}	qml
 h-scope-off	Board.qml	        todoScope: todoView.scope\n	\n	qml
+k-t-off	BoardKeys.qml	    else if (key === "t") host.toggleView("todos")\n	\n	qml
+k-move-off	BoardKeys.qml	    else if (host.view === "todos" && dy !== 0) todoView.moveCursor(dy)\n	\n	qml
+k-enter-off	BoardKeys.qml	    else if (host.view === "todos") todoView.activate()\n	\n	qml
+k-r-off	BoardKeys.qml	    else if (key === "r" && host.view === "todos") todoView.refresh()\n	\n	qml
+k-o-off	BoardKeys.qml	    else if (key === "o" && host.view === "todos") todoView.activate()\n	\n	qml
+k-y-off	BoardKeys.qml	    else if (key === "y" && host.view === "todos") todoView.copyCurrent()\n	\n	qml
+v-order	TodoView.qml	answer.todos.concat(answer.assigned)	answer.assigned.concat(answer.todos)	qml

@@ -815,6 +815,7 @@ Panel {
       id: keyCatcher
       host: root
       views: ({ issue: issueView, picker: picker, settings: settingsView, bulk: bulkBar, mrs: mrsView, setup: setupView })
+      todoList: todoView  // the To-do view (v0.1.77)
       anchors.fill: parent
       blocked: issueView.typing || picker.typing || settingsView.typing || bulkBar.typing  // text fields get every key (Omarchy PanelKeyCatcher.qml:26-29)
       implicitHeight: header.implicitHeight + root.gap + (botsRow.visible ? botsRow.height + root.gap : 0) + (accessHint.visible ? accessHint.height + root.gap : 0) + (moveConfirm.visible ? moveConfirm.height + root.gap : 0) + (bulkBar.visible ? bulkBar.height + root.gap : 0) + (root.view === "board" ? (root.setup !== "" || root.failed ? Math.max(setupView.implicitHeight, skeleton.implicitHeight) : root.boardState === "loading" ? skeleton.implicitHeight : boardView.implicitHeight)
