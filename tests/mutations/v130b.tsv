@@ -1,4 +1,3 @@
-tip-wrong-key	BoardHeader.qml	text: "Refresh (r)"	text: "Refresh (R)"	node
 glyph-no-tip	IssueView.qml	tip: "Back to the board (Esc)"; 	/* no tip */ 	node
 tip-off-card	components/IconTip.qml	x = Math.max(-at, Math.min(want, area.width - at - w))	x = want	qml
 tip-area-null	Board.qml	readonly property Item tipArea: keyCatcher	readonly property Item tipArea: null	qml

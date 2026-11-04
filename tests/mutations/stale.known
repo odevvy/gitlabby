@@ -1,7 +1,3 @@
-stale v130b.tsv tip-wrong-key
-stale v132.tsv pl-always-mr-get
-stale v132.tsv pl-never-mr-get
-stale v133.tsv board-saved-skips-held
 stale v135.tsv tip-no-why
 stale v136.tsv svc-no-notify
 stale v136.tsv svc-watch-alerts-off

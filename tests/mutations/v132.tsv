@@ -3,8 +3,6 @@ pl-case-sensitive	board-fetch	[.columns[] | select(.kind == "label" and (.name |
 pl-no-cap	board-fetch	| unique | .[:15][]	| unique | .[]	sh
 pl-merged-wins	board-fetch	sort_by([(.state == "opened"), (.updated_at // "")])	sort_by([(.updated_at // "")])	sh
 pl-closed-counts	board-fetch	select(.state == "opened" or .state == "merged")	select(.state != "x")	sh
-pl-always-mr-get	board-fetch	if ! jq -e 'has("head_pipeline")'	if ! jq -e 'false'	sh
-pl-never-mr-get	board-fetch	if ! jq -e 'has("head_pipeline")'	if jq -e 'true'	sh
 pl-get-emits	board-fetch	peek "$base/issues/$iid/related_merge_requests"	get "$base/issues/$iid/related_merge_requests"	sh
 pl-http-ok	board-fetch	{status: $s, url: (.web_url | https)}	{status: $s, url: .web_url}	sh
 pl-manual-shows	board-fetch	scheduled: "pending", canceled: "canceled"}	scheduled: "pending", canceled: "canceled", manual: "pending"}	sh
