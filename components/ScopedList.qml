@@ -29,6 +29,8 @@ Item {
   readonly property var entry: fetch.answers[scope] || null
   readonly property var answer: entry ? entry.data : null
   readonly property bool loading: fetch.loading === scope
+  // A load the header shows (its bar and refresh icon): any, unless the view says.
+  property bool busy: loading
   readonly property var parts: answer && answer.state === "ready" ? sections(answer) : []
   readonly property var rows: parts.reduce(function(all, s) { return all.concat(s[2]) }, [])
   property int cursor: 0

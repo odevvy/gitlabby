@@ -21,6 +21,9 @@ ScopedList {
   }
   function refSign(r) { return r.kind === "mr" ? "!" : "#" }
   copySign: refSign
+  // The header shows a reload of lists already on screen; the first load is
+  // the spinner row only.
+  busy: loading && answer !== null
 
   // The first load: a spinner row; an error or sign-in: the same row, still.
   messageShown: !view.answer ? view.loading : view.answer.state !== "ready"
