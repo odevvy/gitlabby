@@ -1,8 +1,3 @@
-stale v138.tsv board-close-keeps
-stale v139.tsv bd-dismiss-case
-stale v139.tsv iv-edit-shown
-stale v139.tsv iv-close-shown
-stale v140.tsv gb-strict-project
 stale v140b.tsv header-no-width
 stale v141.tsv cache-account-raw
 stale v141b.tsv signout-old

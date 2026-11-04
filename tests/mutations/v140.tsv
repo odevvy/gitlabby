@@ -6,5 +6,4 @@ gb-only-top	board-fetch	range($p | length; 0; -1)	range(1; 0; -1)	sh
 gb-no-uri	board-fetch	$g | @uri	$g	sh
 gb-overwrite	board-fetch	&& cat "$tmp/gb" >>"$tmp/b"	&& cat "$tmp/gb" >"$tmp/b"	sh
 gb-no-array-check	board-fetch	jq -e 'type == "array"' "$tmp/gb" >/dev/null 2>&1 && 	 	sh
-gb-strict-project	board-fetch	peek "$base" >"$tmp/proj" || return 0	peek "$base" >"$tmp/proj" || emit error "x"	sh
 gb-strict-group	board-fetch	"$tmp/gb" &&\n	"$tmp/gb" || emit error "x"\n	sh
