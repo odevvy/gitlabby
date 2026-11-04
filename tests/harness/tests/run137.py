@@ -45,7 +45,7 @@ hx = {n: box(n) for n in ("status", "refreshButton", "mrsButton", "keysButton", 
 order = ["status", "refreshButton", "keysButton", "gear"]
 ok("H1 header: Updated, refresh, keys, gear, left to right; merge requests overlaps none of them",
    all(hx[a][1] <= hx[b][0] for a, b in zip(order, order[1:])) and all(hx["mrsButton"][1] <= hx[o][0] or hx["mrsButton"][0] >= hx[o][1] for o in order), hx)
-ok("M0 the board alone: no merge-request fetch", mrs_runs() == [] and h.ev("root.feed.mrAnswers") == {})
+ok("M0 the board alone: no merge-request fetch", mrs_runs() == [] and h.ev("root.feed.mrs.answers") == {})
 badge = lambda: next((it for it in h.walk() if it.objectName() == "mrsBadge"), None)
 ok("M1 no answer yet: no badge", badge() is not None and not badge().isVisible())
 # --- m opens it: one board-fetch mrs, all projects ---------------------------------
@@ -122,14 +122,14 @@ h.answer("mrs", ANS); h.spin(120)
 ok("M24b r twice while loading: one fetch, none queued after it", mrs_runs() == [], mrs_runs())
 h.key(Qt.Key_Escape, "")
 # --- signed out -----------------------------------------------------------------
-h.ev("root.feed.mrAnswers = ({})"); h.key(Qt.Key_M, "m")
+h.ev("root.feed.mrs.answers = ({})"); h.key(Qt.Key_M, "m")
 h.answer("mrs", {"state": "logged-out", "message": "Not signed in to gitlab.com. Run: glab auth login"})
 msg = [it.property("text") for it in h.visible(lambda it: it.objectName() == "mrsMessage")]
 ok("M25 signed out: GitLab's message and how to retry, no rows", msg and msg[0].startswith("Not signed in to gitlab.com.") and "r to try again" in msg[0] and rows() == [], msg)
 ok("M26 no badge for a failed answer", h.ev("header.mrsButton.badge") == "")
 shot("mrs-signed-out")
 h.ev("root.feed.forget()"); h.spin(40)
-ok("M27 sign-out forgets the lists", h.ev("root.feed.mrAnswers") == {})
+ok("M27 sign-out forgets the lists", h.ev("root.feed.mrs.answers") == {})
 ok("M28 the view's height fits under the popup cap (it scrolls past it)", h.ev("panel.contentHeight") <= 960 + 60, h.ev("panel.contentHeight"))
 rc = h.finish()
 print("passed", sum(ALL), "failed", len(ALL) - sum(ALL)) if False else None
