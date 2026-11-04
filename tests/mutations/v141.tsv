@@ -10,7 +10,6 @@ tmp-not-runtime	board-fetch	[[ $runtime == /* && -d $runtime && -w $runtime ]] |
 tmp-runtime-unchecked	board-fetch	[[ $runtime == /* && -d $runtime && -w $runtime ]] || runtime	[[ -n $runtime ]] || runtime	sh
 trap-no-exit	board-fetch	trap 'rm -rf "$tmp"' EXIT	true	sh
 cache-no-account	board-fetch	printf '%s@%s.json' "$cache_base" "$account"	printf '%s.json' "$cache_base"	sh
-cache-account-raw	board-fetch	[[ $account =~ ^[A-Za-z0-9_.-]{1,255}$ ]] || account=unknown	[[ -n $account ]] || account=unknown	sh
 cache-old-kept	board-fetch	rm -f "$cache_base.json" 2>/dev/null	true	sh
 cr-guard-sh	board-fetch	test("(^|[\r	test("(^|[	sh
 cr-guard-js	logic/markdown.js	/(^|[\r	/(^|[	node

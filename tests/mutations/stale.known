@@ -1,6 +1,3 @@
-stale v140b.tsv header-no-width
-stale v141.tsv cache-account-raw
-stale v141b.tsv signout-old
 stale v142.tsv auth-never-skip
 stale v142.tsv auth-always-skip
 stale v142.tsv auth-ttl-long
