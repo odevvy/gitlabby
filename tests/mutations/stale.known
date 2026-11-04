@@ -1,14 +1,3 @@
-stale v142.tsv auth-never-skip
-stale v142.tsv auth-always-skip
-stale v142.tsv auth-ttl-long
-stale v142.tsv auth-future-ok
-stale v142.tsv auth-symlink-ok
-stale v142.tsv auth-garbled-ok
-stale v142.tsv auth-no-mark
-stale v142b.tsv labels-per-issue
-stale v142b.tsv labels-any-project
-stale v150.tsv active-no-mrs
-stale v150.tsv loud-no-mrs
 stale v152.tsv h-columns-accent-always
 stale v154.tsv m-footer-back
 stale v154.tsv m-note-dim
