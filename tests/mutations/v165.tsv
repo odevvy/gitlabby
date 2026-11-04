@@ -32,8 +32,8 @@ q-confirm-shared	Board.qml	Logic.lowerList(saved("confirmMoves", [])), projectKe
 q-statekey-shared	Board.qml	stateKey: projectKey + "#"	stateKey: project + "#"	qml
 q-default-shared	Board.qml	  readonly property var hostDefault: onGitlabCom\n	  readonly property var hostDefault: true\n	qml
 q-default-overwrites	Board.qml	    if (onGitlabCom) {\n      entry.defaultProject	    if (true) {\n      entry.defaultProject	qml
-q-default-not-saved	Board.qml	    } else if (nextDefault) {	    } else if (false) {	qml
-q-default-written-always	Board.qml	    } else if (nextDefault) {	    } else {	qml
+q-default-not-saved	Board.qml	    } else if (p.board) {	    } else if (false) {	qml
+q-default-written-always	Board.qml	    } else if (p.board) {	    } else {	qml
 q-no-hostname-arg	Board.qml	concat(args, ["--hostname", gitlabHost])	concat(args)	qml
 q-cache-no-host	Board.qml	cacheProcess.command = helperCommand(["cached", "--project", project, "--board", boardId])	cacheProcess.command = [helperPath(), "cached", "--project", project, "--board", boardId]	qml
 q-login-plain	Board.qml	"glab auth login" + (onGitlabCom ? "" : " --hostname " + gitlabHost)	"glab auth login"	qml
