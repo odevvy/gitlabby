@@ -57,4 +57,33 @@ h.answer("todos", {"state": "error", "message": "Could not load your to-dos."});
 lr = named("todoLoading")
 ok("V15 an error: the same row, still, and how to retry", len(lr) == 1 and lr[0].property("spinning") is False and lr[0].property("text") == "Could not load your to-dos.  Press r to try again.", [x.property("text") for x in lr])
 ok("V16 the merge requests not asked for", h.running("mrs") == [])
+# --- The header: Board · Merge requests · To-do, the read-only chip, the badge -------------------
+tabs = lambda: [t.property("label") for t in sorted(h.visible(lambda it: it.metaObject().className().startswith("HeadTab")), key=lambda it: it.mapToScene(QPointF(0, 0)).x())]
+ok("H1 the To-do tab third, on; the read-only chip shown", tabs() == ["Board", "Merge requests", "To-do"] and h.ev("header.readOnlyView") is True and len(h.visible(lambda it: it.objectName() == "readOnlyChip")) == 1, tabs())
+todo_tab = lambda: next(it for it in h.visible(lambda it: it.objectName() == "todoTab"))
+badge = lambda: [it.childItems()[0].property("text") for it in h.walk(todo_tab()) if it.objectName() == "todoBadge" and it.isVisible()]
+h.click([t for t in named("todoScopeTab") if t.property("label") == "All projects"][0]); h.spin(100)
+h.ev("root.showView('board')"); h.spin(150)
+ok("H2 on the board: the tabs stay, no chip, the badge: pending to-dos at the last look", tabs() == ["Board", "Merge requests", "To-do"] and h.visible(lambda it: it.objectName() == "readOnlyChip") == [] and badge() == ["1"], badge())
+n = len(h.running()); h.spin(100)
+ok("H3 the badge asked for nothing", h.running("todos") == [], h.running())
+h.click(todo_tab()); h.spin(150)
+ok("H4 a click on To-do opens it", h.ev("root.view") == "todos" and badge() == [])
+h.ev("root.showView('board')"); h.spin(100)
+h.ev("panel.availableCardWidth = 560"); h.spin(300)
+ok("H5 short of room: compact, every tab still whole", h.ev("header.compactTabs") is True and tabs() == ["Board", "MRs", "To-do"], tabs())
+st = h.ev("header.status")
+tabsR = max(t.mapToScene(QPointF(t.width(), 0)).x() for t in h.visible(lambda it: it.metaObject().className().startswith("HeadTab")))
+ok("H6 ... the status after the last tab", st.mapToScene(QPointF(0, 0)).x() >= tabsR - 1, (st.mapToScene(QPointF(0, 0)).x(), tabsR))
+hd = h.ev("header"); hc = h.ctx_of(hd); bad = []
+for view in ("board", "todos"):
+  h.ev("root.showView('%s')" % view); h.spin(100)
+  for w in range(520, 1040, 20):
+    h.ev("panel.availableCardWidth = %d" % w); h.spin(100)
+    title_r = h.ev("title.x + Math.min(title.width, title.paintedWidth)", hc, hd); rule_l = h.ev("tabRule.x", hc, hd)
+    stat_l = h.ev("status.x + status.width - Math.min(status.width, status.paintedWidth)", hc, hd); tabs_r = h.ev("tabs.x + tabs.width", hc, hd)
+    ref_l = h.ev("refreshButton.x", hc, hd); chip_r = h.ev("readOnlyChip.visible ? readOnlyChip.x + readOnlyChip.width : 0", hc, hd)
+    if title_r > rule_l - 20 + 1 or stat_l < tabs_r or max(tabs_r, chip_r) > ref_l - 8: bad.append((w, title_r, rule_l, stat_l, tabs_r, ref_l))
+ok("H7 at every width: the title, the tabs and the status never overlap", bad == [], bad)
+h.ev("panel.availableCardWidth = 1020"); h.spin(300)
 sys.exit(h.finish())

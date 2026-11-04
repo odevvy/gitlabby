@@ -846,6 +846,7 @@ Panel {
         id: header
         host: root
         mrsScope: mrsView.scope
+        todoScope: todoView.scope
         width: parent.width
       }
 

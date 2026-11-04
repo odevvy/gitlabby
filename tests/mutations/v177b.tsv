@@ -16,3 +16,9 @@ v-sign	TodoView.qml	function refSign(r) { return r.kind === "mr" ? "!" : "#" }	f
 v-click-raw	TodoView.qml	else view.host.openUrl(rowBox.row.url) }	else Qt.openUrlExternally(rowBox.row.url) }	qml
 v-status-board	Board.qml	var at = view !== "mrs" && view !== "todos" ? updatedAt	var at = view !== "mrs" ? updatedAt	qml
 v-counts	TodoView.qml	out.push({ kind: "head", title: s[1], count: s[2].length })	out.push({ kind: "head", title: s[1], count: 0 })	qml
+h-tabs-hidden	BoardHeader.qml	|| host.view === "todos"\n  TextMetrics	\n  TextMetrics	qml
+h-no-chip	BoardHeader.qml	readonly property bool readOnlyView: host.view === "mrs" || host.view === "todos"	readonly property bool readOnlyView: host.view === "mrs"	qml
+h-badge-off	BoardHeader.qml	badge: Logic.todoBadge((host.feed.todoAnswers[todoScope] || {}).data)	badge: ""	qml
+h-width-off	BoardHeader.qml	\n      + todoLong.advanceWidth + Style.space(20) + todoTab.badgeRoom : 0)	 : 0)	qml
+h-click-off	BoardHeader.qml	onClicked: host.showView("todos")	onClicked: {}	qml
+h-scope-off	Board.qml	        todoScope: todoView.scope\n	\n	qml
