@@ -9,7 +9,7 @@ import "components"
 // issues assigned to him with their column on this board when known.
 // Read-only: a row only opens its item as Open links in says; a right-click or
 // y copies its link. The lists come from the shared service
-// (BoardService.requestTodos), asked for when this view opens, its scope
+// (BoardService.todos, a ScopedFetch), asked for when this view opens, its scope
 // changes, or r; never on popup open or a timer. t toggles it. Laid out as
 // Merge requests; the first load (or an error) is one LoadingRow, as the
 // project picker shows.

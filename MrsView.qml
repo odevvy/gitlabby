@@ -7,7 +7,7 @@ import "components"
 // Open merge requests: waiting on his review (no drafts), then his own, with
 // each one's pipeline, GitLab's merge status and every reviewer's state.
 // Read-only: a row only opens the merge request in the browser. The lists come
-// from the shared service (BoardService.requestMrs), asked for when this view
+// from the shared service (BoardService.mrs, a ScopedFetch), asked for when this view
 // opens, its scope changes, or r; never on a timer. m toggles it.
 // Quiet (v152 design A; v0.1.71: "read-only" is a chip after the header's tabs,
 // and the header's Updated says when the lists were read). The header's Merge

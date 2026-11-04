@@ -848,7 +848,7 @@ test("merge requests: the answer checked, status pills, reviewer marks, sublines
   const fs = require("node:fs"), path = require("node:path")
   const svc = fs.readFileSync(path.join(__dirname, "..", "BoardService.qml"), "utf8")
   // (What it runs and when it reuses an answer: run137's M tests, by behaviour.)
-  assert.doesNotMatch(svc, /Timer \{[^}]*requestMrs/)
+  assert.doesNotMatch(svc, /Timer \{[^}]*(requestMrs|mrs\.request|mrFetch\.request)/)
 })
 
 test("to-dos (v0.1.77): the answer checked, reasons, refs, sublines, the column, the badge, the scope", () => {

@@ -56,16 +56,10 @@ Item {
 
   // The Merge requests view's lists (ScopedFetch): scope "all" or a project
   // path, data Logic.mrsAnswer. Its own Process, so it never waits behind a
-  // board, and one answer for every screen. The mr* names are the old ones.
+  // board, and one answer for every screen.
   readonly property var mrs: mrFetch
-  property alias mrAnswers: mrFetch.answers
-  readonly property alias mrRunning: mrFetch.loading
-  property alias mrPending: mrFetch.pending
   // The To-do view's lists (v0.1.77), the same way: data Logic.todosAnswer.
   readonly property var todos: todoFetch
-  property alias todoAnswers: todoFetch.answers
-  readonly property alias todoRunning: todoFetch.loading
-  property alias todoPending: todoFetch.pending
 
   // Write access per project: { project: Logic.accessEntry }. Asked once per
   // project per session (board-fetch access, GETs only), when its board first
@@ -278,10 +272,6 @@ Item {
     running: service.watchedKeys.length > 0
     onTriggered: service.background()
   }
-
-  function requestMrs(scope, force) { mrFetch.request(scope, force) }
-
-  function requestTodos(scope, force) { todoFetch.request(scope, force) }
 
   // Sign out, or another server: forget every answer and drop the ones on their way.
   function forget() {
