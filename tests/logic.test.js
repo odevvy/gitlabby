@@ -793,7 +793,8 @@ test("alerts wiring: Settings saves settings.alerts per project; each copy hands
   assert.match(board, /readonly property var alerts: Logic\.alertsFor\(saved\("alerts", null\), project(Key)?\)/)
   assert.match(board, /onWatchCfgChanged: feed\.watch\(watchOwner, watchCfg\)/)
   assert.match(board, /Component\.onDestruction: \{ saveFolds\(\); feed\.watch\(watchOwner, null\) \}/)
-  assert.match(board, /if \(nextAlerts !== undefined\) entry\.alerts = nextAlerts/)
+  assert.match(board, /persist\(\{ alerts: Logic\.withAlert\(/)
+  assert.match(board, /for \(var k in p\) if \(k !== "board"\) entry\[k\] = p\[k\]/)
   // No notifier in the widget: one per event comes from the service only.
   assert.doesNotMatch(board, /omarchy-notification-send|notifyArgv/)
   assert.match(settings, /onClicked: view\.host\.setAlert\(alertCheck\.modelData\.kind, !alertCheck\.on\)/)

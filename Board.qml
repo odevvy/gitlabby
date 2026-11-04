@@ -66,7 +66,7 @@ Panel {
   function useServer(raw) {
     var h = Logic.serverHost(raw)
     if (h === "") return false
-    if (h !== gitlabHost || hostInvalid) persist(undefined, undefined, undefined, { gitlabHost: h })
+    if (h !== gitlabHost || hostInvalid) persist({ gitlabHost: h })
     return true
   }
   // The setup panel's Change server: Settings, with the server field focused.
@@ -93,9 +93,9 @@ Panel {
   // The bar icon's dot after an alert (alertDot), unless Settings keeps it unlit.
   readonly property bool iconUnlit: saved("iconUnlit", false) === true
   readonly property bool iconLit: !iconUnlit && !!feed && feed.unseenAlerts > 0
-  function setIconUnlit(on) { persist(undefined, undefined, undefined, { iconUnlit: on === true }) }
+  function setIconUnlit(on) { persist({ iconUnlit: on === true }) }
   readonly property string linkMode: String(saved("openLinks", "browser")) === "app" ? "app" : "browser"
-  function setLinkMode(mode) { persist(undefined, undefined, undefined, { openLinks: mode === "app" ? "app" : "browser" }) }
+  function setLinkMode(mode) { persist({ openLinks: mode === "app" ? "app" : "browser" }) }
   // The interval actually used: the setting, faster while cards move, slower
   // while nothing changes (Logic.adaptiveInterval), from the shared pace.
   readonly property var cadence: Logic.adaptiveInterval(refreshIntervalSec, feed.paces[fetchKey])
@@ -114,7 +114,7 @@ Panel {
     ? { key: fetchKey, project: project, boardId: boardId, review: alerts.review, idle: alerts.idle, pipeline: alerts.pipeline, bots: saved("bots", null), base: refreshIntervalSec, host: gitlabHost, links: linkMode } : null
   onWatchCfgChanged: feed.watch(watchOwner, watchCfg)
   Component.onDestruction: { saveFolds(); feed.watch(watchOwner, null) }
-  function setAlert(kind, on) { persist(undefined, undefined, Logic.withAlert(saved("alerts", null), projectKey, kind, on)) }
+  function setAlert(kind, on) { persist({ alerts: Logic.withAlert(saved("alerts", null), projectKey, kind, on) }) }
   // Projects whose card moves ask first (settings.confirmMoves; none by default).
   readonly property bool confirmMoves: Logic.has(Logic.lowerList(saved("confirmMoves", [])), projectKey)
   property var boardStates: saved("boardStates", ({})) || ({})
@@ -225,7 +225,7 @@ Panel {
   readonly property string accessNote: Logic.accessNote(accessEntry)
   readonly property bool writable: accessNote === ""
   readonly property bool hintDismissed: Logic.has(Logic.lowerList(saved("accessHintDismissed", [])), projectKey)
-  function dismissHint() { if (!hintDismissed) persist(undefined, undefined, undefined, { accessHintDismissed: Logic.lowerList(saved("accessHintDismissed", [])).concat([projectKey.toLowerCase()]) }) }
+  function dismissHint() { if (!hintDismissed) persist({ accessHintDismissed: Logic.lowerList(saved("accessHintDismissed", [])).concat([projectKey.toLowerCase()]) }) }
 
   // New board data would replace the card being moved or held under the
   // pointer, so while held, board answers are dropped and refetched after.
@@ -311,13 +311,14 @@ Panel {
 
   // Same write path as built-in widgets: merge into the inline entry and hand
   // it to the shell facade. Without the facade the state stays in memory.
-  // nextDefault ({ project, id, name }) replaces the saved default board (this
-  // server's: on another one, settings.serverDefaults[host]; gitlab.com's stays).
-  // nextBots replaces settings.bots (Settings > Bots), nextAlerts settings.alerts
-  // (Settings > Alerts); otherwise they are kept as saved. more: other keys to set.
-  function persist(nextDefault, nextBots, nextAlerts, more) {
+  // patch: settings keys to set (bots, alerts, openLinks, …); the rest are kept
+  // as saved. patch.board ({ project, id, name }) replaces the saved default
+  // board (this server's: on another one, settings.serverDefaults[host];
+  // gitlab.com's stays).
+  function persist(patch) {
+    var p = patch || {}
     if (!bar || !bar.shell || typeof bar.shell.updateEntryInline !== "function") return
-    var d = nextDefault || { project: defaultProject, id: defaultBoardId, name: defaultBoardName }
+    var d = p.board || { project: defaultProject, id: defaultBoardId, name: defaultBoardName }
     var entry = { id: moduleName }
     var dropped = ["id", "collapsedColumns", "hiddenColumns", "project", "boardId", "boardName"]
     for (var key in savedSettings) if (dropped.indexOf(key) === -1) entry[key] = savedSettings[key]
@@ -325,7 +326,7 @@ Panel {
       entry.defaultProject = d.project
       entry.defaultBoardId = d.id
       entry.defaultBoardName = d.name
-    } else if (nextDefault) {
+    } else if (p.board) {
       var defaults = {}, old = Object(saved("serverDefaults", ({})))
       for (var h in old) defaults[h] = old[h]
       defaults[gitlabHost] = { project: d.project, id: d.id, name: d.name }
@@ -336,12 +337,10 @@ Panel {
     entry.boardStates = boardStates
     entry.settingsRevision = settingsRevision
     foldsUnsaved = false; foldSave.stop()  // boardStates goes out with this write
-    if (nextBots !== undefined) entry.bots = nextBots
-    if (nextAlerts !== undefined) entry.alerts = nextAlerts
-    for (var k in more || {}) entry[k] = more[k]
+    for (var k in p) if (k !== "board") entry[k] = p[k]
     bar.shell.updateEntryInline(moduleName, entry)
   }
-  function saveBots(next) { persist(undefined, next) }
+  function saveBots(next) { persist({ bots: next }) }
 
   function helperPath() {
     return decodeURIComponent(Qt.resolvedUrl("board-fetch").toString().replace(/^file:\/\//, ""))
@@ -573,7 +572,7 @@ Panel {
     pendingMove = null
     dropPicks()
     boardState = "loading"
-    if (defaultProject === "") persist({ project: path, id: id, name: name })  // first board: the default
+    if (defaultProject === "") persist({ board: { project: path, id: id, name: name } })  // first board: the default
     back()
     refresh()
   }
@@ -584,7 +583,7 @@ Panel {
   }
   function setDefault(b) {
     project = project; boardId = boardId; boardName = boardName  // freeze before the defaults change
-    persist({ project: pickerProject, id: String(b.id || ""), name: b.id ? String(b.name) : "" })
+    persist({ board: { project: pickerProject, id: String(b.id || ""), name: b.id ? String(b.name) : "" } })
   }
 
   // https only (Logic.httpsUrl), so no file:, javascript: or --flag value reaches the browser.
