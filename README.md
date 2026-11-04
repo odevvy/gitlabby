@@ -903,7 +903,7 @@ file per concern (core, labels, bots, markdown, board, alerts, mrs, bulk,
 access). The Node tests load them through `logic/index.js`; the QML files
 import `Logic.js`, which imports each module, hands each the others it uses
 and re-exports every name, as Omarchy's panels do with their `Model.js`.
-`Board.qml` keeps the board's state and its views; which key goes to which
+`BoardService.qml` holds what every screen shares (the board fetches, alerts, access); the Merge requests and To-do lists are each a `ScopedFetch.qml` there (fetched per scope on demand, an answer under a minute old reused). `Board.qml` keeps the board's state and its views; which key goes to which
 view is in `BoardKeys.qml`. `IssueView.qml` keeps an issue's state and its
 GitLab calls; `IssueLabels.qml` draws its label editor and `IssueComments.qml`
 its comments. CI runs both suites, and `tests/run.sh` checks that reads never
