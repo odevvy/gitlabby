@@ -3,7 +3,6 @@ link-not-accent	SettingsView.qml	text: "Sign out"\n          color: view.host.ac
 link-big	SettingsView.qml	color: view.host.accent\n          font.pixelSize: Style.font.bodySmall\n          MouseArea	color: view.host.accent\n          font.pixelSize: Style.font.body\n          MouseArea	qml
 row-grows	SettingsView.qml	implicitHeight: Math.max(accountText.implicitHeight, Style.space(28))	implicitHeight: accountText.implicitHeight + (view.confirming ? Style.space(28) : 0)	qml
 text-under-link	SettingsView.qml	 - (signOutLink.visible ? signOutLink.implicitWidth : confirmRow.visible ? confirmRow.implicitWidth : 0)	 - 0	qml
-question-text	SettingsView.qml	"Sign out of gitlab.com?"	"Sign out of glab on this computer? glab in your terminal is signed out too, and the saved boards are deleted."	qml
 heading-old	SettingsView.qml	Heading { text: "Account" }	Heading { text: "GitLab account" }	qml
 yes-quiet	SettingsView.qml	small: true; danger: true; label: "Yes, sign out"	small: true; label: "Yes, sign out"	qml
 no-tip	SettingsView.qml	visible: yesButton.hovered	visible: false	qml

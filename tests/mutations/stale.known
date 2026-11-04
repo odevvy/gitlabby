@@ -1,7 +1,3 @@
-stale v123.tsv confirm-case
-stale v124.tsv question-text
-stale v126.tsv comments-no-spinner
-stale v126.tsv picker-no-spinner
 stale v127.tsv switch-keeps-form
 stale v129.tsv keys-button-dead
 stale v130.tsv no-refreshing
