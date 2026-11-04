@@ -848,6 +848,51 @@ test("merge requests: the answer checked, status pills, reviewer marks, sublines
   assert.match(svc, /Date\.now\(\) - last\.startedAt < 60000/)
 })
 
+test("to-dos (v0.1.77): the answer checked, reasons, refs, sublines, the column, the badge, the scope", () => {
+  const raw = JSON.stringify({ state: "ready", scope: "all", updatedAt: "u", todos: [
+    { id: "gid://gitlab/Todo/9", action: "mentioned", kind: "issue", iid: 31, title: "Login", url: "https://gitlab.com/g/p/-/issues/31", project: "g/p", author: { username: "alice", name: "Alice", avatar: "http://x" }, at: "t" },
+    { id: 8, action: "build_failed", kind: "mr", iid: 7, title: "Fix", url: "javascript:x", project: "o/q", author: null },
+    { id: 7, action: "weird", kind: "epic", iid: "x", title: null }, null, "x"],
+    assigned: [{ iid: 12, title: "Cache", url: "https://gitlab.com/g/p/-/issues/12", project: "g/p", labels: ["In Progress", 5, "api"], updatedAt: "t", notes: 5 }, { iid: 0 }, { iid: 3, notes: -1 }] })
+  const a = L.todosAnswer(raw)
+  assert.deepEqual(a.todos[0], { id: "gid://gitlab/Todo/9", action: "mentioned", kind: "issue", iid: 31, title: "Login", url: "https://gitlab.com/g/p/-/issues/31", project: "g/p", author: { username: "alice", name: "Alice", avatar: "" }, at: "t" })
+  assert.equal(a.todos.length, 3)
+  assert.deepEqual([a.todos[1].url, a.todos[1].id, a.todos[2].kind, a.todos[2].iid, a.todos[2].title], ["", "8", "other", 0, ""])
+  assert.deepEqual(a.assigned.map(r => [r.iid, r.labels, r.notes]), [[12, ["In Progress", "api"], 5], [3, [], 0]])
+  assert.deepEqual(L.todosAnswer("junk"), { state: "error", message: "board-fetch gave an unreadable answer.", todos: [], assigned: [] })
+  assert.deepEqual(L.todosAnswer(JSON.stringify({ state: "logged-out", message: "m" })), { state: "logged-out", message: "m", todos: [], assigned: [] })
+  assert.equal(L.todosAnswer(JSON.stringify({ state: "error" })).message, "Could not load your to-dos.")
+  // Reasons in a few words; a failed pipeline or a conflict in the urgent tone.
+  const words = ["mentioned", "directly_addressed", "assigned", "review_requested", "build_failed", "unmergeable", "approval_required", "marked", "nope"].map(x => L.todoAction({ action: x }).text)
+  assert.deepEqual(words, ["mentioned you", "mentioned you", "assigned you", "review requested", "pipeline failed", "can't merge", "approval required", "to-do added", "to-do"])
+  assert.equal(L.todoAction({ action: "build_failed" }).color, "#ec5941")
+  assert.equal(L.todoAction({ action: "approval_required" }).color, "#c17d10")
+  assert.equal(L.todoAction({ action: "mentioned" }).color, "")
+  assert.equal(L.todoAction({ action: "mentioned" }).glyph, "\uf1fa")
+  assert.equal(L.todoAction({ action: "toString" }).text, "to-do", "own keys only")
+  assert.deepEqual([L.todoRef({ kind: "issue", iid: 31 }), L.todoRef({ kind: "mr", iid: 7 }), L.todoRef({ kind: "other", iid: 3 }), L.todoRef({ kind: "issue", iid: 0 })], ["#31", "!7", "", ""])
+  assert.equal(L.todoSubline(a.todos[0]), "g/p  \u00b7  by Alice")
+  assert.equal(L.todoSubline(a.todos[1]), "o/q")
+  // An assigned issue's column: on the board's project, its label's column; else open.
+  const cols = [{ name: "Open", kind: "open" }, { name: "in progress", kind: "label" }, { name: "api", kind: "assignee" }, { name: "review", kind: "label" }]
+  assert.equal(L.issueColumn(a.assigned[0], "g/p", cols), "in progress")
+  assert.equal(L.issueColumn(a.assigned[0], "o/q", cols), "open", "another project's issue")
+  assert.equal(L.issueColumn(Object.assign({}, a.assigned[0], { labels: ["api"] }), "g/p", cols), "open", "only label columns")
+  assert.equal(L.issueColumn(a.assigned[0], "g/p", []), "open")
+  assert.equal(L.issueColumn(Object.assign({}, a.assigned[0], { labels: ["review"] }), "g/p", [{ name: "Review", kind: "label" }]), "Review", "any case, the column's own name")
+  assert.equal(L.issueSubline(a.assigned[0]), "g/p  \u00b7  5 comments")
+  assert.equal(L.issueSubline({ project: "g/p", notes: 1 }), "g/p  \u00b7  1 comment")
+  assert.equal(L.issueSubline({ project: "g/p", notes: 0 }), "g/p")
+  assert.equal(L.todoBadge(a), "3")
+  assert.equal(L.todoBadge({ state: "ready", todos: new Array(12).fill({}) }), "9+")
+  assert.equal(L.todoBadge({ state: "ready", todos: [] }), "")
+  assert.equal(L.todoBadge(undefined), "")
+  assert.equal(L.todoBadge({ state: "error", todos: [{}] }), "")
+  assert.deepEqual(L.todosArgs("all"), ["todos"])
+  assert.deepEqual(L.todosArgs("g/p"), ["todos", "--project", "g/p"])
+  for (const bad of ["g", "g/../p", "g/p;rm", "", "42"]) assert.deepEqual(L.todosArgs(bad), ["todos"], bad)
+})
+
 test("merge requests view wiring: m and the header button open it; it loads on open, scope or r only", () => {
   const fs = require("node:fs"), path = require("node:path"), dir = path.join(__dirname, "..")
   const board = fs.readFileSync(path.join(dir, "Board.qml"), "utf8")

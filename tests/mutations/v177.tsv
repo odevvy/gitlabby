@@ -5,3 +5,18 @@ td-user-dropped	board-fetch	pv=(-f "u=$u"); fi	pv=(); fi	sh
 td-https-off	board-fetch	url: ((.target // {}).webUrl | https)	url: ((.target // {}).webUrl // "")	sh
 td-limit	board-fetch	| .[:30]	| .[:50]	sh
 td-kind-off	board-fetch	{ISSUE: "issue", MERGEREQUEST: "mr"}	{ISSUE: "issue", MERGEREQUEST: "issue"}	sh
+n-url-raw	logic/mrs.js	url: httpsUrl(t.url), project: String(t.project || "")	url: String(t.url || ""), project: String(t.project || "")	node
+n-kind-any	logic/mrs.js	var kind = t.kind === "issue" || t.kind === "mr" ? t.kind : "other"	var kind = String(t.kind || "other")	node
+n-assigned-zero	logic/mrs.js	.filter(function(r) { return Number(r.iid) > 0 }).map(function(r) {\n      return { iid: Number(r.iid)	.map(function(r) {\n      return { iid: Number(r.iid)	node
+n-labels-any	logic/mrs.js	.filter(function(l) { return typeof l === "string" })	.map(String)	node
+n-failed-calm	logic/mrs.js	build_failed: ["pipeline failed", "bad"	build_failed: ["pipeline failed", ""	node
+n-mention-words	logic/mrs.js	mentioned: ["mentioned you"	mentioned: ["mentioned"	node
+n-own-keys	logic/mrs.js	var a = t && Object.prototype.hasOwnProperty.call(todoActions, t.action) ? todoActions[t.action]	var a = t && todoActions[t.action] ? todoActions[t.action]	node
+n-ref-sign	logic/mrs.js	(t.kind === "issue" ? "#" : t.kind === "mr" ? "!" : "")	(t.kind === "mr" ? "!" : "#")	node
+n-col-any-project	logic/mrs.js	if (!issue || issue.project !== project) return "open"	if (!issue) return "open"	node
+n-col-any-kind	logic/mrs.js	c && c.kind === "label" && labels	c && labels	node
+n-col-case	logic/mrs.js	labels.indexOf(String(c.name || "").toLowerCase())	labels.indexOf(String(c.name || ""))	node
+n-one-comment	logic/mrs.js	n === 1 ? "1 comment" : n > 1	n > 0	node
+n-badge-cap	logic/mrs.js	n > 9 ? "9+" : String(n)\n}\n// board-fetch arguments for a scope: "all", or one project path.\nfunction todosArgs	String(n)\n}\n// board-fetch arguments for a scope: "all", or one project path.\nfunction todosArgs	node
+n-args-loose	logic/mrs.js	? ["todos", "--project", String(scope)] : ["todos"]	? ["todos", "--project", String(scope)] : ["todos", "--project", String(scope)]	node
+n-subline-who	logic/mrs.js	t.author && t.author.name ? "by " + t.author.name : ""	""	node
