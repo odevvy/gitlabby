@@ -198,7 +198,7 @@ Item {
       label: "To-do"
       on: host.view === "todos"
       tip: "To-do (t)"
-      badge: Logic.todoBadge((host.feed.todoAnswers[todoScope] || {}).data)
+      badge: Logic.todoBadge((host.feed.todos.answers[todoScope] || {}).data)
       onClicked: host.showView("todos")
     }
   }

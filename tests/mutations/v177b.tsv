@@ -1,8 +1,8 @@
 # v0.1.77 the To-do view (run177b.py): name, file, from, to, kind
 v-no-open	Board.qml	    if (name === "todos" && view !== "todos") todoView.open()\n	\n	qml
-v-reopen-forces	TodoView.qml	function open() { cursor = 0; host.feed.requestTodos(scope, false) }	function open() { cursor = 0; host.feed.requestTodos(scope, true) }	qml
+v-reopen-forces	TodoView.qml	function open() { cursor = 0; host.feed.todos.request(scope, false) }	function open() { cursor = 0; host.feed.todos.request(scope, true) }	qml
 v-scope-ignored	TodoView.qml	readonly property string scope: mode === "project" && host.project !== "" ? host.project : "all"	readonly property string scope: "all"	qml
-v-r-soft	TodoView.qml	function refresh() { host.feed.requestTodos(scope, true) }	function refresh() { host.feed.requestTodos(scope, false) }	qml
+v-r-soft	TodoView.qml	function refresh() { host.feed.todos.request(scope, true) }	function refresh() { host.feed.todos.request(scope, false) }	qml
 v-loading-loud	Board.qml	(view === "mrs" && mrsView.loading) || todosReloading)	(view === "mrs" && mrsView.loading) || (view === "todos" && todoView.loading))	qml
 v-reload-quiet	Board.qml	readonly property bool todosReloading: view === "todos" && todoView.loading && todoView.answer !== null	readonly property bool todosReloading: false	qml
 v-no-spinner-row	TodoView.qml	visible: !view.answer ? view.loading : view.answer.state !== "ready"	visible: view.answer !== null && view.answer.state !== "ready"	qml
@@ -18,7 +18,7 @@ v-status-board	Board.qml	var at = view !== "mrs" && view !== "todos" ? updatedAt
 v-counts	TodoView.qml	out.push({ kind: "head", title: s[1], count: s[2].length })	out.push({ kind: "head", title: s[1], count: 0 })	qml
 h-tabs-hidden	BoardHeader.qml	|| host.view === "todos"\n  TextMetrics	\n  TextMetrics	qml
 h-no-chip	BoardHeader.qml	readonly property bool readOnlyView: host.view === "mrs" || host.view === "todos"	readonly property bool readOnlyView: host.view === "mrs"	qml
-h-badge-off	BoardHeader.qml	badge: Logic.todoBadge((host.feed.todoAnswers[todoScope] || {}).data)	badge: ""	qml
+h-badge-off	BoardHeader.qml	badge: Logic.todoBadge((host.feed.todos.answers[todoScope] || {}).data)	badge: ""	qml
 h-width-off	BoardHeader.qml	\n      + todoLong.advanceWidth + Style.space(20) + todoTab.badgeRoom : 0)	 : 0)	qml
 h-click-off	BoardHeader.qml	onClicked: host.showView("todos")	onClicked: {}	qml
 h-scope-off	Board.qml	        todoScope: todoView.scope\n	\n	qml
