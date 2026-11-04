@@ -900,8 +900,10 @@ test("merge requests view wiring: m and the header button open it; it loads on o
   const fs = require("node:fs"), path = require("node:path"), dir = path.join(__dirname, "..")
   const board = fs.readFileSync(path.join(dir, "Board.qml"), "utf8")
   const view = fs.readFileSync(path.join(dir, "MrsView.qml"), "utf8")
+  const list = fs.readFileSync(path.join(dir, "components", "ScopedList.qml"), "utf8")
   assert.match(board, /MrsView \{ id: mrsView; host: root; anchors\.fill: parent; visible: root\.view === "mrs" \}/)
-  assert.match(board, /if \(name === "mrs" && view !== "mrs"\) mrsView\.open\(\)/)
+  assert.match(board, /lists: \(\{ mrs: mrsView, todos: todoView \}\)/)
+  assert.match(board, /if \(lists\[name\] && view !== name\) lists\[name\]\.open\(\)/)
   const keys = fs.readFileSync(path.join(dir, "BoardKeys.qml"), "utf8")
   assert.match(keys, /else if \(key === "m"\) host\.toggleView\("mrs"\)/)
   assert.match(keys, /key === "r" && host\.view === "mrs"\) mrsView\.refresh\(\)/)
@@ -912,14 +914,16 @@ test("merge requests view wiring: m and the header button open it; it loads on o
   assert.match(header, /Logic\.mrBadge\(\(host\.feed\.mrs\.answers\[mrsScope\] \|\| \{\}\)\.data\)/)
   // Only the view asks for the lists, and only these three ways.
   assert.deepEqual([...board.matchAll(/mrs\.request\(|requestMrs\(/g)].length, 0)
-  assert.deepEqual([...view.matchAll(/host\.feed\.mrs\.request\(([^)]*)\)/g)].map(m => m[1]), ["scope, false", "scope, true", "scope, false"])
+  // (MrsView itself, or the ScopedList it is drawn with.)
+  const asks = src => [...src.matchAll(/(?:host\.feed\.mrs|fetch)\.request\(([^)]*)\)/g)].map(m => m[1])
+  assert.deepEqual(new Set(asks(view).concat(asks(list))), new Set(["scope, false", "scope, true"]))
   // Read-only: a row opens its link and nothing else runs.
-  assert.doesNotMatch(view, /execDetached|Process \{|helperPath/)
-  assert.match(view, /host\.openUrl\(rows\[cursor\]\.url\)/)
+  assert.doesNotMatch(view + list, /execDetached|Process \{|helperPath/)
+  assert.match(view + list, /host\.openUrl\(rows\[cursor\]\.url\)/)
   // Titles and messages from GitLab are plain text: every text is a BoardText
   // (PlainText), and none switches to rich text.
   assert.match(fs.readFileSync(path.join(dir, "components", "BoardText.qml"), "utf8"), /textFormat: Text\.PlainText/)
-  assert.doesNotMatch(view, /textFormat|\bText \{|\bLabel \{/)
+  assert.doesNotMatch(view + list, /textFormat|\bText \{|\bLabel \{/)
 })
 
 // --- 0.1.38 bulk actions ---------------------------------------------------------

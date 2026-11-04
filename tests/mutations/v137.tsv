@@ -18,15 +18,15 @@ svc-force-ignored	ScopedFetch.qml	if (!force && last &&	if (last &&	qml
 svc-no-pending	ScopedFetch.qml	if (p) request(p.scope, p.force)	/* m */	qml
 svc-forget-keeps	ScopedFetch.qml	function clear() { answers = ({}); pending = null }	function clear() { pending = null }	qml
 svc-dup-fetch	ScopedFetch.qml	    if (loading === next) return\n	/* m */\n	qml
-v-no-open-fetch	Board.qml	if (name === "mrs" && view !== "mrs") mrsView.open()	/* m */	qml
+v-no-open-fetch	Board.qml	if (lists[name] && view !== name) lists[name].open()	/* m */	qml
 v-r-ignored	BoardKeys.qml	else if (key === "r" && host.view === "mrs") mrsView.refresh()	/* m */	qml
 v-m-ignored	BoardKeys.qml	else if (key === "m") host.toggleView("mrs")	/* m */	qml
 v-enter-ignored	BoardKeys.qml	else if (host.view === "mrs") mrsView.activate()	/* m */	qml
 v-move-ignored	BoardKeys.qml	else if (host.view === "mrs" && dy !== 0) mrsView.moveCursor(dy)	/* m */	qml
 v-badge-in-view	BoardHeader.qml	visible: mrsButton.badge !== "" && host.view !== "mrs"	visible: true	qml
-v-scope-no-fetch	MrsView.qml	onScopeChanged: if (visible) host.feed.mrs.request(scope, false)	/* m */	qml
-v-cursor-unclamped	MrsView.qml	cursor = Math.max(0, Math.min(rows.length - 1, cursor + dy))	cursor = cursor + dy	qml
+v-scope-no-fetch	components/ScopedList.qml	onScopeChanged: if (visible) fetch.request(scope, false)	/* m */	qml
+v-cursor-unclamped	components/ScopedList.qml	cursor = Math.max(0, Math.min(rows.length - 1, cursor + dy))	cursor = cursor + dy	qml
 v-reviewers-hidden	MrsView.qml	model: (mr.row.reviewers || []).slice(0, 4)	model: []	qml
-v-section-order	MrsView.qml	answer.review.concat(answer.mine)	answer.mine.concat(answer.review)	qml
+v-section-order	MrsView.qml	return [["review", "Waiting on your review", a.review, "Nothing waiting on your review."],\n            ["mine", "Yours", a.mine, "No open merge requests of yours."]]	return [["mine", "Yours", a.mine, "No open merge requests of yours."],\n            ["review", "Waiting on your review", a.review, "Nothing waiting on your review."]]	qml
 v-retry-hint	MrsView.qml	(view.loading ? "" : "  Press r to try again.")	""	qml
-v-this-project-wrong	MrsView.qml	mode === "project" && host.project !== "" ? host.project : "all"	"all"	qml
+v-this-project-wrong	components/ScopedList.qml	mode === "project" && host.project !== "" ? host.project : "all"	"all"	qml

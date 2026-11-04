@@ -3,24 +3,24 @@ m-footer-back	MrsView.qml	      + (view.loading && view.entry ? "  \u00b7  refre
 m-note-dim	MrsView.qml	      elide: Text.ElideRight\n      color: view.host.quiet	      elide: Text.ElideRight\n      color: view.host.dim	qml
 m-note-no-time	MrsView.qml	: view.entry ? "  \u00b7  updated " + view.stamp(view.entry.startedAt) : "")	: "")	qml
 m-note-indented	MrsView.qml	anchors { left: parent.left; right: tabs.left;	anchors { left: parent.left; leftMargin: Style.space(40); right: tabs.left;	qml
-m-underline-all	MrsView.qml	            visible: tab.on\n	            visible: true\n	qml
-m-underline-dim	MrsView.qml	            height: 2; radius: 1\n            color: view.host.accent	            height: 2; radius: 1\n            color: view.host.dim	qml
-m-tab-off-dim	MrsView.qml	tabMouse.containsMouse ? view.host.dim : view.host.quiet	tabMouse.containsMouse ? view.host.dim : view.host.dim	qml
-m-tab-on-accent	MrsView.qml	color: tab.on ? view.host.foreground :	color: tab.on ? view.host.accent :	qml
-m-tabs-left	MrsView.qml	      anchors { right: parent.right; verticalCenter: parent.verticalCenter }\n      spacing: Style.space(14)	      anchors { left: parent.left; leftMargin: Style.space(140); verticalCenter: parent.verticalCenter }\n      spacing: Style.space(14)	qml
-m-count-dim	MrsView.qml	objectName: "mrsCount"; text: String(item.modelData.count || 0); color: view.host.quiet	objectName: "mrsCount"; text: String(item.modelData.count || 0); color: view.host.dim	qml
-m-empty-dim	MrsView.qml	text: item.modelData.text || ""\n            color: view.host.quiet	text: item.modelData.text || ""\n            color: view.host.dim	qml
-m-empty-indent	MrsView.qml	            anchors.verticalCenter: parent.verticalCenter\n            text: item.modelData.text	            leftPadding: Style.space(8)\n            anchors.verticalCenter: parent.verticalCenter\n            text: item.modelData.text	qml
-m-row-outline	MrsView.qml	            border.width: 0\n	            border { width: current ? 1 : 0; color: view.host.accent }\n	qml
-m-row-heavy	MrsView.qml	view.host.foreground.b, 0.05) : "transparent"	view.host.foreground.b, 0.3) : "transparent"	qml
-m-row-all-filled	MrsView.qml	color: current ? Qt.rgba(	color: true ? Qt.rgba(	qml
-m-bar-all	MrsView.qml	              visible: mr.current\n	              visible: true\n	qml
-m-bar-dim	MrsView.qml	width: 2; height: parent.height - Style.space(12); radius: 1\n              color: view.host.accent	width: 2; height: parent.height - Style.space(12); radius: 1\n              color: view.host.dim	qml
-m-bar-full	MrsView.qml	width: 2; height: parent.height - Style.space(12);	width: 2; height: parent.height;	qml
-m-bar-inset	MrsView.qml	anchors { left: parent.left; verticalCenter: parent.verticalCenter }\n              width: 2	anchors { left: parent.left; leftMargin: Style.space(4); verticalCenter: parent.verticalCenter }\n              width: 2	qml
+m-underline-all	components/ScopedList.qml	            visible: tab.on\n	            visible: true\n	qml
+m-underline-dim	components/ScopedList.qml	            height: 2; radius: 1\n            color: view.host.accent	            height: 2; radius: 1\n            color: view.host.dim	qml
+m-tab-off-dim	components/ScopedList.qml	tabMouse.containsMouse ? view.host.dim : view.host.quiet	tabMouse.containsMouse ? view.host.dim : view.host.dim	qml
+m-tab-on-accent	components/ScopedList.qml	color: tab.on ? view.host.foreground :	color: tab.on ? view.host.accent :	qml
+m-tabs-left	components/ScopedList.qml	      anchors { right: parent.right; verticalCenter: parent.verticalCenter }\n      spacing: Style.space(14)	      anchors { left: parent.left; leftMargin: Style.space(140); verticalCenter: parent.verticalCenter }\n      spacing: Style.space(14)	qml
+m-count-dim	components/ScopedList.qml	objectName: view.names.count; text: String(item.modelData.count || 0); color: view.host.quiet	objectName: view.names.count; text: String(item.modelData.count || 0); color: view.host.dim	qml
+m-empty-dim	components/ScopedList.qml	text: item.modelData.text || ""\n            color: view.host.quiet	text: item.modelData.text || ""\n            color: view.host.dim	qml
+m-empty-indent	components/ScopedList.qml	            anchors.verticalCenter: parent.verticalCenter\n            text: item.modelData.text	            leftPadding: Style.space(8)\n            anchors.verticalCenter: parent.verticalCenter\n            text: item.modelData.text	qml
+m-row-outline	components/ScopedList.qml	            border.width: 0\n	            border { width: current ? 1 : 0; color: view.host.accent }\n	qml
+m-row-heavy	components/ScopedList.qml	view.host.foreground.b, 0.05) : "transparent"	view.host.foreground.b, 0.3) : "transparent"	qml
+m-row-all-filled	components/ScopedList.qml	color: current ? Qt.rgba(	color: true ? Qt.rgba(	qml
+m-bar-all	components/ScopedList.qml	              visible: rowBox.current\n	              visible: true\n	qml
+m-bar-dim	components/ScopedList.qml	width: 2; height: parent.height - Style.space(12); radius: 1\n              color: view.host.accent	width: 2; height: parent.height - Style.space(12); radius: 1\n              color: view.host.dim	qml
+m-bar-full	components/ScopedList.qml	width: 2; height: parent.height - Style.space(12);	width: 2; height: parent.height;	qml
+m-bar-inset	components/ScopedList.qml	anchors { left: parent.left; verticalCenter: parent.verticalCenter }\n              width: 2	anchors { left: parent.left; leftMargin: Style.space(4); verticalCenter: parent.verticalCenter }\n              width: 2	qml
 m-status-dim	MrsView.qml	color: mr.status.color !== "" ? mr.status.color : view.host.dim\n	color: view.host.dim\n	qml
-m-meta-dim	MrsView.qml	                elide: Text.ElideRight\n                color: view.host.quiet	                elide: Text.ElideRight\n                color: view.host.dim	qml
+m-meta-dim	MrsView.qml	        elide: Text.ElideRight\n        color: view.host.quiet	        elide: Text.ElideRight\n        color: view.host.dim	qml
 m-age-dim	MrsView.qml	text: Logic.age(mr.row.updatedAt); color: view.host.quiet	text: Logic.age(mr.row.updatedAt); color: view.host.dim	qml
-m-tab-no-click	MrsView.qml	onClicked: view.setMode(tab.modelData.mode)	onClicked: {}	qml
-m-heading-back	MrsView.qml	    implicitHeight: tabs.implicitHeight\n	    implicitHeight: tabs.implicitHeight\n    BoardText { x: 300; text: "Merge requests" }\n	qml
-m-close-back	MrsView.qml	    implicitHeight: tabs.implicitHeight\n	    implicitHeight: tabs.implicitHeight\n    GlyphButton { x: 300; host: view.host; glyph: "\uf00d"; onClicked: view.host.back() }\n	qml
+m-tab-no-click	components/ScopedList.qml	onClicked: view.setMode(tab.modelData.mode)	onClicked: {}	qml
+m-heading-back	components/ScopedList.qml	    implicitHeight: tabs.implicitHeight\n	    implicitHeight: tabs.implicitHeight\n    BoardText { x: 300; text: "Merge requests" }\n	qml
+m-close-back	components/ScopedList.qml	    implicitHeight: tabs.implicitHeight\n	    implicitHeight: tabs.implicitHeight\n    GlyphButton { x: 300; host: view.host; glyph: "\uf00d"; onClicked: view.host.back() }\n	qml

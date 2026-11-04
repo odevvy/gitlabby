@@ -14,9 +14,9 @@ card-right-opens	BoardView.qml	if (mouse.button === Qt.RightButton) { view.host.
 card-right-drags	BoardView.qml	if (!(pressedButtons & Qt.LeftButton)) return	if (!pressed) return	qml
 card-right-press	BoardView.qml	onPressed: function(mouse) { if (mouse.button !== Qt.LeftButton) return; pressedAt	onPressed: function(mouse) { pressedAt	qml
 card-left-copies	BoardView.qml	if (mouse.button === Qt.RightButton) { view.host.copyLink(card.modelData, "#"); return }	if (true) { view.host.copyLink(card.modelData, "#"); return }	qml
-mr-right-off	MrsView.qml	acceptedButtons: Qt.LeftButton | Qt.RightButton\n              onClicked	onClicked	qml
-mr-right-opens	MrsView.qml	if (mouse.button === Qt.RightButton) view.host.copyLink	if (mouse.button === Qt.NoButton) view.host.copyLink	qml
-mr-left-copies	MrsView.qml	if (mouse.button === Qt.RightButton) view.host.copyLink(mr.row, "!"); else view.host.openUrl(mr.row.url)	view.host.copyLink(mr.row, "!")	qml
+mr-right-off	components/ScopedList.qml	acceptedButtons: Qt.LeftButton | Qt.RightButton\n              onClicked	onClicked	qml
+mr-right-opens	components/ScopedList.qml	if (mouse.button === Qt.RightButton) view.host.copyLink	if (mouse.button === Qt.NoButton) view.host.copyLink	qml
+mr-left-copies	components/ScopedList.qml	if (mouse.button === Qt.RightButton) view.host.copyLink(rowBox.row, view.copySign(rowBox.row)); else view.host.openUrl(rowBox.row.url)	view.host.copyLink(rowBox.row, view.copySign(rowBox.row))	qml
 keys-no-board-y	logic/board.js	    ["y", "Copy the link · or right-click"],\n    ["Shift+H / L"	    ["Shift+H / L"	node
 keys-no-issue-y	logic/board.js	    ["y", "Copy the link"],\n	\n	node
 keys-mr-no-right	logic/board.js	    ["y", "Copy the link · or right-click"],\n    ["r", "Refresh the lists"]	    ["y", "Copy the link"],\n    ["r", "Refresh the lists"]	node
