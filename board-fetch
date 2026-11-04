@@ -396,19 +396,20 @@ todos_list() {
     todos: ([.todos[] | select($p == "" or .project == $p)] | .[:30]), assigned: .assigned[:20]}' "$tmp/todos.n" 2>/dev/null ||
     emit error "GitLab returned an unreadable response."
 }
-mrs_list() {
-  local prefix="" kind pid miid
+mrs_rest() { # the same files as mrs_graphql, every row left for the detail GETs; or emits an error
+  local prefix="" q="state=opened&order_by=updated_at&sort=desc&per_page=20"
   [[ -z $project ]] || prefix="$base/"
-  local q="state=opened&order_by=updated_at&sort=desc&per_page=20"
-  if ! mrs_graphql; then
-    get "${prefix}merge_requests?scope=reviews_for_me&draft=false&$q" >"$tmp/mrs-review" || emit error "Could not load merge requests."
-    get "${prefix}merge_requests?scope=created_by_me&$q" >"$tmp/mrs-mine" || emit error "Could not load merge requests."
-    jq -se 'length == 2 and all(type == "array")' "$tmp/mrs-review" "$tmp/mrs-mine" >/dev/null 2>&1 ||
-      emit error "GitLab returned an unreadable response."
-    echo '{}' >"$tmp/mrd"; echo '{}' >"$tmp/mrr.all"
-    jq -rn --slurpfile r "$tmp/mrs-review" --slurpfile m "$tmp/mrs-mine" \
-      '[($r[0] | map(select(.draft != true)) | .[:10][]), ($m[0][:10][])] | unique_by([.project_id, .iid])[] | "\(.project_id) \(.iid)"' >"$tmp/mrs-redo" 2>/dev/null
-  fi
+  get "${prefix}merge_requests?scope=reviews_for_me&draft=false&$q" >"$tmp/mrs-review" || emit error "Could not load merge requests."
+  get "${prefix}merge_requests?scope=created_by_me&$q" >"$tmp/mrs-mine" || emit error "Could not load merge requests."
+  jq -se 'length == 2 and all(type == "array")' "$tmp/mrs-review" "$tmp/mrs-mine" >/dev/null 2>&1 ||
+    emit error "GitLab returned an unreadable response."
+  echo '{}' >"$tmp/mrd"; echo '{}' >"$tmp/mrr.all"
+  jq -rn --slurpfile r "$tmp/mrs-review" --slurpfile m "$tmp/mrs-mine" \
+    '[($r[0] | map(select(.draft != true)) | .[:10][]), ($m[0][:10][])] | unique_by([.project_id, .iid])[] | "\(.project_id) \(.iid)"' >"$tmp/mrs-redo" 2>/dev/null
+}
+mrs_list() {
+  local kind pid miid
+  mrs_graphql || mrs_rest
   mr_detail() { # project_id iid
     peek "projects/$1/merge_requests/$2" >"$tmp/mrd-$1-$2" || rm -f "$tmp/mrd-$1-$2"
     peek "projects/$1/merge_requests/$2/reviewers" >"$tmp/mrr-$1-$2" || rm -f "$tmp/mrr-$1-$2"
