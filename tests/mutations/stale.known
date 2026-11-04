@@ -1,8 +1,3 @@
-stale v135.tsv tip-no-why
-stale v136.tsv svc-no-notify
-stale v136.tsv svc-watch-alerts-off
-stale v136.tsv logic-alert-default-on
-stale v137.tsv v-badge-in-view
 stale v138.tsv board-close-keeps
 stale v139.tsv bd-dismiss-case
 stale v139.tsv iv-edit-shown

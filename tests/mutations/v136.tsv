@@ -1,4 +1,3 @@
-svc-no-notify	BoardService.qml	events.forEach(function(ev) { Quickshell.execDetached(Logic.notifyArgv(ev)) })	events.forEach(function(ev) {})	qml
 svc-first-load-alerts	BoardService.qml	var events = baselines[key] ? Logic.alertEvents(baselines[key], data,	var events = true ? Logic.alertEvents(baselines[key] || { state: "ready", project: data.project, columns: [] }, data,	qml
 svc-error-keeps-baseline	BoardService.qml	if (!data || data.state !== "ready") { dropBaseline(key); return }	if (!data || data.state !== "ready") { return }	qml
 svc-no-baseline-update	BoardService.qml	    b[key] = data\n    baselines = b	    baselines = b	qml
@@ -7,13 +6,11 @@ svc-own-moves-forever	BoardService.qml	m[key] = moved.filter(function(x) { retur
 svc-bg-always	BoardService.qml	request(cfg.project, cfg.boardId, true, cad.sec * 1000 - 2000, 0)	request(cfg.project, cfg.boardId, false, 0, 0)	qml
 svc-bg-off	BoardService.qml	running: service.watchedKeys.length > 0	running: false	qml
 svc-bg-never-stops	BoardService.qml	running: service.watchedKeys.length > 0	running: true	qml
-svc-watch-alerts-off	BoardService.qml	if (cfg && (cfg.review || cfg.idle)) {	if (cfg) {	qml
 svc-unwatch-keeps	BoardService.qml	if (o !== owner) { owners[o] = watchers[key][o]; any = true }	{ owners[o] = watchers[key][o]; any = true }	qml
 svc-bg-signed-out	BoardService.qml	if (!cfg || (last && (last.state === "logged-out" || last.state === "no-glab"))) return	if (!cfg) return	qml
 board-no-watch	Board.qml	onWatchCfgChanged: feed.watch(watchOwner, watchCfg)	onWatchCfgChanged: {}	qml
 board-no-own-move	Board.qml	if (data.state === "ready") feed.noteOwnMove(fetchKey, move.iid)	if (false) feed.noteOwnMove(fetchKey, move.iid)	qml
 board-no-persist	Board.qml	for (var k in p) if (k !== "board") entry[k] = p[k]	for (var k in p) if (k !== "board" && k !== "alerts") entry[k] = p[k]	qml
-logic-alert-default-on	logic/alerts.js	return { review: !!(e && e.review === true), idle: !!(e && e.idle === true) }	return { review: !(e && e.review === false), idle: !!(e && e.idle === true) }	qml
 logic-no-batch	logic/alerts.js	} else if (came.length > 1) {	} else if (false) {	qml
 logic-batch-each	logic/alerts.js	if (came.length === 1) {	if (came.length >= 1) {	qml
 logic-no-escape	logic/alerts.js	"-g", "\uf296", oneLine(ev.headline, 120), escaped(oneLine(ev.body, 300))]	"-g", "\uf296", oneLine(ev.headline, 120), oneLine(ev.body, 300)]	qml
