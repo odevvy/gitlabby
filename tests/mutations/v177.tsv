@@ -1,0 +1,7 @@
+td-not-pending	board-fetch	todos(state: [pending], first: 50)	todos(first: 50)	sh
+td-no-filter	board-fetch	select($p == "" or .project == $p)	select(true)	sh
+td-no-rest	board-fetch	todos_graphql || todos_rest	todos_graphql || emit error "x"	sh
+td-user-dropped	board-fetch	pv=(-f "u=$u"); fi	pv=(); fi	sh
+td-https-off	board-fetch	url: ((.target // {}).webUrl | https)	url: ((.target // {}).webUrl // "")	sh
+td-limit	board-fetch	| .[:30]	| .[:50]	sh
+td-kind-off	board-fetch	{ISSUE: "issue", MERGEREQUEST: "mr"}	{ISSUE: "issue", MERGEREQUEST: "issue"}	sh
