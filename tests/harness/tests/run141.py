@@ -84,12 +84,14 @@ ok("U3 a changed board: columns replaced", "columns" in changes and "colors" not
 # (The placeholder pulse and the issue view's loading bar already stop: they run
 # while visible, and KeyboardPanel hides the card when closed.)
 h.ev("root.opened = false"); h.spin(40)
-h.ev("root.refresh()"); h.spin(600)
-r0 = h.ev("header.refreshButton.rotation"); h.spin(300)
+h.ev("root.refresh()"); h.spin(60)
+rot = lambda: h.ev("header.refreshButton.rotation")
+h.until(lambda: rot() % 360 == 0)  # the spin winds down to upright
+r0 = rot(); h.spin(300)
 ok("A1 a fetch with the popup closed: refresh icon still, upright", h.ev("root.loading") and r0 % 360 == 0 and h.ev("header.refreshButton.rotation") == r0, r0)
 ok("A2 the closed card is hidden, so visible-gated pulses stop too", h.ev("panel.visible") is False and h.ev("skeleton.visible") is False)
-h.ev("root.opened = true"); h.spin(300)
-ok("A3 open while loading: it spins", h.ev("header.refreshButton.rotation") % 360 != 0)
+h.ev("root.opened = true")
+ok("A3 open while loading: it spins", h.until(lambda: rot() % 360 != 0))
 h.answer("board", board(2)); h.spin(1000)
 
 # --- the one https check -------------------------------------------------------------------
