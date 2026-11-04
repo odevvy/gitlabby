@@ -4,6 +4,20 @@
 # tests/run.sh (sh), tests/logic.test.js (node) or the harness test <qml-test> (qml). A mutation must make
 # its test fail. \n in from/to is a newline. Usage: mutate.sh <plugin-dir> <spec> <qml-test>
 # PYTHON: an interpreter with PySide6 (python3).
+# mutate.sh --check <plugin-dir> <spec>...: only that every row's `from` is still
+# in its file (no test runs; a second or two), so a row can't go stale unnoticed.
+# Prints "stale <spec> <name>" per row that no longer matches.
+if [[ $1 == --check ]]; then
+  S=$(cd "$2" && pwd); shift 2; bad=0
+  for spec in "$@"; do
+    while IFS=$'\t' read -r name file from _; do
+      [[ -z $name || $name == \#* ]] && continue
+      src=$(cat "$S/$file" 2>/dev/null) || src=""
+      [[ $src == *"${from//\\n/$'\n'}"* ]] || { echo "stale $(basename "$spec") $name"; bad=1; }
+    done <"$spec"
+  done
+  exit $bad
+fi
 S=$(cd "$1" && pwd); spec=$2; qt=$3; survived=0
 w=$(mktemp -d); trap 'rm -rf "$w"' EXIT
 while IFS=$'\t' read -r name file from to kind; do
