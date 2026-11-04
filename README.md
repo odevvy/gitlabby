@@ -43,9 +43,9 @@ the picker's board step. The header shows a star on the default board and a
 
 - The title, `group/project / Board ▾`, opens the picker: pick a project (type
   to filter your projects, up to 500, most recently active first), then one of its boards.
-- After the title, the **Board** and **Merge requests** tabs switch between the
-  two views (the current one is underlined; the Merge requests tab shows how many
-  wait on your review). On the right: `Updated`, then the refresh, columns
+- After the title, the **Board**, **Merge requests** and **To-do** tabs switch
+  between the three views (the current one is underlined; the Merge requests tab
+  shows how many wait on your review, the To-do tab how many to-dos are pending). On the right: `Updated`, then the refresh, columns
   (board only), keyboard and settings buttons. Buttons and tabs are 28-point targets
   with a faint fill on hover, and every tip names its key. Tips come after
   half a second of hovering, and never while a column folds, so a strip or
@@ -474,6 +474,38 @@ the REST way: two list GETs plus, per row, one GET of the merge request
 (pipeline and status) and one of its reviewers (their states). Either way the
 rows are the same.
 
+## To-do
+
+The **To-do** tab in the header (after Merge requests), or `t`, shows two
+lists:
+
+- **To-dos**: your pending GitLab to-dos, newest first, up to 30. Each row
+  says why in a few words: `mentioned you`, `review requested`, `pipeline
+  failed`, `assigned you`, `can't merge`, `approval required`, ... (a failed
+  pipeline or a conflict in red), then `#issue` or `!MR`, the title, the
+  project and who did it, and how long ago.
+- **Assigned to you**: open issues assigned to you, most recently changed
+  first, up to 20. On the right, the issue's column on this board when it is
+  in this board's project and one of its labels is a column here; else `open`.
+
+`All projects` (the default) and `This project` pick the scope, as on Merge
+requests. The first load is one spinner row; an error stays on that row with
+`Press r to try again.` The header's `Updated 14:05` says when the lists were
+read, and a quiet `read-only` chip follows the tabs.
+
+It is read-only: nothing is marked done. `Enter`, `o` or a click opens the
+issue or merge request as **Open links in** says (https links only); `y` or a
+right-click copies its link. The lists load when you open the view, switch its
+scope, or press `r`; never when the popup opens and never in the background.
+An answer under a minute old is reused, so a second monitor shows the same
+lists. The badge on the tab is how many to-dos were pending at the last look;
+nothing is fetched for it. A load is one GraphQL query (`glab api graphql`, a
+read-only `query`) for both lists, with your username (glab's) and the project
+as variables. Without a username, or if the query fails, times out or answers
+something unexpected, it is two REST GETs instead (`todos?state=pending`,
+`issues?scope=assigned_to_me`). It needs no more glab scopes than reading the
+board.
+
 ## Cards and colors
 
 - Label chips use each label's GitLab colors. Column headers have a dot in the
@@ -571,6 +603,7 @@ each shortcut on one line, with a quiet note after some (`asks first`).
 | `p` | Project and board |
 | `s` | Settings |
 | `m` | Merge requests |
+| `t` | To-do |
 | `?` | These shortcuts |
 | `Tab` / `Shift+Tab` | Next / previous bar panel |
 | `Esc` | Back to the board, then close |
@@ -593,6 +626,15 @@ each shortcut on one line, with a quiet note after some (`asks first`).
 | `Esc` | Leave the box |
 
 **Merge requests**
+
+| Key | Action |
+| --- | --- |
+| `j k` / `↓ ↑` | Move between them |
+| `Enter` / `o` | Open in the browser |
+| `y` | Copy the link · or right-click |
+| `r` | Refresh the lists |
+
+**To-do**
 
 | Key | Action |
 | --- | --- |
@@ -687,8 +729,8 @@ field focused. Your token stays with glab; the board never sees it.
 
 `glab` handles all authentication; the plugin never reads, stores, or prints
 a token, and never shows glab's own messages. Every read is a
-`glab api --method GET` request, except the Merge requests view's one
-GraphQL `query` (sent as a POST, as GraphQL requires; it reads only). The writes are one `PUT` to the issue when
+`glab api --method GET` request, except the Merge requests and To-do views' and the pipeline alert's
+GraphQL `query` (sent as a POST, as GraphQL requires; each reads only). The writes are one `PUT` to the issue when
 you drop a card, add or remove a label, or close or reopen it, and one `POST`
 to its notes when you comment; they need the `api` scope (what `glab auth login` asks for by
 default). Each `board-fetch` run ends within 40 seconds: no single glab call
@@ -754,6 +796,7 @@ one left behind is removed at sign-out or after a failed read.)
 ./board-fetch whoami                            # your username (not saved)
 ./board-fetch mrs [--project P]                 # open MRs for your review and yours, with reviewer state
 ./board-fetch pipes --project P                 # your open MRs in P with their head pipelines (the pipeline alert)
+./board-fetch todos [--project P]               # your pending to-dos and open issues assigned to you (To-do)
 ./board-fetch logout                            # glab auth logout, then delete the saved boards
 ./board-fetch boards --project P                # boards of a project
 ./board-fetch issue --project P --iid N         # one issue with its description

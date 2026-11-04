@@ -219,19 +219,22 @@ test("the README's Keyboard section lists exactly the keys the popup shows, grou
 test("the key groups: every view's keys, the setup panel's, no key twice in a group, Board's four on the left", () => {
   const group = title => (L.keyGroups.find(g => g.title === title) || { keys: [] }).keys
   const action = (title, key) => (group(title).find(([k]) => k === key) || [])[1] || ""
-  assert.deepEqual(L.keyGroups.map(g => g.title), ["Board", "Picked cards", "Confirm a move or a close", "Setup panel", "Anywhere", "Issue", "Comment box", "Merge requests", "Scrolling", "Pickers and filters"])
+  assert.deepEqual(L.keyGroups.map(g => g.title), ["Board", "Picked cards", "Confirm a move or a close", "Setup panel", "Anywhere", "Issue", "Comment box", "Merge requests", "To-do", "Scrolling", "Pickers and filters"])
   assert.match(action("Setup panel", "Enter / Space"), /main button/)
   assert.match(action("Setup panel", "r"), /Try again/)
   assert.match(action("Anywhere", "?"), /shortcuts/)
   for (const k of ["o", "c", "e", "x"]) assert.ok(action("Issue", k), k)
   assert.match(action("Anywhere", "m"), /Merge requests/)
   for (const k of ["j_k / ↓_↑", "Enter / o", "r"]) assert.ok(action("Merge requests", k), k)
+  // v0.1.77: t opens To-do, with the same four keys as Merge requests.
+  assert.equal(action("Anywhere", "t"), "To-do")
+  assert.deepEqual(group("To-do"), group("Merge requests"))
   assert.match(action("Board", "v"), /bulk/)
   assert.match(action("Board", "Shift+H / L"), /asks first/)
   for (const k of ["Shift+H / L", "x", "e", "Enter / Space", "Esc"]) assert.ok(action("Picked cards", k), k)
   for (const g of L.keyGroups) assert.equal(new Set(g.keys.map(([k]) => k)).size, g.keys.length, g.title)
   // Every shortcut the popup had before 0.1.62's shorter rows is still listed.
-  assert.equal(L.keyGroups.reduce((n, g) => n + g.keys.length, 0), 38)
+  assert.equal(L.keyGroups.reduce((n, g) => n + g.keys.length, 0), 38 + 1 + 4)
   // v0.1.72: y copies the link on the board, in an issue and on Merge requests.
   assert.match(action("Board", "y"), /^Copy the link · or right-click$/)
   assert.match(action("Issue", "y"), /^Copy the link$/)
@@ -508,7 +511,7 @@ test("icon buttons: every GlyphButton, header button and tab has a tip, and ever
   assert.ok(tips.length >= 17, "found " + tips.length)  // 6 GlyphButtons, 11 IconTips (v0.1.30)
   const bracketed = tips.flatMap(t => [...t.matchAll(/\(([^()"]+)\)"/g)].map(m => m[1]))
   for (const k of bracketed) assert.ok(keys.has(k), "'" + k + "' in a tip is not a shortcut")
-  assert.deepEqual([...new Set(bracketed)].sort(), ["?", "Esc", "e", "m", "o", "p", "r", "s", "x"])
+  assert.deepEqual([...new Set(bracketed)].sort(), ["?", "Esc", "e", "m", "o", "p", "r", "s", "t", "x"])
 })
 
 // v0.1.30 regression: his saved setting, exactly as in shell.json. Omarchy
