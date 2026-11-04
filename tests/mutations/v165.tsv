@@ -47,7 +47,6 @@ q-switch-keeps-project	Board.qml	    project = Qt.binding(function() { return ro
 q-switch-no-account-check	Board.qml	      if (view === "settings") checkAccount()	      if (false) checkAccount()	qml
 q-switch-no-load	Board.qml	      if (opened) refresh()\n      else readCache()	      if (false) refresh()	qml
 q-service-not-told	Board.qml	  function switchServer() {\n    if (gitlabHost === shownHost) return\n    shownHost = gitlabHost\n    feed.setHost(gitlabHost)	  function switchServer() {\n    if (gitlabHost === shownHost) return\n    shownHost = gitlabHost	qml
-q-watch-no-host	Board.qml	base: refreshIntervalSec, host: gitlabHost }	base: refreshIntervalSec }	qml
 s-sethost-keeps	BoardService.qml	host = h; forget() }	host = h }	qml
 s-no-hostname-arg	BoardService.qml	concat(args, ["--hostname", host])	concat(args)	qml
 s-fetch-no-host	BoardService.qml	fetch.command = helperCommand(job.args)	fetch.command = [helperPath()].concat(job.args)	qml

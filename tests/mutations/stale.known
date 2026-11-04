@@ -1,9 +1,3 @@
-stale v152.tsv h-columns-accent-always
-stale v154.tsv m-footer-back
-stale v154.tsv m-note-dim
-stale v154.tsv m-note-no-time
-stale v154.tsv m-note-indented
-stale v165.tsv q-watch-no-host
 stale v167.tsv no-updating
 stale v167.tsv dot-not-held
 stale v170.tsv tip-alerts-ignored
