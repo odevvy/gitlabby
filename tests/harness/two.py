@@ -5,7 +5,7 @@
 #   import two; two.start({"alerts": {...}}, "ogb-h136-"); from two import *
 # start() takes the settings beyond the shared ones (SETTINGS), loads both
 # screens, and sets the names a test uses (wins, boards, ctxs, SETTINGS, ...).
-import sys, os, json, copy, shutil, tempfile, subprocess; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import sys, os, json, copy, shutil, tempfile, subprocess, atexit; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from lib import *
 from PySide6.QtGui import QImage, QPainter, QColor
 out = sys.argv[2] if len(sys.argv) > 2 else None
@@ -47,6 +47,7 @@ Item {
 }
 """ % {"s": json.dumps(SETTINGS)}
     d = tempfile.mkdtemp(prefix=prefix); dst = d + "/app"
+    atexit.register(shutil.rmtree, d, True)  # also when a test stops early
     shutil.copytree(sys.argv[1], dst, ignore=shutil.ignore_patterns(".git")); open(dst + "/main2.qml", "w").write(MAIN)
     eng = QQmlApplicationEngine(); eng.addImportPath(HERE + "/stubs")
     eng.warnings.connect(lambda ws: warnings.extend(w.toString() for w in ws))

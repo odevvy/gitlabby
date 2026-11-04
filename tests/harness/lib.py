@@ -1,6 +1,6 @@
 # Shared harness: loads a copy of the plugin with the Omarchy stand-ins in ./stubs
 # into an offscreen window. Usage in a test: from lib import *; h = Harness(src)
-import sys, os, json, shutil, tempfile
+import sys, os, json, shutil, tempfile, atexit
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 from PySide6.QtCore import QUrl, QTimer, QObject, QPoint, QPointF, QRect, Qt, QEvent
 from PySide6.QtGui import QGuiApplication, QFontDatabase, QKeyEvent
@@ -18,6 +18,7 @@ for d in [os.environ.get("OGB_FONTS", ""), TOOLING + "/fonts"]:
 class Harness:
     def __init__(self, src, settings=None):
         self.dir = tempfile.mkdtemp(prefix="ogb-h-"); dst = self.dir + "/app"
+        atexit.register(shutil.rmtree, self.dir, True)  # also when a test stops early
         shutil.copytree(src, dst, ignore=shutil.ignore_patterns(".git")); shutil.copy(HERE + "/main.qml", dst + "/main.qml")
         self.eng = QQmlApplicationEngine(); self.eng.addImportPath(HERE + "/stubs")
         self.warnings = []; self.eng.warnings.connect(lambda ws: self.warnings.extend(w.toString() for w in ws))
