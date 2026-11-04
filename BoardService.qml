@@ -61,12 +61,11 @@ Item {
   property alias mrAnswers: mrFetch.answers
   readonly property alias mrRunning: mrFetch.loading
   property alias mrPending: mrFetch.pending
-  // The To-do view (v0.1.77), the same way: { scope: { data (Logic.todosAnswer),
-  // startedAt } }, asked for only when a widget copy's view opens, its scope
-  // changes, or r there; never on a timer or when the popup opens. Its own Process.
-  property var todoAnswers: ({})
-  readonly property string todoRunning: todoFetch.running ? todoFetch.scope : ""
-  property var todoPending: null  // { scope, force }: asked for while another scope loads
+  // The To-do view's lists (v0.1.77), the same way: data Logic.todosAnswer.
+  readonly property var todos: todoFetch
+  property alias todoAnswers: todoFetch.answers
+  readonly property alias todoRunning: todoFetch.loading
+  property alias todoPending: todoFetch.pending
 
   // Write access per project: { project: Logic.accessEntry }. Asked once per
   // project per session (board-fetch access, GETs only), when its board first
@@ -282,30 +281,7 @@ Item {
 
   function requestMrs(scope, force) { mrFetch.request(scope, force) }
 
-  // An answer under a minute old is shown again, unless force (r), as requestMrs.
-  function requestTodos(scope, force) {
-    if (todoRunning === scope) return
-    var last = todoAnswers[scope]
-    if (!force && last && Date.now() - last.startedAt < 60000) return
-    if (todoFetch.running) { todoPending = { scope: scope, force: force === true }; return }
-    todoFetch.scope = scope
-    todoFetch.generation = generation
-    todoFetch.startedAt = Date.now()
-    todoFetch.command = helperCommand(Logic.todosArgs(scope))
-    todoFetch.running = true
-  }
-  function todosDone(raw) {
-    if (todoFetch.generation !== generation) return
-    var a = {}
-    for (var k in todoAnswers) a[k] = todoAnswers[k]
-    a[todoFetch.scope] = { data: Logic.todosAnswer(raw), startedAt: todoFetch.startedAt }
-    todoAnswers = a
-  }
-  function todosNext() {
-    var p = todoPending
-    todoPending = null
-    if (p) requestTodos(p.scope, p.force)
-  }
+  function requestTodos(scope, force) { todoFetch.request(scope, force) }
 
   // Sign out, or another server: forget every answer and drop the ones on their way.
   function forget() {
@@ -319,8 +295,7 @@ Item {
     pipeWaiting = []
     queue = []
     mrFetch.clear()
-    todoAnswers = ({})
-    todoPending = null
+    todoFetch.clear()
     access = ({})
     accessWaiting = []
   }
@@ -346,14 +321,7 @@ Item {
     onRunningChanged: if (!running) Qt.callLater(service.pipesNext)
     stdout: StdioCollector { waitForEnd: true; onStreamFinished: service.pipesDone(text) }
   }
-  Process {
-    id: todoFetch
-    property string scope: ""
-    property int generation: 0
-    property real startedAt: 0
-    onRunningChanged: if (!running) Qt.callLater(service.todosNext)
-    stdout: StdioCollector { waitForEnd: true; onStreamFinished: service.todosDone(text) }
-  }
+  ScopedFetch { id: todoFetch; service: service; args: Logic.todosArgs; parse: Logic.todosAnswer }
   Process {
     id: accessFetch
     property string project: ""

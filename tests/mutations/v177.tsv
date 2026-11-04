@@ -20,10 +20,10 @@ n-one-comment	logic/mrs.js	n === 1 ? "1 comment" : n > 1	n > 0	node
 n-badge-cap	logic/mrs.js	n > 9 ? "9+" : String(n)\n}\n// board-fetch arguments for a scope: "all", or one project path.\nfunction todosArgs	String(n)\n}\n// board-fetch arguments for a scope: "all", or one project path.\nfunction todosArgs	node
 n-args-loose	logic/mrs.js	? ["todos", "--project", String(scope)] : ["todos"]	? ["todos", "--project", String(scope)] : ["todos", "--project", String(scope)]	node
 n-subline-who	logic/mrs.js	t.author && t.author.name ? "by " + t.author.name : ""	""	node
-q-td-no-reuse	BoardService.qml	var last = todoAnswers[scope]\n    if (!force && last && Date.now() - last.startedAt < 60000) return	var last = todoAnswers[scope]	qml
-q-td-force-ignored	BoardService.qml	var last = todoAnswers[scope]\n    if (!force && last && Date.now() - last.startedAt < 60000) return	var last = todoAnswers[scope]\n    if (last && Date.now() - last.startedAt < 60000) return	qml
-q-td-no-dedupe	BoardService.qml	if (todoRunning === scope) return	if (false) return	qml
-q-td-no-queue	BoardService.qml	if (todoFetch.running) { todoPending = { scope: scope, force: force === true }; return }	if (todoFetch.running) return	qml
-q-td-gen	BoardService.qml	    if (todoFetch.generation !== generation) return\n    var a = {}\n    for (var k in todoAnswers)	    var a = {}\n    for (var k in todoAnswers)	qml
-q-td-forget	BoardService.qml	    todoAnswers = ({})\n    todoPending = null	    todoPending = null	qml
-q-td-unchecked	BoardService.qml	data: Logic.todosAnswer(raw)	data: JSON.parse(raw)	qml
+q-td-no-reuse	ScopedFetch.qml	if (!force && last && Date.now() - last.startedAt < 60000) return	if (false) return	qml
+q-td-force-ignored	ScopedFetch.qml	if (!force && last &&	if (last &&	qml
+q-td-no-dedupe	ScopedFetch.qml	if (loading === next) return	if (false) return	qml
+q-td-no-queue	ScopedFetch.qml	if (running) { pending = { scope: next, force: force === true }; return }	if (running) return	qml
+q-td-gen	ScopedFetch.qml	    if (generation !== service.generation) return\n	\n	qml
+q-td-forget	BoardService.qml	    todoFetch.clear()\n	\n	qml
+q-td-unchecked	BoardService.qml	parse: Logic.todosAnswer	parse: JSON.parse	qml
