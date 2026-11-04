@@ -575,8 +575,9 @@ test("shared refresh: one BoardService for every screen; Board.qml fetches board
   // The service's Processes, each with its own id: one board fetch at a time for
   // the whole shell (fetch), one merge-request list (mrFetch) and one access
   // check (accessFetch), in that order; only fetch runs "board".
-  const procs = [...service.matchAll(/^\s*Process \{\s*\n\s*id: (\w+)/gm)].map(m => m[1])
-  assert.equal((service.match(/^\s*Process \{/gm) || []).length, procs.length)
+  // (A ScopedFetch, one list fetched per scope on demand, is a Process too.)
+  const procs = [...service.matchAll(/^\s*(?:Process|ScopedFetch) \{\s*id: (\w+)/gm)].map(m => m[1])
+  assert.equal((service.match(/^\s*(?:Process|ScopedFetch) \{/gm) || []).length, procs.length)
   assert.deepEqual(procs.filter(p => ["fetch", "mrFetch", "accessFetch"].includes(p)), ["fetch", "mrFetch", "accessFetch"])
   // v0.1.76: and one pipes query (pipeFetch); v0.1.77: and the to-dos (todoFetch); nothing else.
   assert.deepEqual(procs, ["fetch", "mrFetch", "pipeFetch", "todoFetch", "accessFetch"])
@@ -846,9 +847,8 @@ test("merge requests: the answer checked, status pills, reviewer marks, sublines
   // The service: fetched only on request (no timer calls it), its own process.
   const fs = require("node:fs"), path = require("node:path")
   const svc = fs.readFileSync(path.join(__dirname, "..", "BoardService.qml"), "utf8")
-  assert.equal((svc.match(/requestMrs\(/g) || []).length, 2, "defined once, called once (the pending one)")
-  assert.match(svc, /mrFetch\.command = (\[helperPath\(\)\]\.concat|helperCommand)\(Logic\.mrsArgs\(scope\)\)/)
-  assert.match(svc, /Date\.now\(\) - last\.startedAt < 60000/)
+  // (What it runs and when it reuses an answer: run137's M tests, by behaviour.)
+  assert.doesNotMatch(svc, /Timer \{[^}]*(requestMrs|mrs\.request|mrFetch\.request)/)
 })
 
 test("to-dos (v0.1.77): the answer checked, reasons, refs, sublines, the column, the badge, the scope", () => {
@@ -909,10 +909,10 @@ test("merge requests view wiring: m and the header button open it; it loads on o
   assert.match(keys, /else if \(host\.view === "mrs"\) mrsView\.activate\(\)/)
   const header = fs.readFileSync(path.join(dir, "BoardHeader.qml"), "utf8")
   assert.match(board, /BoardHeader \{\s*id: header\s*host: root\s*mrsScope: mrsView\.scope/)
-  assert.match(header, /Logic\.mrBadge\(\(host\.feed\.mrAnswers\[mrsScope\] \|\| \{\}\)\.data\)/)
+  assert.match(header, /Logic\.mrBadge\(\(host\.feed\.mrs\.answers\[mrsScope\] \|\| \{\}\)\.data\)/)
   // Only the view asks for the lists, and only these three ways.
-  assert.deepEqual([...board.matchAll(/requestMrs\(/g)].length, 0)
-  assert.deepEqual([...view.matchAll(/host\.feed\.requestMrs\(([^)]*)\)/g)].map(m => m[1]), ["scope, false", "scope, true", "scope, false"])
+  assert.deepEqual([...board.matchAll(/mrs\.request\(|requestMrs\(/g)].length, 0)
+  assert.deepEqual([...view.matchAll(/host\.feed\.mrs\.request\(([^)]*)\)/g)].map(m => m[1]), ["scope, false", "scope, true", "scope, false"])
   // Read-only: a row opens its link and nothing else runs.
   assert.doesNotMatch(view, /execDetached|Process \{|helperPath/)
   assert.match(view, /host\.openUrl\(rows\[cursor\]\.url\)/)
@@ -1165,11 +1165,15 @@ test("BoardKeys.qml: Board.qml's keyCatcher, handed root and every view its keys
   const fs = require("node:fs"), path = require("node:path"), dir = path.join(__dirname, "..")
   const board = fs.readFileSync(path.join(dir, "Board.qml"), "utf8")
   const keys = fs.readFileSync(path.join(dir, "BoardKeys.qml"), "utf8")
-  assert.match(board, /BoardKeys \{[^\n]*\n\s*id: keyCatcher\n\s*host: root\n\s*views: \(\{ issue: issueView, picker: picker, settings: settingsView, bulk: bulkBar, mrs: mrsView, setup: setupView \}\)/)
+  // Handed root and a map of the views (which keys reach which view: the harness).
+  const block = (board.match(/BoardKeys \{[^\n]*\n\s*id: keyCatcher\n\s*host: root\n\s*views: \(\{([^}]*)\}\)/) || [])[1] || ""
+  const handed = Object.fromEntries(block.split(",").map(p => p.split(":").map(x => x.trim())))
+  for (const [key, id] of [["issue", "issueView"], ["picker", "picker"], ["settings", "settingsView"], ["bulk", "bulkBar"], ["mrs", "mrsView"], ["todos", "todoView"], ["setup", "setupView"]])
+    assert.equal(handed[key], id, key)
   // The routing lives in one place: no key handler left in Board.qml.
   assert.doesNotMatch(board, /on(CloseRequested|DeleteRequested|TabRequested|MoveRequested|ActivateRequested|TextKey):/)
   assert.match(keys, /^PanelKeyCatcher \{$/m)
-  for (const [name, key] of [["issueView", "issue"], ["picker", "picker"], ["settingsView", "settings"], ["bulkBar", "bulk"], ["mrsView", "mrs"], ["setupView", "setup"]])
+  for (const [name, key] of [["issueView", "issue"], ["picker", "picker"], ["settingsView", "settings"], ["bulkBar", "bulk"], ["mrsView", "mrs"], ["todoView", "todos"], ["setupView", "setup"]])
     assert.match(keys, new RegExp("readonly property Item " + name + ": views\\." + key + " \\|\\| null"))
   // Only the host and the passed views: no id from Board.qml.
   assert.doesNotMatch(keys, /\broot\./)

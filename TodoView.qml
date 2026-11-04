@@ -9,7 +9,7 @@ import "components"
 // issues assigned to him with their column on this board when known.
 // Read-only: a row only opens its item as Open links in says; a right-click or
 // y copies its link. The lists come from the shared service
-// (BoardService.requestTodos), asked for when this view opens, its scope
+// (BoardService.todos, a ScopedFetch), asked for when this view opens, its scope
 // changes, or r; never on popup open or a timer. t toggles it. Laid out as
 // Merge requests; the first load (or an error) is one LoadingRow, as the
 // project picker shows.
@@ -19,9 +19,9 @@ Item {
   // "all" projects (the default), or "project": the board's project.
   property string mode: "all"
   readonly property string scope: mode === "project" && host.project !== "" ? host.project : "all"
-  readonly property var entry: host.feed.todoAnswers[scope] || null
+  readonly property var entry: host.feed.todos.answers[scope] || null
   readonly property var answer: entry ? entry.data : null
-  readonly property bool loading: host.feed.todoRunning === scope
+  readonly property bool loading: host.feed.todos.loading === scope
   readonly property var rows: answer && answer.state === "ready" ? answer.todos.concat(answer.assigned) : []
   property int cursor: 0
   // One flat list: headings, rows, and a line for an empty section.
@@ -37,10 +37,10 @@ Item {
     return out
   }
 
-  function open() { cursor = 0; host.feed.requestTodos(scope, false) }
-  function refresh() { host.feed.requestTodos(scope, true) }
+  function open() { cursor = 0; host.feed.todos.request(scope, false) }
+  function refresh() { host.feed.todos.request(scope, true) }
   function setMode(next) { if (next !== mode) { mode = next; cursor = 0 } }
-  onScopeChanged: if (visible) host.feed.requestTodos(scope, false)
+  onScopeChanged: if (visible) host.feed.todos.request(scope, false)
   onRowsChanged: cursor = Math.max(0, Math.min(cursor, rows.length - 1))
   function moveCursor(dy) {
     if (rows.length === 0) return

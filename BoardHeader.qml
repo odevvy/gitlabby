@@ -187,7 +187,7 @@ Item {
       label: header.compactTabs ? "MRs" : "Merge requests"
       on: host.view === "mrs"
       tip: "Merge requests (m)"
-      badge: Logic.mrBadge((host.feed.mrAnswers[mrsScope] || {}).data)
+      badge: Logic.mrBadge((host.feed.mrs.answers[mrsScope] || {}).data)
       onClicked: host.showView("mrs")
     }
     // To-do (TodoView), like t does. The badge: pending to-dos at the last look
@@ -198,7 +198,7 @@ Item {
       label: "To-do"
       on: host.view === "todos"
       tip: "To-do (t)"
-      badge: Logic.todoBadge((host.feed.todoAnswers[todoScope] || {}).data)
+      badge: Logic.todoBadge((host.feed.todos.answers[todoScope] || {}).data)
       onClicked: host.showView("todos")
     }
   }

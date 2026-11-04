@@ -54,20 +54,12 @@ Item {
   property int generation: 0
   signal answered(string key, string raw, int ticket)
 
-  // The Merge requests view: { scope: { data (Logic.mrsAnswer), startedAt } },
-  // scope "all" or a project path. Fetched only when a widget copy asks (the
-  // view opens, its scope changes, or r there); never on a timer. Its own
-  // Process, so it never waits behind a board, and one answer for every screen.
-  property var mrAnswers: ({})
-  readonly property string mrRunning: mrFetch.running ? mrFetch.scope : ""
-  property var mrPending: null  // { scope, force }: asked for while another scope loads
-  signal mrsAnswered(string scope)
-  // The To-do view (v0.1.77), the same way: { scope: { data (Logic.todosAnswer),
-  // startedAt } }, asked for only when a widget copy's view opens, its scope
-  // changes, or r there; never on a timer or when the popup opens. Its own Process.
-  property var todoAnswers: ({})
-  readonly property string todoRunning: todoFetch.running ? todoFetch.scope : ""
-  property var todoPending: null  // { scope, force }: asked for while another scope loads
+  // The Merge requests view's lists (ScopedFetch): scope "all" or a project
+  // path, data Logic.mrsAnswer. Its own Process, so it never waits behind a
+  // board, and one answer for every screen.
+  readonly property var mrs: mrFetch
+  // The To-do view's lists (v0.1.77), the same way: data Logic.todosAnswer.
+  readonly property var todos: todoFetch
 
   // Write access per project: { project: Logic.accessEntry }. Asked once per
   // project per session (board-fetch access, GETs only), when its board first
@@ -281,58 +273,6 @@ Item {
     onTriggered: service.background()
   }
 
-  // An answer under a minute old is shown again (a second screen opening the
-  // view, or flipping the scope back), unless force (r).
-  function requestMrs(scope, force) {
-    if (mrRunning === scope) return
-    var last = mrAnswers[scope]
-    if (!force && last && Date.now() - last.startedAt < 60000) return
-    if (mrFetch.running) { mrPending = { scope: scope, force: force === true }; return }
-    mrFetch.scope = scope
-    mrFetch.generation = generation
-    mrFetch.startedAt = Date.now()
-    mrFetch.command = helperCommand(Logic.mrsArgs(scope))
-    mrFetch.running = true
-  }
-  function mrsDone(raw) {
-    if (mrFetch.generation !== generation) return
-    var a = {}
-    for (var k in mrAnswers) a[k] = mrAnswers[k]
-    a[mrFetch.scope] = { data: Logic.mrsAnswer(raw), startedAt: mrFetch.startedAt }
-    mrAnswers = a
-    mrsAnswered(mrFetch.scope)
-  }
-  function mrsNext() {
-    var p = mrPending
-    mrPending = null
-    if (p) requestMrs(p.scope, p.force)
-  }
-
-  // An answer under a minute old is shown again, unless force (r), as requestMrs.
-  function requestTodos(scope, force) {
-    if (todoRunning === scope) return
-    var last = todoAnswers[scope]
-    if (!force && last && Date.now() - last.startedAt < 60000) return
-    if (todoFetch.running) { todoPending = { scope: scope, force: force === true }; return }
-    todoFetch.scope = scope
-    todoFetch.generation = generation
-    todoFetch.startedAt = Date.now()
-    todoFetch.command = helperCommand(Logic.todosArgs(scope))
-    todoFetch.running = true
-  }
-  function todosDone(raw) {
-    if (todoFetch.generation !== generation) return
-    var a = {}
-    for (var k in todoAnswers) a[k] = todoAnswers[k]
-    a[todoFetch.scope] = { data: Logic.todosAnswer(raw), startedAt: todoFetch.startedAt }
-    todoAnswers = a
-  }
-  function todosNext() {
-    var p = todoPending
-    todoPending = null
-    if (p) requestTodos(p.scope, p.force)
-  }
-
   // Sign out, or another server: forget every answer and drop the ones on their way.
   function forget() {
     generation++
@@ -344,10 +284,8 @@ Item {
     pipeAt = ({})
     pipeWaiting = []
     queue = []
-    mrAnswers = ({})
-    mrPending = null
-    todoAnswers = ({})
-    todoPending = null
+    mrFetch.clear()
+    todoFetch.clear()
     access = ({})
     accessWaiting = []
   }
@@ -365,14 +303,7 @@ Item {
     onRunningChanged: if (!running) Qt.callLater(service.next)
     stdout: StdioCollector { waitForEnd: true; onStreamFinished: service.done(text) }
   }
-  Process {
-    id: mrFetch
-    property string scope: ""
-    property int generation: 0
-    property real startedAt: 0
-    onRunningChanged: if (!running) Qt.callLater(service.mrsNext)
-    stdout: StdioCollector { waitForEnd: true; onStreamFinished: service.mrsDone(text) }
-  }
+  ScopedFetch { id: mrFetch; service: service; args: Logic.mrsArgs; parse: Logic.mrsAnswer }
   Process {
     id: pipeFetch
     property string project: ""
@@ -380,14 +311,7 @@ Item {
     onRunningChanged: if (!running) Qt.callLater(service.pipesNext)
     stdout: StdioCollector { waitForEnd: true; onStreamFinished: service.pipesDone(text) }
   }
-  Process {
-    id: todoFetch
-    property string scope: ""
-    property int generation: 0
-    property real startedAt: 0
-    onRunningChanged: if (!running) Qt.callLater(service.todosNext)
-    stdout: StdioCollector { waitForEnd: true; onStreamFinished: service.todosDone(text) }
-  }
+  ScopedFetch { id: todoFetch; service: service; args: Logic.todosArgs; parse: Logic.todosAnswer }
   Process {
     id: accessFetch
     property string project: ""

@@ -51,10 +51,10 @@ h.ev("root.opened = true"); h.spin(60)  # signing in closed it
 h.answer("board", A()) if h.running("board") else None
 h.ev("root.persist()"); w = writes()[-1]
 h.ok("G7 a write on gitlab.com: the same keys as before (no server keys added)", "serverDefaults" not in w and "gitlabHost" not in w and w["defaultProject"] == P and w["defaultBoardId"] == "7", sorted(w))
-h.ev("root.feed.requestMrs('all', false)"); h.spin(40)
+h.ev("root.feed.mrs.request('all', false)"); h.spin(40)
 h.ok("G8 the service's merge requests on gitlab.com too", tail_ok(h.running("mrs", raw=True), "gitlab.com"), h.running(raw=True))
 h.answer("mrs", {"state": "ready", "review": [], "mine": []})
-h.ok("G9 merge requests kept (until the server changes)", len(h.ev("Object.keys(root.feed.mrAnswers)")) == 1)
+h.ok("G9 merge requests kept (until the server changes)", len(h.ev("Object.keys(root.feed.mrs.answers)")) == 1)
 
 # --- the setting, read as a bare name ----------------------------------------------
 for raw, want in [("https://GitLab.Example.com/", H), (" gitlab.example.com// ", H), ("http://gitlab.example.com", "gitlab.com"),
@@ -72,7 +72,7 @@ setting(gitlabHost="https://" + H + "/")
 h.ok("W1 the server: a bare name, the service follows", h.ev("root.gitlabHost") == H and h.ev("root.feed.host") == H)
 h.ok("W2 nothing of gitlab.com's left: no project (no default here), board, projects, account",
      h.ev("root.project") == "" and h.ev("root.columns").__len__() == 0 and h.ev("root.projects").__len__() == 0 and h.ev("root.account") == "" and h.ev("root.cached") is False, [h.ev("root.project"), h.ev("root.account")])
-h.ok("W3 the service forgot its answers, merge requests and access", h.ev("Object.keys(root.feed.answers).length") == 0 and h.ev("Object.keys(root.feed.mrAnswers).length") == 0 and h.ev("Object.keys(root.feed.access).length") == 0)
+h.ok("W3 the service forgot its answers, merge requests and access", h.ev("Object.keys(root.feed.answers).length") == 0 and h.ev("Object.keys(root.feed.mrs.answers).length") == 0 and h.ev("Object.keys(root.feed.access).length") == 0)
 h.ok("W4 a fetch was on its way", len(inflight) == 1)
 h.answer("board", A())  # gitlab.com's answer arrives late
 h.ok("W5 ...its late answer is dropped", h.ev("root.columns").__len__() == 0 and h.ev("Object.keys(root.feed.answers).length") == 0)
@@ -129,7 +129,7 @@ h.ev("root.refresh()"); h.spin(40); h.answer("board", A(H))  # the first answer 
 h.ev("root.refresh()"); h.spin(40); h.answer("board", C(H))
 note = [c for c in h.launched()[before:] if c and c[0] == "omarchy-notification-send"]
 h.ok("K11 an alert here links this server's board", len(note) == 1 and note[0][-1] == "https://%s/%s/-/boards/7" % (H, P), note)
-h.ev("root.feed.requestMrs('all', true)"); h.spin(40)
+h.ev("root.feed.mrs.request('all', true)"); h.spin(40)
 h.ok("K12 merge requests from this server", tail_ok(h.running("mrs", raw=True), H), h.running(raw=True))
 h.answer("mrs", {"state": "ready", "review": [], "mine": []})
 h.ok("K13 confirm moves per server: gitlab.com's entry doesn't count here",

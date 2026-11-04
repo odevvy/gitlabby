@@ -6,16 +6,14 @@ import qs.Ui
 // children and passed in views, so their ids stay Board.qml's.
 PanelKeyCatcher {
   property Item host
-  // { issue, picker, settings, bulk, mrs, setup }: the views keys go to; and
-  // todoList, the To-do view (v0.1.77).
+  // { issue, picker, settings, bulk, mrs, todos, setup }: the views keys go to.
   property var views: ({})
   readonly property Item issueView: views.issue || null
   readonly property Item picker: views.picker || null
   readonly property Item settingsView: views.settings || null
   readonly property Item bulkBar: views.bulk || null
   readonly property Item mrsView: views.mrs || null
-  property Item todoList: null
-  readonly property Item todoView: todoList
+  readonly property Item todoView: views.todos || null
   readonly property Item setupView: views.setup || null
 
   onCloseRequested: {
