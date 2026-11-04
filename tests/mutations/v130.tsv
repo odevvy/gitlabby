@@ -1,4 +1,2 @@
-no-refreshing	Board.qml	    if (refreshing) return message !== "" ? message + "  Refreshing…" : "Refreshing…"\n	    // no refreshing text\n	qml
-refreshing-loses-message	Board.qml	return message !== "" ? message + "  Refreshing…" : "Refreshing…"	return "Refreshing…"	qml
 refreshing-over-saved	Board.qml	loading && boardState === "ready" && !cached	loading && boardState === "ready"	qml
 refreshing-red	BoardHeader.qml	host.boardState === "ready" && !host.refreshing) ? host.urgent	host.boardState === "ready") ? host.urgent	qml
