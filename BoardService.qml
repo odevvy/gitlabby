@@ -16,7 +16,6 @@ Item {
   // Host injection (shell.qml ensureService); not used.
   property var shell: null
   property var manifest: null
-  property string omarchyPath: ""
 
   // { key: { raw, ticket, startedAt (ms), state } }: the last answer per board.
   property var answers: ({})

@@ -39,6 +39,13 @@ class Harness:
     def spin(self, ms):
         t = QTimer(); t.setSingleShot(True); t.start(ms)
         while t.isActive(): app.processEvents()
+    # Spins until cond() holds or ms pass; returns cond()'s last value. For
+    # waits on an animation or a timer, instead of a fixed spin that a busy
+    # machine can outrun (run141's A1 was one).
+    def until(self, cond, ms=3000, step=20):
+        left = ms
+        while not cond() and left > 0: self.spin(step); left -= step
+        return cond()
     def walk(self, root=None):
         st = [root or self.win.contentItem()]
         while st:

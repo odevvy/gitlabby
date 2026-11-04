@@ -1237,5 +1237,13 @@ all=$(printf '%s\n' "$reads"; "$fetch" --project group/app; "$fetch" projects; "
   fx user <<<'{"username":"dev1","private_token":"glpat-SECRET"}'; "$fetch" whoami; "$fetch" logout; FAKE_LOGOUT=fail "$fetch" logout; printf '%s\n' "$labels_out" "$close_out")
 check "no token leak" '.' "$(grep -qiE 'glpat|bearer' <<<"$all" && echo false || echo true)"
 
+# --- mutation rows still match the code (tests/mutate.sh --check) ------------
+# A row whose `from` is gone from its file mutates nothing. The rows that went
+# stale before 0.1.78 are listed in mutations/stale.known (repaired or dropped
+# when the files are folded); any other stale row fails here.
+stale=$(bash "$here/mutate.sh" --check "$here/.." "$here"/mutations/*.tsv)
+check "mutation rows: none stale but the known ones" '.' "$([[ $stale == "$(<"$here/mutations/stale.known")" ]] && echo true || echo false)"
+check "mutation rows: a moved pattern shows as stale" '.' "$(printf 'x\tboard-fetch\tno such text\tq\tsh\n' >"$work/m.tsv"; [[ $(bash "$here/mutate.sh" --check "$here/.." "$work/m.tsv") == "stale m.tsv x" ]] && echo true || echo false)"
+
 echo "passed $pass, failed $fail"
 ((fail == 0))
