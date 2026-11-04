@@ -20,7 +20,7 @@ bd-canmove-writes	Board.qml	resolvedBoardId !== "" && writable	resolvedBoardId !
 bd-no-request	Board.qml	    if (boardState === "ready" && !cached) feed.requestAccess(project)	    /* m */	qml
 bd-move-403	Board.qml	      feed.noteRefused(project, data.message)  // a 403: view-only here	      /* m */	qml
 bd-pick-viewonly	Board.qml	|| !column || !writable) return	|| !column) return	qml
-bd-dismiss-not-saved	Board.qml	persist(undefined, undefined, undefined, { accessHintDismissed:	persist(undefined, undefined, undefined, { other:	qml
+bd-dismiss-not-saved	Board.qml	persist({ accessHintDismissed:	persist({ other:	qml
 bd-dismiss-case	Board.qml	readonly property bool hintDismissed: Logic.has(Logic.lowerList(saved("accessHintDismissed", [])), project)	readonly property bool hintDismissed: saved("accessHintDismissed", []).indexOf(project) !== -1	qml
 bd-status	Board.qml	      if (!writable) time = "View-only  " + time	      /* m */	qml
 ah-always	AccessHint.qml	host.accessNote !== "" && !host.hintDismissed	!host.hintDismissed	qml

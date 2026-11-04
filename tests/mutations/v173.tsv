@@ -4,7 +4,7 @@ mode-loose	Board.qml	String(saved("openLinks", "browser")) === "app"	String(save
 open-ignores-mode	Board.qml	[linkMode === "app" ? "omarchy-launch-webapp" : "omarchy-launch-browser", link]	["omarchy-launch-browser", link]	qml
 open-modes-swapped	Board.qml	linkMode === "app" ? "omarchy-launch-webapp" : "omarchy-launch-browser"	linkMode === "app" ? "omarchy-launch-browser" : "omarchy-launch-webapp"	qml
 open-stays	Board.qml	"omarchy-launch-browser", link])\n    close()	"omarchy-launch-browser", link])	qml
-save-drops-others	Board.qml	persist(undefined, undefined, undefined, { openLinks	bar.shell.updateEntryInline(moduleName, { id: moduleName, openLinks	qml
+save-drops-others	Board.qml	persist({ openLinks	bar.shell.updateEntryInline(moduleName, { id: moduleName, openLinks	qml
 save-raw	Board.qml	{ openLinks: mode === "app" ? "app" : "browser" }	{ openLinks: "app" }	qml
 seg-current-wrong	SettingsView.qml	readonly property bool current: view.host.linkMode === modelData.mode	readonly property bool current: modelData.mode === "browser"	qml
 seg-order	SettingsView.qml	model: [{ mode: "browser", label: "Browser tab" }, { mode: "app", label: "App window" }]	model: [{ mode: "app", label: "App window" }, { mode: "browser", label: "Browser tab" }]	qml

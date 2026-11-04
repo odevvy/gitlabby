@@ -95,7 +95,7 @@ Panel {
   readonly property bool iconLit: !iconUnlit && !!feed && feed.unseenAlerts > 0
   function setIconUnlit(on) { persist({ iconUnlit: on === true }) }
   readonly property string linkMode: String(saved("openLinks", "browser")) === "app" ? "app" : "browser"
-  function setLinkMode(mode) { persist(undefined, undefined, undefined, { openLinks: mode === "app" ? "app" : "browser" }) }
+  function setLinkMode(mode) { persist({ openLinks: mode === "app" ? "app" : "browser" }) }
   // The interval actually used: the setting, faster while cards move, slower
   // while nothing changes (Logic.adaptiveInterval), from the shared pace.
   readonly property var cadence: Logic.adaptiveInterval(refreshIntervalSec, feed.paces[fetchKey])
@@ -225,7 +225,7 @@ Panel {
   readonly property string accessNote: Logic.accessNote(accessEntry)
   readonly property bool writable: accessNote === ""
   readonly property bool hintDismissed: Logic.has(Logic.lowerList(saved("accessHintDismissed", [])), projectKey)
-  function dismissHint() { if (!hintDismissed) persist(undefined, undefined, undefined, { accessHintDismissed: Logic.lowerList(saved("accessHintDismissed", [])).concat([projectKey.toLowerCase()]) }) }
+  function dismissHint() { if (!hintDismissed) persist({ accessHintDismissed: Logic.lowerList(saved("accessHintDismissed", [])).concat([projectKey.toLowerCase()]) }) }
 
   // New board data would replace the card being moved or held under the
   // pointer, so while held, board answers are dropped and refetched after.
@@ -316,7 +316,6 @@ Panel {
   // board (this server's: on another one, settings.serverDefaults[host];
   // gitlab.com's stays).
   function persist(patch) {
-    if (arguments.length === 4) patch = arguments[3]  // positional callers left: next commit
     var p = patch || {}
     if (!bar || !bar.shell || typeof bar.shell.updateEntryInline !== "function") return
     var d = p.board || { project: defaultProject, id: defaultBoardId, name: defaultBoardName }
