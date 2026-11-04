@@ -1168,12 +1168,12 @@ test("BoardKeys.qml: Board.qml's keyCatcher, handed root and every view its keys
   // Handed root and a map of the views (which keys reach which view: the harness).
   const block = (board.match(/BoardKeys \{[^\n]*\n\s*id: keyCatcher\n\s*host: root\n\s*views: \(\{([^}]*)\}\)/) || [])[1] || ""
   const handed = Object.fromEntries(block.split(",").map(p => p.split(":").map(x => x.trim())))
-  for (const [key, id] of [["issue", "issueView"], ["picker", "picker"], ["settings", "settingsView"], ["bulk", "bulkBar"], ["mrs", "mrsView"], ["setup", "setupView"]])
+  for (const [key, id] of [["issue", "issueView"], ["picker", "picker"], ["settings", "settingsView"], ["bulk", "bulkBar"], ["mrs", "mrsView"], ["todos", "todoView"], ["setup", "setupView"]])
     assert.equal(handed[key], id, key)
   // The routing lives in one place: no key handler left in Board.qml.
   assert.doesNotMatch(board, /on(CloseRequested|DeleteRequested|TabRequested|MoveRequested|ActivateRequested|TextKey):/)
   assert.match(keys, /^PanelKeyCatcher \{$/m)
-  for (const [name, key] of [["issueView", "issue"], ["picker", "picker"], ["settingsView", "settings"], ["bulkBar", "bulk"], ["mrsView", "mrs"], ["setupView", "setup"]])
+  for (const [name, key] of [["issueView", "issue"], ["picker", "picker"], ["settingsView", "settings"], ["bulkBar", "bulk"], ["mrsView", "mrs"], ["todoView", "todos"], ["setupView", "setup"]])
     assert.match(keys, new RegExp("readonly property Item " + name + ": views\\." + key + " \\|\\| null"))
   // Only the host and the passed views: no id from Board.qml.
   assert.doesNotMatch(keys, /\broot\./)
