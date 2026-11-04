@@ -13,11 +13,11 @@ lg-badge-cap	logic/mrs.js	n > 9 ? "9+" : String(n)	String(n)	node
 lg-args-unchecked	logic/mrs.js	&& String(scope).indexOf("..") === -1 ? ["mrs"	? ["mrs"	node
 lg-https-dropped	logic/mrs.js	return { iid: iid, title: String(r.title || ""), url: httpsUrl(r.url),	return { iid: iid, title: String(r.title || ""), url: String(r.url || ""),	node
 lg-state-unchecked	logic/mrs.js	o.state = reviewerStates.indexOf(p.state) !== -1 ? p.state : ""	o.state = String(p.state || "")	node
-svc-no-reuse	BoardService.qml	if (!force && last && Date.now() - last.startedAt < 60000) return	/* m */	qml
-svc-force-ignored	BoardService.qml	if (!force && last &&	if (last &&	qml
-svc-no-pending	BoardService.qml	if (p) requestMrs(p.scope, p.force)	/* m */	qml
-svc-forget-keeps	BoardService.qml	    mrAnswers = ({})\n    mrPending = null	    mrPending = null	qml
-svc-dup-fetch	BoardService.qml	    if (mrRunning === scope) return\n	/* m */	qml
+svc-no-reuse	ScopedFetch.qml	if (!force && last && Date.now() - last.startedAt < 60000) return	/* m */	qml
+svc-force-ignored	ScopedFetch.qml	if (!force && last &&	if (last &&	qml
+svc-no-pending	ScopedFetch.qml	if (p) request(p.scope, p.force)	/* m */	qml
+svc-forget-keeps	ScopedFetch.qml	function clear() { answers = ({}); pending = null }	function clear() { pending = null }	qml
+svc-dup-fetch	ScopedFetch.qml	    if (loading === next) return\n	/* m */\n	qml
 v-no-open-fetch	Board.qml	if (name === "mrs" && view !== "mrs") mrsView.open()	/* m */	qml
 v-r-ignored	BoardKeys.qml	else if (key === "r" && host.view === "mrs") mrsView.refresh()	/* m */	qml
 v-m-ignored	BoardKeys.qml	else if (key === "m") host.toggleView("mrs")	/* m */	qml
