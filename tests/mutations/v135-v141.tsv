@@ -30,7 +30,7 @@ svc-unwatch-keeps	BoardService.qml	if (o !== owner) { owners[o] = watchers[key][
 svc-bg-signed-out	BoardService.qml	if (!cfg || (last && (last.state === "logged-out" || last.state === "no-glab"))) return	if (!cfg) return	qml	harness/tests/run136.py
 board-no-watch	Board.qml	onWatchCfgChanged: feed.watch(watchOwner, watchCfg)	onWatchCfgChanged: {}	qml	harness/tests/run136.py
 board-no-own-move	Board.qml	if (data.state === "ready") feed.noteOwnMove(fetchKey, move.iid)	if (false) feed.noteOwnMove(fetchKey, move.iid)	qml	harness/tests/run136.py
-board-no-persist	Board.qml	for (var k in p) if (k !== "board") entry[k] = p[k]	for (var k in p) if (k !== "board" && k !== "alerts") entry[k] = p[k]	qml	harness/tests/run136b.py
+board-no-persist	BoardPersist.qml	for (var k in p) if (k !== "board") entry[k] = p[k]	for (var k in p) if (k !== "board" && k !== "alerts") entry[k] = p[k]	qml	harness/tests/run136b.py
 logic-no-batch	logic/alerts.js	} else if (came.length > 1) {	} else if (false) {	qml	harness/tests/run136.py
 logic-batch-each	logic/alerts.js	if (came.length === 1) {	if (came.length >= 1) {	qml	harness/tests/run136.py
 logic-no-escape	logic/alerts.js	"-g", "\uf296", oneLine(ev.headline, 120), escaped(oneLine(ev.body, 300))]	"-g", "\uf296", oneLine(ev.headline, 120), oneLine(ev.body, 300)]	qml	harness/tests/run136.py
