@@ -139,7 +139,7 @@ h-keys-gone	BoardHeader.qml	    text: "\uf11c"\n	    text: ""\n    visible: fals
 s-save-each-fold	Board.qml	    foldsUnsaved = true	    persist()	qml	harness/tests/run156.py
 s-no-2s-save	Board.qml	foldSave.restart()	foldSave.stop()	qml	harness/tests/run156.py
 s-no-close-save	Board.qml	dropPicks(); saveFolds() }	dropPicks() }	qml	harness/tests/run156.py
-s-pending-kept	Board.qml	foldsUnsaved = false; foldSave.stop()	foldSave.restart()	qml	harness/tests/run156.py
+s-pending-kept	Board.qml	foldsUnsaved = false; foldSave.stop(); boardPersist.persist	foldSave.restart(); boardPersist.persist	qml	harness/tests/run156.py
 s-default-deferred	Board.qml	    persist()  // a Settings change: saved now	    else persist()	qml	harness/tests/run156.py
 f-no-folding	Board.qml	function startFold() { folding = true; foldClock.restart() }	function startFold() { foldClock.restart() }	qml	harness/tests/run156.py
 f-never-ends	Board.qml	onTriggered: root.folding = false	onTriggered: root.folding = true	qml	harness/tests/run156.py

@@ -33,10 +33,10 @@ q-setalert-shared	Board.qml	Logic.withAlert(saved("alerts", null), projectKey, k
 q-confirm-shared	Board.qml	Logic.lowerList(saved("confirmMoves", [])), projectKey)	Logic.lowerList(saved("confirmMoves", [])), project)	qml	harness/tests/run165.py
 q-statekey-shared	Board.qml	stateKey: projectKey + "#"	stateKey: project + "#"	qml	harness/tests/run165.py
 q-default-shared	Board.qml	  readonly property var hostDefault: onGitlabCom\n	  readonly property var hostDefault: true\n	qml	harness/tests/run165.py
-q-default-overwrites	Board.qml	    if (onGitlabCom) {\n      entry.defaultProject	    if (true) {\n      entry.defaultProject	qml	harness/tests/run165.py
-q-default-not-saved	Board.qml	    } else if (p.board) {	    } else if (false) {	qml	harness/tests/run165.py
-q-default-written-always	Board.qml	    } else if (p.board) {	    } else {	qml	harness/tests/run165.py
-q-no-hostname-arg	Board.qml	concat(args, ["--hostname", gitlabHost])	concat(args)	qml	harness/tests/run165.py
+q-default-overwrites	BoardPersist.qml	    if (h.onGitlabCom) {\n      entry.defaultProject	    if (true) {\n      entry.defaultProject	qml	harness/tests/run165.py
+q-default-not-saved	BoardPersist.qml	    } else if (p.board) {	    } else if (false) {	qml	harness/tests/run165.py
+q-default-written-always	BoardPersist.qml	    } else if (p.board) {	    } else {	qml	harness/tests/run165.py
+q-no-hostname-arg	BoardPersist.qml	concat(args, ["--hostname", data.host.gitlabHost])	concat(args)	qml	harness/tests/run165.py
 q-cache-no-host	Board.qml	cacheProcess.command = helperCommand(["cached", "--project", project, "--board", boardId])	cacheProcess.command = [helperPath(), "cached", "--project", project, "--board", boardId]	qml	harness/tests/run165.py
 q-login-plain	logic/core.js	? "glab auth login --hostname " + h :	? "glab auth login" :	qml	harness/tests/run165.py
 q-login-always	logic/core.js	h !== "" && h !== "gitlab.com" && 	h !== "" && 	qml	harness/tests/run165.py
