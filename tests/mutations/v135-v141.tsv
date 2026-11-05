@@ -73,3 +73,81 @@ v-reviewers-hidden	MrsView.qml	model: (mr.row.reviewers || []).slice(0, 4)	model
 v-section-order	MrsView.qml	return [["review", "Waiting on your review", a.review, "Nothing waiting on your review."],\n            ["mine", "Yours", a.mine, "No open merge requests of yours."]]	return [["mine", "Yours", a.mine, "No open merge requests of yours."],\n            ["review", "Waiting on your review", a.review, "Nothing waiting on your review."]]	qml	harness/tests/run137.py
 v-retry-hint	MrsView.qml	(view.loading ? "" : "  Press r to try again.")	""	qml	harness/tests/run137.py
 v-this-project-wrong	components/ScopedList.qml	mode === "project" && host.project !== "" ? host.project : "all"	"all"	qml	harness/tests/run137.py
+# --- from v138.tsv
+cap-21	logic/bulk.js	if (list.length >= bulkCap)	if (list.length > bulkCap)	node	logic.test.js
+pick-no-col	logic/bulk.js	function pickKey(column, iid) { return columnKey(column) + "|" + iid }	function pickKey(column, iid) { return "|" + iid }	node	logic.test.js
+plan-from-target	logic/bulk.js	"--from", listSpec(from), "--to"	"--from", listSpec(action.to), "--to"	node	logic.test.js
+plan-no-skip-there	logic/bulk.js	else if (columnKey(from) === columnKey(action.to)) skip = "Already in " + action.to.name	else if (false) skip = ""	node	logic.test.js
+plan-add-dup	logic/bulk.js	if (labels.indexOf(action.label) !== -1) skip = "Already has "	if (false) skip = "Already has "	node	logic.test.js
+summary-skips	logic/bulk.js	todo = results.length - count("skipped")	todo = results.length	node	logic.test.js
+outcome-timeout-goes-on	logic/bulk.js	if (state === "timeout" || /within 30 seconds/.test(message)) return { ok: false, stop: true,	if (state === "timeout" || /within 30 seconds/.test(message)) return { ok: false, stop: false,	qml	harness/tests/run138.py
+outcome-403-stops	logic/bulk.js	return { ok: false, stop: false, text: message || "Failed." }	return { ok: false, stop: true, text: message || "Failed." }	qml	harness/tests/run138.py
+outcome-loggedout-goes-on	logic/bulk.js	if (state === "logged-out" || state === "no-glab") return { ok: false, stop: true,	if (state === "no-glab") return { ok: false, stop: true,	qml	harness/tests/run138.py
+bar-parallel	BulkBar.qml	write(bar.pendingLine)	write(bar.plan.filter(function(s){ return s.args }).map(function(s){ return JSON.stringify(s.args) + String.fromCharCode(10) }).join(""))	qml	harness/tests/run138.py
+bar-no-own-move	BulkBar.qml	if (out.ok) host.feed.noteOwnMove(host.fetchKey, plan[step].iid)	if (false) host.feed.noteOwnMove(host.fetchKey, plan[step].iid)	qml	harness/tests/run138.py
+bar-no-refresh	BulkBar.qml	    host.bulkFinished()  // before busy ends	    /* m */  // before busy ends	qml	harness/tests/run138.py
+bar-refresh-late	BulkBar.qml	    host.bulkFinished()  // before busy ends, so the queued refresh runs then\n    mode = "results"	    mode = "results"\n    host.bulkFinished()	qml	harness/tests/run138.py
+bar-esc-run-ignored	BulkBar.qml	if (running) { stopping = true; return true }	if (running) { return true }	qml	harness/tests/run138.py
+bar-stop-ignored	BulkBar.qml	    if (stopping) { finish(); return }	    /* m */	qml	harness/tests/run138.py
+bar-arm-writes	BulkBar.qml	    mode = "armed"\n	    mode = "armed"; Qt.callLater(confirm)\n	qml	harness/tests/run138.py
+bar-no-focus-back	BulkBar.qml	    host.focusBoard()  // keys back to the panel (from the label filter)	    /* m */	qml	harness/tests/run138.py
+bar-back-while-running	BulkBar.qml	function backToPicking() { if (busy || mode === "results") return;	function backToPicking() {	qml	harness/tests/run138.py
+bar-remove-all-labels	BulkBar.qml	(labelOp === "add" || on[l.name] === true)	(true)	qml	harness/tests/run138.py
+bar-status-labels	BulkBar.qml	return !Logic.has(status, l.name) &&	return true &&	qml	harness/tests/run138.py
+bar-watchdog-off	BulkBar.qml	    watchdog.restart()	    /* m */	qml	harness/tests/run138.py
+bar-keep-all	BulkBar.qml	return r.status === "failed" || r.status === "untried" }).map(function(r) { return r.key })	return true }).map(function(r) { return r.key })	qml	harness/tests/run138.py
+bar-late-answer	BulkBar.qml	    if (!running) return  // a late answer	    /* m */  // a late answer	qml	harness/tests/run138.py
+board-held-armed	Board.qml	|| bulkBar.busy || bulkBar.armed	|| bulkBar.busy	qml	harness/tests/run138.py
+board-held-busy	Board.qml	|| bulkBar.busy || bulkBar.armed	|| bulkBar.armed	qml	harness/tests/run138.py
+board-drag-during-run	Board.qml	if (move || pendingMove || bulkBar.busy || !row ||	if (move || pendingMove || !row ||	qml	harness/tests/run138.py
+board-no-v	BoardKeys.qml	if (text.toLowerCase() === "v" && host.view === "board") { host.pickAtCursor(); return }	/* m */	qml	harness/tests/run138.py
+board-same-key	BoardKeys.qml	if (bulkBar.armed && text === bulkBar.armKey) bulkBar.confirm()	/* m */	qml	harness/tests/run138.py
+board-keys-leak	BoardKeys.qml	      return  // choosing, armed, running or results	      /* m */  // choosing, armed, running or results	qml	harness/tests/run138.py
+board-enter	BoardKeys.qml	else if (host.view === "board" && bulkBar.armed) bulkBar.confirm()	else if (false) bulkBar.confirm()	qml	harness/tests/run138.py
+board-esc	BoardKeys.qml	else if (host.view === "board" && bulkBar.stepBack()) {}	else if (false) {}	qml	harness/tests/run138.py
+board-x	BoardKeys.qml	bulkBar.mode === "" && host.picked.length > 0) bulkBar.armClose("x")	bulkBar.mode === "" && host.picked.length > 0) {}	qml	harness/tests/run138.py
+board-hl	BoardKeys.qml	{ bulkBar.armSide(text === "H" ? -1 : 1, text); return }	{ return }	qml	harness/tests/run138.py
+board-live-picks	Board.qml	onColumnsChanged: if (!bulkBar.running && !bulkBar.armed) picked = Logic.livePicks(columns, picked)	onColumnsChanged: {}	qml	harness/tests/run138.py
+board-cap-note	Board.qml	    bulkBar.pickNote(t.full)	    /* m */	qml	harness/tests/run138.py
+view-ctrl-opens	BoardView.qml	if (mouse.modifiers & Qt.ControlModifier) view.host.togglePick	if (false) view.host.togglePick	qml	harness/tests/run138.py
+view-no-mark	BoardView.qml	visible: card.picked; z: 5	visible: false; z: 5	qml	harness/tests/run138.py
+# --- from v139.tsv
+bf-simple	board-fetch	    get "$base" >"$tmp/a"	    get "$base?simple=true" >"$tmp/a"	sh	run.sh
+bf-no-group	board-fetch	[$proj.permissions.project_access.access_level?, $proj.permissions.group_access.access_level?]	[$proj.permissions.project_access.access_level?]	sh	run.sh
+bf-min	board-fetch	| map(numbers) | max // 0)	| map(numbers) | min // 0)	sh	run.sh
+bf-no-scope-filter	board-fetch	[$tok.scopes[] | strings | select(test("^[a-z_]{1,40}$"))]	[$tok.scopes[] | strings]	sh	run.sh
+bf-whole-token	board-fetch	then [$tok.scopes[] | strings	then [$tok | tostring	sh	run.sh
+bf-no-token-get	board-fetch	    peek personal_access_tokens/self >"$tmp/t" 2>/dev/null || : >"$tmp/t"	    : >"$tmp/t"	sh	run.sh
+bf-error-ready	board-fetch	if ($proj | type) != "object" or ($proj.id | type) != "number" then null else	if false then null else	sh	run.sh
+lg-planner-14	logic/access.js	var plannerLevel = 15	var plannerLevel = 14	node	logic.test.js
+lg-unknown-viewonly	logic/access.js	if ((entry.known && entry.level < plannerLevel) || entry.refused === "forbidden")	if ((entry.level < plannerLevel) || entry.refused === "forbidden")	node	logic.test.js
+lg-scope-ignored	logic/access.js	if (entry.refused === "scope" || (Array.isArray(entry.scopes) && entry.scopes.indexOf("api") === -1)) return "read-token"	if (entry.refused === "scope") return "read-token"	node	logic.test.js
+lg-403-ignored	logic/access.js	/\b403\b|forbidden/i.test(m) ? "forbidden"	/forbiddenx/.test(m) ? "forbidden"	node	logic.test.js
+lg-url-api	logic/access.js	&scopes=read_api"\n}	&scopes=api"\n}	node	logic.test.js
+lg-url-http	logic/access.js	return "https://" + host + "/-/user_settings	return "http://" + host + "/-/user_settings	node	logic.test.js
+svc-every-time	BoardService.qml	if (project === "" || access[project] !== undefined || accessWaiting	if (project === "" || accessWaiting	qml	harness/tests/run139.py
+svc-no-wait	BoardService.qml	if (accessFetch.running) { if (accessFetch.project !== project) accessWaiting = accessWaiting.concat([project]); return }	if (accessFetch.running) { return }	qml	harness/tests/run139.py
+svc-no-next	BoardService.qml	onRunningChanged: if (!running) Qt.callLater(service.accessNext)	onRunningChanged: {}	qml	harness/tests/run139.py
+svc-no-forget	BoardService.qml	    access = ({})\n    accessWaiting = []	    accessWaiting = []	qml	harness/tests/run139.py
+svc-refused-ignored	BoardService.qml	if (kind !== "" && project !== "") setAccess	if (false) setAccess	qml	harness/tests/run139.py
+bd-canmove-writes	Board.qml	resolvedBoardId !== "" && writable	resolvedBoardId !== ""	qml	harness/tests/run139.py
+bd-no-request	Board.qml	    if (boardState === "ready" && !cached) feed.requestAccess(project)	    /* m */	qml	harness/tests/run139.py
+bd-move-403	Board.qml	      feed.noteRefused(project, data.message)  // a 403: view-only here	      /* m */	qml	harness/tests/run139.py
+bd-pick-viewonly	Board.qml	|| !column || !writable) return	|| !column) return	qml	harness/tests/run139.py
+bd-dismiss-not-saved	Board.qml	persist({ accessHintDismissed:	persist({ other:	qml	harness/tests/run139.py
+bd-status	Board.qml	      if (!writable) time = "View-only  " + time	      /* m */	qml	harness/tests/run139.py
+ah-always	AccessHint.qml	host.accessNote !== "" && !host.hintDismissed	!host.hintDismissed	qml	harness/tests/run139.py
+ah-dismiss-ignored	AccessHint.qml	&& !host.hintDismissed	&& true	qml	harness/tests/run139.py
+ah-link-readtoken	AccessHint.qml	visible: hint.words.link; host	visible: true; host	qml	harness/tests/run139.py
+iv-e-key	IssueView.qml	if (!issueReady || issueError !== "" || !host.writable) return	if (!issueReady || issueError !== "") return	qml	harness/tests/run139.py
+iv-x-key	IssueView.qml	    if (!host.writable) return  // view-only here	    /* m */	qml	harness/tests/run139.py
+# --- from v140.tsv
+gb-no-call-labels	board-fetch	cmd_labels() {\n    guard_boards	cmd_labels() {\n    get --paginate "$base/boards?per_page=100" >"$tmp/b"	sh	run.sh
+gb-no-call-relabel	board-fetch	    label=$add$remove\n    guard_boards	    label=$add$remove\n    get --paginate "$base/boards?per_page=100" >"$tmp/b"	sh	run.sh
+gb-any-kind	board-fetch	select(.namespace.kind == "group") | 	 	sh	run.sh
+gb-no-parents	board-fetch	range($p | length; 0; -1)	range($p | length; $p | length - 1; -1)	sh	run.sh
+gb-only-top	board-fetch	range($p | length; 0; -1)	range(1; 0; -1)	sh	run.sh
+gb-no-uri	board-fetch	$g | @uri	$g	sh	run.sh
+gb-overwrite	board-fetch	&& cat "$tmp/gb" >>"$tmp/b"	&& cat "$tmp/gb" >"$tmp/b"	sh	run.sh
+gb-no-array-check	board-fetch	jq -e 'type == "array"' "$tmp/gb" >/dev/null 2>&1 && 	 	sh	run.sh
+gb-strict-group	board-fetch	"$tmp/gb" &&\n	"$tmp/gb" || emit error "x"\n	sh	run.sh
