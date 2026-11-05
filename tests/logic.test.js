@@ -1248,3 +1248,14 @@ test("keyOps: any change ends at the wanted order, rows that stay are never remo
 test("keyOps: a key twice in the wanted list counts once", () => {
   assert.deepEqual(runOps(["1"], L.keyOps(["1"], ["1", "2", "1"])), ["1", "2"])
 })
+
+// --- 0.1.83 sign-in command ---------------------------------------------------
+test("sign-in command: only a checked host reaches the shell", () => {
+  assert.equal(L.signInCommand("gitlab.com"), "glab auth login")
+  assert.equal(L.signInCommand("GitLab.Example.com"), "glab auth login --hostname gitlab.example.com")
+  assert.equal(L.signInCommand("https://gitlab.example.com/"), "glab auth login --hostname gitlab.example.com")
+  for (const bad of ["x;rm -rf ~", "a$(id)", "a`id`", "a b", "a|b", "a&b", "a\nb", "'a'", "-oX", "", null, undefined])
+    assert.equal(L.signInCommand(bad), "glab auth login", String(bad))
+  for (const host of ["gitlab.example.com", "x;y", "a$(b)", "c d"])
+    assert.match(L.signInCommand(host), /^glab auth login( --hostname [a-z0-9.-]+)?$/)
+})
