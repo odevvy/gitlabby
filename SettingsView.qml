@@ -439,6 +439,18 @@ Item {
           }
         }
       }
+      // What glab's token may do: Logic.accessLine over the scopes board-fetch
+      // access already read for this project (the token's record, never the
+      // token). Nothing until that answer; "can't be read" for a browser sign-in.
+      BoardText {
+        objectName: "accessLine"
+        width: parent.width
+        wrapMode: Text.Wrap
+        visible: text !== "" && view.host.account !== "" && !view.confirming && !view.host.signingOut
+        color: view.host.dim
+        font.pixelSize: Style.font.bodySmall
+        text: Logic.accessLine(view.host.accessEntry)
+      }
     }
   }
   // More below: the bottom edge fades (ScrollHint.qml).

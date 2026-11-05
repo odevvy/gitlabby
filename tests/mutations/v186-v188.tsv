@@ -14,3 +14,6 @@ kv-caps-accent	KeysView.qml	color: view.host.foreground; font { pixelSize: Style
 line-api-quiet	logic/access.js	if (s.indexOf("api") !== -1) return t	if (false) return t	node	logic.test.js
 line-unknown-shown	logic/access.js	if (!entry || !entry.known) return ""	if (!entry) return ""	node	logic.test.js
 line-empty-scopes	logic/access.js	if (!Array.isArray(s) || s.length === 0) return	if (!Array.isArray(s)) return	node	logic.test.js
+line-loud	SettingsView.qml	color: view.host.dim\n        font.pixelSize: Style.font.bodySmall\n        text: Logic.accessLine	color: view.host.foreground\n        font.pixelSize: Style.font.bodySmall\n        text: Logic.accessLine	qml	harness/tests/run188.py
+line-during-confirm	SettingsView.qml	visible: text !== "" && view.host.account !== "" && !view.confirming	visible: text !== "" && view.host.account !== ""	qml	harness/tests/run188.py
+line-gone	SettingsView.qml	text: Logic.accessLine(view.host.accessEntry)	text: ""	qml	harness/tests/run188.py
