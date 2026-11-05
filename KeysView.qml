@@ -5,8 +5,8 @@ import "Logic.js" as Logic
 import "components"
 
 // The popup's keys (Logic.keyGroups, also in the README), grouped by where
-// they work. Laid out like Settings: each group is a soft card (the Settings
-// pane fill) with a caption heading, and every shortcut is one line: compact
+// they work. Laid out like Settings: no cards, each group under Settings'
+// thin rule (fg at 12%) with a caption heading, and every shortcut is one 22 px line: compact
 // caps (a chord's caps joined, "/" between choices), then short words and a
 // quiet note. Two columns when there is room (Board's four groups on the
 // left); it scrolls if the screen is short. ? toggles it; ✕ or Esc returns.
@@ -15,8 +15,8 @@ Item {
   required property var host
   readonly property color fg: host.foreground
   readonly property color pane: Qt.rgba(fg.r, fg.g, fg.b, 0.035)
-  readonly property real gap: Style.space(12)
-  readonly property real pad: Style.space(12)
+  readonly property real gap: Style.space(14)
+  readonly property real pad: 0
   readonly property bool twoColumns: width >= Style.space(640)
   readonly property real columnWidth: twoColumns ? (width - gap) / 2 : width
   readonly property real capsWidth: Style.space(122)
@@ -44,7 +44,7 @@ Item {
           width: Math.max(Style.space(20), capText.implicitWidth + Style.space(10)); height: Style.space(20)
           radius: Style.space(4)
           color: Qt.rgba(view.fg.r, view.fg.g, view.fg.b, 0.07)
-          BoardText { id: capText; anchors.centerIn: parent; text: part.modelData.cap || ""; color: view.host.accent; font { pixelSize: Style.font.caption; bold: true } }
+          BoardText { id: capText; anchors.centerIn: parent; text: part.modelData.cap || ""; color: view.host.foreground; font { pixelSize: Style.font.caption; bold: true } }
         }
         BoardText {
           id: sep
@@ -69,7 +69,7 @@ Item {
 
   Flickable {
     id: flick
-    anchors { top: top.bottom; topMargin: Style.space(10); left: parent.left; right: parent.right; bottom: parent.bottom }
+    anchors { top: top.bottom; topMargin: Style.space(6); left: parent.left; right: parent.right; bottom: parent.bottom }
     contentHeight: groups.implicitHeight
     clip: true; boundsBehavior: Flickable.StopAtBounds
     ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
@@ -93,12 +93,13 @@ Item {
               objectName: "keyGroup"
               required property var modelData
               width: side.width
-              height: body.implicitHeight + view.pad * 2 - Style.space(4)
-              radius: Style.space(8)
-              color: view.pane
+              height: body.implicitHeight + Style.space(8)
+              radius: 0
+              color: "transparent"
+              Rectangle { objectName: "keyRule"; width: parent.width; height: 1; color: Qt.rgba(view.fg.r, view.fg.g, view.fg.b, 0.12) }
               Column {
                 id: body
-                x: view.pad; y: view.pad
+                x: 0; y: Style.space(8)
                 width: parent.width - view.pad * 2
                 BoardText {  // the group's heading, like Settings' (Omarchy's PanelSectionHeader)
                   text: card.modelData.title; bottomPadding: Style.space(4)
@@ -116,7 +117,7 @@ Item {
                     // Fits one line: the caps in their column, the words in the rest.
                     readonly property bool fits: caps.implicitWidth <= view.capsWidth && words.implicitWidth <= width - words.x
                     width: body.width
-                    implicitHeight: Style.space(26)
+                    implicitHeight: Style.space(22)
                     Caps { id: caps; key: keyRow.modelData[0]; anchors.verticalCenter: parent.verticalCenter }
                     Row {
                       id: words

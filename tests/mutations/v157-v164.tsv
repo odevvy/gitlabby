@@ -60,12 +60,12 @@ kp-slash-as-cap	logic/board.js	if (word === "/") { out.push({ text: "/" }); retu
 kg-row-dropped	logic/board.js	["s", "Settings"],\n    ["m",	["m",	node	logic.test.js
 kg-board-right	logic/board.js	  { title: "Setup panel", keys: [\n    ["Enter / Space", "Its main button"],\n    ["r", "Try again"]] },\n  { title: "Anywhere"	  { title: "Anywhere"	node	logic.test.js
 kv-board-three-left	KeysView.qml	Logic.keyGroups.slice(0, 4), Logic.keyGroups.slice(4)	Logic.keyGroups.slice(0, 3), Logic.keyGroups.slice(3)	qml	harness/tests/run162.py
-kv-no-card-fill	KeysView.qml	color: view.pane	color: "transparent"	qml	harness/tests/run162.py
+kv-no-card-fill	KeysView.qml	color: "transparent"	color: view.pane	qml	harness/tests/run162.py
 kv-chord-loose	KeysView.qml	x: part.modelData.joined ? -Style.space(3) : 0	x: 0	qml	harness/tests/run162.py
 kv-sep-dim	KeysView.qml	color: view.host.quiet\n          font.pixelSize: Style.font.caption\n        }\n      }	color: view.host.dim\n          font.pixelSize: Style.font.caption\n        }\n      }	qml	harness/tests/run162.py
 kv-note-loud	KeysView.qml	text: keyRow.note; color: view.host.quiet	text: keyRow.note; color: view.host.foreground	qml	harness/tests/run162.py
 kv-caps-narrow	KeysView.qml	readonly property real capsWidth: Style.space(122)	readonly property real capsWidth: Style.space(90)	qml	harness/tests/run162.py
-kv-tall-rows	KeysView.qml	implicitHeight: Style.space(26)	implicitHeight: Style.space(30)	qml	harness/tests/run162.py
+kv-tall-rows	KeysView.qml	implicitHeight: Style.space(22)	implicitHeight: Style.space(26)	qml	harness/tests/run162.py
 kv-old-title	KeysView.qml	font { pixelSize: Style.font.subtitle; bold: true }	font { pixelSize: Style.font.bodySmall; bold: true }	qml	harness/tests/run162.py
 kv-note-in-words	KeysView.qml	readonly property string what: String(modelData[1]).split(" · ")[0]	readonly property string what: String(modelData[1])	qml	harness/tests/run162.py
 # --- from v163.tsv

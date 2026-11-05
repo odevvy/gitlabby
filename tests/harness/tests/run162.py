@@ -1,6 +1,6 @@
-# v0.1.62: the shortcuts screen laid out like Settings. Nine groups in soft
-# cards (Board's four on the left), each with a caption heading; the title as
-# in Settings; every shortcut one 26 px line: compact caps (a chord's caps
+# v0.1.62: the shortcuts screen laid out like Settings (v0.1.87: flat like it).
+# Nine groups (Board's four on the left), no card fill, each under a thin rule
+# with a caption heading; the title as in Settings; every shortcut one 22 px line: compact caps (a chord's caps
 # joined, a quiet "/" between choices), short words and a quiet note, nothing
 # wrapped or clipped at the popup's width (760 px or more).
 # Usage: run162.py <src>
@@ -19,21 +19,27 @@ ok("K0 two columns at the popup's width (760 or more)", kev("twoColumns") and h.
 title = [it for it in h.walk(kv) if it.property("text") == "Keyboard shortcuts"]
 ok("K1 the title is Settings' (subtitle, bold)", title and title[0].property("font").pixelSize() == h.ev("Style.font.subtitle") and title[0].property("font").bold())
 cards = named("keyGroup")
+fl_top = lambda: next(it for it in h.walk(kv) if it.metaObject().className() == "QQuickFlickable").mapToItem(kv, QPointF(0, 0)).y() - title[0].parentItem().height()
 groups = kev("Logic.keyGroups.length")  # the list itself: tests/logic.test.js
-ok("K2 every group (nine or more), each a soft card with Settings' pane fill", len(cards) == groups >= 9 and all(abs(c.property("color").alphaF() - 0.035) < 0.01 and c.property("radius") == S(8) for c in cards), len(cards))
+rules = named("keyRule")
+ok("K2 every group (nine or more), flat: no fill, a 1 px rule at fg 12% on top", len(cards) == groups >= 9 and all(c.property("color").alphaF() == 0 for c in cards)
+   and len(rules) == len(cards) and all(r.height() == 1 and abs(r.property("color").alphaF() - 0.12) < 0.01 and r.width() == r.parentItem().width() for r in rules), len(cards))
+ok("K2b Settings' spacing: groups 14 apart, the list 6 under the title, no side padding", kev("gap") == S(14) and kev("pad") == 0
+   and abs(fl_top() - S(6)) < 0.5, (kev("gap"), kev("pad"), fl_top()))
 left = sorted([c for c in cards if c.mapToItem(kv, QPointF(0, 0)).x() < kv.width() / 2], key=lambda c: c.mapToItem(kv, QPointF(0, 0)).y())
 ltitles = [h.ev("modelData.title", QQmlEngine.contextForObject(c), c) for c in left]
 ok("K3 the board's four groups on the left, in order", ltitles == ["Board", "Picked cards", "Confirm a move or a close", "Setup panel"], ltitles)
 rows = named("keyRow")
 total = kev("Logic.keyGroups.reduce(function(n, g) { return n + g.keys.length }, 0)")
 ok("K4 every shortcut (33 or more), one row each", len(rows) == total >= 33, (len(rows), total))
-ok("K5 every row one line (26 px), its caps and words fit", all(r.height() == S(26) and r.property("fits") for r in rows), [h.ev("modelData[1]", QQmlEngine.contextForObject(r), r) for r in rows if not r.property("fits")])
+ok("K5 every row one line (22 px, as Settings' rows), its caps and words fit", all(r.height() == S(22) and r.property("fits") for r in rows), [h.ev("modelData[1]", QQmlEngine.contextForObject(r), r) for r in rows if not r.property("fits")])
 def row(text): return next(r for r in rows if h.ev("modelData[1]", QQmlEngine.contextForObject(r), r) == text)
 def caps(r): return sorted([c for c in h.walk(r) if c.objectName() == "keyCap" and c.isVisible()], key=lambda c: c.mapToItem(r, QPointF(0, 0)).x())
 mv = row("Move left / right · asks first"); cs = caps(mv)
 gap = lambda a, b: b.mapToItem(mv, QPointF(0, 0)).x() - (a.mapToItem(mv, QPointF(0, 0)).x() + a.width())
 ok("K6 Shift H / L: Shift and H joined (2 px), then a quiet /, then L", [c.childItems()[0].property("text") for c in cs] == ["Shift", "H", "L"] and abs(gap(cs[0], cs[1]) - S(2)) < 0.5 and gap(cs[1], cs[2]) > S(8)
    and [(s.property("text"), s.property("color").name()) for s in h.walk(mv) if s.objectName() == "keySep" and s.isVisible()] == [("/", h.ev("root.quiet").name())], [gap(cs[0], cs[1]), gap(cs[1], cs[2])])
+ok("K6b cap text in the foreground (accent stays for state), bold", all(c.childItems()[0].property("color").name() == h.ev("root.foreground").name() and c.childItems()[0].property("font").bold() for c in cs))
 ok("K7 h j k l is one cap", [c.childItems()[0].property("text") for c in caps(row("Move between cards"))] == ["h j k l", "← ↓ ↑ →"])
 notes = [n for n in h.walk(mv) if n.objectName() == "keyNote" and n.isVisible()]
 words = [n for n in h.walk(mv) if n.objectName() == "keyWhat" and n.isVisible()]
