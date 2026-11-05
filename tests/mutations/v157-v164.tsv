@@ -1,0 +1,37 @@
+# Mutation rows from v157.tsv to v164.tsv (folded in 0.1.85). Columns: name, file, from, to, kind, test.
+# --- from v157.tsv
+# v0.1.57: keyed cards. node rows: tests/logic.test.js; qml rows: tests/harness/tests/run157.py
+k-no-dedupe	logic/board.js	if (!seen[k]) { seen[k] = true; keys.push(k) }	seen[k] = true; keys.push(k)	node	logic.test.js
+k-remove-forward	logic/board.js	for (var i = cur.length - 1; i >= 0; i--) if (!seen[cur[i]])	for (var i = 0; i < cur.length; i++) if (!seen[cur[i]])	node	logic.test.js
+k-no-move	logic/board.js	else if (at !== j) {	else if (false) {	node	logic.test.js
+k-keys-not-strings	logic/board.js	var cur = have.map(String), ops = []	var cur = have.slice(), ops = []	node	logic.test.js
+k-insert-at-end	logic/board.js	{ op: "insert", at: j, k: keys[j] }	{ op: "insert", at: cur.length, k: keys[j] }	node	logic.test.js
+k-move-dropped	logic/board.js	cur.splice(j, 0, cur.splice(at, 1)[0])	cur.splice(at, 1)	node	logic.test.js
+q-columns-unkeyed	BoardView.qml	        model: colModel	        model: view.host.shownColumns	qml	harness/tests/run157.py
+q-cards-rebuilt	BoardView.qml	            view.syncKeys(cardModel, keys)	            cardModel.clear(); keys.forEach(function(k) { cardModel.append({ k: k }) })	qml	harness/tests/run157.py
+q-columns-rebuilt	BoardView.qml	onColKeysChanged: syncKeys(colModel, colKeys)	onColKeysChanged: { colModel.clear(); syncKeys(colModel, colKeys) }	qml	harness/tests/run157.py
+q-card-objects-new	BoardView.qml	next[key] = old && JSON.stringify(old) === JSON.stringify(i) ? old : i	next[key] = i	qml	harness/tests/run157.py
+q-move-backwards	BoardView.qml	else if (o.op === "move") model.move(o.from, o.to, 1)	else if (o.op === "move") model.move(o.to, o.from, 1)	qml	harness/tests/run157.py
+q-insert-first	BoardView.qml	else model.insert(o.at, { k: o.k })	else model.insert(0, { k: o.k })	qml	harness/tests/run157.py
+# --- from v158.tsv
+# v0.1.58: open and closed issues in parallel, Review pipelines eight at a time. sh rows: tests/run.sh
+p-open-sequential	board-fetch	  echo $? >"$tmp/open.rc" ) &	  echo $? >"$tmp/open.rc" )	sh	run.sh
+p-closed-unchecked	board-fetch	for part in open closed; do	for part in open; do	sh	run.sh
+p-closed-first	board-fetch	for part in open closed; do	for part in closed open; do	sh	run.sh
+p-no-timeout-message	board-fetch	  ((rc != 124)) || emit error "$slow"\n  if ((rc != 0)); then\n    if	  if ((rc != 0)); then\n    if	sh	run.sh
+p-no-auth-recheck	board-fetch	    if ((auth_skipped)); then auth_skipped=0; forget_auth; check_auth; fi\n    emit error "Could not load $part	    emit error "Could not load $part	sh	run.sh
+p-no-wait	board-fetch	fi\nwait\nfor part in	fi\nfor part in	sh	run.sh
+p-pipelines-four	board-fetch	>= 8)); do wait -n; done\n  pipeline_of	>= 4)); do wait -n; done\n  pipeline_of	sh	run.sh
+p-hidden-closed-fails	board-fetch	echo '[]' >"$tmp/closed"; echo 0 >"$tmp/closed.rc"	echo '[]' >"$tmp/closed"; echo 1 >"$tmp/closed.rc"	sh	run.sh
+# --- from v159.tsv
+# v0.1.59: lazy sign-in check for reads, writes check first. sh rows: tests/run.sh
+a-reads-check-first	board-fetch	  *) auth_skipped=1 ;;	  *) auth_skipped=0; check_auth ;;	sh	run.sh
+a-writes-lazy	board-fetch	  move|relabel|close|reopen|comment|bulk) auth_skipped=0; check_auth ;;	  move|relabel|close|reopen|comment|bulk) auth_skipped=1 ;;	sh	run.sh
+a-move-unchecked	board-fetch	  move|relabel|close|reopen|comment|bulk) auth_skipped=0; check_auth ;;	  relabel|close|reopen|comment|bulk) auth_skipped=0; check_auth ;;	sh	run.sh
+a-relabel-unchecked	board-fetch	  move|relabel|close|reopen|comment|bulk) auth_skipped=0; check_auth ;;	  move|close|reopen|comment|bulk) auth_skipped=0; check_auth ;;	sh	run.sh
+a-close-unchecked	board-fetch	  move|relabel|close|reopen|comment|bulk) auth_skipped=0; check_auth ;;	  move|relabel|reopen|comment|bulk) auth_skipped=0; check_auth ;;	sh	run.sh
+a-reopen-unchecked	board-fetch	  move|relabel|close|reopen|comment|bulk) auth_skipped=0; check_auth ;;	  move|relabel|close|comment|bulk) auth_skipped=0; check_auth ;;	sh	run.sh
+a-comment-unchecked	board-fetch	  move|relabel|close|reopen|comment|bulk) auth_skipped=0; check_auth ;;	  move|relabel|close|reopen|bulk) auth_skipped=0; check_auth ;;	sh	run.sh
+a-bulk-unchecked	board-fetch	  move|relabel|close|reopen|comment|bulk) auth_skipped=0; check_auth ;;	  move|relabel|close|reopen|comment) auth_skipped=0; check_auth ;;	sh	run.sh
+a-no-recheck-after-failed-read	board-fetch	  if ((rc != 0 && auth_skipped)); then auth_skipped=0; forget_auth; check_auth; fi	  :	sh	run.sh
+a-old-mark-kept	board-fetch	forget_auth() { [[ -z $auth_mark ]] || rm -f "$auth_mark" 2>/dev/null; }	forget_auth() { :; }	sh	run.sh
