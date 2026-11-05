@@ -95,3 +95,59 @@ dim-45	Board.qml	background.b, 0.35))	background.b, 0.45))	qml	harness/tests/run
 signout-pill-color	components/ActionButton.qml	  readonly property color tone: danger ? host.urgent : host.accent	  readonly property color tone: host.accent	qml	harness/tests/run123.py
 skeleton-fixed	components/Skeleton.qml	  implicitWidth: knownWidth > 0 ? knownWidth : cards.length	  implicitWidth: cards.length	qml	harness/tests/run123.py
 skeleton-no-last	components/Skeleton.qml	host.boardWidths[host.stateKey] || host.lastBoardWidth	host.boardWidths[host.stateKey] || 0	qml	harness/tests/run123.py
+# --- from v124.tsv
+link-no-confirm	SettingsView.qml	onClicked: view.confirming = true	onClicked: view.host.signOut()	qml	harness/tests/run124.py
+link-not-accent	SettingsView.qml	text: "Sign out"\n          color: view.host.accent	text: "Sign out"\n          color: view.host.foreground	qml	harness/tests/run124.py
+link-big	SettingsView.qml	color: view.host.accent\n          font.pixelSize: Style.font.bodySmall\n          MouseArea	color: view.host.accent\n          font.pixelSize: Style.font.body\n          MouseArea	qml	harness/tests/run124.py
+row-grows	SettingsView.qml	implicitHeight: Math.max(accountText.implicitHeight, Style.space(28))	implicitHeight: accountText.implicitHeight + (view.confirming ? Style.space(28) : 0)	qml	harness/tests/run124.py
+text-under-link	SettingsView.qml	 - (signOutLink.visible ? signOutLink.implicitWidth : confirmRow.visible ? confirmRow.implicitWidth : 0)	 - 0	qml	harness/tests/run124.py
+heading-old	SettingsView.qml	Heading { text: "Account" }	Heading { text: "GitLab account" }	qml	harness/tests/run124.py
+yes-quiet	SettingsView.qml	small: true; danger: true; label: "Yes, sign out"	small: true; label: "Yes, sign out"	qml	harness/tests/run124.py
+no-tip	SettingsView.qml	visible: yesButton.hovered	visible: false	qml	harness/tests/run124.py
+tip-offcard	SettingsView.qml	onAboutToShow: x = parent.width - implicitWidth	onAboutToShow: x = parent.width	qml	harness/tests/run124.py
+hovered-dead	components/ActionButton.qml	readonly property bool hovered: mouse.containsMouse	readonly property bool hovered: false	qml	harness/tests/run124.py
+link-while-signing-out	SettingsView.qml	visible: !view.host.signingOut && !view.confirming &&	visible: !view.confirming &&	qml	harness/tests/run124.py
+cancel-signs-out	SettingsView.qml	label: "Cancel"\n            onClicked: view.confirming = false	label: "Cancel"\n            onClicked: { view.confirming = false; view.host.signOut() }	qml	harness/tests/run124.py
+frame-back	SettingsView.qml	      Item {\n        id: accountRow	      Rectangle {\n        border.width: 1; color: "transparent"\n        id: accountRow	qml	harness/tests/run124.py
+link-left	SettingsView.qml	anchors { right: parent.right; verticalCenter: parent.verticalCenter }\n          visible: !view.host.signingOut	anchors { left: parent.left; verticalCenter: parent.verticalCenter }\n          visible: !view.host.signingOut	qml	harness/tests/run124.py
+labels-under-close	IssueView.qml	width: parent.width - (stateAction.visible ? stateAction.implicitWidth + Style.space(12) : 0)	width: parent.width	qml	harness/tests/run124.py
+filter-always-on	components/LabelPicker.qml	enabled: picker.labelsState === "ready"	enabled: true	qml	harness/tests/run124.py
+no-focus-after-load	IssueView.qml	if (labelsState === "ready" && editing) labelFilter.forceActiveFocus()	if (false) labelFilter.forceActiveFocus()	qml	harness/tests/run124.py
+filter-big	components/LabelPicker.qml	verticalPadding: Style.space(3)	verticalPadding: Style.space(7)	qml	harness/tests/run124.py
+keys-while-loading	BoardKeys.qml	if (host.view === "issue" && issueView.editing) return	if (false) return	qml	harness/tests/run124.py
+x-while-loading	BoardKeys.qml	host.view === "issue" && !issueView.editing) issueView.toggleState()	host.view === "issue") issueView.toggleState()	qml	harness/tests/run124.py
+esc-while-loading	BoardKeys.qml	else if (host.view === "issue" && issueView.editing) issueView.doneEditing()	else if (false) issueView.doneEditing()	qml	harness/tests/run124.py
+done-editing-dead	IssueView.qml	onClicked: view.editing ? view.doneEditing() : view.editLabels()	onClicked: view.editLabels()	qml	harness/tests/run124.py
+close-link-loud	IssueView.qml	color: stateMouse.containsMouse && enabled ? view.host.foreground : view.host.dim	color: view.host.foreground	qml	harness/tests/run124.py
+close-link-dead	IssueView.qml	onClicked: view.toggleState() }	onClicked: {} }	qml	harness/tests/run124.py
+hint-under-post	IssueComments.qml	width: parent.width - postButton.width - Style.space(12)	width: parent.width	qml	harness/tests/run124.py
+hint-long	IssueComments.qml	"Posts as you. Lines starting with / aren't sent."	"Posts as you on GitLab. Lines starting with / (quick actions) aren't sent."	qml	harness/tests/run124.py
+edit-own-row	IssueView.qml	          BoardText {\n            id: editAction	          Item { width: labelFlow.width; height: 1 }\n          BoardText {\n            id: editAction	qml	harness/tests/run124.py
+filter-not-dim	components/LabelPicker.qml	enabled: picker.labelsState === "ready"\n      opacity: enabled ? 1 : 0.5	enabled: picker.labelsState === "ready"\n      opacity: 1	qml	harness/tests/run124.py
+see-all-hidden	BoardView.qml	visible: !!column.modelData.seeAll	visible: false	qml	harness/tests/run124.py
+see-all-always	BoardView.qml	visible: !!column.modelData.seeAll	visible: true	qml	harness/tests/run124.py
+see-all-dead	BoardView.qml	onClicked: view.host.openUrl(column.modelData.seeAll) }	onClicked: {} }	qml	harness/tests/run124.py
+see-all-loud	BoardView.qml	color: seeAllMouse.containsMouse ? view.host.accent : view.host.dim	color: view.host.accent	qml	harness/tests/run124.py
+cap-link-never	board-fetch	| (if $capped\n	| (if false\n	sh	run.sh
+cap-link-always	board-fetch	| (if $capped\n	| (if true\n	sh	run.sh
+link-any-url	board-fetch	capture("^(?<p>https://[^?#]+)/-/(?:issues|work_items)/[0-9]+$")	capture("^(?<p>.+)/-/[a-z_]+/[0-9]+$")	sh	run.sh
+link-unscoped	board-fetch	"/-/issues?state=closed" + $webScope)	"/-/issues?state=closed")	sh	run.sh
+cap-50	board-fetch	closed_cap=20	closed_cap=50	sh	run.sh
+# --- from v125.tsv
+work-items-unread-sh	board-fetch	/-/(?:issues|work_items)/[0-9]+$	/-/issues/[0-9]+$	sh	run.sh
+work-items-unread-qml	board-fetch	/-/(?:issues|work_items)/[0-9]+$	/-/issues/[0-9]+$	qml	harness/tests/run125.py
+issues-unread	board-fetch	/-/(?:issues|work_items)/[0-9]+$	/-/work_items/[0-9]+$	sh	run.sh
+footer-hidden	BoardView.qml	visible: !!column.modelData.seeAll	visible: false	qml	harness/tests/run125.py
+column-no-taller	BoardView.qml	height: Math.max(view.tallest, flick.height)	height: flick.height	qml	harness/tests/run125.py
+board-not-scrolling	BoardView.qml	contentHeight: board.implicitHeight	contentHeight: flick.height	qml	harness/tests/run125.py
+opens-scrolled	BoardView.qml	contentWidth: board.implicitWidth; contentHeight: board.implicitHeight	contentWidth: board.implicitWidth; contentHeight: board.implicitHeight; onContentHeightChanged: contentY = Math.max(0, contentHeight - height)	qml	harness/tests/run125.py
+# --- from v126.tsv
+labels-no-spinner	components/LabelPicker.qml	Spinner { id: spinner; running: status.busy;	Spinner { id: spinner; running: false;	qml	harness/tests/run126.py
+labels-spin-forever	components/LabelPicker.qml	readonly property bool busy: !bad && (picker.busyText !== "" || picker.labelsState === "loading")	readonly property bool busy: true	qml	harness/tests/run126.py
+spin-on-error	components/LabelPicker.qml	readonly property bool busy: !bad && (	readonly property bool busy: (	qml	harness/tests/run126.py
+saving-no-spin	components/LabelPicker.qml	readonly property bool busy: !bad && (picker.busyText !== "" || picker.labelsState === "loading")	readonly property bool busy: !bad && (picker.labelsState === "loading")	qml	harness/tests/run126.py
+spinner-overlaps-text	components/LabelPicker.qml	Row {\n    width: parent.width; spacing: Style.space(6)\n    visible: status.text	Item {\n    width: parent.width; height: status.height; property int spacing: Style.space(6)\n    visible: status.text	qml	harness/tests/run126.py
+spinner-still	components/Spinner.qml	RotationAnimation on rotation { running: spinner.running;	RotationAnimation on rotation { running: false;	qml	harness/tests/run126.py
+spinner-dim	components/Spinner.qml	color: Commons.Color.accent	color: Commons.Color.popups.text	qml	harness/tests/run126.py
+spinner-big	components/Spinner.qml	font.pixelSize: Style.font.bodySmall	font.pixelSize: Style.font.body * 2	qml	harness/tests/run126.py
+spinner-always	components/Spinner.qml	visible: running	visible: true	qml	harness/tests/run126.py
