@@ -1,7 +1,0 @@
-close-sends-labels	board-fetch	'{state_event: $e}'	'{state_event: $e, labels: ""}'	sh
-no-state-check	board-fetch	and .iid == $iid and .state == $want)	and .iid == $iid)	sh
-no-iid-check	board-fetch	select(type == "object" and .iid == $iid and .state == $want)	select(type == "object" and .state == $want)	sh
-unbounded-close	board-fetch	      bounded api --hostname "$hostname" --method PUT --header "Content-Type: application/json" --input - "$base/issues/$iid"\n    }\n    if [[ $cmd == close	      timeout 30 glab api --hostname "$hostname" --method PUT --header "Content-Type: application/json" --input - "$base/issues/$iid"\n    }\n    if [[ $cmd == close	sh
-status-on-all	logic/labels.js	return (labels || []).map(String).filter(function(name) { return has(status, name) })	return (labels || []).map(String)	node
-no-refresh-after-close	IssueView.qml	    host.refresh()  // the card moves to or from Closed		qml
-no-busy-guard	IssueView.qml	    if (stateBusy !== "" || !issueReady || issueError !== "") return\n    confirming = false	    confirming = false	qml
