@@ -892,7 +892,7 @@ omarchy plugin validate .
 
 The QML views have offscreen tests too: `tests/harness/` loads a copy of
 the plugin with stand-ins for Quickshell and Omarchy's `qs.Commons`/`qs.Ui`
-(`tests/harness/stubs`, and `tests/harness15` at 1.5x scale) into PySide6,
+(`tests/harness/stubs`; set `OGB_SCALE=1.5` for 1.5x) into PySide6,
 answers its board-fetch calls with fixtures, and checks what is on screen.
 `tests/mutations/` lists deliberate bugs in eight files (one per line: name,
 file, from, to, sh|qml|node, test). The test column names what must fail:

@@ -2,11 +2,12 @@
 # (calm answers in a row, cards in progress); the popup's timer and the
 # "due" check use Logic.adaptiveInterval of the setting and that pace. Fake
 # time: the age of the last answer is set by hand (startedAt), the timer is
-# fired by hand. Scale 1.5 stubs (harness15/) for the previews.
+# fired by hand. Style.scale 1.5 (OGB_SCALE) for the previews.
 # Usage: run135.py <src> [outdir]   (previews: tip-setting, tip-fast, tip-slow, tip-active)
 import sys, os, json, copy; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import os
+os.environ["OGB_SCALE"] = "1.5"
 import lib
-lib.HERE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "harness15")
 from lib import *
 src = sys.argv[1]; out = sys.argv[2] if len(sys.argv) > 2 else None
 P = "firelink21/phrase41"

@@ -1,12 +1,13 @@
-# v0.1.39: the view-only hint at scale 1.5 (harness15/). board-fetch access runs
+# v0.1.39: the view-only hint at Style.scale 1.5 (OGB_SCALE). board-fetch access runs
 # once per project per session (GETs only) when its board loads; below Planner
 # (15), or after a write refused with 403, moves, bulk picks, labels and close
 # are off and AccessHint says why, with GitLab's https token page (read_api)
 # and glab auth login; a token without api gets its own note; Not now is saved
 # per project. Usage: run139.py <src> [outdir]
 import sys, os, json; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import os
+os.environ["OGB_SCALE"] = "1.5"
 import lib
-lib.HERE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "harness15")
 from lib import *
 from PySide6.QtGui import QKeyEvent
 src = sys.argv[1]; out = sys.argv[2] if len(sys.argv) > 2 else None

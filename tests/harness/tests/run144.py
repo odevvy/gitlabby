@@ -4,8 +4,9 @@
 # stdin. Same per-card results, cap, Esc stop and stop rules as before.
 # Usage: run144.py <src>
 import sys, os, json; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import os
+os.environ["OGB_SCALE"] = "1.5"
 import lib
-lib.HERE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "harness15")
 from lib import *
 src = sys.argv[1]
 P = "firelink21/phrase41"

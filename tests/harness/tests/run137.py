@@ -1,12 +1,13 @@
-# v0.1.37: the Merge requests view at scale 1.5 (harness15/). m and the header
+# v0.1.37: the Merge requests view at Style.scale 1.5 (OGB_SCALE). m and the header
 # button open it; it asks the shared service for board-fetch mrs only on open,
 # on a scope change or r (an answer under a minute old is reused); rows show
 # status, pipeline and every reviewer's state; Enter/o/click open the link and
 # nothing else; signed out shows the message; the badge counts review requests.
 # Usage: run137.py <src> [outdir]   (previews: mrs-view, mrs-header-badge, mrs-signed-out)
 import sys, os, json; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import os
+os.environ["OGB_SCALE"] = "1.5"
 import lib
-lib.HERE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "harness15")
 from lib import *
 from PySide6.QtGui import QImage
 src = sys.argv[1]; out = sys.argv[2] if len(sys.argv) > 2 else None

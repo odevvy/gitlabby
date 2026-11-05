@@ -16,7 +16,10 @@ for d in [os.environ.get("OGB_FONTS", ""), TOOLING + "/fonts"]:
         for f in os.listdir(d): QFontDatabase.addApplicationFont(os.path.join(d, f))
 
 class Harness:
-    def __init__(self, src, settings=None):
+    def __init__(self, src, settings=None, scale=None):
+        # scale: 1 (default) or 1.5 for the screenshot tests. OGB_SCALE wins when
+        # scale is omitted (the old harness15 stubs).
+        self.scale = float(scale if scale is not None else os.environ.get("OGB_SCALE", "1") or "1")
         self.dir = tempfile.mkdtemp(prefix="ogb-h-"); dst = self.dir + "/app"
         atexit.register(shutil.rmtree, self.dir, True)  # also when a test stops early
         shutil.copytree(src, dst, ignore=shutil.ignore_patterns(".git")); shutil.copy(HERE + "/main.qml", dst + "/main.qml")
@@ -26,6 +29,10 @@ class Harness:
         if not self.eng.rootObjects(): print("LOAD FAILED"); print("\n".join(self.warnings)); sys.exit(1)
         self.win = self.eng.rootObjects()[0]; self.board = self.win.findChild(QQuickItem, "board")
         self.ctx = QQmlEngine.contextForObject(self.board.childItems()[0])  # Board.qml's ids (root, panel, settingsView, ...)
+        if self.scale != 1:
+            # Before any test spins: match the old harness15 window and Style.
+            self.ev("Style.scale = %s" % self.scale)
+            self.win.setWidth(1500); self.win.setHeight(1700)
         self.results = []
         # bar.shell stand-in: records writes and feeds them back like the real shell.
         self.ev("root.bar = Qt.createQmlObject('import QtQuick; QtObject { property var shell: QtObject { property var writes: []; function updateEntryInline(id, s) { writes = writes.concat([JSON.parse(JSON.stringify(s))]); root.settings = JSON.parse(JSON.stringify(s)); return true } } }', root)")
