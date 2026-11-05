@@ -1,4 +1,4 @@
-# v0.1.83: Settings > Show avatars (showAvatars, default on). This step: the setting itself. Off, no avatar
+# v0.1.83: Settings > Show avatars (showAvatars, default on). Off, no avatar
 # picture is requested (every Image source is empty) and the initials circle
 # stays; on, the picture URL is asked for as before. Usage: run183.py <src>
 import sys, os, copy; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -13,15 +13,34 @@ PIC = "file://" + pic_dir + "/a.png"  # a local picture: the test makes no netwo
 B = copy.deepcopy(BOARD)
 first = next(i for c in B["columns"] for i in c["issues"])
 first["assignees"] = [{"username": "alice", "name": "Alice Smith", "avatar": PIC}]
+second = [i for c in B["columns"] for i in c["issues"]][1]
+second["assignees"] = [{"username": "alice", "name": "Alice Smith", "avatar": ""}, {"username": "bob", "name": "Bob", "avatar": ""}]
 h = Harness(sys.argv[1], {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": [], "boardStates": {}, "refreshIntervalSec": 60})
 h.ev("panel.availableCardHeight = 620; panel.availableCardWidth = 1020")
 h.ev("root.opened = true"); h.spin(60); h.answer("board", B); h.spin(500)
 ok = h.ok
 def pics(): return [it.property("source").toString() for it in h.walk() if it.objectName() == "avatarImage"]
 def initials(): return [it.property("text") for it in h.visible(lambda it: it.property("text") == "AS")]
-ok("A0 default on", h.ev("root.showAvatars") is True)
+ok("A1 default on: the picture is asked for, its initials go once it loads (the other alice has no picture)", h.ev("root.showAvatars") is True and PIC in pics() and h.until(lambda: len(initials()) == 1), (pics(), initials()))
 w0 = len(h.ev("root.bar.shell.writes") or []); h.ev("root.setShowAvatars(false)"); h.spin(150)
-ok("A2 setShowAvatars(false) saves showAvatars: false", (h.ev("root.bar.shell.writes") or [])[w0:][-1].get("showAvatars") is False and h.ev("root.showAvatars") is False)
+ok("A2 setShowAvatars(false) saves showAvatars: false", (h.ev("root.bar.shell.writes") or [])[w0:][-1].get("showAvatars") is False)
+ok("A3 off: no picture is requested anywhere", h.ev("root.showAvatars") is False and pics() != [] and all(p == "" for p in pics()), pics())
+ok("A4 off: the initials circle shows instead", initials() != [], initials())
 h.ev("root.setShowAvatars('yes')"); h.spin(60)
 ok("A5 only true turns it on", (h.ev("root.bar.shell.writes") or [])[-1].get("showAvatars") is False)
+# Initials circle colour: the same username always gets the same colour (two
+# cards with alice), from the theme accent, and another name can differ.
+def circles():
+    out = []
+    for it in h.walk():
+        if it.metaObject().className().startswith("Avatar"):
+            p = it.property("person"); p = p.toVariant() if hasattr(p, "toVariant") else p
+            out.append(((p or {}).get("username"), it.property("color").name()))
+    return out
+cs = circles(); al = [c for u, c in cs if u == "alice"]; ot = [c for u, c in cs if u == "bob"]
+ok("C1 the initials circle is tinted (not the old flat faint grey)", cs and all(c != QColor(h.ev("root.faint.toString()")).name() for _, c in cs), cs)
+ok("C2 alice has the same colour on both cards", len(al) == 2 and al[0] == al[1], cs)
+ok("C3 another name gets its own colour", ot and ot[0] != al[0], cs)
+h.ev("root.setShowAvatars(true)"); h.spin(150)
+ok("A6 on again: the picture again", PIC in pics(), pics())
 sys.exit(h.finish())
