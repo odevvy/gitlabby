@@ -905,8 +905,9 @@ python -m venv ~/.cache/ogb-tests && ~/.cache/ogb-tests/bin/pip install PySide6-
 export PYTHON=~/.cache/ogb-tests/bin/python
 tests/harness/all.sh                                  # every view test, 4 at a time (about 1.5 min)
 $PYTHON tests/harness/tests/run144.py .               # one of them
-tests/mutate.sh . tests/mutations/v141b-v148.tsv      # each row against its own test
+tests/mutate.sh --changed origin/main . tests/mutations/*.tsv   # per release: rows whose file or test changed
 tests/mutate.sh --check . tests/mutations/*.tsv       # rows whose pattern or test is gone (no tests run)
+tests/mutate.sh . tests/mutations/*.tsv               # the full sweep (about an hour), now and then
 ```
 
 `HARNESS_JOBS` sets how many view tests run at once. The tests on two
