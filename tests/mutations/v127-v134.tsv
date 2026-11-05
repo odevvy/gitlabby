@@ -43,7 +43,7 @@ taken-reason-generic	BotsSection.qml	"There's already a bot named " + newName + 
 menu-not-auto	BotsSection.qml	menuOpen = k === "list"	menuOpen = false	qml	harness/tests/run129.py
 pick-keeps-open	BotsSection.qml	pick = name; menuOpen = false	pick = name	qml	harness/tests/run129.py
 noowner-hidden	BotsSection.qml	label: "cards no bot owns"; enabled: !sec.hasNoOwner;	label: "cards no bot owns"; visible: !sec.hasNoOwner;	qml	harness/tests/run129.py
-tip-offcard	BotsRow.qml	    return Math.max(-at, Math.min(0, row.width - at - width))	    return 0	qml	harness/tests/run129.py
+# dropped in 0.1.89: tip-offcard (the same mutation as tip-offcard)
 # --- from v130.tsv
 # dropped in 0.1.85: refreshing-over-saved (only delays a refresh error over a saved copy until that refresh ends, a moment later)
 refreshing-red	BoardHeader.qml	host.boardState === "ready" && !host.refreshing) ? host.urgent	host.boardState === "ready") ? host.urgent	qml	harness/tests/run130.py

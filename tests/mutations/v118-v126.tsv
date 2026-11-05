@@ -96,7 +96,7 @@ signout-pill-color	components/ActionButton.qml	  readonly property color tone: d
 skeleton-fixed	components/Skeleton.qml	  implicitWidth: knownWidth > 0 ? knownWidth : cards.length	  implicitWidth: cards.length	qml	harness/tests/run123.py
 skeleton-no-last	components/Skeleton.qml	host.boardWidths[host.stateKey] || host.lastBoardWidth	host.boardWidths[host.stateKey] || 0	qml	harness/tests/run123.py
 # --- from v124.tsv
-link-no-confirm	SettingsView.qml	onClicked: view.confirming = true	onClicked: view.host.signOut()	qml	harness/tests/run124.py
+# dropped in 0.1.89: link-no-confirm (the same mutation as no-confirm)
 link-not-accent	SettingsView.qml	text: "Sign out"\n          color: view.host.accent	text: "Sign out"\n          color: view.host.foreground	qml	harness/tests/run124.py
 link-big	SettingsView.qml	color: view.host.accent\n          font.pixelSize: Style.font.bodySmall\n          MouseArea	color: view.host.accent\n          font.pixelSize: Style.font.body\n          MouseArea	qml	harness/tests/run124.py
 row-grows	SettingsView.qml	implicitHeight: Math.max(accountText.implicitHeight, Style.space(28))	implicitHeight: accountText.implicitHeight + (view.confirming ? Style.space(28) : 0)	qml	harness/tests/run124.py
@@ -135,9 +135,9 @@ link-unscoped	board-fetch	"/-/issues?state=closed" + $webScope)	"/-/issues?state
 cap-50	board-fetch	closed_cap=20	closed_cap=50	sh	run.sh
 # --- from v125.tsv
 work-items-unread-sh	board-fetch	/-/(?:issues|work_items)/[0-9]+$	/-/issues/[0-9]+$	sh	run.sh
-work-items-unread-qml	board-fetch	/-/(?:issues|work_items)/[0-9]+$	/-/issues/[0-9]+$	qml	harness/tests/run125.py
+# dropped in 0.1.89: work-items-unread-qml (the same mutation as work-items-unread-sh)
 issues-unread	board-fetch	/-/(?:issues|work_items)/[0-9]+$	/-/work_items/[0-9]+$	sh	run.sh
-footer-hidden	BoardView.qml	visible: !!column.modelData.seeAll	visible: false	qml	harness/tests/run125.py
+# dropped in 0.1.89: footer-hidden (the same mutation as see-all-hidden)
 column-no-taller	BoardView.qml	height: Math.max(view.tallest, flick.height)	height: flick.height	qml	harness/tests/run125.py
 board-not-scrolling	BoardView.qml	contentHeight: board.implicitHeight	contentHeight: flick.height	qml	harness/tests/run125.py
 opens-scrolled	BoardView.qml	contentWidth: board.implicitWidth; contentHeight: board.implicitHeight	contentWidth: board.implicitWidth; contentHeight: board.implicitHeight; onContentHeightChanged: contentY = Math.max(0, contentHeight - height)	qml	harness/tests/run125.py

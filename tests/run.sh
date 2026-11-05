@@ -1246,6 +1246,13 @@ check "mutation rows: none stale but the known ones" '.' "$([[ $stale == "$(<"$h
 check "mutation rows: a moved pattern shows as stale" '.' "$(printf 'x\tboard-fetch\tno such text\tq\tsh\trun.sh\n' >"$work/m.tsv"; [[ $(bash "$here/mutate.sh" --check "$here/.." "$work/m.tsv") == "stale m.tsv x" ]] && echo true || echo false)"
 check "mutation rows: a row naming a missing test shows as notest" '.' "$(printf 'y\tBoard.qml\timport QtQuick\tq\tqml\tharness/tests/nope.py\n' >"$work/n.tsv"; [[ $(bash "$here/mutate.sh" --check "$here/.." "$work/n.tsv") == "notest n.tsv y" ]] && echo true || echo false)"
 check "mutation rows: a row without a test shows as notest" '.' "$(printf 'z\tBoard.qml\timport QtQuick\tq\tqml\n' >"$work/z.tsv"; [[ $(bash "$here/mutate.sh" --check "$here/.." "$work/z.tsv") == "notest z.tsv z" ]] && echo true || echo false)"
+# --changed (the per-release run) picks the rows whose file or test differs from
+# a git base; CI's image has no git, so there it is checked locally only.
+check "mutation rows: --changed picks only rows whose file or test changed" '.' "$(command -v git >/dev/null || { echo true; exit; }
+  d=$work/chg; mkdir -p "$d" && cd "$d" && git init -q && printf 'a\n' >a.txt && printf 'b\n' >b.txt && git add . &&
+  git -c user.name=t -c user.email=t@t commit -qm x && echo z >>a.txt &&
+  printf 'ra\ta.txt\ta\tq\tsh\trun.sh\nrb\tb.txt\tb\tq\tsh\trun.sh\n' >"$work/c.tsv" &&
+  [[ $(bash "$here/mutate.sh" --changed HEAD --list "$d" "$work/c.tsv") == ra ]] && echo true || echo false)"
 
 echo "passed $pass, failed $fail"
 ((fail == 0))
