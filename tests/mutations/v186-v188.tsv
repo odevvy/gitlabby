@@ -10,3 +10,7 @@ kv-gap-12	KeysView.qml	readonly property real gap: Style.space(14)	readonly prop
 kv-pad-back	KeysView.qml	readonly property real pad: 0	readonly property real pad: Style.space(12)	qml	harness/tests/run162.py
 kv-title-gap-10	KeysView.qml	topMargin: Style.space(6)	topMargin: Style.space(10)	qml	harness/tests/run162.py
 kv-caps-accent	KeysView.qml	color: view.host.foreground; font { pixelSize: Style.font.caption; bold: true } }	color: view.host.accent; font { pixelSize: Style.font.caption; bold: true } }	qml	harness/tests/run162.py
+# v0.1.88: Settings > Account shows the token's scopes (Logic.accessLine; the line: run188)
+line-api-quiet	logic/access.js	if (s.indexOf("api") !== -1) return t	if (false) return t	node	logic.test.js
+line-unknown-shown	logic/access.js	if (!entry || !entry.known) return ""	if (!entry) return ""	node	logic.test.js
+line-empty-scopes	logic/access.js	if (!Array.isArray(s) || s.length === 0) return	if (!Array.isArray(s)) return	node	logic.test.js

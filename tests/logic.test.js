@@ -1269,3 +1269,14 @@ test("link checks match: linkUrl opens exactly what openUrl's httpsUrl accepts",
   assert.equal(L.linkUrl("https://a b", issueUrl), "")
   assert.equal(L.linkUrl('https://x/"y', issueUrl), "")
 })
+
+test("accessLine: the token's scopes for Settings > Account, never the token", () => {
+  const line = (scopes, known = true) => L.accessLine({ known, level: 30, scopes, refused: "" })
+  assert.equal(L.accessLine(null), "")
+  assert.equal(line(["api"], false), "")
+  assert.equal(line(null), "Access: can't be read for this sign-in (browser sign-in, not a token).")
+  assert.equal(line([]), "Access: can't be read for this sign-in (browser sign-in, not a token).")
+  assert.equal(line(["read_api"]), "Access: read_api \u00b7 read only. Moving cards, labels and comments need api.")
+  assert.equal(line(["api", "read_user"]), "Access: api, read_user \u00b7 read and write. Only moving cards, labels and comments need api; read_api is enough to look.")
+  assert.equal(line(["read_user"]), "Access: read_user")
+})

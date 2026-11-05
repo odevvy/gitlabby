@@ -46,10 +46,23 @@ function accessHint(note, entry, project, host) {
       + "create one with just the read_api scope, then run " + login + " in a terminal and paste it there, never anywhere else. "
       + "glab in your terminal becomes read-only too, for every project." }
 }
+// Settings > Account: what glab's token may do, from the scopes board-fetch
+// access already read (personal_access_tokens/self: the token's record, never
+// its value). "" until the entry is known; no scopes (a browser/OAuth sign-in,
+// or GitLab refused the lookup): can't be read.
+function accessLine(entry) {
+  if (!entry || !entry.known) return ""
+  var s = entry.scopes
+  if (!Array.isArray(s) || s.length === 0) return "Access: can't be read for this sign-in (browser sign-in, not a token)."
+  var t = "Access: " + s.join(", ")
+  if (s.indexOf("api") !== -1) return t + " \u00b7 read and write. Only moving cards, labels and comments need api; read_api is enough to look."
+  if (s.indexOf("read_api") !== -1) return t + " \u00b7 read only. Moving cards, labels and comments need api."
+  return t
+}
 // GitLab's own token page, prefilled (docs: Prefill personal access token
 // details): a name and the read_api scope. Never a token.
 function patUrl(host) {
   return "https://" + host + "/-/user_settings/personal_access_tokens?name=GitLab+board&description=Read-only+token+for+the+Omarchy+GitLab+board&scopes=read_api"
 }
 
-if (typeof module !== "undefined") module.exports = { plannerLevel: plannerLevel, accessEntry: accessEntry, writeRefusal: writeRefusal, refusedEntry: refusedEntry, accessNote: accessNote, accessHint: accessHint, patUrl: patUrl }
+if (typeof module !== "undefined") module.exports = { plannerLevel: plannerLevel, accessEntry: accessEntry, writeRefusal: writeRefusal, refusedEntry: refusedEntry, accessNote: accessNote, accessHint: accessHint, accessLine: accessLine, patUrl: patUrl }
