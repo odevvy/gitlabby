@@ -2,13 +2,13 @@
 # --- from v149.tsv
 # v0.1.49: a list bot's column is that bot's alone. node rows: logic.test.js; qml rows: tests/harness/tests/run122.py
 review-shared	logic/bots.js	 || listed.indexOf(list) !== -1) return	) return	node	logic.test.js
-review-shared-qml	logic/bots.js	 || listed.indexOf(list) !== -1) return	) return	qml	harness/tests/run122.py
+# dropped in 0.1.89: review-shared-qml (the same mutation as review-shared)
 list-bot-skips-own	logic/bots.js	bot.list !== undefined ? list !== bot.list : 	bot.list !== undefined ? list !== bot.list || listed.indexOf(list) !== -1 : 	node	logic.test.js
 listed-from-labels	logic/bots.js	var listed = config.bots.filter(function(b) { return b.list !== undefined }).map(function(b) { return b.list })	var listed = config.bots.filter(function(b) { return b.list !== undefined }).map(function(b) { return b.name })	node	logic.test.js
 listed-every-column	logic/bots.js	listed.indexOf(list) !== -1) return	listed.length > 0) return	node	logic.test.js
 # --- from v150.tsv
 # v0.1.50 a refresh shows (v0.1.63: a breathing dot instead of the bar); qml rows: tests/harness/tests/run150.py
-active-closed-too	Board.qml	refreshActive: opened && (	refreshActive: (	qml	harness/tests/run150.py
+# dropped in 0.1.89: active-closed-too (the same mutation as rotation-closed)
 icon-still	BoardHeader.qml	RotationAnimation on rotation { running: host.loudRefresh;	RotationAnimation on rotation { running: false;	qml	harness/tests/run150.py
 icon-timer-too	BoardHeader.qml	RotationAnimation on rotation { running: host.loudRefresh;	RotationAnimation on rotation { running: host.refreshActive;	qml	harness/tests/run150.py
 manual-always	Board.qml	manualRefresh = ifDue !== true || (manualRefresh && loading)	manualRefresh = true	qml	harness/tests/run150.py

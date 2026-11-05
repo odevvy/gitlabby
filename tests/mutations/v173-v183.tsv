@@ -115,7 +115,7 @@ n-badge-cap	logic/mrs.js	n > 9 ? "9+" : String(n)\n}\n// board-fetch arguments f
 n-args-loose	logic/mrs.js	? ["todos", "--project", String(scope)] : ["todos"]	? ["todos", "--project", String(scope)] : ["todos", "--project", String(scope)]	node	logic.test.js
 n-subline-who	logic/mrs.js	t.author && t.author.name ? "by " + t.author.name : ""	""	node	logic.test.js
 q-td-no-reuse	ScopedFetch.qml	if (!force && last && Date.now() - last.startedAt < 60000) return	if (false) return	qml	harness/tests/run177.py
-q-td-force-ignored	ScopedFetch.qml	if (!force && last &&	if (last &&	qml	harness/tests/run177.py
+# dropped in 0.1.89: q-td-force-ignored (the same mutation as svc-force-ignored)
 q-td-no-dedupe	ScopedFetch.qml	if (loading === next) return	if (false) return	qml	harness/tests/run177.py
 q-td-no-queue	ScopedFetch.qml	if (running) { pending = { scope: next, force: force === true }; return }	if (running) return	qml	harness/tests/run177.py
 q-td-gen	ScopedFetch.qml	    if (generation !== service.generation) return\n	\n	qml	harness/tests/run177.py
