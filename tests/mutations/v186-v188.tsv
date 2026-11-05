@@ -1,0 +1,6 @@
+# Mutation rows from 0.1.86 on. Columns: name, file, from, to, kind, test.
+# v0.1.86: Merge requests load like To-do (LoadingRow, busy only on a reload)
+mrs-no-spin	MrsView.qml	spinning: view.loading	spinning: false	qml	harness/tests/run186.py
+mrs-busy-first	MrsView.qml	busy: loading && answer !== null	busy: loading	qml	harness/tests/run186.py
+mrs-no-retry	MrsView.qml	+ (view.loading ? "" : "  Press r to try again.")	+ ""	qml	harness/tests/run186.py
+mrs-plain-line	MrsView.qml	    LoadingRow {\n      objectName: "mrsMessage"\n      host: view.host	    BoardText {\n      objectName: "mrsMessage"\n      property bool spinning: false	qml	harness/tests/run186.py

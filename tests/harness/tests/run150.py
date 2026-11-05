@@ -55,9 +55,10 @@ h.age_feed(); h.ev("root.refresh()"); h.spin(60)
 ok("R9 issue view: the spin", h.ev("root.view") == "issue" and spins())
 shot("refresh-issue")
 h.answer("board", BOARD); h.spin(100); settle(); h.stop_all()
-# The MRs view: its own list loading counts
+# The MRs view: its first load is the view's own spinner row (as To-do, 0.1.86); a reload spins the header
 h.ev("root.showView('mrs')"); h.spin(60)
-ok("R10 MRs view: the list loading spins it", h.running("mrs") != [] and spins(), h.running())
+ok("R10 MRs view, first load: the spinner row, not the header", h.running("mrs") != [] and not h.ev("root.refreshActive")
+   and any(it.objectName() == "mrsMessage" and it.property("spinning") is True for it in h.visible(lambda it: True)), h.running())
 ANS = {"state": "ready", "message": "", "scope": "all", "updatedAt": "2026-10-31T13:00:00Z", "review": [], "mine": []}
 h.answer("mrs", ANS); h.spin(80); settle()
 ok("R11 the list in: the icon stops upright", not h.ev("root.refreshActive") and h.ev("header.refreshButton.rotation") % 360 == 0)

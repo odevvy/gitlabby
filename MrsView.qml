@@ -23,14 +23,18 @@ ScopedList {
   }
   copySign: function(row) { return "!" }
 
-  messageShown: !view.answer || view.answer.state !== "ready"
+  // The header shows a reload of lists already on screen; the first load is
+  // the spinner row only (as To-do).
+  busy: loading && answer !== null
+
+  // The first load: a spinner row; an error or sign-in: the same row, still.
+  messageShown: !view.answer ? view.loading : view.answer.state !== "ready"
   message: Component {
-    BoardText {
+    LoadingRow {
       objectName: "mrsMessage"
-      wrapMode: Text.Wrap
-      color: view.host.dim
-      font.pixelSize: Style.font.bodySmall
-      text: !view.answer ? (view.loading ? "Loading merge requests\u2026" : "")
+      host: view.host
+      spinning: view.loading
+      text: !view.answer ? "Loading merge requests\u2026"
         : view.answer.message + (view.loading ? "" : "  Press r to try again.")
     }
   }
