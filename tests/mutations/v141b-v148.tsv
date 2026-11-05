@@ -63,3 +63,21 @@ mrs-use-ignored	logic/mrs.js	function use(m) { Core = m.Core; }	function use(m) 
 bulk-wrong-borrow	logic/bulk.js	return BoardLogic.columnKey(column)	return BoardLogic.listSpec(column)	node	logic.test.js
 index-drops-module	logic/index.js	  require("./access.js")	  {}	node	logic.test.js
 labels-borrow-wrong	logic/labels.js	function has(list, name) { return Core.has(list, name) }	function has(list, name) { return false }	node	logic.test.js
+# --- from v147.tsv
+keys-no-host	Board.qml	      host: root\n      views: ({ issue	      views: ({ issue	qml	harness/tests/run147.py
+keys-drops-issue	Board.qml	views: ({ issue: issueView, picker	views: ({ picker	qml	harness/tests/run147.py
+keys-swaps-settings	Board.qml	settings: settingsView, bulk: bulkBar	settings: picker, bulk: bulkBar	qml	harness/tests/run147.py
+keys-drops-mrs	Board.qml	mrs: mrsView, todos: todoView, setup: setupView })	todos: todoView, setup: setupView })	qml	harness/tests/run147.py
+keys-prop-wrong	BoardKeys.qml	readonly property Item setupView: views.setup || null	readonly property Item setupView: views.picker || null	qml	harness/tests/run147.py
+keys-plain-catcher	Board.qml	    BoardKeys {  // the key routing (BoardKeys.qml)	    PanelKeyCatcher {  // the key routing (BoardKeys.qml)	qml	harness/tests/run147.py
+keys-escape-dead	BoardKeys.qml	    else if (host.view !== "board") host.back()	    else if (false) host.back()	qml	harness/tests/run147.py
+# --- from v148.tsv
+labels-wrong-field	IssueLabels.qml	readonly property Item field: labelPicker.field	readonly property Item field: doneButton	qml	harness/tests/run148.py
+labels-always-open	IssueLabels.qml	  visible: owner.editing	  visible: true	qml	harness/tests/run148.py
+labels-pick-dead	IssueLabels.qml	onPicked: function(name) { owner.relabel("add", name) }	onPicked: function(name) {}	qml	harness/tests/run148.py
+labels-done-dead	IssueLabels.qml	onClicked: owner.doneEditing()	onClicked: {}	qml	harness/tests/run148.py
+iv-filter-wrong	IssueView.qml	labelFilter: labelEditor.field	labelFilter: comments.box	qml	harness/tests/run148.py
+iv-box-wrong	IssueView.qml	readonly property Item box: comments.box	readonly property Item box: labelEditor.field	qml	harness/tests/run148.py
+comments-alias-wrong	IssueComments.qml	property alias box: box	property alias box: postButton	qml	harness/tests/run148.py
+comments-post-dead	IssueComments.qml	owner.post(); event.accepted = true	event.accepted = true	qml	harness/tests/run148.py
+comments-notes-hidden	IssueComments.qml	model: owner.notes	model: []	qml	harness/tests/run148.py
