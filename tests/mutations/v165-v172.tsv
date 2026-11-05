@@ -1,0 +1,137 @@
+# Mutation rows from v165.tsv to v172.tsv (folded in 0.1.85). Columns: name, file, from, to, kind, test.
+# --- from v165.tsv
+host-port-allowed	board-fetch	[A-Za-z0-9])?)*$ && ${#hostname}	[A-Za-z0-9])?)*(:[0-9]+)?$ && ${#hostname}	sh	run.sh
+host-path-allowed	board-fetch	[A-Za-z0-9])?)*$ && ${#hostname}	[A-Za-z0-9])?)*(/.*)?$ && ${#hostname}	sh	run.sh
+host-no-length-cap	board-fetch	 && ${#hostname} -le 253 ]]	 ]]	sh	run.sh
+host-cache-shared	board-fetch	host_tag="$hostname~"	true	sh	run.sh
+host-cache-tag-on-gitlab	board-fetch	[[ $hostname == gitlab.com ]] || host_tag=	[[ $hostname == nothing ]] || host_tag=	sh	run.sh
+host-hint-missing	board-fetch	glab auth login${host_tag:+ --hostname $hostname}	glab auth login	sh	run.sh
+host-hint-always	board-fetch	glab auth login${host_tag:+ --hostname $hostname}	glab auth login --hostname $hostname	sh	run.sh
+host-graphql-default	board-fetch	bounded api --hostname "$hostname" graphql	bounded api --hostname gitlab.com graphql	sh	run.sh
+host-post-default	board-fetch	bounded api --hostname "$hostname" --method POST	bounded api --hostname gitlab.com --method POST	sh	run.sh
+srv-keeps-scheme	logic/core.js	if (h.indexOf("https://") === 0) h = h.slice(8)	if (false) h = h.slice(8)	node	logic.test.js
+srv-keeps-slash	logic/core.js	h = h.replace(/\/+$/, "")	h = h	node	logic.test.js
+srv-one-slash	logic/core.js	h = h.replace(/\/+$/, "")	h = h.replace(/\/$/, "")	node	logic.test.js
+srv-case-kept	logic/core.js	.trim().toLowerCase()	.trim()	node	logic.test.js
+srv-port-ok	logic/core.js	"(\\." + label + ")*$"	"(\\." + label + ")*(:[0-9]+)?$"	node	logic.test.js
+srv-path-ok	logic/core.js	"(\\." + label + ")*$"	"(\\." + label + ")*(/.*)?$"	node	logic.test.js
+srv-unanchored	logic/core.js	new RegExp("^" + label	new RegExp(label	node	logic.test.js
+srv-no-cap	logic/core.js	h.length <= 253 && 	true && 	node	logic.test.js
+key-tagged-gitlab	logic/core.js	!host || host === "gitlab.com" ? project	!host ? project	node	logic.test.js
+key-shared	logic/core.js	host + ":" + project\n	project\n	node	logic.test.js
+url-host-ignored	logic/alerts.js	"https://" + (Core.serverHost(host) || "gitlab.com") + "/"	"https://gitlab.com/"	node	logic.test.js
+url-host-raw	logic/alerts.js	(Core.serverHost(host) || "gitlab.com")	(host || "gitlab.com")	node	logic.test.js
+alert-host-dropped	logic/alerts.js	host = Core.serverHost(opts.host) || "gitlab.com"	host = "gitlab.com"	node	logic.test.js
+alert-bots-shared	logic/alerts.js	botsConfig(opts.bots, Core.serverKey(host, project))	botsConfig(opts.bots, project)	node	logic.test.js
+alert-review-url-default	logic/alerts.js	came.length + " cards entered review", body: shown.join(", ") + (came.length > 3 ? " +" + (came.length - 3) + " more" : "") + " · " + project, url: boardUrl(next, host)	came.length + " cards entered review", body: shown.join(", ") + (came.length > 3 ? " +" + (came.length - 3) + " more" : "") + " · " + project, url: boardUrl(next)	node	logic.test.js
+q-host-ignored	Board.qml	readonly property string gitlabHost: Logic.serverHost(saved("gitlabHost", "gitlab.com")) || "gitlab.com"	readonly property string gitlabHost: "gitlab.com"	qml	harness/tests/run165.py
+q-host-raw	Board.qml	Logic.serverHost(saved("gitlabHost", "gitlab.com")) || "gitlab.com"	String(saved("gitlabHost", "gitlab.com"))	qml	harness/tests/run165.py
+q-key-bare	Board.qml	readonly property string projectKey: Logic.serverKey(gitlabHost, project)	readonly property string projectKey: project	qml	harness/tests/run165.py
+q-bots-shared	Board.qml	Logic.botsConfig(saved("bots", null), projectKey)	Logic.botsConfig(saved("bots", null), project)	qml	harness/tests/run165.py
+q-alerts-shared	Board.qml	Logic.alertsFor(saved("alerts", null), projectKey)	Logic.alertsFor(saved("alerts", null), project)	qml	harness/tests/run165.py
+q-setalert-shared	Board.qml	Logic.withAlert(saved("alerts", null), projectKey, kind, on)	Logic.withAlert(saved("alerts", null), project, kind, on)	qml	harness/tests/run165.py
+q-confirm-shared	Board.qml	Logic.lowerList(saved("confirmMoves", [])), projectKey)	Logic.lowerList(saved("confirmMoves", [])), project)	qml	harness/tests/run165.py
+q-statekey-shared	Board.qml	stateKey: projectKey + "#"	stateKey: project + "#"	qml	harness/tests/run165.py
+q-default-shared	Board.qml	  readonly property var hostDefault: onGitlabCom\n	  readonly property var hostDefault: true\n	qml	harness/tests/run165.py
+q-default-overwrites	Board.qml	    if (onGitlabCom) {\n      entry.defaultProject	    if (true) {\n      entry.defaultProject	qml	harness/tests/run165.py
+q-default-not-saved	Board.qml	    } else if (p.board) {	    } else if (false) {	qml	harness/tests/run165.py
+q-default-written-always	Board.qml	    } else if (p.board) {	    } else {	qml	harness/tests/run165.py
+q-no-hostname-arg	Board.qml	concat(args, ["--hostname", gitlabHost])	concat(args)	qml	harness/tests/run165.py
+q-cache-no-host	Board.qml	cacheProcess.command = helperCommand(["cached", "--project", project, "--board", boardId])	cacheProcess.command = [helperPath(), "cached", "--project", project, "--board", boardId]	qml	harness/tests/run165.py
+q-login-plain	logic/core.js	? "glab auth login --hostname " + h :	? "glab auth login" :	qml	harness/tests/run165.py
+q-login-always	logic/core.js	h !== "" && h !== "gitlab.com" && 	h !== "" && 	qml	harness/tests/run165.py
+q-signin-fixed	Board.qml	"omarchy-launch-floating-terminal-with-presentation", loginCommand]	"omarchy-launch-floating-terminal-with-presentation", "glab auth login"]	qml	harness/tests/run165.py
+q-no-switch	Board.qml	  onGitlabHostChanged: switchServer()	  onGitlabHostChanged: {}	qml	harness/tests/run165.py
+q-switch-keeps-session	Board.qml	    feed.setHost(gitlabHost)\n    session++	    feed.setHost(gitlabHost)	qml	harness/tests/run165.py
+q-switch-keeps-account	Board.qml	cached = false; account = ""; accountError = ""\n	cached = false; accountError = ""\n	qml	harness/tests/run165.py
+q-switch-keeps-projects	Board.qml	    columns = []; projects = []; pickerBoards = []; cached = false; account = ""; accountError = ""	    columns = []; pickerBoards = []; cached = false; account = ""; accountError = ""	qml	harness/tests/run165.py
+q-switch-keeps-project	Board.qml	    project = Qt.binding(function() { return root.defaultProject })	    project = project	qml	harness/tests/run165.py
+q-switch-no-account-check	Board.qml	      if (view === "settings") checkAccount()	      if (false) checkAccount()	qml	harness/tests/run165.py
+q-switch-no-load	Board.qml	      if (opened) refresh()\n      else readCache()	      if (false) refresh()	qml	harness/tests/run165.py
+q-service-not-told	Board.qml	  function switchServer() {\n    if (gitlabHost === shownHost) return\n    shownHost = gitlabHost\n    feed.setHost(gitlabHost)	  function switchServer() {\n    if (gitlabHost === shownHost) return\n    shownHost = gitlabHost	qml	harness/tests/run165.py
+s-sethost-keeps	BoardService.qml	host = h; forget() }	host = h }	qml	harness/tests/run165.py
+s-no-hostname-arg	BoardService.qml	concat(args, ["--hostname", host])	concat(args)	qml	harness/tests/run165.py
+s-fetch-no-host	BoardService.qml	fetch.command = helperCommand(job.args)	fetch.command = [helperPath()].concat(job.args)	qml	harness/tests/run165.py
+s-mrs-no-host	ScopedFetch.qml	command = service.helperCommand(args(next))	command = [service.helperPath()].concat(args(next))	qml	harness/tests/run165.py
+s-access-no-host	BoardService.qml	accessFetch.command = helperCommand(["access", "--project", project])	accessFetch.command = [helperPath(), "access", "--project", project]	qml	harness/tests/run165.py
+s-alert-no-host	BoardService.qml	m.iid }), host: cfg.host })	m.iid }) })	qml	harness/tests/run165.py
+b-labels-no-host	BulkBar.qml	labelsProcess.command = host.helperCommand(["labels", "--project", host.project])	labelsProcess.command = [host.helperPath(), "labels", "--project", host.project]	qml	harness/tests/run165.py
+b-bulk-no-host	BulkBar.qml	runProcess.command = host.helperCommand(["bulk", "--project", host.project])	runProcess.command = [host.helperPath(), "bulk", "--project", host.project]	qml	harness/tests/run165.py
+i-issue-no-host	IssueView.qml	issueProcess.command = host.helperCommand(["issue"	issueProcess.command = [host.helperPath()].concat(["issue"	qml	harness/tests/run165.py
+i-notes-no-host	IssueView.qml	notesProcess.command = host.helperCommand(["notes"	notesProcess.command = [host.helperPath()].concat(["notes"	qml	harness/tests/run165.py
+i-labels-no-host	IssueView.qml	labelsProcess.command = host.helperCommand(["labels"	labelsProcess.command = [host.helperPath()].concat(["labels"	qml	harness/tests/run165.py
+i-relabel-no-host	IssueView.qml	relabelProcess.command = host.helperCommand(["relabel"	relabelProcess.command = [host.helperPath()].concat(["relabel"	qml	harness/tests/run165.py
+i-state-no-host	IssueView.qml	stateProcess.command = host.helperCommand([op	stateProcess.command = [host.helperPath()].concat([op	qml	harness/tests/run165.py
+i-comment-no-host	IssueView.qml	commentProcess.command = host.helperCommand(["comment"	commentProcess.command = [host.helperPath()].concat(["comment"	qml	harness/tests/run165.py
+i-recent-shared	IssueView.qml	key: visible && issue.iid ? host.projectKey + "#"	key: visible && issue.iid ? host.project + "#"	qml	harness/tests/run165.py
+i-recent-kept	IssueView.qml	    function onGitlabHostChanged() { view.recent = ({}); view.recentOrder = [] } }	    function onGitlabHostChanged() {} }	qml	harness/tests/run165.py
+t-labels-no-host	SettingsView.qml	labelsProcess.command = host.helperCommand(["labels", "--project", host.project])	labelsProcess.command = [host.helperPath(), "labels", "--project", host.project]	qml	harness/tests/run165.py
+t-labels-shared	SettingsView.qml	(labelsFor === host.projectKey && labelsState === "ready")) return\n    labelsFor = host.projectKey	(labelsFor === host.project && labelsState === "ready")) return\n    labelsFor = host.project	qml	harness/tests/run165.py
+t-account-fixed	SettingsView.qml	" on " + view.host.gitlabHost : "Checking	" on gitlab.com" : "Checking	qml	harness/tests/run165.py
+t-signout-fixed	SettingsView.qml	"Sign out of glab on " + view.host.gitlabHost + "? This	"Sign out of glab on gitlab.com? This	qml	harness/tests/run165.py
+h-words-fixed	AccessHint.qml	host.accessEntry, host.project, host.gitlabHost)	host.accessEntry, host.project, "gitlab.com")	qml	harness/tests/run165.py
+h-page-fixed	AccessHint.qml	Logic.patUrl(hint.host.gitlabHost)	Logic.patUrl("gitlab.com")	qml	harness/tests/run165.py
+h-dismiss-shared	Board.qml	Logic.has(Logic.lowerList(saved("accessHintDismissed", [])), projectKey)	Logic.has(Logic.lowerList(saved("accessHintDismissed", [])), project)	qml	harness/tests/run165.py
+h-dismiss-saved-bare	Board.qml	.concat([projectKey.toLowerCase()])	.concat([project.toLowerCase()])	qml	harness/tests/run165.py
+o-found-shared	BotsSection.qml	Logic.botsEntry(raw, host.projectKey)	Logic.botsEntry(raw, host.project)	qml	harness/tests/run165.py
+o-remove-shared	BotsSection.qml	Logic.withoutBot(raw, host.projectKey, index)	Logic.withoutBot(raw, host.project, index)	qml	harness/tests/run165.py
+o-busy-shared	BotsSection.qml	Logic.withBusy(raw, host.projectKey, column	Logic.withBusy(raw, host.project, column	qml	harness/tests/run165.py
+o-add-for-bare	BotsSection.qml	addFor = host.projectKey;	addFor = host.project;	qml	harness/tests/run165.py
+# --- from v166.tsv
+# v0.1.66: Settings > GitLab server and the setup panel for another server (qml: tests/harness/tests/run166.py)
+host-bad-never	SettingsView.qml	readonly property bool hostBad: hostCandidate === ""	readonly property bool hostBad: false	qml	harness/tests/run166.py
+host-candidate-raw	SettingsView.qml	: Logic.serverHost(hostField.text)	: hostField.text.trim()	qml	harness/tests/run166.py
+host-use-always	SettingsView.qml	!hostBad && (hostCandidate !== host.gitlabHost || host.hostInvalid)	!hostBad	qml	harness/tests/run166.py
+host-no-fix-invalid	SettingsView.qml	hostCandidate !== host.gitlabHost || host.hostInvalid)	hostCandidate !== host.gitlabHost)	qml	harness/tests/run166.py
+host-fix-invalid-no-save	Board.qml	if (h !== gitlabHost || hostInvalid) persist	if (h !== gitlabHost) persist	qml	harness/tests/run166.py
+host-invalid-never	Board.qml	readonly property bool hostInvalid: savedHost.trim() !== "" &&	readonly property bool hostInvalid: false &&	qml	harness/tests/run166.py
+host-field-not-typing	SettingsView.qml	botsSection.typing || hostField.activeFocus	botsSection.typing || false	qml	harness/tests/run166.py
+host-esc-no-reset	SettingsView.qml	{ view.resetServer(); view.host.focusBoard() }	{ view.host.focusBoard() }	qml	harness/tests/run166.py
+host-no-resync	SettingsView.qml	function onSavedHostChanged() { view.resetServer() }	function onSavedHostChanged() { void 0 }	qml	harness/tests/run166.py
+host-enter-unwired	SettingsView.qml	onAccepted: view.useServer()	onAccepted: void 0	qml	harness/tests/run166.py
+host-help-quiet	SettingsView.qml	color: view.hostBad ? view.host.urgent : view.host.quiet	color: view.host.quiet	qml	harness/tests/run166.py
+host-until-always	SettingsView.qml	view.host.hostInvalid && hostField.text === view.host.savedHost	true	qml	harness/tests/run166.py
+host-switch-text	SettingsView.qml	"Use switches to "	"Use moves to "	qml	harness/tests/run166.py
+setup-own-never	SetupView.qml	step === "logged-out" && !host.onGitlabCom	step === "logged-out" && false	qml	harness/tests/run166.py
+setup-own-gitlab-com	SetupView.qml	step === "logged-out" && !host.onGitlabCom	step === "logged-out" && true	qml	harness/tests/run166.py
+setup-copy-install	SetupView.qml	if (ownServer) host.copyLogin(); else	if (false) host.copyLogin(); else	qml	harness/tests/run166.py
+copy-login-install	Board.qml	["wl-copy", loginCommand]	["wl-copy", installCommand]	qml	harness/tests/run166.py
+setup-copy-main	SetupView.qml	main: !setupView.ownServer	main: true	qml	harness/tests/run166.py
+setup-command-install	SetupView.qml	setupView.ownServer ? setupView.host.loginCommand : 	false ? setupView.host.loginCommand : 	qml	harness/tests/run166.py
+setup-no-change-server	SetupView.qml	visible: setupView.ownServer\n        label: "Change server"	visible: false\n        label: "Change server"	qml	harness/tests/run166.py
+change-server-no-focus	Board.qml	Qt.callLater(settingsView.focusServer)	Qt.callLater(function() {})	qml	harness/tests/run166.py
+setup-signin-label	SetupView.qml	setupView.ownServer ? "Sign in" : "Sign in to GitLab"	"Sign in to GitLab"	qml	harness/tests/run166.py
+setup-small-print	SetupView.qml	"Sign in opens a terminal with that command. 	"A terminal opens. 	qml	harness/tests/run166.py
+# --- from v167.tsv
+# v0.1.67: calm loading, Updating…, the bottom fade (qml: tests/harness/tests/run167.py)
+lr-spinner-off	components/LoadingRow.qml	running: row.spinning && row.visible	running: false	qml	harness/tests/run167.py
+lr-not-italic	components/LoadingRow.qml	color: row.host.dim; font.italic: true	color: row.host.dim; font.italic: false	qml	harness/tests/run167.py
+lr-not-dim	components/LoadingRow.qml	color: row.host.dim; font.italic	color: row.host.foreground; font.italic	qml	harness/tests/run167.py
+picker-spins-on-error	Picker.qml	spinning: view.host.auxLoading	spinning: true	qml	harness/tests/run167.py
+picker-no-reason	Picker.qml	text: view.host.auxLoading ? "Loading…" : view.host.auxError	text: view.host.auxLoading ? "Loading…" : "x"	qml	harness/tests/run167.py
+grace-zero	IssueView.qml	interval: 250; onTriggered	interval: 1; onTriggered	qml	harness/tests/run167.py
+never-waited	IssueView.qml	onTriggered: view.waited = true	onTriggered: view.waited = false	qml	harness/tests/run167.py
+desc-row-no-grace	IssueView.qml	visible: view.waited && !view.described	visible: !view.described	qml	harness/tests/run167.py
+notes-row-before-desc	IssueComments.qml	owner.waited && owner.described && owner.notesReadyFor	owner.waited && owner.notesReadyFor	qml	harness/tests/run167.py
+notes-row-no-grace	IssueComments.qml	visible: owner.waited && owner.described	visible: owner.described	qml	harness/tests/run167.py
+box-says-loading	IssueComments.qml	placeholderText: "Write a comment…  (Ctrl+Enter to post)"	placeholderText: owner.loaded ? "Write a comment…  (Ctrl+Enter to post)" : "Loading…"	qml	harness/tests/run167.py
+comments-loading-text	IssueComments.qml	owner.notesLoading && owner.notes.length === 0 ? ""	owner.notesLoading && owner.notes.length === 0 ? "Loading comments…"	qml	harness/tests/run167.py
+desc-text-while-loading	IssueView.qml	visible: view.described && (view.issueError !== ""	visible: !view.described || (view.issueError !== ""	qml	harness/tests/run167.py
+edit-hidden-while-loading	IssueView.qml	objectName: "editAction"\n            visible: view.issueError === ""	objectName: "editAction"\n            visible: view.issueReady && view.issueError === ""	qml	harness/tests/run167.py
+state-hidden-while-loading	IssueView.qml	objectName: "stateAction"\n          visible: view.issueError === ""	objectName: "stateAction"\n          visible: view.issueReady && view.issueError === ""	qml	harness/tests/run167.py
+edit-shown-while-loading	IssueView.qml	opacity: view.issueReady ? 1 : 0	opacity: 1	qml	harness/tests/run167.py
+state-shown-while-loading	IssueView.qml	opacity: view.issueReady ? 1 : 0\n          Behavior on opacity { NumberAnimation { duration: 150 } }\n          enabled:	opacity: 1\n          Behavior on opacity { NumberAnimation { duration: 150 } }\n          enabled:	qml	harness/tests/run167.py
+updating-on-timer	Board.qml	readonly property bool updatingNow: loudNow && boardState === "ready"	readonly property bool updatingNow: loading && boardState === "ready"	qml	harness/tests/run167.py
+updating-first-load	Board.qml	if (ifDue !== true && boardState === "ready" && opened)	if (ifDue !== true && opened)	qml	harness/tests/run167.py
+no-hold	Board.qml	{ refreshHeld = true;	{ refreshHeld = false;	qml	harness/tests/run167.py
+hold-forever	Board.qml	onTriggered: root.refreshHeld = false	onTriggered: root.refreshHeld = true	qml	harness/tests/run167.py
+hold-short	Board.qml	id: refreshHold; interval: 500	id: refreshHold; interval: 50	qml	harness/tests/run167.py
+held-not-shown	Board.qml	readonly property bool updating: updatingNow || (refreshHeld && opened && boardState === "ready")	readonly property bool updating: updatingNow	qml	harness/tests/run167.py
+held-when-closed	Board.qml	(refreshHeld && opened && boardState	(refreshHeld && boardState	qml	harness/tests/run167.py
+hint-never	components/ScrollHint.qml	opacity: more ? 1 : 0	opacity: 0	qml	harness/tests/run167.py
+hint-always	components/ScrollHint.qml	opacity: more ? 1 : 0	opacity: 1	qml	harness/tests/run167.py
+hint-wrong-color	components/ScrollHint.qml	readonly property color bg: host.background	readonly property color bg: host.foreground	qml	harness/tests/run167.py
+hint-at-top	components/ScrollHint.qml	right: flick.right; bottom: flick.bottom	right: flick.right; top: flick.top	qml	harness/tests/run167.py
+settings-no-hint	SettingsView.qml	ScrollHint { flick: flick; host: view.host }	Item { }	qml	harness/tests/run167.py
+keys-no-hint	KeysView.qml	ScrollHint { flick: flick; host: view.host }	Item { }	qml	harness/tests/run167.py
+issue-no-hint	IssueView.qml	ScrollHint { flick: flick; host: view.host }	Item { }	qml	harness/tests/run167.py
