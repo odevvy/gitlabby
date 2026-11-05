@@ -471,9 +471,7 @@ guard_boards() {
 }
 
 
-run_cmd() {
-case $cmd in
-  projects)
+cmd_projects() {
     # Page by page, at most 5 pages (500 projects, most recently active first),
     # so a huge membership can't keep the widget waiting for long.
     : >"$tmp/p"
@@ -484,22 +482,27 @@ case $cmd in
     done
     jq -cs '{state: "ready", message: "", projects: (reduce (add // [])[] as $p ([]; if any(.[]; .id == $p.id) then . else . + [{id: $p.id, path: $p.path_with_namespace}] end))}' "$tmp/p" 2>/dev/null ||
       emit error "GitLab returned an unreadable response."
-    exit 0 ;;
-  whoami)
+    exit 0
+}
+cmd_whoami() {
     get user >"$tmp/u" || emit error "Could not load your GitLab account."
     jq -ce 'if (.username | type) == "string" then {state: "ready", message: "", user: .username} else null end' "$tmp/u" 2>/dev/null ||
       emit error "GitLab returned an unreadable response."
-    exit 0 ;;
-  mrs)
+    exit 0
+}
+cmd_mrs() {
     mrs_list
-    exit 0 ;;
-  pipes)
+    exit 0
+}
+cmd_pipes() {
     pipes_list
-    exit 0 ;;
-  todos)
+    exit 0
+}
+cmd_todos() {
     todos_list
-    exit 0 ;;
-  access)
+    exit 0
+}
+cmd_access() {
     # The project (GET, not simple: only the full answer has permissions) and,
     # best effort, the token's own record: only its scopes are kept. OAuth
     # sign-ins have no such record (404), so scopes is then null.
@@ -513,8 +516,9 @@ case $cmd in
          scopes: (if ($tok | type) == "object" and ($tok.scopes | type) == "array"
            then [$tok.scopes[] | strings | select(test("^[a-z_]{1,40}$"))] else null end)} end' 2>/dev/null |
       grep -v '^null$' | grep . || emit error "GitLab returned an unreadable response."
-    exit 0 ;;
-  labels)
+    exit 0
+}
+cmd_labels() {
     guard_boards
     get --paginate "$base/labels?per_page=100" >"$tmp/l" || emit error "Could not load labels for $project."
     jq -cn --slurpfile b "$tmp/b" --slurpfile l "$tmp/l" "$DEFS"' status($b) as $status
@@ -522,8 +526,9 @@ case $cmd in
          labels: [($l | add // [])[] | select((.name | type) == "string" and (.name | ascii_downcase | IN($status[]) | not))
            | {name, color: (.color | hex), textColor: (.text_color | hex)}] | unique_by(.name) | sort_by(.name | ascii_downcase)}' 2>/dev/null ||
       emit error "GitLab returned an unreadable response."
-    exit 0 ;;
-  relabel)
+    exit 0
+}
+cmd_relabel() {
     label=$add$remove
     guard_boards
     kind=$(jq -rn --slurpfile b "$tmp/b" --arg l "$label" "$DEFS"' if $l | ascii_downcase | IN(status($b)[]) then "status" else "free" end' 2>/dev/null)
@@ -553,8 +558,9 @@ case $cmd in
       | {state: "ready", message: (if $a != "" then "Added \($a)." else "Removed \($r)." end), labels: names,
          updatedAt: (now | todateiso8601)}' "$tmp/r" 2>/dev/null |
       grep . || emit error "GitLab returned an unexpected response to the label change."
-    exit 0 ;;
-  close|reopen)
+    exit 0
+}
+cmd_close() {
     # A PUT like write_issue(): the JSON body on stdin, only a state_event.
     write_state() {
       bounded api --hostname "$hostname" --method PUT --header "Content-Type: application/json" --input - "$base/issues/$iid"
@@ -572,28 +578,32 @@ case $cmd in
       | {state: "ready", message: (if $want == "closed" then "Closed #\($iid)." else "Reopened #\($iid)." end), issueState: .state,
          labels: names, updatedAt: (now | todateiso8601)}' "$tmp/r" 2>/dev/null |
       grep . || emit error "GitLab returned an unexpected response."
-    exit 0 ;;
-  boards)
+    exit 0
+}
+cmd_boards() {
     get --paginate "$base/boards?per_page=100" >"$tmp/b" || emit error "Could not load boards for $project."
     jq -cs '{state: "ready", message: "", boards: [add // [] | .[] | {id, name}]}' "$tmp/b" 2>/dev/null ||
       emit error "GitLab returned an unreadable response."
-    exit 0 ;;
-  issue)
+    exit 0
+}
+cmd_issue() {
     get "$base/issues/$iid" >"$tmp/i" || emit error "Could not load issue #$iid."
     jq -c "$DEFS"' {state: "ready", message: "", issue: {iid, title, state, labels: (.labels // []), url: (.web_url | https),
       description: (.description // ""), author: (.author.username // ""), milestone: (.milestone.title // ""),
       assignees: [(.assignees // [])[].username], createdAt: .created_at, updatedAt: .updated_at}}' "$tmp/i" 2>/dev/null ||
       emit error "GitLab returned an unreadable response."
-    exit 0 ;;
-  notes)
+    exit 0
+}
+cmd_notes() {
     # Newest 100 notes (GitLab's page maximum); comments only, oldest first.
     get "$base/issues/$iid/notes?sort=desc&order_by=created_at&per_page=100" >"$tmp/n" || emit error "Could not load comments."
     jq -c --argjson iid "$iid" "$DEFS"' select(type == "array") | {state: "ready", message: "", iid: $iid, more: (length >= 100),
       notes: [reverse[] | select(.system != true) | {id, body: (.body // ""), createdAt: .created_at,
         author: {username: (.author.username // ""), name: (.author.name // .author.username // ""), avatar: (.author.avatar_url | https)}}]}' "$tmp/n" 2>/dev/null |
       grep . || emit error "GitLab returned an unreadable response."
-    exit 0 ;;
-  comment)
+    exit 0
+}
+cmd_comment() {
     # The only POST in this script, the same way as write_issue(): JSON on stdin.
     write_note() {
       bounded api --hostname "$hostname" --method POST --header "Content-Type: application/json" --input - "$base/issues/$iid/notes"
@@ -613,8 +623,9 @@ case $cmd in
     # changed and no note. Nothing above sends one, but if it happens, say so.
     jq -e 'type == "object" and (has("commands_changes") or has("summary"))' "$tmp/r" >/dev/null 2>&1 &&
       emit commands "GitLab ran this as quick actions instead of posting a comment. Check the issue."
-    emit error "GitLab returned an unexpected response to the comment." ;;  # emit exits
-  move)
+    emit error "GitLab returned an unexpected response to the comment."  # emit exits
+}
+cmd_move() {
     # Both lists are looked up in GitLab's own copy of the board (a GET), so the
     # labels sent below are that board's list labels and nothing else.
     # Effects follow GitLab's board (docs.gitlab.com/user/project/issue_board/
@@ -677,7 +688,27 @@ JQ
     jq -c --argjson iid "$iid" --slurpfile plan "$tmp/plan" 'select(type == "object" and .iid == $iid)
       | {state: "ready", message: "Moved #\(.iid) to \($plan[0].to).", updatedAt: (now | todateiso8601)}' "$tmp/r" 2>/dev/null |
       grep . || emit error "GitLab returned an unexpected response to the move."
-    exit 0 ;;
+    exit 0
+}
+
+# One function per command (cmd_<name>); run_cmd picks it. Each ends with exit 0
+# or emit (which exits), so a command never falls through to the board below.
+run_cmd() {
+case $cmd in
+  projects) cmd_projects ;;
+  whoami) cmd_whoami ;;
+  mrs) cmd_mrs ;;
+  pipes) cmd_pipes ;;
+  todos) cmd_todos ;;
+  access) cmd_access ;;
+  labels) cmd_labels ;;
+  relabel) cmd_relabel ;;
+  close|reopen) cmd_close ;;
+  boards) cmd_boards ;;
+  issue) cmd_issue ;;
+  notes) cmd_notes ;;
+  comment) cmd_comment ;;
+  move) cmd_move ;;
 esac
 }
 # Bulk: each stdin line is one card's command, run in a subshell (so its emit

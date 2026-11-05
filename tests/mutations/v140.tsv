@@ -1,4 +1,4 @@
-gb-no-call-labels	board-fetch	  labels)\n    guard_boards	  labels)\n    get --paginate "$base/boards?per_page=100" >"$tmp/b"	sh
+gb-no-call-labels	board-fetch	cmd_labels() {\n    guard_boards	cmd_labels() {\n    get --paginate "$base/boards?per_page=100" >"$tmp/b"	sh
 gb-no-call-relabel	board-fetch	    label=$add$remove\n    guard_boards	    label=$add$remove\n    get --paginate "$base/boards?per_page=100" >"$tmp/b"	sh
 gb-any-kind	board-fetch	select(.namespace.kind == "group") | 	 	sh
 gb-no-parents	board-fetch	range($p | length; 0; -1)	range($p | length; $p | length - 1; -1)	sh

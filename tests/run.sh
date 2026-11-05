@@ -376,15 +376,15 @@ check "R glab api only in get(), peek(), write_issue(), write_labels(), write_st
 # shellcheck disable=SC2016  # the pattern is literal board-fetch source
 check "R the GraphQL call sends a constant query, the project only as a variable" '.' "$(grep 'bounded api' <<<"$src" | grep -c ' graphql ' | grep -qx 1 &&
   grep -qF 'bounded api --hostname "$hostname" graphql -f "query=$q" "${pv[@]}"' <<<"$src" && ! grep -qiE 'mutation|subscription' <<<"$src" && echo true || echo false)"
-check "R write_issue only inside move" '.' "$(awk '/^  move\)/{m=1} /^    exit 0 ;;/{if(m)m=2} /write_issue/{if(m!=1)bad=1} END{print bad?"false":"true"}' <<<"$src")"
-check "R move: issue read, then stale exit, then the PUT" '.' "$(awk '/^  move\)/{m=1} /^    exit 0 ;;/{if(m==1)m=2}
+check "R write_issue only inside move" '.' "$(awk '/^cmd_move\(\) \{/{m=1} /^}$/{if(m)m=2} /write_issue/{if(m!=1)bad=1} END{print bad?"false":"true"}' <<<"$src")"
+check "R move: issue read, then stale exit, then the PUT" '.' "$(awk '/^cmd_move\(\) \{/{m=1} /^}$/{if(m==1)m=2}
   m==1 && /get "\$base\/issues\/\$iid"/{g=NR} m==1 && /emit stale/{st=NR} m==1 && /\| write_issue/{w=NR}
   END{print (g && st && w && g < st && st < w) ? "true" : "false"}' <<<"$src")"
-check "R write_labels only inside relabel" '.' "$(awk '/^  relabel\)/{m=1} /^    exit 0 ;;/{if(m)m=2} /write_labels/{if(m!=1)bad=1} END{print bad?"false":"true"}' <<<"$src")"
-check "R relabel: status guard, then the PUT" '.' "$(awk '/^  relabel\)/{m=1} /^    exit 0 ;;/{if(m==1)m=2}
+check "R write_labels only inside relabel" '.' "$(awk '/^cmd_relabel\(\) \{/{m=1} /^}$/{if(m)m=2} /write_labels/{if(m!=1)bad=1} END{print bad?"false":"true"}' <<<"$src")"
+check "R relabel: status guard, then the PUT" '.' "$(awk '/^cmd_relabel\(\) \{/{m=1} /^}$/{if(m==1)m=2}
   m==1 && /is a board list label/{g=NR} m==1 && /\| write_labels/{w=NR} END{print (g && w && g < w) ? "true" : "false"}' <<<"$src")"
-check "R write_state only inside close|reopen" '.' "$(awk '/^  close\|reopen\)/{m=1} /^    exit 0 ;;/{if(m)m=2} /write_state/{if(m!=1)bad=1} END{print bad?"false":"true"}' <<<"$src")"
-check "R write_note only inside comment" '.' "$(awk '/^  comment\)/{m=1} /^    exit 0 ;;/{if(m)m=2} /write_note/{if(m!=1)bad=1} END{print bad?"false":"true"}' <<<"$src")"
+check "R write_state only inside close|reopen" '.' "$(awk '/^cmd_close\(\) \{/{m=1} /^}$/{if(m)m=2} /write_state/{if(m!=1)bad=1} END{print bad?"false":"true"}' <<<"$src")"
+check "R write_note only inside comment" '.' "$(awk '/^cmd_comment\(\) \{/{m=1} /^}$/{if(m)m=2} /write_note/{if(m!=1)bad=1} END{print bad?"false":"true"}' <<<"$src")"
 check "R stdin is read only for comment" '.' "$(: >"$FAKE_LOG"; echo '{"body":"x"}' | "$fetch" notes --project a/b --iid 1 >/dev/null; grep -q NON-GET "$FAKE_LOG" && echo false || echo true)"
 
 # --- T: a glab call that never answers ends with a clear message ------------
