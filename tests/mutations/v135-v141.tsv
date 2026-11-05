@@ -151,3 +151,22 @@ gb-no-uri	board-fetch	$g | @uri	$g	sh	run.sh
 gb-overwrite	board-fetch	&& cat "$tmp/gb" >>"$tmp/b"	&& cat "$tmp/gb" >"$tmp/b"	sh	run.sh
 gb-no-array-check	board-fetch	jq -e 'type == "array"' "$tmp/gb" >/dev/null 2>&1 && 	 	sh	run.sh
 gb-strict-group	board-fetch	"$tmp/gb" &&\n	"$tmp/gb" || emit error "x"\n	sh	run.sh
+# --- from v140b.tsv
+header-no-scope	Board.qml	        mrsScope: mrsView.scope	        mrsScope: "review"	qml	harness/tests/run140.py
+# --- from v141.tsv
+dl-no-cap	board-fetch	((left <= 30)) || left=30\n  ((left >= 1)) || return 124	left=30	sh	run.sh
+dl-no-kill	board-fetch	timeout -k 5 "$left" glab	timeout "$left" glab	sh	run.sh
+dl-clamp-gone	board-fetch	((deadline_s >= 10 && deadline_s <= 120)) || deadline_s=40	true	sh	run.sh
+room-always	board-fetch	room() { ((deadline - SECONDS >= write_room)) ||	room() { true ||	sh	run.sh
+room-relabel	board-fetch	    }\n    room\n	    }\n	sh	run.sh
+room-close	board-fetch	doing=Reopening; fi\n    room	doing=Reopening; fi	sh	run.sh
+room-comment	board-fetch	"$base/issues/$iid/notes"\n    }\n    room	"$base/issues/$iid/notes"\n    }	sh	run.sh
+room-move	board-fetch	    room\n    jq -c '.body' "$tmp/plan" | write_issue	    jq -c '.body' "$tmp/plan" | write_issue	sh	run.sh
+tmp-not-runtime	board-fetch	[[ $runtime == /* && -d $runtime && -w $runtime ]] || runtime=${TMPDIR:-/tmp}	runtime=${TMPDIR:-/tmp}	sh	run.sh
+tmp-runtime-unchecked	board-fetch	[[ $runtime == /* && -d $runtime && -w $runtime ]] || runtime	[[ -n $runtime ]] || runtime	sh	run.sh
+trap-no-exit	board-fetch	trap 'rm -rf "$tmp"' EXIT	true	sh	run.sh
+cache-no-account	board-fetch	printf '%s@%s.json' "$cache_base" "$account"	printf '%s.json' "$cache_base"	sh	run.sh
+cache-old-kept	board-fetch	rm -f "$cache_base.json" 2>/dev/null	true	sh	run.sh
+cr-guard-sh	board-fetch	test("(^|[\r	test("(^|[	sh	run.sh
+cr-guard-js	logic/markdown.js	/(^|[\r	/(^|[	node	logic.test.js
+https-loose	logic/core.js	/^https:\/\/[^\s"<>]+$/	/^https:\/\/\S+$/	node	logic.test.js
