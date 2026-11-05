@@ -938,7 +938,7 @@ are set, `patch.board` replaces the default board, the rest stay as saved.
 `BoardService.qml` holds what every screen shares (the board fetches, alerts, access); the Merge requests and To-do lists are each a `ScopedFetch.qml` there (fetched per scope on demand, an answer under a minute old reused). Both lists are drawn by `components/ScopedList.qml` (scope tabs, sections, cursor, open and copy); each view gives only its sections and row look, and `Board.qml` reaches them through its `lists` table. `Board.qml` keeps the board's state and its views; which key goes to which
 view is in `BoardKeys.qml`. `IssueView.qml` keeps an issue's state and its
 GitLab calls; `IssueLabels.qml` draws its label editor and `IssueComments.qml`
-its comments. CI runs both suites, and `tests/run.sh` checks that reads never
+its comments. CI runs both suites on merge requests and on `main` (not on every branch push), and `tests/run.sh` checks that reads never
 send anything but GET. Saving a file under `~/.config/omarchy/plugins/`
 reloads the plugin.
 
