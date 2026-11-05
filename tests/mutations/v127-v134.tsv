@@ -87,3 +87,39 @@ ui-hand-always	components/PipelineMark.qml	cursorShape: mark.info && mark.info.u
 ui-theme-color	components/PipelineMark.qml	color: info ? info.color : "transparent"	color: host.dim	qml	harness/tests/run132.py
 ui-always-visible	components/PipelineMark.qml	visible: info !== null	visible: true	qml	harness/tests/run132.py
 pl-one-at-a-time	board-fetch	pipeline_of "$riid" &	pipeline_of "$riid"	sh	run.sh
+# --- from v133.tsv
+svc-no-join	BoardService.qml	if (runningKey === key && fetch.ticket >= minTicket) return null	if (false) return null	qml	harness/tests/run133.py
+svc-join-old	BoardService.qml	if (runningKey === key && fetch.ticket >= minTicket) return null	if (runningKey === key) return null	qml	harness/tests/run133.py
+svc-queue-twice	BoardService.qml	if (queuedKeys.indexOf(key) !== -1) return null	if (false) return null	qml	harness/tests/run133.py
+svc-never-saved	BoardService.qml	if (ifDue && last && last.ticket >= minTicket && Date.now() - last.startedAt < maxAgeMs) return last	if (false) return last	qml	harness/tests/run133.py
+svc-always-saved	BoardService.qml	if (ifDue && last && last.ticket >= minTicket	if (last && last.ticket >= minTicket	qml	harness/tests/run133.py
+svc-saved-ignores-floor	BoardService.qml	last && last.ticket >= minTicket && Date.now()	last && Date.now()	qml	harness/tests/run133.py
+svc-saved-forever	BoardService.qml	Date.now() - last.startedAt < maxAgeMs	true	qml	harness/tests/run133.py
+svc-oldest-first	BoardService.qml	queue = [{ key: key, args: ["board", "--project", project, "--board", boardId] }].concat(queue)	queue = queue.concat([{ key: key, args: ["board", "--project", project, "--board", boardId] }])	qml	harness/tests/run133.py
+svc-no-generation	BoardService.qml	    if (fetch.generation !== generation) return\n	    // no generation check\n	qml	harness/tests/run133.py
+svc-forget-keeps	BoardService.qml	    generation++\n    answers = ({})	    generation++	qml	harness/tests/run133.py
+svc-no-broadcast	BoardService.qml	    answered(fetch.key, raw, fetch.ticket)	    // not told	qml	harness/tests/run133.py
+svc-no-next	BoardService.qml	onRunningChanged: if (!running) Qt.callLater(service.next)	onRunningChanged: if (false) Qt.callLater(service.next)	qml	harness/tests/run133.py
+board-own-feed	Board.qml	readonly property var feed: sharedFeed || localFeed	readonly property var feed: localFeed	qml	harness/tests/run133.py
+board-loading-running-only	Board.qml	(feed.runningKey === fetchKey || feed.queuedKeys.indexOf(fetchKey) !== -1)	(feed.runningKey === fetchKey)	qml	harness/tests/run133.py
+board-any-key	Board.qml	function onAnswered(key, raw, ticket) { if (key === root.fetchKey)	function onAnswered(key, raw, ticket) { if (true)	qml	harness/tests/run133.py
+board-timer-forces	Board.qml	onTriggered: root.refresh(true)	onTriggered: root.refresh()	qml	harness/tests/run133.py
+board-open-forces	Board.qml	cursor = null; refresh(true) }	cursor = null; refresh() }	qml	harness/tests/run133.py
+board-queued-forces	Board.qml	refreshQueued = false; refresh(true) }	refreshQueued = false; refresh() }	qml	harness/tests/run133.py
+board-no-floor-after-move	Board.qml	data.state === "stale") { refreshQueued = true; moveFloor = feed.tickets + 1 }	data.state === "stale") { refreshQueued = true }	qml	harness/tests/run133.py
+board-no-floor-watchdog	Board.qml	root.refreshQueued = true; root.moveFloor = root.feed.tickets + 1;	root.refreshQueued = true;	qml	harness/tests/run133.py
+board-no-forget	Board.qml	    feed.forget()\n	    // forget dropped\n	qml	harness/tests/run133.py
+board-floor-ignored	Board.qml	(!fromCache && ticket < moveFloor)	(false)	qml	harness/tests/run133.py
+node-no-service-kind	manifest.json	    "bar-widget",\n    "service"\n	    "bar-widget"\n	node	logic.test.js
+node-board-fetches	Board.qml	  BoardService { id: localFeed }	  BoardService { id: localFeed }\n  Process { command: [helperPath(), "board"] }	node	logic.test.js
+# --- from v134.tsv
+refresh-two-lines	SettingsView.qml	readonly property bool oneLine: refreshHeading.implicitWidth + Style.space(12) + segPane.implicitWidth <= width	readonly property bool oneLine: false	qml	harness/tests/run134.py
+refresh-always-one	SettingsView.qml	readonly property bool oneLine: refreshHeading.implicitWidth + Style.space(12) + segPane.implicitWidth <= width	readonly property bool oneLine: true	qml	harness/tests/run134.py
+refresh-stack-overlaps	SettingsView.qml	y: refreshRow.oneLine ? 0 : refreshHeading.implicitHeight + Style.space(6)	y: 0	qml	harness/tests/run134.py
+collapsed-wide-gap	SettingsView.qml	      Flow {\n        width: parent.width\n        spacing: Style.space(6)	      Flow {\n        width: parent.width\n        spacing: Style.space(16)	qml	harness/tests/run134.py
+collapsed-no-toggle	SettingsView.qml	onClicked: view.host.toggleDefaultCollapsed(chk.modelData.name)	onClicked: {}	qml	harness/tests/run134.py
+collapsed-wrong-on	SettingsView.qml	readonly property bool on: view.host.isDefaultCollapsed(modelData.name)	readonly property bool on: false	qml	harness/tests/run134.py
+collapsed-full-rows	SettingsView.qml	implicitWidth: chkRow.implicitWidth + Style.space(10); implicitHeight: Style.space(22)	width: parent.width; implicitHeight: Style.space(22)	qml	harness/tests/run134.py
+busy-wide-gap	BotsSection.qml	      width: parent.width\n      spacing: Style.space(6)\n      topPadding: Style.space(2)	      width: parent.width\n      spacing: Style.space(16)\n      topPadding: Style.space(2)	qml	harness/tests/run134.py
+busy-no-pad	BotsSection.qml	implicitWidth: checkRow.implicitWidth + Style.space(10)	implicitWidth: checkRow.implicitWidth	node	logic.test.js
+settings-noscroll	SettingsView.qml	    contentWidth: width; contentHeight: content.implicitHeight	    contentWidth: width; contentHeight: height	qml	harness/tests/run134.py
