@@ -1,0 +1,75 @@
+# Mutation rows from v135.tsv to v141.tsv (folded in 0.1.85). Columns: name, file, from, to, kind, test.
+# --- from v135.tsv
+sig-ignores-labels	logic/board.js	return i.iid + "[" + (i.labels || []).slice().sort().join(",") + "]"	return String(i.iid)	node	logic.test.js
+first-fast	logic/board.js	calm: !prev ? 2 :	calm: !prev ? 0 :	qml	harness/tests/run135.py
+change-no-reset	logic/board.js	sig === prev.sig ? prev.calm + 1 : 0	prev.calm + 1	qml	harness/tests/run135.py
+no-fast	logic/board.js	if (pace.calm < 2) return { sec: Math.max(paceFloorSec, Math.round(base / 2)), why: "cards moved recently" }	if (false) return null	qml	harness/tests/run135.py
+fast-three	logic/board.js	if (pace.calm < 2) return	if (pace.calm < 3) return	qml	harness/tests/run135.py
+no-floor	logic/board.js	sec: Math.max(paceFloorSec, Math.round(base / 2))	sec: Math.round(base / 2)	node	logic.test.js
+no-ceiling	logic/board.js	Math.min(base * 4, base * Math.pow	Math.min(base * 16, base * Math.pow	qml	harness/tests/run135.py
+no-backoff	logic/board.js	var slow = Math.min(base * 4, base * Math.pow(2, Math.floor((pace.calm - 2) / 2)))	var slow = base	qml	harness/tests/run135.py
+active-ignored	logic/board.js	if (slow > base && pace.active)	if (false)	qml	harness/tests/run135.py
+active-any-column	logic/board.js	/^(in[ -]?progress|doing)$/i.test(String(c.name || "").trim())	true	node	logic.test.js
+errors-reset	logic/board.js	if (!data || data.state !== "ready") return prev || null	if (!data) return null	qml	harness/tests/run135.py
+svc-no-pace	BoardService.qml	      p[fetch.key] = pace\n      paces = p	      p[fetch.key] = pace	qml	harness/tests/run135.py
+svc-forget-keeps-pace	BoardService.qml	    answers = ({})\n    paces = ({})	    answers = ({})	qml	harness/tests/run135.py
+timer-setting	Board.qml	interval: root.cadence.sec * 1000	interval: root.refreshIntervalSec * 1000	qml	harness/tests/run135.py
+due-setting	Board.qml	ifDue === true, cadence.sec * 1000 - 2000	ifDue === true, refreshIntervalSec * 1000 - 2000	qml	harness/tests/run135.py
+cadence-local	Board.qml	Logic.adaptiveInterval(refreshIntervalSec, feed.paces[fetchKey])	Logic.adaptiveInterval(refreshIntervalSec, null)	qml	harness/tests/run135.py
+tip-off	BoardHeader.qml	IconTip { host: header.host; shown: statusMouse.containsMouse; text: host.cadenceText() }	IconTip { host: header.host; shown: false; text: host.cadenceText() }	qml	harness/tests/run135.py
+# --- from v136.tsv
+svc-first-load-alerts	BoardService.qml	var events = baselines[key] ? Logic.alertEvents(baselines[key], data,	var events = true ? Logic.alertEvents(baselines[key] || { state: "ready", project: data.project, columns: [] }, data,	qml	harness/tests/run136.py
+svc-error-keeps-baseline	BoardService.qml	if (!data || data.state !== "ready") { dropBaseline(key); return }	if (!data || data.state !== "ready") { return }	qml	harness/tests/run136.py
+svc-no-baseline-update	BoardService.qml	    b[key] = data\n    baselines = b	    baselines = b	qml	harness/tests/run136.py
+svc-own-moves-ignored	BoardService.qml	ignore: moved.map(function(m) { return m.iid })	ignore: []	qml	harness/tests/run136.py
+svc-own-moves-forever	BoardService.qml	m[key] = moved.filter(function(x) { return ticket < x.after })	m[key] = moved	qml	harness/tests/run136.py
+svc-bg-always	BoardService.qml	request(cfg.project, cfg.boardId, true, cad.sec * 1000 - 2000, 0)	request(cfg.project, cfg.boardId, false, 0, 0)	qml	harness/tests/run136.py
+svc-bg-off	BoardService.qml	running: service.watchedKeys.length > 0	running: false	qml	harness/tests/run136.py
+svc-bg-never-stops	BoardService.qml	running: service.watchedKeys.length > 0	running: true	qml	harness/tests/run136.py
+svc-unwatch-keeps	BoardService.qml	if (o !== owner) { owners[o] = watchers[key][o]; any = true }	{ owners[o] = watchers[key][o]; any = true }	qml	harness/tests/run136.py
+svc-bg-signed-out	BoardService.qml	if (!cfg || (last && (last.state === "logged-out" || last.state === "no-glab"))) return	if (!cfg) return	qml	harness/tests/run136.py
+board-no-watch	Board.qml	onWatchCfgChanged: feed.watch(watchOwner, watchCfg)	onWatchCfgChanged: {}	qml	harness/tests/run136.py
+board-no-own-move	Board.qml	if (data.state === "ready") feed.noteOwnMove(fetchKey, move.iid)	if (false) feed.noteOwnMove(fetchKey, move.iid)	qml	harness/tests/run136.py
+board-no-persist	Board.qml	for (var k in p) if (k !== "board") entry[k] = p[k]	for (var k in p) if (k !== "board" && k !== "alerts") entry[k] = p[k]	qml	harness/tests/run136b.py
+logic-no-batch	logic/alerts.js	} else if (came.length > 1) {	} else if (false) {	qml	harness/tests/run136.py
+logic-batch-each	logic/alerts.js	if (came.length === 1) {	if (came.length >= 1) {	qml	harness/tests/run136.py
+logic-no-escape	logic/alerts.js	"-g", "\uf296", oneLine(ev.headline, 120), escaped(oneLine(ev.body, 300))]	"-g", "\uf296", oneLine(ev.headline, 120), oneLine(ev.body, 300)]	qml	harness/tests/run136.py
+logic-urgency-normal	logic/alerts.js	"-u", "low"	"-u", "normal"	qml	harness/tests/run136.py
+logic-app-default	logic/alerts.js	"--app-name", "GitLab board", 	"--app-name", "omarchy-action", 	qml	harness/tests/run136.py
+logic-exec-http	logic/core.js	function httpsUrl(url) { return /^https:	function httpsUrl(url) { return /^https?:	node	logic.test.js
+logic-idle-any	logic/alerts.js	was[i] && was[i].state === "working" && b.state !== "working"	b.state !== "working"	qml	harness/tests/run136.py
+logic-idle-off	logic/alerts.js	  if (opts.idle) {	  if (false) {	qml	harness/tests/run136.py
+logic-review-off	logic/alerts.js	  if (opts.review) {	  if (true) {	node	logic.test.js
+logic-other-project	logic/alerts.js	|| prev.project !== next.project) return out	) return out	node	logic.test.js
+# --- from v137.tsv
+bf-drafts-kept	board-fetch	review: [$r[0] | map(select(.draft != true))[:10][] | row]	review: [$r[0][:10][] | row]	sh	run.sh
+bf-no-reviewers-get	board-fetch	    peek "projects/$1/merge_requests/$2/reviewers"	    : "projects/$1/merge_requests/$2/reviewers"	sh	run.sh
+bf-no-mr-get	board-fetch	    peek "projects/$1/merge_requests/$2" >"$tmp/mrd-$1-$2"	    : >"$tmp/mrd-$1-$2"	sh	run.sh
+bf-wrong-scope	board-fetch	scope=reviews_for_me&draft=false&$q	scope=assigned_to_me&draft=false&$q	sh	run.sh
+bf-no-cap	board-fetch	($m[0][:10][])] | unique_by	($m[0][])] | unique_by	sh	run.sh
+bf-state-unchecked	board-fetch	{state: (.state | select(IN(states[])) // null)}	{state: .state}	sh	run.sh
+bf-list-fail-ok	board-fetch	get "${prefix}merge_requests?scope=created_by_me&$q" >"$tmp/mrs-mine" || emit error "Could not load merge requests."	get "${prefix}merge_requests?scope=created_by_me&$q" >"$tmp/mrs-mine" || echo "[]" >"$tmp/mrs-mine"	sh	run.sh
+bf-project-ignored	board-fetch	[[ -z $project ]] || prefix="$base/"	:	sh	run.sh
+bf-http-links	board-fetch	url: (.web_url | https), draft:	url: .web_url, draft:	sh	run.sh
+lg-draft-not-first	logic/mrs.js	if (row && row.draft) return { text: "Draft", color: "" }	/* m */	node	logic.test.js
+lg-badge-mine	logic/mrs.js	answer.state === "ready" ? answer.review.length : 0	answer.state === "ready" ? answer.review.length + answer.mine.length : 0	qml	harness/tests/run137.py
+lg-badge-cap	logic/mrs.js	n > 9 ? "9+" : String(n)	String(n)	node	logic.test.js
+lg-args-unchecked	logic/mrs.js	&& String(scope).indexOf("..") === -1 ? ["mrs"	? ["mrs"	node	logic.test.js
+lg-https-dropped	logic/mrs.js	return { iid: iid, title: String(r.title || ""), url: httpsUrl(r.url),	return { iid: iid, title: String(r.title || ""), url: String(r.url || ""),	node	logic.test.js
+lg-state-unchecked	logic/mrs.js	o.state = reviewerStates.indexOf(p.state) !== -1 ? p.state : ""	o.state = String(p.state || "")	node	logic.test.js
+svc-no-reuse	ScopedFetch.qml	if (!force && last && Date.now() - last.startedAt < 60000) return	/* m */	qml	harness/tests/run137.py
+svc-force-ignored	ScopedFetch.qml	if (!force && last &&	if (last &&	qml	harness/tests/run137.py
+svc-no-pending	ScopedFetch.qml	if (p) request(p.scope, p.force)	/* m */	qml	harness/tests/run137.py
+svc-forget-keeps	ScopedFetch.qml	function clear() { answers = ({}); pending = null }	function clear() { pending = null }	qml	harness/tests/run137.py
+svc-dup-fetch	ScopedFetch.qml	    if (loading === next) return\n	/* m */\n	qml	harness/tests/run137.py
+v-no-open-fetch	Board.qml	if (lists[name] && view !== name) lists[name].open()	/* m */	qml	harness/tests/run137.py
+v-r-ignored	BoardKeys.qml	else if (key === "r" && host.view === "mrs") mrsView.refresh()	/* m */	qml	harness/tests/run137.py
+v-m-ignored	BoardKeys.qml	else if (key === "m") host.toggleView("mrs")	/* m */	qml	harness/tests/run137.py
+v-enter-ignored	BoardKeys.qml	else if (host.view === "mrs") mrsView.activate()	/* m */	qml	harness/tests/run137.py
+v-move-ignored	BoardKeys.qml	else if (host.view === "mrs" && dy !== 0) mrsView.moveCursor(dy)	/* m */	qml	harness/tests/run137.py
+v-scope-no-fetch	components/ScopedList.qml	onScopeChanged: if (visible) fetch.request(scope, false)	/* m */	qml	harness/tests/run137.py
+v-cursor-unclamped	components/ScopedList.qml	cursor = Math.max(0, Math.min(rows.length - 1, cursor + dy))	cursor = cursor + dy	qml	harness/tests/run137.py
+v-reviewers-hidden	MrsView.qml	model: (mr.row.reviewers || []).slice(0, 4)	model: []	qml	harness/tests/run137.py
+v-section-order	MrsView.qml	return [["review", "Waiting on your review", a.review, "Nothing waiting on your review."],\n            ["mine", "Yours", a.mine, "No open merge requests of yours."]]	return [["mine", "Yours", a.mine, "No open merge requests of yours."],\n            ["review", "Waiting on your review", a.review, "Nothing waiting on your review."]]	qml	harness/tests/run137.py
+v-retry-hint	MrsView.qml	(view.loading ? "" : "  Press r to try again.")	""	qml	harness/tests/run137.py
+v-this-project-wrong	components/ScopedList.qml	mode === "project" && host.project !== "" ? host.project : "all"	"all"	qml	harness/tests/run137.py
