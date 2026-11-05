@@ -292,23 +292,6 @@ Panel {
   // defaults and every saved board, without touching anything else. Runs again
   // only if it could not be saved.
   readonly property int settingsRevision: 2
-  function migrateSettings() {
-    if ((parseInt(String(saved("settingsRevision", 1)), 10) || 1) >= settingsRevision) return
-    if (!bar || !bar.shell || typeof bar.shell.updateEntryInline !== "function") return
-    if (saved("defaultCollapsed", null) === null && saved("boardStates", null) === null) return  // nothing saved yet
-    // Read the saved values directly: the property bindings may not have caught up.
-    var collapsed = Logic.lowerList(saved("defaultCollapsed", ["closed", "research"]))
-    var states = saved("boardStates", ({})) || ({})
-    var next = {}
-    for (var key in states) {
-      var entry = states[key] || {}
-      next[key] = Array.isArray(entry.collapsed) && !Logic.has(entry.collapsed, "open")
-        ? { collapsed: entry.collapsed.concat(["open"]), hidden: entry.hidden || [] } : entry
-    }
-    defaultCollapsed = Logic.has(collapsed, "open") ? collapsed : collapsed.concat(["open"])
-    boardStates = next
-    persist()
-  }
   onSettingsChanged: Qt.callLater(migrateSettings)
 
   function setRefreshInterval(seconds) { refreshIntervalSec = seconds; persist() }
@@ -319,38 +302,6 @@ Panel {
   // as saved. patch.board ({ project, id, name }) replaces the saved default
   // board (this server's: on another one, settings.serverDefaults[host];
   // gitlab.com's stays).
-  function persist(patch) {
-    var p = patch || {}
-    if (!bar || !bar.shell || typeof bar.shell.updateEntryInline !== "function") return
-    var d = p.board || { project: defaultProject, id: defaultBoardId, name: defaultBoardName }
-    var entry = { id: moduleName }
-    var dropped = ["id", "collapsedColumns", "hiddenColumns", "project", "boardId", "boardName"]
-    for (var key in savedSettings) if (dropped.indexOf(key) === -1) entry[key] = savedSettings[key]
-    if (onGitlabCom) {
-      entry.defaultProject = d.project
-      entry.defaultBoardId = d.id
-      entry.defaultBoardName = d.name
-    } else if (p.board) {
-      var defaults = {}, old = Object(saved("serverDefaults", ({})))
-      for (var h in old) defaults[h] = old[h]
-      defaults[gitlabHost] = { project: d.project, id: d.id, name: d.name }
-      entry.serverDefaults = defaults
-    }
-    entry.refreshIntervalSec = refreshIntervalSec
-    entry.defaultCollapsed = defaultCollapsed
-    entry.boardStates = boardStates
-    entry.settingsRevision = settingsRevision
-    foldsUnsaved = false; foldSave.stop()  // boardStates goes out with this write
-    for (var k in p) if (k !== "board") entry[k] = p[k]
-    bar.shell.updateEntryInline(moduleName, entry)
-  }
-  function saveBots(next) { persist({ bots: next }) }
-
-  function helperPath() {
-    return decodeURIComponent(Qt.resolvedUrl("board-fetch").toString().replace(/^file:\/\//, ""))
-  }
-  // board-fetch with these arguments, on this server: the one way every view runs it.
-  function helperCommand(args) { return [helperPath()].concat(args, ["--hostname", gitlabHost]) }
 
   // ifDue (the timer, opening the popup): skipped when this board was fetched
   // less than an interval ago, on any screen; that answer is shown instead.
@@ -736,6 +687,13 @@ Panel {
     repeat: true; running: root.opened && root.setup === ""
     onTriggered: root.refresh(true)
   }
+
+  BoardPersist { id: boardPersist; host: root }
+  function migrateSettings() { boardPersist.migrateSettings() }
+  function persist(patch) { foldsUnsaved = false; foldSave.stop(); boardPersist.persist(patch) }
+  function saveBots(next) { boardPersist.saveBots(next) }
+  function helperPath() { return boardPersist.helperPath() }
+  function helperCommand(args) { return boardPersist.helperCommand(args) }
 
   BoardService { id: localFeed }
   // Every answer for the board on screen, whichever screen asked for it.

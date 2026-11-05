@@ -789,12 +789,13 @@ test("pipeline alert (v0.1.76): board-fetch pipes, its answer, what finished, th
 test("alerts wiring: Settings saves settings.alerts per project; each copy hands its board to the service", () => {
   const fs = require("node:fs"), path = require("node:path"), dir = path.join(__dirname, "..")
   const board = fs.readFileSync(path.join(dir, "Board.qml"), "utf8")
+  const persist = fs.readFileSync(path.join(dir, "BoardPersist.qml"), "utf8")
   const settings = fs.readFileSync(path.join(dir, "SettingsView.qml"), "utf8")
   assert.match(board, /readonly property var alerts: Logic\.alertsFor\(saved\("alerts", null\), project(Key)?\)/)
   assert.match(board, /onWatchCfgChanged: feed\.watch\(watchOwner, watchCfg\)/)
   assert.match(board, /Component\.onDestruction: \{ saveFolds\(\); feed\.watch\(watchOwner, null\) \}/)
   assert.match(board, /persist\(\{ alerts: Logic\.withAlert\(/)
-  assert.match(board, /for \(var k in p\) if \(k !== "board"\) entry\[k\] = p\[k\]/)
+  assert.match(persist, /for \(var k in p\) if \(k !== "board"\) entry\[k\] = p\[k\]/)
   // No notifier in the widget: one per event comes from the service only.
   assert.doesNotMatch(board, /omarchy-notification-send|notifyArgv/)
   assert.match(settings, /onClicked: view\.host\.setAlert\(alertCheck\.modelData\.kind, !alertCheck\.on\)/)
