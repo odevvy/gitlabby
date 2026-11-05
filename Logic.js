@@ -143,4 +143,5 @@ var writeRefusal = Access.writeRefusal
 var refusedEntry = Access.refusedEntry
 var accessNote = Access.accessNote
 var accessHint = Access.accessHint
+var accessLine = Access.accessLine
 var patUrl = Access.patUrl
