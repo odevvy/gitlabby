@@ -3,14 +3,14 @@
 # Views fit or scroll inside; switching views never resizes the popup, only a
 # fold changes its width. (v0.1.34 grew Settings and Keys past the cap.) The compact
 # Settings (Refresh every on one line, Start collapsed as wrapping check boxes,
-# the busy row's wrap gap). Rendered at scale 1.5 (his screenshot) with the
-# stubs in harness15/. Screens: 1440 tall (free 1385) and an 800 laptop (745).
+# the busy row's wrap gap). Rendered at scale 1.5 (his screenshot) at Style.scale 1.5 (OGB_SCALE). Screens: 1440 tall (free 1385) and an 800 laptop (745).
 # Usage: run134.py <src> [outdir]   (previews: settings-1440, settings-800,
 # settings-800-end, settings-narrow, keys-1440, keys-800, keys-narrow-1440,
 # board-1440, issue-1440)
 import sys, os, json; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import os
+os.environ["OGB_SCALE"] = "1.5"
 import lib
-lib.HERE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "harness15")
 from lib import *
 src = sys.argv[1]; out = sys.argv[2] if len(sys.argv) > 2 else None
 P = "firelink21/phrase41"

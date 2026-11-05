@@ -1,12 +1,13 @@
-# v0.1.36: Settings > Alerts in one window at scale 1.5 (harness15/): off by
+# v0.1.36: Settings > Alerts in one window at Style.scale 1.5 (OGB_SCALE): off by
 # default, a click saves settings.alerts for the project and makes the shared
 # service watch the board; previews of the section and of the notifications as
 # Omarchy would show them (a mock card; the body through Omarchy's own
 # NotificationLogic.styledBody, StyledText as in NotificationCard.qml).
 # Usage: run136b.py <src> [outdir]
 import sys, os, json, subprocess; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import os
+os.environ["OGB_SCALE"] = "1.5"
 import lib
-lib.HERE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "harness15")
 from lib import *
 src = sys.argv[1]; out = sys.argv[2] if len(sys.argv) > 2 else None
 P = "firelink21/phrase41"
