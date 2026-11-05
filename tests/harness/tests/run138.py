@@ -1,4 +1,4 @@
-# v0.1.38: bulk actions at scale 1.5 (harness15/). v and Ctrl+click pick
+# v0.1.38: bulk actions at Style.scale 1.5 (OGB_SCALE). v and Ctrl+click pick
 # cards (cap 20); Shift+H/L, x, e or a button arms the bar, which lists what
 # happens to which card and writes nothing; the same key, Enter or the main
 # button confirms; writes run one card at a time with the single-card
@@ -6,8 +6,9 @@
 # Esc steps back, or stops a run after the current card.
 # Usage: run138.py <src> [outdir]   (previews: bulk-selection, bulk-armed, bulk-running, bulk-results, bulk-label)
 import sys, os, json; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import os
+os.environ["OGB_SCALE"] = "1.5"
 import lib
-lib.HERE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "harness15")
 from lib import *
 from PySide6.QtGui import QKeyEvent
 src = sys.argv[1]; out = sys.argv[2] if len(sys.argv) > 2 else None
