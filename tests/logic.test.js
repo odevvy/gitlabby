@@ -1259,3 +1259,13 @@ test("sign-in command: only a checked host reaches the shell", () => {
   for (const host of ["gitlab.example.com", "x;y", "a$(b)", "c d"])
     assert.match(L.signInCommand(host), /^glab auth login( --hostname [a-z0-9.-]+)?$/)
 })
+
+test("link checks match: linkUrl opens exactly what openUrl's httpsUrl accepts", () => {
+  const issueUrl = "https://gitlab.com/g/p/-/issues/1"
+  for (const u of ["https://a b", 'https://x/"y', "https://x/<y>", "/a b", "https://ok.example/p?q=1#f", "/g/p/-/issues/2", "javascript:x", "http://x"]) {
+    const out = L.linkUrl(u, issueUrl)
+    assert.equal(out, out === "" ? "" : L.httpsUrl(out), u)
+  }
+  assert.equal(L.linkUrl("https://a b", issueUrl), "")
+  assert.equal(L.linkUrl('https://x/"y', issueUrl), "")
+})

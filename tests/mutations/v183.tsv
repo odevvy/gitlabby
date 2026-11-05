@@ -1,2 +1,3 @@
 signin-raw-host	logic/core.js	return h !== "" && h !== "gitlab.com" && /^[a-z0-9.-]+$/.test(h) ? "glab auth login --hostname " + h : "glab auth login"	return host && host !== "gitlab.com" ? "glab auth login --hostname " + host : "glab auth login"	node
 signin-board-fixed	Board.qml	Logic.signInCommand(gitlabHost)	"glab auth login"	qml
+link-check-loose	logic/markdown.js	  return Core.httpsUrl(value)\n	  return /^https:\/\//.test(value) ? value : ""\n	node
