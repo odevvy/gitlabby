@@ -135,3 +135,40 @@ hint-at-top	components/ScrollHint.qml	right: flick.right; bottom: flick.bottom	r
 settings-no-hint	SettingsView.qml	ScrollHint { flick: flick; host: view.host }	Item { }	qml	harness/tests/run167.py
 keys-no-hint	KeysView.qml	ScrollHint { flick: flick; host: view.host }	Item { }	qml	harness/tests/run167.py
 issue-no-hint	IssueView.qml	ScrollHint { flick: flick; host: view.host }	Item { }	qml	harness/tests/run167.py
+# --- from v168.tsv
+# v0.1.68: vim keys beside the arrows: scrolling, Ctrl+j/k in the filter, the shortcuts list (node rows: tests/logic.test.js; qml: tests/harness/tests/run168.py)
+scroll-branch-gone	BoardKeys.qml	    else if (dy !== 0) host.scrollView(dy)  // j/k	    else if (false) host.scrollView(dy)  // j/k	qml	harness/tests/run168.py
+scroll-on-dx	BoardKeys.qml	    else if (dy !== 0) host.scrollView(dy)  // j/k	    else host.scrollView(dy !== 0 ? dy : 1)  // j/k	qml	harness/tests/run168.py
+scroll-not-settings	Board.qml	var v = view === "settings" ? settingsView :	var v = view === "nope" ? settingsView :	qml	harness/tests/run168.py
+scroll-not-keys	Board.qml	view === "keys" ? keysView :	view === "nope" ? keysView :	qml	harness/tests/run168.py
+scroll-not-issue	Board.qml	view === "issue" ? issueView : null	view === "nope" ? issueView : null	qml	harness/tests/run168.py
+scroll-backwards	Board.qml	from + dy * Style.space(56)	from - dy * Style.space(56)	qml	harness/tests/run168.py
+scroll-step-zero	Board.qml	from + dy * Style.space(56)	from + dy * 0	qml	harness/tests/run168.py
+scroll-past-end	Board.qml	Math.min(f.contentHeight - f.height, from	Math.min(1e9, from	qml	harness/tests/run168.py
+scroll-past-top	Board.qml	var to = Math.max(0, Math.min(	var to = Math.max(-1e9, Math.min(	qml	harness/tests/run168.py
+filter-ctrl-off	Picker.qml	if (!(event.modifiers & Qt.ControlModifier)) return	return	qml	harness/tests/run168.py
+filter-no-n	Picker.qml	event.key === Qt.Key_J || event.key === Qt.Key_N ? 1	event.key === Qt.Key_J ? 1	qml	harness/tests/run168.py
+filter-no-p	Picker.qml	event.key === Qt.Key_K || event.key === Qt.Key_P ? -1	event.key === Qt.Key_K ? -1	qml	harness/tests/run168.py
+filter-j-up	Picker.qml	event.key === Qt.Key_N ? 1	event.key === Qt.Key_N ? -1	qml	harness/tests/run168.py
+filter-plain-j-moves	Picker.qml	if (!(event.modifiers & Qt.ControlModifier)) return	if (event.text !== "j" && !(event.modifiers & Qt.ControlModifier)) return	qml	harness/tests/run168.py
+keys-no-scrolling	logic/board.js	  { title: "Scrolling", keys: [	  { title: "Scrollin", keys: [	node	logic.test.js
+keys-no-ctrl-row	logic/board.js	    ["Ctrl+j / k", "The same while typing a filter · or Ctrl+n / p"],\n	\n	node	logic.test.js
+keys-arrows-alone	logic/board.js	    ["j_k / ↓_↑", "Move up / down"],	    ["↑_↓", "Move up / down"],	node	logic.test.js
+# --- from v169.tsv
+# v0.1.69: refresh next to the status, then columns (qml: tests/harness/tests/run169.py)
+refresh-ignores-columns	BoardHeader.qml	right: columnsButton.visible ? columnsButton.left : keysButton.left; rightMargin	right: keysButton.left; rightMargin	qml	harness/tests/run169.py
+refresh-to-hidden-columns	BoardHeader.qml	right: columnsButton.visible ? columnsButton.left : keysButton.left; rightMargin	right: columnsButton.left; rightMargin	qml	harness/tests/run169.py
+columns-before-refresh	BoardHeader.qml	anchors { right: keysButton.left; rightMargin: Style.space(4); verticalCenter: parent.verticalCenter }\n    text: "\uf0db"	anchors { right: refreshButton.left; rightMargin: Style.space(4); verticalCenter: parent.verticalCenter }\n    text: "\uf0db"	qml	harness/tests/run169.py
+status-under-buttons	BoardHeader.qml	right: refreshButton.left; rightMargin: Style.space(8)	right: keysButton.left; rightMargin: Style.space(8)	qml	harness/tests/run169.py
+refresh-no-gap	BoardHeader.qml	columnsButton.left : keysButton.left; rightMargin: Style.space(4)	columnsButton.left : keysButton.left; rightMargin: 0	qml	harness/tests/run169.py
+# --- from v170.tsv
+# v0.1.70: the refresh pace in plain words (node rows: tests/logic.test.js; qml: tests/harness/tests/run170.py)
+pace-words-slowed	logic/board.js	t += " · slowed to "	t += " · now "	node	logic.test.js
+pace-words-sped	logic/board.js	t += " · sped up to "	t += " · slowed to "	node	logic.test.js
+pace-words-no-progress	logic/board.js	else if (cad.why === "cards in progress")	else if (false)	node	logic.test.js
+pace-words-no-why	logic/board.js	durationText(cad.sec) + ", " + cad.why\n  else if (cad.sec < base)	durationText(cad.sec)\n  else if (cad.sec < base)	node	logic.test.js
+pace-words-pace-first	logic/board.js	t = "Every " + durationText(base)	t = "Every " + durationText(cad.sec)	node	logic.test.js
+pace-words-no-alerts	logic/board.js	return t + (closedToo ? " · also while closed, for alerts" : "")	return t	node	logic.test.js
+note-gone	SettingsView.qml	      Help { text: "Slows down, up to 4x	      BoardText { visible: false; text: "Slows down, up to 4x	qml	harness/tests/run170.py
+note-loud	SettingsView.qml	      Help { text: "Slows down, up to 4x	      Label { text: "Slows down, up to 4x	qml	harness/tests/run170.py
+note-dropped	SettingsView.qml	      Help { text: "Slows down, up to 4x, while the board stays quiet; any change brings it back." }\n	\n	qml	harness/tests/run170.py
