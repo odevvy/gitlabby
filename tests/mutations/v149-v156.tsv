@@ -1,0 +1,30 @@
+# Mutation rows from v149.tsv to v156.tsv (folded in 0.1.85). Columns: name, file, from, to, kind, test.
+# --- from v149.tsv
+# v0.1.49: a list bot's column is that bot's alone. node rows: logic.test.js; qml rows: tests/harness/tests/run122.py
+review-shared	logic/bots.js	 || listed.indexOf(list) !== -1) return	) return	node	logic.test.js
+review-shared-qml	logic/bots.js	 || listed.indexOf(list) !== -1) return	) return	qml	harness/tests/run122.py
+list-bot-skips-own	logic/bots.js	bot.list !== undefined ? list !== bot.list : 	bot.list !== undefined ? list !== bot.list || listed.indexOf(list) !== -1 : 	node	logic.test.js
+listed-from-labels	logic/bots.js	var listed = config.bots.filter(function(b) { return b.list !== undefined }).map(function(b) { return b.list })	var listed = config.bots.filter(function(b) { return b.list !== undefined }).map(function(b) { return b.name })	node	logic.test.js
+listed-every-column	logic/bots.js	listed.indexOf(list) !== -1) return	listed.length > 0) return	node	logic.test.js
+# --- from v150.tsv
+# v0.1.50 a refresh shows (v0.1.63: a breathing dot instead of the bar); qml rows: tests/harness/tests/run150.py
+active-closed-too	Board.qml	refreshActive: opened && (	refreshActive: (	qml	harness/tests/run150.py
+icon-still	BoardHeader.qml	RotationAnimation on rotation { running: host.loudRefresh;	RotationAnimation on rotation { running: false;	qml	harness/tests/run150.py
+icon-timer-too	BoardHeader.qml	RotationAnimation on rotation { running: host.loudRefresh;	RotationAnimation on rotation { running: host.refreshActive;	qml	harness/tests/run150.py
+manual-always	Board.qml	manualRefresh = ifDue !== true || (manualRefresh && loading)	manualRefresh = true	qml	harness/tests/run150.py
+manual-never	Board.qml	manualRefresh = ifDue !== true || (manualRefresh && loading)	manualRefresh = false	qml	harness/tests/run150.py
+dot-never	BoardHeader.qml	visible: host.refreshActive && status.text !== ""	visible: false	qml	harness/tests/run150.py
+dot-always	BoardHeader.qml	visible: host.refreshActive && status.text !== ""	visible: status.text !== ""	qml	harness/tests/run150.py
+dot-one-color	BoardHeader.qml	color: host.loudRefresh ? host.accent : host.quiet	color: host.accent	qml	harness/tests/run150.py
+dot-still	BoardHeader.qml	running: refreshDot.visible; loops: Animation.Infinite	running: false; loops: Animation.Infinite	qml	harness/tests/run150.py
+dot-away	BoardHeader.qml	rightMargin: status.paintedWidth + Style.space(8)	rightMargin: Style.space(8)	qml	harness/tests/run150.py
+manual-demoted	Board.qml	ifDue !== true || (manualRefresh && loading)	ifDue !== true	qml	harness/tests/run150.py
+# --- from v151.tsv
+# v0.1.51 idle bots without the word; qml rows: tests/harness/tests/run151.py
+word-back	BotsRow.qml	text: bot.modelData.name\n	text: bot.modelData.name + (bot.busy ? "" : "  idle")\n	qml	harness/tests/run151.py
+tip-text-short	BotsRow.qml	" · idle, nothing in a busy column"	" · idle"	qml	harness/tests/run151.py
+tip-never	BotsRow.qml	visible: idleMouse.containsMouse && !bot.busy	visible: false	qml	harness/tests/run151.py
+tip-name-only	BotsRow.qml	anchors.leftMargin: -(dot.width + bot.spacing); 	 	qml	harness/tests/run151.py
+idle-name-bright	BotsRow.qml	color: bot.busy ? row.host.foreground : row.host.dim	color: row.host.foreground	qml	harness/tests/run151.py
+idle-dot-filled	BotsRow.qml	color: bot.modelData.state === "working" ? bot.tint : "transparent"	color: bot.modelData.state === "working" ? bot.tint : row.host.dim	qml	harness/tests/run151.py
+idle-last	BotsRow.qml	model: row.states	model: row.states.slice().sort(function(a, b) { return (a.state === "idle") - (b.state === "idle") })	qml	harness/tests/run151.py
