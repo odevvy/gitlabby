@@ -1,0 +1,153 @@
+# Mutation rows from v118.tsv to v126.tsv (folded in 0.1.85). Columns: name, file, from, to, kind, test.
+# --- from v118.tsv
+logout-no-hostname	board-fetch	bounded auth logout --hostname "$hostname"	bounded auth logout	sh	run.sh
+logout-keeps-cache	board-fetch	[[ -z $cache_root ]] || rm -rf -- "$cache_dir"	[[ -z $cache_root ]] || true	sh	run.sh
+cache-gone-even-on-failure	board-fetch	if [[ $cmd == logout ]]; then\n	if [[ $cmd == logout ]]; then\n  rm -rf -- "$cache_dir"\n	sh	run.sh
+whoami-whole-user	board-fetch	{state: "ready", message: "", user: .username}	{state: "ready", message: "", user: .username, raw: .}	sh	run.sh
+whoami-unbounded	board-fetch	    get user >"$tmp/u"	    glab api --hostname "$hostname" --method GET user >"$tmp/u"	sh	run.sh
+logout-after-auth-check	board-fetch	if [[ $cmd == logout ]]; then	if [[ $cmd == logout ]] && bounded auth status --hostname "$hostname" >/dev/null; then	sh	run.sh
+logout-says-ready	board-fetch	emit logged-out "Signed out of $hostname."	emit ready "Signed out of $hostname."	sh	run.sh
+whoami-saved	board-fetch	    get user >"$tmp/u"	    mkdir -p "$cache_dir"; get user >"$tmp/u"	sh	run.sh
+no-account-check	Board.qml	if (name === "settings" && view !== "settings") checkAccount()		qml	harness/tests/run118.py
+no-confirm	SettingsView.qml	onClicked: view.confirming = true	onClicked: view.host.signOut()	qml	harness/tests/run118.py
+board-kept-in-memory	Board.qml	columns = []; projects = []; pickerBoards = []; cached = false; account = ""	cached = false	qml	harness/tests/run118.py
+refresh-while-signing-out	Board.qml	    if (signingOut) return\n		qml	harness/tests/run118.py
+logout-error-ignored	Board.qml	if (data.state !== "logged-out") { accountError = String(data.message || "Could not sign out."); return }	if (data.state !== "logged-out") return	qml	harness/tests/run118.py
+no-setup-after-signout	Board.qml	message = String(data.message || ""); boardState = "logged-out"	message = String(data.message || ""); boardState = "error"	qml	harness/tests/run118.py
+# --- from v119.tsv
+# dropped in 0.1.85: setup-own-height (the popup is a fixed 640 high since 0.1.64, so the setup panel's own height changes nothing)
+try-again-main	SetupView.qml	label: "Try again"; main: setupView.step === "error"	label: "Try again"; main: true	qml	harness/tests/run119.py
+# --- from v120.tsv
+guard-off	board-fetch	[[ $kind == free ]] ||	true ||	sh	run.sh
+case-sensitive-status	board-fetch	| map(ascii_downcase) | unique;	| unique;	sh	run.sh
+labels-not-filtered	board-fetch	select((.name | type) == "string" and (.name | ascii_downcase | IN($status[]) | not))	select((.name | type) == "string")	sh	run.sh
+overwrite-labels	board-fetch	{remove_labels: $r}	{labels: $r}	sh	run.sh
+add-creates	board-fetch	[[ $known == true ]] ||	true ||	sh	run.sh
+logic-offers-status	logic/labels.js	&& !has(status, l.name) &&	&&	node	logic.test.js
+qml-status-removable	IssueView.qml	view.editing && !Logic.has(view.status, name)	view.editing	qml	harness/tests/run120.py
+qml-no-client-guard	IssueView.qml	|| !issueReady || Logic.has(status, name)) return	|| !issueReady) return	qml	harness/tests/run120.py
+qml-no-refresh	IssueView.qml	    host.refresh()  // the card on the board		qml	harness/tests/run120.py
+status-not-faded	IssueView.qml	 || (view.editing && !removable)		qml	harness/tests/run120.py
+no-workflow-labels	board-fetch	| strings] + workflow | map(ascii_downcase)	| strings] + [] | map(ascii_downcase)	sh	run.sh
+# --- from v121.tsv
+close-sends-labels	board-fetch	'{state_event: $e}'	'{state_event: $e, labels: ""}'	sh	run.sh
+no-state-check	board-fetch	and .iid == $iid and .state == $want)	and .iid == $iid)	sh	run.sh
+no-iid-check	board-fetch	select(type == "object" and .iid == $iid and .state == $want)	select(type == "object" and .state == $want)	sh	run.sh
+unbounded-close	board-fetch	      bounded api --hostname "$hostname" --method PUT --header "Content-Type: application/json" --input - "$base/issues/$iid"\n    }\n    if [[ $cmd == close	      timeout 30 glab api --hostname "$hostname" --method PUT --header "Content-Type: application/json" --input - "$base/issues/$iid"\n    }\n    if [[ $cmd == close	sh	run.sh
+status-on-all	logic/labels.js	return (labels || []).map(String).filter(function(name) { return has(status, name) })	return (labels || []).map(String)	node	logic.test.js
+no-refresh-after-close	IssueView.qml	    host.refresh()  // the card moves to or from Closed		qml	harness/tests/run121.py
+no-busy-guard	IssueView.qml	    if (stateBusy !== "" || !issueReady || issueError !== "") return\n    confirming = false	    confirming = false	qml	harness/tests/run121.py
+# --- from v122.tsv
+closed-counts	logic/bots.js	if (c.kind !== "label") return	if (c.kind === "open") return	node	logic.test.js
+case-sensitive-list	logic/bots.js	var list = String(c.name).toLowerCase()	var list = String(c.name)	node	logic.test.js
+case-sensitive-label	logic/bots.js	var labels = lowerList(row.labels || [])	var labels = (row.labels || []).map(String)	node	logic.test.js
+first-owner-only	logic/bots.js	var owners = config.bots.filter(function(b) { return b.label }).map(function(b) { return b.label })	var owners = config.bots.filter(function(b) { return b.label }).map(function(b) { return b.label }).slice(0, 1)	node	logic.test.js
+noowner-takes-all	logic/bots.js	: !labels.some(function(l) { return owners.indexOf(l) !== -1 }))	: true)	node	logic.test.js
+list-bot-needs-busy	logic/bots.js	if (bot.list !== undefined ? list !== bot.list : config.busyLists.indexOf(list) === -1 || listed.indexOf(list) !== -1) return	if (config.busyLists.indexOf(list) === -1 || (bot.list !== undefined ? list !== bot.list : listed.indexOf(list) !== -1)) return	node	logic.test.js
+all-working	logic/bots.js	var working = bot.list !== undefined || config.workingLists.indexOf(list) !== -1	var working = true	node	logic.test.js
+no-dedupe	logic/bots.js	if (!found[row.iid]) {	if (true) {	node	logic.test.js
+empty-shows	logic/bots.js	if (bots.length === 0) return null	if (c.bots.length === 0) return null	node	logic.test.js
+any-project	logic/bots.js	  var e = raw[project]\n	  var e = raw[project] || raw[Object.keys(raw)[0]]\n	node	logic.test.js
+row-always	Board.qml	root.boardState === "ready" && root.botStates.length > 0	root.boardState === "ready"	qml	harness/tests/run122.py
+row-every-view	Board.qml	visible: root.view === "board" && root.setup === ""	visible: root.setup === ""	qml	harness/tests/run122.py
+stale-height	Board.qml	+ (botsRow.visible ? botsRow.height + root.gap : 0) +	+	qml	harness/tests/run122.py
+row-overlaps	Board.qml	anchors { top: botsRow.bottom; topMargin: visible ? root.gap : 0;	anchors { top: header.bottom; topMargin: visible ? root.gap : 0;	qml	harness/tests/run122.py
+hidden-keeps-space	Board.qml	height: visible ? implicitHeight : 0	height: implicitHeight	qml	harness/tests/run122.py
+dot-always-filled	BotsRow.qml	color: bot.modelData.state === "working" ? bot.tint : "transparent"	color: bot.busy ? bot.tint : "transparent"	qml	harness/tests/run122.py
+idle-ring-accent	BotsRow.qml	color: bot.busy ? bot.tint : row.host.dim }	color: bot.tint }	qml	harness/tests/run122.py
+qa-shows-list	BotsRow.qml	(bot.oneList !== "" ? "" : " " + modelData.list)	" " + modelData.list	qml	harness/tests/run122.py
+click-dead	BotsRow.qml	onClicked: row.host.openIssue(ref.modelData.row)	onClicked: {}	qml	harness/tests/run122.py
+# no-idle-word retired in 0.1.51: the word is gone; v151.tsv word-back and idle-name-bright cover the idle look
+# --- from v123.tsv
+slash-allowed	board-fetch	  ! jq -e '.body | test(	  jq -e '.body | test(	sh	run.sh
+slash-first-line-only	board-fetch	test("(^|	test("(^	sh	run.sh
+commands-silent	board-fetch	      emit commands "GitLab ran	      emit error "GitLab ran	sh	run.sh
+401-anywhere	board-fetch	authenticated with glab|API call failed: .*: 401( |$)	authenticated with glab|401	sh	run.sh
+projects-one-page	board-fetch	    for page in 1 2 3 4 5; do	    for page in 1; do	sh	run.sh
+projects-unbounded	board-fetch	    for page in 1 2 3 4 5; do	    for page in 1 2 3 4 5 6 7; do	sh	run.sh
+projects-dupes	board-fetch	if any(.[]; .id == $p.id) then . else	if false then . else	sh	run.sh
+workflow-drift	board-fetch	def workflow: ["review", "in progress", "approved", "todo", "research"];	def workflow: ["review", "in progress", "approved", "todo"];	sh	run.sh
+nested-links	logic/markdown.js	links.push("<a href=\"" + url + "\">" + (t || url) + "</a>"); return "\x02" + (links.length - 1) + "\x02" })	return "<a href=\"" + url + "\">" + (t || url) + "</a>" })	node	logic.test.js
+markers-kept	logic/markdown.js	  text = String(text).replace(/[\x01\x02]/g, "")	  text = String(text)	node	logic.test.js
+qa-js-first-line	logic/markdown.js	return /(^|	return /(^	node	logic.test.js
+movenote-generic	logic/markdown.js	  if (from.kind === "label" && to.kind === "open") return "This removes its status label on GitLab."		node	logic.test.js
+hint-ignored	IssueComments.qml	enabled: owner.loaded && !owner.posting && box.text.trim() !== "" && !postStatus.slash	enabled: owner.loaded && !owner.posting && box.text.trim() !== ""	qml	harness/tests/run123.py
+post-no-guard	IssueView.qml	box.text.trim() === "" || Logic.quickAction(box.text)) return	box.text.trim() === "") return	qml	harness/tests/run123.py
+commands-no-reload	IssueView.qml	    if (data.state === "commands") { loadIssue(); loadNotes(); host.refresh() }		qml	harness/tests/run123.py
+refresh-wipes	Board.qml	if (data.state === "error" && boardState === "ready" && columns.length > 0)	if (false)	qml	harness/tests/run123.py
+refresh-error-sticks	Board.qml	    refreshError = ""\n    cached = !!fromCache	    cached = !!fromCache	qml	harness/tests/run123.py
+failed-blank	Board.qml	visible: root.view === "board" && (root.setup !== "" || root.failed) }	visible: root.view === "board" && root.setup !== "" }	qml	harness/tests/run123.py
+confirm-ignored	Board.qml	    if (!confirmMoves) return moveIssue(row, from, to)	    return moveIssue(row, from, to)	qml	harness/tests/run123.py
+drop-bypasses	BoardView.qml	view.host.requestMove(row, from, to)	view.host.moveIssue(row, from, to)	qml	harness/tests/run123.py
+confirm-not-held	Board.qml	move !== null || pendingMove !== null || boardView.holding	move !== null || boardView.holding	qml	harness/tests/run123.py
+escape-closes	BoardKeys.qml	if (host.pendingMove) host.cancelMove()	if (false) host.cancelMove()	qml	harness/tests/run123.py
+enter-opens	BoardKeys.qml	if (host.pendingMove) host.confirmMove()	if (false) host.confirmMove()	qml	harness/tests/run123.py
+shift-l-nothing	BoardKeys.qml	if ((text === "H" || text === "L") && host.view === "board")	if (false)	qml	harness/tests/run123.py
+shift-wrong-way	BoardKeys.qml	host.moveCursorCard(text === "H" ? -1 : 1)	host.moveCursorCard(text === "H" ? 1 : -1)	qml	harness/tests/run123.py
+e-dead	BoardKeys.qml	key === "e" && host.view === "issue"	key === "#" && host.view === "issue"	qml	harness/tests/run123.py
+x-no-confirm	IssueView.qml	    else askClose()	    else setState("close")	qml	harness/tests/run123.py
+issue-escape-leaves	BoardKeys.qml	else if (host.view === "issue" && issueView.confirming) issueView.confirming = false	else if (false) issueView.confirming = false	qml	harness/tests/run123.py
+bots-all-numbers	BotsRow.qml	model: bot.modelData.issues.slice(0, row.shown)	model: bot.modelData.issues	qml	harness/tests/run123.py
+bots-no-tip	BotsRow.qml	            visible: moreMouse.containsMouse	            visible: false	qml	harness/tests/run123.py
+tip-offcard	BotsRow.qml	    return Math.max(-at, Math.min(0, row.width - at - width))	    return 0	qml	harness/tests/run129.py
+bots-spacing	BotsRow.qml	    spacing: Style.space(6)  // between	    spacing: Style.space(18)  // between	qml	harness/tests/run123.py
+dim-45	Board.qml	background.b, 0.35))	background.b, 0.45))	qml	harness/tests/run123.py
+signout-pill-color	components/ActionButton.qml	  readonly property color tone: danger ? host.urgent : host.accent	  readonly property color tone: host.accent	qml	harness/tests/run123.py
+skeleton-fixed	components/Skeleton.qml	  implicitWidth: knownWidth > 0 ? knownWidth : cards.length	  implicitWidth: cards.length	qml	harness/tests/run123.py
+skeleton-no-last	components/Skeleton.qml	host.boardWidths[host.stateKey] || host.lastBoardWidth	host.boardWidths[host.stateKey] || 0	qml	harness/tests/run123.py
+# --- from v124.tsv
+link-no-confirm	SettingsView.qml	onClicked: view.confirming = true	onClicked: view.host.signOut()	qml	harness/tests/run124.py
+link-not-accent	SettingsView.qml	text: "Sign out"\n          color: view.host.accent	text: "Sign out"\n          color: view.host.foreground	qml	harness/tests/run124.py
+link-big	SettingsView.qml	color: view.host.accent\n          font.pixelSize: Style.font.bodySmall\n          MouseArea	color: view.host.accent\n          font.pixelSize: Style.font.body\n          MouseArea	qml	harness/tests/run124.py
+row-grows	SettingsView.qml	implicitHeight: Math.max(accountText.implicitHeight, Style.space(28))	implicitHeight: accountText.implicitHeight + (view.confirming ? Style.space(28) : 0)	qml	harness/tests/run124.py
+text-under-link	SettingsView.qml	 - (signOutLink.visible ? signOutLink.implicitWidth : confirmRow.visible ? confirmRow.implicitWidth : 0)	 - 0	qml	harness/tests/run124.py
+heading-old	SettingsView.qml	Heading { text: "Account" }	Heading { text: "GitLab account" }	qml	harness/tests/run124.py
+yes-quiet	SettingsView.qml	small: true; danger: true; label: "Yes, sign out"	small: true; label: "Yes, sign out"	qml	harness/tests/run124.py
+no-tip	SettingsView.qml	visible: yesButton.hovered	visible: false	qml	harness/tests/run124.py
+tip-offcard	SettingsView.qml	onAboutToShow: x = parent.width - implicitWidth	onAboutToShow: x = parent.width	qml	harness/tests/run124.py
+hovered-dead	components/ActionButton.qml	readonly property bool hovered: mouse.containsMouse	readonly property bool hovered: false	qml	harness/tests/run124.py
+link-while-signing-out	SettingsView.qml	visible: !view.host.signingOut && !view.confirming &&	visible: !view.confirming &&	qml	harness/tests/run124.py
+cancel-signs-out	SettingsView.qml	label: "Cancel"\n            onClicked: view.confirming = false	label: "Cancel"\n            onClicked: { view.confirming = false; view.host.signOut() }	qml	harness/tests/run124.py
+frame-back	SettingsView.qml	      Item {\n        id: accountRow	      Rectangle {\n        border.width: 1; color: "transparent"\n        id: accountRow	qml	harness/tests/run124.py
+link-left	SettingsView.qml	anchors { right: parent.right; verticalCenter: parent.verticalCenter }\n          visible: !view.host.signingOut	anchors { left: parent.left; verticalCenter: parent.verticalCenter }\n          visible: !view.host.signingOut	qml	harness/tests/run124.py
+labels-under-close	IssueView.qml	width: parent.width - (stateAction.visible ? stateAction.implicitWidth + Style.space(12) : 0)	width: parent.width	qml	harness/tests/run124.py
+filter-always-on	components/LabelPicker.qml	enabled: picker.labelsState === "ready"	enabled: true	qml	harness/tests/run124.py
+no-focus-after-load	IssueView.qml	if (labelsState === "ready" && editing) labelFilter.forceActiveFocus()	if (false) labelFilter.forceActiveFocus()	qml	harness/tests/run124.py
+filter-big	components/LabelPicker.qml	verticalPadding: Style.space(3)	verticalPadding: Style.space(7)	qml	harness/tests/run124.py
+keys-while-loading	BoardKeys.qml	if (host.view === "issue" && issueView.editing) return	if (false) return	qml	harness/tests/run124.py
+x-while-loading	BoardKeys.qml	host.view === "issue" && !issueView.editing) issueView.toggleState()	host.view === "issue") issueView.toggleState()	qml	harness/tests/run124.py
+esc-while-loading	BoardKeys.qml	else if (host.view === "issue" && issueView.editing) issueView.doneEditing()	else if (false) issueView.doneEditing()	qml	harness/tests/run124.py
+done-editing-dead	IssueView.qml	onClicked: view.editing ? view.doneEditing() : view.editLabels()	onClicked: view.editLabels()	qml	harness/tests/run124.py
+close-link-loud	IssueView.qml	color: stateMouse.containsMouse && enabled ? view.host.foreground : view.host.dim	color: view.host.foreground	qml	harness/tests/run124.py
+close-link-dead	IssueView.qml	onClicked: view.toggleState() }	onClicked: {} }	qml	harness/tests/run124.py
+hint-under-post	IssueComments.qml	width: parent.width - postButton.width - Style.space(12)	width: parent.width	qml	harness/tests/run124.py
+hint-long	IssueComments.qml	"Posts as you. Lines starting with / aren't sent."	"Posts as you on GitLab. Lines starting with / (quick actions) aren't sent."	qml	harness/tests/run124.py
+edit-own-row	IssueView.qml	          BoardText {\n            id: editAction	          Item { width: labelFlow.width; height: 1 }\n          BoardText {\n            id: editAction	qml	harness/tests/run124.py
+filter-not-dim	components/LabelPicker.qml	enabled: picker.labelsState === "ready"\n      opacity: enabled ? 1 : 0.5	enabled: picker.labelsState === "ready"\n      opacity: 1	qml	harness/tests/run124.py
+see-all-hidden	BoardView.qml	visible: !!column.modelData.seeAll	visible: false	qml	harness/tests/run124.py
+see-all-always	BoardView.qml	visible: !!column.modelData.seeAll	visible: true	qml	harness/tests/run124.py
+see-all-dead	BoardView.qml	onClicked: view.host.openUrl(column.modelData.seeAll) }	onClicked: {} }	qml	harness/tests/run124.py
+see-all-loud	BoardView.qml	color: seeAllMouse.containsMouse ? view.host.accent : view.host.dim	color: view.host.accent	qml	harness/tests/run124.py
+cap-link-never	board-fetch	| (if $capped\n	| (if false\n	sh	run.sh
+cap-link-always	board-fetch	| (if $capped\n	| (if true\n	sh	run.sh
+link-any-url	board-fetch	capture("^(?<p>https://[^?#]+)/-/(?:issues|work_items)/[0-9]+$")	capture("^(?<p>.+)/-/[a-z_]+/[0-9]+$")	sh	run.sh
+link-unscoped	board-fetch	"/-/issues?state=closed" + $webScope)	"/-/issues?state=closed")	sh	run.sh
+cap-50	board-fetch	closed_cap=20	closed_cap=50	sh	run.sh
+# --- from v125.tsv
+work-items-unread-sh	board-fetch	/-/(?:issues|work_items)/[0-9]+$	/-/issues/[0-9]+$	sh	run.sh
+work-items-unread-qml	board-fetch	/-/(?:issues|work_items)/[0-9]+$	/-/issues/[0-9]+$	qml	harness/tests/run125.py
+issues-unread	board-fetch	/-/(?:issues|work_items)/[0-9]+$	/-/work_items/[0-9]+$	sh	run.sh
+footer-hidden	BoardView.qml	visible: !!column.modelData.seeAll	visible: false	qml	harness/tests/run125.py
+column-no-taller	BoardView.qml	height: Math.max(view.tallest, flick.height)	height: flick.height	qml	harness/tests/run125.py
+board-not-scrolling	BoardView.qml	contentHeight: board.implicitHeight	contentHeight: flick.height	qml	harness/tests/run125.py
+opens-scrolled	BoardView.qml	contentWidth: board.implicitWidth; contentHeight: board.implicitHeight	contentWidth: board.implicitWidth; contentHeight: board.implicitHeight; onContentHeightChanged: contentY = Math.max(0, contentHeight - height)	qml	harness/tests/run125.py
+# --- from v126.tsv
+labels-no-spinner	components/LabelPicker.qml	Spinner { id: spinner; running: status.busy;	Spinner { id: spinner; running: false;	qml	harness/tests/run126.py
+labels-spin-forever	components/LabelPicker.qml	readonly property bool busy: !bad && (picker.busyText !== "" || picker.labelsState === "loading")	readonly property bool busy: true	qml	harness/tests/run126.py
+spin-on-error	components/LabelPicker.qml	readonly property bool busy: !bad && (	readonly property bool busy: (	qml	harness/tests/run126.py
+saving-no-spin	components/LabelPicker.qml	readonly property bool busy: !bad && (picker.busyText !== "" || picker.labelsState === "loading")	readonly property bool busy: !bad && (picker.labelsState === "loading")	qml	harness/tests/run126.py
+spinner-overlaps-text	components/LabelPicker.qml	Row {\n    width: parent.width; spacing: Style.space(6)\n    visible: status.text	Item {\n    width: parent.width; height: status.height; property int spacing: Style.space(6)\n    visible: status.text	qml	harness/tests/run126.py
+spinner-still	components/Spinner.qml	RotationAnimation on rotation { running: spinner.running;	RotationAnimation on rotation { running: false;	qml	harness/tests/run126.py
+spinner-dim	components/Spinner.qml	color: Commons.Color.accent	color: Commons.Color.popups.text	qml	harness/tests/run126.py
+spinner-big	components/Spinner.qml	font.pixelSize: Style.font.bodySmall	font.pixelSize: Style.font.body * 2	qml	harness/tests/run126.py
+spinner-always	components/Spinner.qml	visible: running	visible: true	qml	harness/tests/run126.py

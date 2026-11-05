@@ -1,2 +1,0 @@
-setup-own-height	Board.qml	Math.max(setupView.implicitHeight, skeleton.implicitHeight)	setupView.implicitHeight	qml
-try-again-main	SetupView.qml	label: "Try again"; main: setupView.step === "error"	label: "Try again"; main: true	qml

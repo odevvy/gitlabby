@@ -1,2 +1,0 @@
-status-says-refreshing	Board.qml	    if (move) return "Moving #" + move.iid + "…"	    if (move) return "Moving #" + move.iid + "…"\n    if (refreshing) return "Refreshing…"	qml
-error-over-refresh	Board.qml	refreshError !== "" && !refreshing)	refreshError !== "")	qml

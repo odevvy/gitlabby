@@ -1,1 +1,0 @@
-m-check-blind	tests/mutate.sh	"* ]] || { echo "stale	"* ]] || true || { echo "stale	sh

@@ -1,0 +1,80 @@
+# Mutation rows from v157.tsv to v164.tsv (folded in 0.1.85). Columns: name, file, from, to, kind, test.
+# --- from v157.tsv
+# v0.1.57: keyed cards. node rows: tests/logic.test.js; qml rows: tests/harness/tests/run157.py
+k-no-dedupe	logic/board.js	if (!seen[k]) { seen[k] = true; keys.push(k) }	seen[k] = true; keys.push(k)	node	logic.test.js
+k-remove-forward	logic/board.js	for (var i = cur.length - 1; i >= 0; i--) if (!seen[cur[i]])	for (var i = 0; i < cur.length; i++) if (!seen[cur[i]])	node	logic.test.js
+k-no-move	logic/board.js	else if (at !== j) {	else if (false) {	node	logic.test.js
+k-keys-not-strings	logic/board.js	var cur = have.map(String), ops = []	var cur = have.slice(), ops = []	node	logic.test.js
+k-insert-at-end	logic/board.js	{ op: "insert", at: j, k: keys[j] }	{ op: "insert", at: cur.length, k: keys[j] }	node	logic.test.js
+k-move-dropped	logic/board.js	cur.splice(j, 0, cur.splice(at, 1)[0])	cur.splice(at, 1)	node	logic.test.js
+q-columns-unkeyed	BoardView.qml	        model: colModel	        model: view.host.shownColumns	qml	harness/tests/run157.py
+q-cards-rebuilt	BoardView.qml	            view.syncKeys(cardModel, keys)	            cardModel.clear(); keys.forEach(function(k) { cardModel.append({ k: k }) })	qml	harness/tests/run157.py
+q-columns-rebuilt	BoardView.qml	onColKeysChanged: syncKeys(colModel, colKeys)	onColKeysChanged: { colModel.clear(); syncKeys(colModel, colKeys) }	qml	harness/tests/run157.py
+q-card-objects-new	BoardView.qml	next[key] = old && JSON.stringify(old) === JSON.stringify(i) ? old : i	next[key] = i	qml	harness/tests/run157.py
+q-move-backwards	BoardView.qml	else if (o.op === "move") model.move(o.from, o.to, 1)	else if (o.op === "move") model.move(o.to, o.from, 1)	qml	harness/tests/run157.py
+q-insert-first	BoardView.qml	else model.insert(o.at, { k: o.k })	else model.insert(0, { k: o.k })	qml	harness/tests/run157.py
+# --- from v158.tsv
+# v0.1.58: open and closed issues in parallel, Review pipelines eight at a time. sh rows: tests/run.sh
+p-open-sequential	board-fetch	  echo $? >"$tmp/open.rc" ) &	  echo $? >"$tmp/open.rc" )	sh	run.sh
+p-closed-unchecked	board-fetch	for part in open closed; do	for part in open; do	sh	run.sh
+p-closed-first	board-fetch	for part in open closed; do	for part in closed open; do	sh	run.sh
+p-no-timeout-message	board-fetch	  ((rc != 124)) || emit error "$slow"\n  if ((rc != 0)); then\n    if	  if ((rc != 0)); then\n    if	sh	run.sh
+p-no-auth-recheck	board-fetch	    if ((auth_skipped)); then auth_skipped=0; forget_auth; check_auth; fi\n    emit error "Could not load $part	    emit error "Could not load $part	sh	run.sh
+p-no-wait	board-fetch	fi\nwait\nfor part in	fi\nfor part in	sh	run.sh
+p-pipelines-four	board-fetch	>= 8)); do wait -n; done\n  pipeline_of	>= 4)); do wait -n; done\n  pipeline_of	sh	run.sh
+p-hidden-closed-fails	board-fetch	echo '[]' >"$tmp/closed"; echo 0 >"$tmp/closed.rc"	echo '[]' >"$tmp/closed"; echo 1 >"$tmp/closed.rc"	sh	run.sh
+# --- from v159.tsv
+# v0.1.59: lazy sign-in check for reads, writes check first. sh rows: tests/run.sh
+a-reads-check-first	board-fetch	  *) auth_skipped=1 ;;	  *) auth_skipped=0; check_auth ;;	sh	run.sh
+a-writes-lazy	board-fetch	  move|relabel|close|reopen|comment|bulk) auth_skipped=0; check_auth ;;	  move|relabel|close|reopen|comment|bulk) auth_skipped=1 ;;	sh	run.sh
+a-move-unchecked	board-fetch	  move|relabel|close|reopen|comment|bulk) auth_skipped=0; check_auth ;;	  relabel|close|reopen|comment|bulk) auth_skipped=0; check_auth ;;	sh	run.sh
+a-relabel-unchecked	board-fetch	  move|relabel|close|reopen|comment|bulk) auth_skipped=0; check_auth ;;	  move|close|reopen|comment|bulk) auth_skipped=0; check_auth ;;	sh	run.sh
+a-close-unchecked	board-fetch	  move|relabel|close|reopen|comment|bulk) auth_skipped=0; check_auth ;;	  move|relabel|reopen|comment|bulk) auth_skipped=0; check_auth ;;	sh	run.sh
+a-reopen-unchecked	board-fetch	  move|relabel|close|reopen|comment|bulk) auth_skipped=0; check_auth ;;	  move|relabel|close|comment|bulk) auth_skipped=0; check_auth ;;	sh	run.sh
+a-comment-unchecked	board-fetch	  move|relabel|close|reopen|comment|bulk) auth_skipped=0; check_auth ;;	  move|relabel|close|reopen|bulk) auth_skipped=0; check_auth ;;	sh	run.sh
+a-bulk-unchecked	board-fetch	  move|relabel|close|reopen|comment|bulk) auth_skipped=0; check_auth ;;	  move|relabel|close|reopen|comment) auth_skipped=0; check_auth ;;	sh	run.sh
+a-no-recheck-after-failed-read	board-fetch	  if ((rc != 0 && auth_skipped)); then auth_skipped=0; forget_auth; check_auth; fi	  :	sh	run.sh
+a-old-mark-kept	board-fetch	forget_auth() { [[ -z $auth_mark ]] || rm -f "$auth_mark" 2>/dev/null; }	forget_auth() { :; }	sh	run.sh
+# --- from v160.tsv
+# v0.1.60: shared avatar mask, recent issues in memory. qml rows: tests/harness/tests/run160.py
+av-own-mask	components/Avatar.qml	maskSource: avatar.host.avatarMask	maskSource: null	qml	harness/tests/run160.py
+c-issue-not-kept	IssueView.qml	issue = data.issue; remember(key, { issue: data.issue })	issue = data.issue	qml	harness/tests/run160.py
+c-notes-not-kept	IssueView.qml	; remember(key, { notes: notes, more: more, notesAt: notesAt }) }	 }	qml	harness/tests/run160.py
+c-cap-11	IssueView.qml	while (order.length > 10)	while (order.length > 11)	qml	harness/tests/run160.py
+c-evict-newest	IssueView.qml	delete next[order.shift()]	delete next[order.pop()]	qml	harness/tests/run160.py
+c-always-described	IssueView.qml	readonly property bool described: issueReady || fromCache	readonly property bool described: true	qml	harness/tests/run160.py
+c-cache-wins	IssueView.qml	Object.assign({}, seen.issue, view.issue)	Object.assign({}, view.issue, seen.issue)	qml	harness/tests/run160.py
+c-signout-keeps	IssueView.qml	function onSigningOutChanged() { view.recent = ({}); view.recentOrder = [] }	function onSigningOutChanged() { }	qml	harness/tests/run160.py
+c-notes-dropped	IssueView.qml	notes = seen && seen.notes ? seen.notes : []	notes = []	qml	harness/tests/run160.py
+c-no-description	IssueView.qml	view.fromCache = true	view.fromCache = false	qml	harness/tests/run160.py
+# --- from v161.tsv
+# v0.1.61: calm tooltips. qml rows: tests/harness/tests/run161.py
+t-delay-400	components/IconTip.qml	delay: 500	delay: 400	qml	harness/tests/run161.py
+t-delay-none	components/IconTip.qml	delay: 500	delay: 0	qml	harness/tests/run161.py
+t-shown-while-folding	components/IconTip.qml	!(host && host.folding)	!(host && false)	qml	harness/tests/run161.py
+# --- from v162.tsv
+# v0.1.62: shortcuts screen like Settings. node rows: tests/logic.test.js; qml rows: tests/harness/tests/run162.py
+kp-chord-loose	logic/board.js	{ cap: p.replace(/_/g, " "), joined: true }	{ cap: p.replace(/_/g, " ") }	node	logic.test.js
+kp-underscore-kept	logic/board.js	: { cap: p.replace(/_/g, " ") })	: { cap: p })	node	logic.test.js
+kp-slash-as-cap	logic/board.js	if (word === "/") { out.push({ text: "/" }); return }	if (false) return	node	logic.test.js
+kg-row-dropped	logic/board.js	["s", "Settings"],\n    ["m",	["m",	node	logic.test.js
+kg-board-right	logic/board.js	  { title: "Setup panel", keys: [\n    ["Enter / Space", "Its main button"],\n    ["r", "Try again"]] },\n  { title: "Anywhere"	  { title: "Anywhere"	node	logic.test.js
+kv-board-three-left	KeysView.qml	Logic.keyGroups.slice(0, 4), Logic.keyGroups.slice(4)	Logic.keyGroups.slice(0, 3), Logic.keyGroups.slice(3)	qml	harness/tests/run162.py
+kv-no-card-fill	KeysView.qml	color: view.pane	color: "transparent"	qml	harness/tests/run162.py
+kv-chord-loose	KeysView.qml	x: part.modelData.joined ? -Style.space(3) : 0	x: 0	qml	harness/tests/run162.py
+kv-sep-dim	KeysView.qml	color: view.host.quiet\n          font.pixelSize: Style.font.caption\n        }\n      }	color: view.host.dim\n          font.pixelSize: Style.font.caption\n        }\n      }	qml	harness/tests/run162.py
+kv-note-loud	KeysView.qml	text: keyRow.note; color: view.host.quiet	text: keyRow.note; color: view.host.foreground	qml	harness/tests/run162.py
+kv-caps-narrow	KeysView.qml	readonly property real capsWidth: Style.space(122)	readonly property real capsWidth: Style.space(90)	qml	harness/tests/run162.py
+kv-tall-rows	KeysView.qml	implicitHeight: Style.space(26)	implicitHeight: Style.space(30)	qml	harness/tests/run162.py
+kv-old-title	KeysView.qml	font { pixelSize: Style.font.subtitle; bold: true }	font { pixelSize: Style.font.bodySmall; bold: true }	qml	harness/tests/run162.py
+kv-note-in-words	KeysView.qml	readonly property string what: String(modelData[1]).split(" · ")[0]	readonly property string what: String(modelData[1])	qml	harness/tests/run162.py
+# --- from v163.tsv
+status-says-refreshing	Board.qml	    if (move) return "Moving #" + move.iid + "…"	    if (move) return "Moving #" + move.iid + "…"\n    if (refreshing) return "Refreshing…"	qml	harness/tests/run130.py
+error-over-refresh	Board.qml	refreshError !== "" && !refreshing)	refreshError !== "")	qml	harness/tests/run130.py
+# --- from v164.tsv
+w-own-per-view	Board.qml	contentWidth: panel.fittedContentWidth(Math.max(Style.space(760),	contentWidth: panel.fittedContentWidth(Math.max(root.view === "settings" ? Style.space(520) : Style.space(760),	qml	harness/tests/run134.py
+w-low-floor	Board.qml	contentWidth: panel.fittedContentWidth(Math.max(Style.space(760),	contentWidth: panel.fittedContentWidth(Math.max(Style.space(520),	qml	harness/tests/run134.py
+w-not-board	Board.qml	root.shownBoardWidth) + panel.padding * 2 + Style.space(4)))	0) + panel.padding * 2 + Style.space(4)))	qml	harness/tests/run134.py
+h-own-per-view	Board.qml	contentHeight: panel.fittedContentHeight(Style.space(640), Style.space(640))	contentHeight: panel.fittedContentHeight(keyCatcher.implicitHeight, Style.space(640))	qml	harness/tests/run134.py
+h-no-cap	Board.qml	contentHeight: panel.fittedContentHeight(Style.space(640), Style.space(640))	contentHeight: panel.fittedContentHeight(keyCatcher.implicitHeight)	qml	harness/tests/run134.py
+h-ignores-screen	Board.qml	contentHeight: panel.fittedContentHeight(Style.space(640), Style.space(640))	contentHeight: Style.space(640)	qml	harness/tests/run134.py

@@ -1,8 +1,0 @@
-entry-no-bulk-use	Logic.js	Bulk.use({ BoardLogic: BoardLogic, Core: Core })	// m	qml
-entry-no-alerts-bots	Logic.js	Alerts.use({ Core: Core, Bots: Bots })	Alerts.use({ Core: Core })	qml
-entry-drops-name	Logic.js	var bulkPlan = Bulk.bulkPlan\n	/* m */	node
-entry-wrong-module	Logic.js	var mrsArgs = Mrs.mrsArgs	var mrsArgs = Bulk.mrsArgs	node
-mrs-use-ignored	logic/mrs.js	function use(m) { Core = m.Core; }	function use(m) { }	qml
-bulk-wrong-borrow	logic/bulk.js	return BoardLogic.columnKey(column)	return BoardLogic.listSpec(column)	node
-index-drops-module	logic/index.js	  require("./access.js")	  {}	node
-labels-borrow-wrong	logic/labels.js	function has(list, name) { return Core.has(list, name) }	function has(list, name) { return false }	node

@@ -1,0 +1,83 @@
+# Mutation rows from v141b.tsv to v148.tsv (folded in 0.1.85). Columns: name, file, from, to, kind, test.
+# --- from v141b.tsv
+wd-move-30	Board.qml	id: moveWatchdog; interval: 50000	id: moveWatchdog; interval: 30000	qml	harness/tests/run141.py
+wd-bulk-45	BulkBar.qml	id: watchdog; interval: 50000	id: watchdog; interval: 45000	qml	harness/tests/run141.py
+still-move-silent	Board.qml	    if (moveStillRunning) return noteStillFinishing()	    if (moveStillRunning) return false	qml	harness/tests/run141.py
+still-request-silent	Board.qml	    if (moveStillRunning || (!bulkBar.running && bulkBar.busy)) return noteStillFinishing()	 	qml	harness/tests/run141.py
+still-bulk-silent	BulkBar.qml	if (!running && (runProcess.running || host.moveStillRunning))	if (false)	qml	harness/tests/run141.py
+still-bulk-own-only	BulkBar.qml	runProcess.running || host.moveStillRunning	runProcess.running	qml	harness/tests/run141.py
+pick-closed-stale	Board.qml	if (bulkBar.running || bulkBar.armed || bulkBar.mode	if (bulkBar.busy || bulkBar.armed || bulkBar.mode	qml	harness/tests/run141.py
+apply-always-columns	Board.qml	if (JSON.stringify(nextColumns) !== JSON.stringify(columns)) columns = nextColumns	columns = nextColumns	qml	harness/tests/run141.py
+apply-always-colors	Board.qml	if (JSON.stringify(nextColors) !== JSON.stringify(labelColors)) labelColors = nextColors	labelColors = nextColors	qml	harness/tests/run141.py
+rotation-closed	Board.qml	refreshActive: opened && (	refreshActive: (	qml	harness/tests/run150.py
+openurl-own-check	Board.qml	var link = Logic.httpsUrl(url)	var link = /^https:\/\//.test(String(url || "")) ? String(url) : ""	qml	harness/tests/run141.py
+# --- from v142.tsv
+auth-no-recheck	board-fetch	if ((rc != 0 && auth_skipped)); then auth_skipped=0; forget_auth; check_auth; fi	true	sh	run.sh
+auth-logout-keeps	board-fetch	  forget_auth\n  bounded auth logout	  bounded auth logout	sh	run.sh
+auth-mark-in-tmp	board-fetch	[[ $runtime == "${XDG_RUNTIME_DIR:-}" ]] && auth_mark=	auth_mark=	sh	run.sh
+pc-no-reuse	board-fetch	then "reuse \($i)" else	then "ask \($i)" else	sh	run.sh
+pc-reuse-running	board-fetch	($c.status | IN("passed", "failed", "canceled"))	($c.status | type == "string")	sh	run.sh
+pc-ttl-long	board-fetch	$now - $at < 120	$now - $at < 1200	sh	run.sh
+pc-reused-dropped	board-fetch	with_entries(select(.key | IN($reused[])))	with_entries(select(false))	sh	run.sh
+pc-at-leaks	board-fetch	{pipeline: ($all[.iid | tostring] | del(.at))}	{pipeline: $all[.iid | tostring]}	sh	run.sh
+pc-at-renewed	board-fetch	($fresh | map_values(. + {at: $now}))	($fresh | map_values(. + {at: $now})) | map_values(.at = $now)	sh	run.sh
+pc-symlink	board-fetch	-f $pipes_file && ! -L $pipes_file	-f $pipes_file	sh	run.sh
+# --- from v142b.tsv
+labels-no-ttl	IssueView.qml	 && Date.now() - labelsAt < 300000) return	) return	qml	harness/tests/run142.py
+labels-reuse-error	IssueView.qml	labelsState === "ready" && Date.now()	labelsState !== "loading" && labelsState !== "" && Date.now()	qml	harness/tests/run142.py
+# --- from v143.tsv
+gql-off	board-fetch	  mrs_graphql || mrs_rest\n	  mrs_rest\n	sh	run.sh
+gql-unknown-ok	board-fetch	type == "string" and known)	true)	sh	run.sh
+gql-state-raw	board-fetch	state: (.mergeRequestInteraction.reviewState | ascii_downcase)	state: .mergeRequestInteraction.reviewState	sh	run.sh
+gql-errors-ignored	board-fetch	select((.errors // null) == null) | 	 	sh	run.sh
+gql-path-relative	board-fetch	web_url: (.path | abs)	web_url: .path	sh	run.sh
+gql-avatar-relative	board-fetch	avatar_url: (.avatarUrl | abs)	avatar_url: .avatarUrl	sh	run.sh
+gql-status-raw	board-fetch	detailed_merge_status: (.detailedMergeStatus | strings | ascii_downcase),\n              head_pipeline	detailed_merge_status: .detailedMergeStatus,\n              head_pipeline	sh	run.sh
+gql-pipe-upper	board-fetch	{status: (.status | strings | ascii_downcase), web_url	{status: .status, web_url	sh	run.sh
+gql-redo-dropped	board-fetch	redo: [$all[] | select(ok | not)	redo: [$all[] | select(false)	sh	run.sh
+gql-no-draft-filter	board-fetch	state: opened, draft: false, sort	state: opened, sort	sh	run.sh
+gql-project-ignored	board-fetch	elif [[ -n $project ]]; then vars='($p: String)' arg='projectPath: $p, '; fi	fi	sh	run.sh
+gql-id-as-path	board-fetch	pv=(-f "id=gid://gitlab/Project/$project")	pv=(-f "id=$project")	sh	run.sh
+gql-merge-lost	board-fetch	'$had[0] + (map(objects	'(map(objects	sh	run.sh
+gql-rev-merge-lost	board-fetch	'$had[0] + (add // {})'	'(add // {})'	sh	run.sh
+# --- from v144.tsv
+bk-guard-uncached	board-fetch	if ((in_bulk)) && [[ -f $tmp/guard-b ]]	if false	sh	run.sh
+bk-guard-not-saved	board-fetch	  ((in_bulk)) && cp "$tmp/b" "$tmp/guard-b"	  :	sh	run.sh
+bk-labels-uncached	board-fetch	      ((in_bulk)) && cp "$tmp/l" "$tmp/guard-l"	      :	sh	run.sh
+bk-any-project	board-fetch	[[ $project == "$run_project" ]] ||	true ||	sh	run.sh
+bk-any-command	board-fetch	^(move|relabel|close|reopen)$ ]] || emit error "Bulk	^(move|relabel|close|reopen|comment|logout)$ ]] || emit error "Bulk	sh	run.sh
+bk-host-from-step	board-fetch	  hostname=$run_host deadline=	  deadline=	sh	run.sh
+bk-one-deadline	board-fetch	 deadline=$((SECONDS + deadline_s))\n  check_args	\n  check_args	sh	run.sh
+bk-emit-escapes	board-fetch	  local line=$1 args=()\n  exec 3>&1	  local line=$1 args=()	sh	run.sh
+bk-stdin-kept-open	BulkBar.qml	    runProcess.stdinEnabled = false  // end	    // end	qml	harness/tests/run144.py
+bk-new-process-per-card	BulkBar.qml	if (runProcess.running) { runProcess.write	if (false) { runProcess.write	qml	harness/tests/run144.py
+bk-first-line-lost	BulkBar.qml	onStarted: { if (bar.pendingLine !== "") write(bar.pendingLine);	onStarted: {	qml	harness/tests/run144.py
+bk-silent-end-hangs	BulkBar.qml	onRunningChanged: if (!running && bar.running)	onRunningChanged: if (false)	qml	harness/tests/run144.py
+bk-stdin-off	BulkBar.qml	    runProcess.stdinEnabled = true\n	\n	qml	harness/tests/run144.py
+# --- from v146.tsv
+entry-no-bulk-use	Logic.js	Bulk.use({ BoardLogic: BoardLogic, Core: Core })	// m	qml	harness/tests/run146.py
+entry-no-alerts-bots	Logic.js	Alerts.use({ Core: Core, Bots: Bots })	Alerts.use({ Core: Core })	qml	harness/tests/run146.py
+entry-drops-name	Logic.js	var bulkPlan = Bulk.bulkPlan\n	/* m */	node	logic.test.js
+entry-wrong-module	Logic.js	var mrsArgs = Mrs.mrsArgs	var mrsArgs = Bulk.mrsArgs	node	logic.test.js
+mrs-use-ignored	logic/mrs.js	function use(m) { Core = m.Core; }	function use(m) { }	qml	harness/tests/run146.py
+bulk-wrong-borrow	logic/bulk.js	return BoardLogic.columnKey(column)	return BoardLogic.listSpec(column)	node	logic.test.js
+index-drops-module	logic/index.js	  require("./access.js")	  {}	node	logic.test.js
+labels-borrow-wrong	logic/labels.js	function has(list, name) { return Core.has(list, name) }	function has(list, name) { return false }	node	logic.test.js
+# --- from v147.tsv
+keys-no-host	Board.qml	      host: root\n      views: ({ issue	      views: ({ issue	qml	harness/tests/run147.py
+keys-drops-issue	Board.qml	views: ({ issue: issueView, picker	views: ({ picker	qml	harness/tests/run147.py
+keys-swaps-settings	Board.qml	settings: settingsView, bulk: bulkBar	settings: picker, bulk: bulkBar	qml	harness/tests/run147.py
+keys-drops-mrs	Board.qml	mrs: mrsView, todos: todoView, setup: setupView })	todos: todoView, setup: setupView })	qml	harness/tests/run147.py
+keys-prop-wrong	BoardKeys.qml	readonly property Item setupView: views.setup || null	readonly property Item setupView: views.picker || null	qml	harness/tests/run147.py
+keys-plain-catcher	Board.qml	    BoardKeys {  // the key routing (BoardKeys.qml)	    PanelKeyCatcher {  // the key routing (BoardKeys.qml)	qml	harness/tests/run147.py
+keys-escape-dead	BoardKeys.qml	    else if (host.view !== "board") host.back()	    else if (false) host.back()	qml	harness/tests/run147.py
+# --- from v148.tsv
+labels-wrong-field	IssueLabels.qml	readonly property Item field: labelPicker.field	readonly property Item field: doneButton	qml	harness/tests/run148.py
+labels-always-open	IssueLabels.qml	  visible: owner.editing	  visible: true	qml	harness/tests/run148.py
+labels-pick-dead	IssueLabels.qml	onPicked: function(name) { owner.relabel("add", name) }	onPicked: function(name) {}	qml	harness/tests/run148.py
+labels-done-dead	IssueLabels.qml	onClicked: owner.doneEditing()	onClicked: {}	qml	harness/tests/run148.py
+iv-filter-wrong	IssueView.qml	labelFilter: labelEditor.field	labelFilter: comments.box	qml	harness/tests/run148.py
+iv-box-wrong	IssueView.qml	readonly property Item box: comments.box	readonly property Item box: labelEditor.field	qml	harness/tests/run148.py
+comments-alias-wrong	IssueComments.qml	property alias box: box	property alias box: postButton	qml	harness/tests/run148.py
+comments-post-dead	IssueComments.qml	owner.post(); event.accepted = true	event.accepted = true	qml	harness/tests/run148.py
+comments-notes-hidden	IssueComments.qml	model: owner.notes	model: []	qml	harness/tests/run148.py

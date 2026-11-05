@@ -1,9 +1,0 @@
-labels-wrong-field	IssueLabels.qml	readonly property Item field: labelPicker.field	readonly property Item field: doneButton	qml
-labels-always-open	IssueLabels.qml	  visible: owner.editing	  visible: true	qml
-labels-pick-dead	IssueLabels.qml	onPicked: function(name) { owner.relabel("add", name) }	onPicked: function(name) {}	qml
-labels-done-dead	IssueLabels.qml	onClicked: owner.doneEditing()	onClicked: {}	qml
-iv-filter-wrong	IssueView.qml	labelFilter: labelEditor.field	labelFilter: comments.box	qml
-iv-box-wrong	IssueView.qml	readonly property Item box: comments.box	readonly property Item box: labelEditor.field	qml
-comments-alias-wrong	IssueComments.qml	property alias box: box	property alias box: postButton	qml
-comments-post-dead	IssueComments.qml	owner.post(); event.accepted = true	event.accepted = true	qml
-comments-notes-hidden	IssueComments.qml	model: owner.notes	model: []	qml

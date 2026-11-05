@@ -1,0 +1,125 @@
+# Mutation rows from v127.tsv to v134.tsv (folded in 0.1.85). Columns: name, file, from, to, kind, test.
+# --- from v127.tsv
+edit-in-place	logic/core.js	return plain(raw) ? JSON.parse(JSON.stringify(raw)) : {}	return plain(raw) ? raw : {}	node	logic.test.js
+first-bot-no-busy	logic/bots.js	{ busyLists: (labelColumns || []).slice(), bots: [] }	{ busyLists: [], bots: [] }	node	logic.test.js
+last-keeps-entry	logic/bots.js	if (found.entry.bots.length === 0) delete next[project]	if (false) delete next[project]	node	logic.test.js
+busy-case-sensitive	logic/bots.js	return String(n).toLowerCase() !== key	return String(n) !== String(column)	node	logic.test.js
+string-setting-ok	logic/bots.js	if (!plain(raw)) return { problem: "setting", entry: null }	if (!plain(raw)) return { problem: "", entry: null }	node	logic.test.js
+name-taken-case	logic/bots.js	String(b.name || "").trim().toLowerCase() === key	String(b.name || "") === String(name)	node	logic.test.js
+persist-ignores-bots	Board.qml	for (var k in p) if (k !== "board") entry[k] = p[k]	for (var k in p) if (k !== "board" && k !== "bots") entry[k] = p[k]	qml	harness/tests/run127.py
+esc-keeps-form	BoardKeys.qml	else if (host.view === "settings" && settingsView.adding) settingsView.cancelAdd()	else if (false) settingsView.cancelAdd()	qml	harness/tests/run127.py
+offers-columns	BotsSection.qml	Logic.statusLabels(fetchedStatus, host.columns).concat(ownerLabels)	ownerLabels	qml	harness/tests/run127.py
+offers-taken	BotsSection.qml	.concat(ownerLabels)	.concat([])	qml	harness/tests/run127.py
+dup-allowed	BotsSection.qml	readonly property bool ready: newName !== "" && !taken &&	readonly property bool ready: newName !== "" &&	qml	harness/tests/run127.py
+no-owner-twice	BotsSection.qml	label: "cards no bot owns"; enabled: !sec.hasNoOwner;	label: "cards no bot owns"; enabled: true;	qml	harness/tests/run127.py
+no-flag-label	BotsSection.qml	? "not a label here"	? ""	qml	harness/tests/run127.py
+no-flag-column	BotsSection.qml	? "not a column here"	? ""	qml	harness/tests/run127.py
+malformed-unsaid	BotsSection.qml	text: !bot.ok ? "ignored: needs a name and a label or a column"	text: !bot.ok ? ""	qml	harness/tests/run127.py
+problem-unsaid	BotsSection.qml	text: sec.found.problem === "setting" ? "The bots	text: false ? "The bots	qml	harness/tests/run127.py
+remove-first	BotsSection.qml	onClicked: sec.remove(bot.index)	onClicked: sec.remove(0)	qml	harness/tests/run127.py
+busy-dead	BotsSection.qml	onClicked: sec.toggleBusy(modelData)	onClicked: sec.pick = sec.pick	qml	harness/tests/run127.py
+form-unfocused	BotsSection.qml	    nameField.forceActiveFocus()	    nameField.text = ""	qml	harness/tests/run127.py
+labels-not-on-open	SettingsView.qml	if (visible && botsSection.bots.length > 0) loadLabels()	if (false) loadLabels()	qml	harness/tests/run127.py
+add-no-labels	BotsSection.qml	    wantLabels()	    adding = true	qml	harness/tests/run127.py
+picker-adds	BotsSection.qml	choose: true; selected: sec.pick	choose: false; selected: sec.pick	qml	harness/tests/run127.py
+# --- from v128.tsv
+plus-suffix-dropped	logic/core.js	(column.capped ? "+" : "")	("")	node	logic.test.js
+plus-always	logic/core.js	(column.capped ? "+" : "")	("+")	node	logic.test.js
+summary-plain-count	BoardView.qml	label: modelData.name + " " + Logic.countLabel(modelData)	label: modelData.name + " " + (modelData.issues || []).length	qml	harness/tests/run128.py
+strip-plain-count	BoardView.qml	text: Logic.countLabel(column.modelData); color: view.host.dim	text: String(column.issues.length); color: view.host.dim	qml	harness/tests/run128.py
+header-plain-count	BoardView.qml	text: Logic.countLabel(column.modelData); color: view.host.quiet	text: String(column.issues.length); color: view.host.quiet	qml	harness/tests/run128.py
+fetch-no-extra	board-fetch	per_page=$((closed_cap + 1))	per_page=$closed_cap	sh	run.sh
+capped-at-20	board-fetch	($fetchedClosed | length > $cap) as $capped	($fetchedClosed | length >= $cap) as $capped	sh	run.sh
+shows-21	board-fetch	$fetchedClosed[:$cap] as $rawClosed	$fetchedClosed as $rawClosed	sh	run.sh
+no-capped-flag	board-fetch	(if $capped then {capped: true} else {} end)	{}	sh	run.sh
+form-row-no-wrap	BotsSection.qml	Flow {\n              id: choiceRow	Row {\n              id: choiceRow	qml	harness/tests/run128.py
+form-flow-no-width	BotsSection.qml	id: choiceRow\n              width: parent.width; spacing	id: choiceRow\n              spacing	qml	harness/tests/run128.py
+# --- from v129.tsv
+dot-no-column	BotsRow.qml	readonly property color tint: Logic.dotColor(modelData.color, String(row.host.background)) || row.host.accent	readonly property color tint: row.host.accent	qml	harness/tests/run129.py
+dot-no-fallback	BotsRow.qml	String(row.host.background)) || row.host.accent	String(row.host.background)) || modelData.color	qml	harness/tests/run129.py
+contrast-ignored	logic/labels.js	(Math.min(a, b) + 0.05) >= 2 ? color : ""	(Math.min(a, b) + 0.05) >= 0 ? color : ""	node	logic.test.js
+reason-missing	BotsSection.qml	: newName === "" ? "Name the bot to add it."	: newName === "" ? ""	qml	harness/tests/run129.py
+taken-reason-generic	BotsSection.qml	"There's already a bot named " + newName + "."	"Choose a label to add " + newName + "."	qml	harness/tests/run129.py
+menu-not-auto	BotsSection.qml	menuOpen = k === "list"	menuOpen = false	qml	harness/tests/run129.py
+pick-keeps-open	BotsSection.qml	pick = name; menuOpen = false	pick = name	qml	harness/tests/run129.py
+noowner-hidden	BotsSection.qml	label: "cards no bot owns"; enabled: !sec.hasNoOwner;	label: "cards no bot owns"; visible: !sec.hasNoOwner;	qml	harness/tests/run129.py
+tip-offcard	BotsRow.qml	    return Math.max(-at, Math.min(0, row.width - at - width))	    return 0	qml	harness/tests/run129.py
+# --- from v130.tsv
+# dropped in 0.1.85: refreshing-over-saved (only delays a refresh error over a saved copy until that refresh ends, a moment later)
+refreshing-red	BoardHeader.qml	host.boardState === "ready" && !host.refreshing) ? host.urgent	host.boardState === "ready") ? host.urgent	qml	harness/tests/run130.py
+# --- from v130b.tsv
+glyph-no-tip	IssueView.qml	tip: "Back to the board (Esc)"; 	/* no tip */ 	node	logic.test.js
+tip-off-card	components/IconTip.qml	x = Math.max(-at, Math.min(want, area.width - at - w))	x = want	qml	harness/tests/run130b.py
+tip-area-null	Board.qml	readonly property Item tipArea: keyCatcher	readonly property Item tipArea: null	qml	harness/tests/run130b.py
+tip-never	components/IconTip.qml	visible: shown && text !== ""	visible: false	qml	harness/tests/run130b.py
+glyph-tip-unbound	components/GlyphButton.qml	text: button.tip }	text: "" }	qml	harness/tests/run130b.py
+column-tip-no-name	BoardView.qml	text: "Collapse " + column.modelData.name	text: "Collapse"	qml	harness/tests/run130b.py
+done-tip-no-key	IssueView.qml	"Done editing (Esc)"	"Done editing"	qml	harness/tests/run130b.py
+star-default-dead	BoardHeader.qml	enabled: host.project !== ""; hoverEnabled: true; cursorShape: host.onDefault	enabled: !host.onDefault && host.project !== ""; hoverEnabled: true; cursorShape: host.onDefault	qml	harness/tests/run130b.py
+settings-as-qt-gave	Board.qml	readonly property var savedSettings: Logic.plainJson(settings)	readonly property var savedSettings: settings	qml	harness/tests/run130b.py
+plainjson-noop	logic/core.js	var v = JSON.parse(JSON.stringify(value)); return	var v = value; return	node	logic.test.js
+two-parsers	logic/bots.js	var bots = c.bots.filter(botUsable).map(	var bots = c.bots.filter(function(b) { return b && b.name }).map(	node	logic.test.js
+editor-own-read	BotsSection.qml	host.saved("bots", null)	host.settings.bots || null	qml	harness/tests/run130b.py
+# --- from v132.tsv
+pl-any-column	board-fetch	select(.kind == "label" and (.name | ascii_downcase) == "review") | .issues[].iid]	select(.kind == "label") | .issues[].iid]	sh	run.sh
+pl-case-sensitive	board-fetch	[.columns[] | select(.kind == "label" and (.name | ascii_downcase) == "review")	[.columns[] | select(.kind == "label" and .name == "review")	sh	run.sh
+pl-no-cap	board-fetch	| unique | .[:15][]	| unique | .[]	sh	run.sh
+pl-merged-wins	board-fetch	sort_by([(.state == "opened"), (.updated_at // "")])	sort_by([(.updated_at // "")])	sh	run.sh
+pl-closed-counts	board-fetch	select(.state == "opened" or .state == "merged")	select(.state != "x")	sh	run.sh
+pl-get-emits	board-fetch	peek "$base/issues/$iid/related_merge_requests"	get "$base/issues/$iid/related_merge_requests"	sh	run.sh
+pl-http-ok	board-fetch	{status: $s, url: (.web_url | https)}	{status: $s, url: .web_url}	sh	run.sh
+pl-manual-shows	board-fetch	scheduled: "pending", canceled: "canceled"}	scheduled: "pending", canceled: "canceled", manual: "pending"}	sh	run.sh
+pl-canceling-lost	board-fetch	running: "running", canceling: "running",	running: "running",	sh	run.sh
+pl-all-columns-get-it	board-fetch	.columns |= map(if .kind == "label" and (.name | ascii_downcase) == "review"	.columns |= map(if true	sh	run.sh
+pl-serial-unbounded	board-fetch	while (($(jobs -rp | wc -l) >= 4)); do wait -n; done	while (($(jobs -rp | wc -l) >= 99)); do wait -n; done	sh	run.sh
+mark-http	logic/board.js	var url = /^https:\/\//.test(String(p.url || "")) ? String(p.url) : ""	var url = String(p.url || "")	node	logic.test.js
+mark-unknown	logic/board.js	if (!Object.prototype.hasOwnProperty.call(pipelineMarks, status)) return null	if (!pipelineMarks[status]) return { glyph: "?", color: "#fff", url: "", tip: "" }	node	logic.test.js
+mark-mr-unchecked	logic/board.js	var on = /^[!#A-Za-z0-9_.\/-]+$/.test(String(p.mr || "")) ? " on " + p.mr : ""	var on = p.mr ? " on " + p.mr : ""	node	logic.test.js
+mark-same-glyph	logic/board.js	failed: { glyph: "\uf057"	failed: { glyph: "\uf058"	node	logic.test.js
+mark-tip-always-open	logic/board.js	(url ? ": open it on GitLab" : "")	": open it on GitLab"	node	logic.test.js
+ui-no-mark	BoardView.qml	pipeline: card.modelData.pipeline || null	pipeline: null	qml	harness/tests/run132.py
+ui-under-cardmouse	BoardView.qml	                PipelineMark {\n                  id: pipelineMark	                PipelineMark {\n                  z: -1\n                  id: pipelineMark	qml	harness/tests/run132.py
+ui-overlaps-age	BoardView.qml	x: footer.x + meta.x - width - Style.space(8)	x: footer.x + meta.x - width / 2	qml	harness/tests/run132.py
+ui-wrong-row	BoardView.qml	y: footer.y + (footer.height - height) / 2	y: footer.y - height	qml	harness/tests/run132.py
+ui-click-ignores-url	components/PipelineMark.qml	onClicked: if (mark.info && mark.info.url !== "") mark.host.openUrl(mark.info.url)	onClicked: mark.host.openIssue({ iid: 0 })	qml	harness/tests/run132.py
+ui-no-tip	components/PipelineMark.qml	IconTip { host: mark.host; shown: mouse.containsMouse;	IconTip { host: mark.host; shown: false;	qml	harness/tests/run132.py
+ui-hand-always	components/PipelineMark.qml	cursorShape: mark.info && mark.info.url !== "" ? Qt.PointingHandCursor : Qt.ArrowCursor	cursorShape: Qt.PointingHandCursor	qml	harness/tests/run132.py
+ui-theme-color	components/PipelineMark.qml	color: info ? info.color : "transparent"	color: host.dim	qml	harness/tests/run132.py
+ui-always-visible	components/PipelineMark.qml	visible: info !== null	visible: true	qml	harness/tests/run132.py
+pl-one-at-a-time	board-fetch	pipeline_of "$riid" &	pipeline_of "$riid"	sh	run.sh
+# --- from v133.tsv
+svc-no-join	BoardService.qml	if (runningKey === key && fetch.ticket >= minTicket) return null	if (false) return null	qml	harness/tests/run133.py
+svc-join-old	BoardService.qml	if (runningKey === key && fetch.ticket >= minTicket) return null	if (runningKey === key) return null	qml	harness/tests/run133.py
+svc-queue-twice	BoardService.qml	if (queuedKeys.indexOf(key) !== -1) return null	if (false) return null	qml	harness/tests/run133.py
+svc-never-saved	BoardService.qml	if (ifDue && last && last.ticket >= minTicket && Date.now() - last.startedAt < maxAgeMs) return last	if (false) return last	qml	harness/tests/run133.py
+svc-always-saved	BoardService.qml	if (ifDue && last && last.ticket >= minTicket	if (last && last.ticket >= minTicket	qml	harness/tests/run133.py
+svc-saved-ignores-floor	BoardService.qml	last && last.ticket >= minTicket && Date.now()	last && Date.now()	qml	harness/tests/run133.py
+svc-saved-forever	BoardService.qml	Date.now() - last.startedAt < maxAgeMs	true	qml	harness/tests/run133.py
+svc-oldest-first	BoardService.qml	queue = [{ key: key, args: ["board", "--project", project, "--board", boardId] }].concat(queue)	queue = queue.concat([{ key: key, args: ["board", "--project", project, "--board", boardId] }])	qml	harness/tests/run133.py
+svc-no-generation	BoardService.qml	    if (fetch.generation !== generation) return\n	    // no generation check\n	qml	harness/tests/run133.py
+svc-forget-keeps	BoardService.qml	    generation++\n    answers = ({})	    generation++	qml	harness/tests/run133.py
+svc-no-broadcast	BoardService.qml	    answered(fetch.key, raw, fetch.ticket)	    // not told	qml	harness/tests/run133.py
+svc-no-next	BoardService.qml	onRunningChanged: if (!running) Qt.callLater(service.next)	onRunningChanged: if (false) Qt.callLater(service.next)	qml	harness/tests/run133.py
+board-own-feed	Board.qml	readonly property var feed: sharedFeed || localFeed	readonly property var feed: localFeed	qml	harness/tests/run133.py
+board-loading-running-only	Board.qml	(feed.runningKey === fetchKey || feed.queuedKeys.indexOf(fetchKey) !== -1)	(feed.runningKey === fetchKey)	qml	harness/tests/run133.py
+board-any-key	Board.qml	function onAnswered(key, raw, ticket) { if (key === root.fetchKey)	function onAnswered(key, raw, ticket) { if (true)	qml	harness/tests/run133.py
+board-timer-forces	Board.qml	onTriggered: root.refresh(true)	onTriggered: root.refresh()	qml	harness/tests/run133.py
+board-open-forces	Board.qml	cursor = null; refresh(true) }	cursor = null; refresh() }	qml	harness/tests/run133.py
+board-queued-forces	Board.qml	refreshQueued = false; refresh(true) }	refreshQueued = false; refresh() }	qml	harness/tests/run133.py
+board-no-floor-after-move	Board.qml	data.state === "stale") { refreshQueued = true; moveFloor = feed.tickets + 1 }	data.state === "stale") { refreshQueued = true }	qml	harness/tests/run133.py
+board-no-floor-watchdog	Board.qml	root.refreshQueued = true; root.moveFloor = root.feed.tickets + 1;	root.refreshQueued = true;	qml	harness/tests/run133.py
+board-no-forget	Board.qml	    feed.forget()\n	    // forget dropped\n	qml	harness/tests/run133.py
+board-floor-ignored	Board.qml	(!fromCache && ticket < moveFloor)	(false)	qml	harness/tests/run133.py
+node-no-service-kind	manifest.json	    "bar-widget",\n    "service"\n	    "bar-widget"\n	node	logic.test.js
+node-board-fetches	Board.qml	  BoardService { id: localFeed }	  BoardService { id: localFeed }\n  Process { command: [helperPath(), "board"] }	node	logic.test.js
+# --- from v134.tsv
+refresh-two-lines	SettingsView.qml	readonly property bool oneLine: refreshHeading.implicitWidth + Style.space(12) + segPane.implicitWidth <= width	readonly property bool oneLine: false	qml	harness/tests/run134.py
+refresh-always-one	SettingsView.qml	readonly property bool oneLine: refreshHeading.implicitWidth + Style.space(12) + segPane.implicitWidth <= width	readonly property bool oneLine: true	qml	harness/tests/run134.py
+refresh-stack-overlaps	SettingsView.qml	y: refreshRow.oneLine ? 0 : refreshHeading.implicitHeight + Style.space(6)	y: 0	qml	harness/tests/run134.py
+collapsed-wide-gap	SettingsView.qml	      Flow {\n        width: parent.width\n        spacing: Style.space(6)	      Flow {\n        width: parent.width\n        spacing: Style.space(16)	qml	harness/tests/run134.py
+collapsed-no-toggle	SettingsView.qml	onClicked: view.host.toggleDefaultCollapsed(chk.modelData.name)	onClicked: {}	qml	harness/tests/run134.py
+collapsed-wrong-on	SettingsView.qml	readonly property bool on: view.host.isDefaultCollapsed(modelData.name)	readonly property bool on: false	qml	harness/tests/run134.py
+collapsed-full-rows	SettingsView.qml	implicitWidth: chkRow.implicitWidth + Style.space(10); implicitHeight: Style.space(22)	width: parent.width; implicitHeight: Style.space(22)	qml	harness/tests/run134.py
+busy-wide-gap	BotsSection.qml	      width: parent.width\n      spacing: Style.space(6)\n      topPadding: Style.space(2)	      width: parent.width\n      spacing: Style.space(16)\n      topPadding: Style.space(2)	qml	harness/tests/run134.py
+busy-no-pad	BotsSection.qml	implicitWidth: checkRow.implicitWidth + Style.space(10)	implicitWidth: checkRow.implicitWidth	node	logic.test.js
+settings-noscroll	SettingsView.qml	    contentWidth: width; contentHeight: content.implicitHeight	    contentWidth: width; contentHeight: height	qml	harness/tests/run134.py
