@@ -1,4 +1,0 @@
-# v0.1.61: calm tooltips. qml rows: tests/harness/tests/run161.py
-t-delay-400	components/IconTip.qml	delay: 500	delay: 400	qml
-t-delay-none	components/IconTip.qml	delay: 500	delay: 0	qml
-t-shown-while-folding	components/IconTip.qml	!(host && host.folding)	!(host && false)	qml

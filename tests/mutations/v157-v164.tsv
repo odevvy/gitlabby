@@ -35,3 +35,36 @@ a-comment-unchecked	board-fetch	  move|relabel|close|reopen|comment|bulk) auth_s
 a-bulk-unchecked	board-fetch	  move|relabel|close|reopen|comment|bulk) auth_skipped=0; check_auth ;;	  move|relabel|close|reopen|comment) auth_skipped=0; check_auth ;;	sh	run.sh
 a-no-recheck-after-failed-read	board-fetch	  if ((rc != 0 && auth_skipped)); then auth_skipped=0; forget_auth; check_auth; fi	  :	sh	run.sh
 a-old-mark-kept	board-fetch	forget_auth() { [[ -z $auth_mark ]] || rm -f "$auth_mark" 2>/dev/null; }	forget_auth() { :; }	sh	run.sh
+# --- from v160.tsv
+# v0.1.60: shared avatar mask, recent issues in memory. qml rows: tests/harness/tests/run160.py
+av-own-mask	components/Avatar.qml	maskSource: avatar.host.avatarMask	maskSource: null	qml	harness/tests/run160.py
+c-issue-not-kept	IssueView.qml	issue = data.issue; remember(key, { issue: data.issue })	issue = data.issue	qml	harness/tests/run160.py
+c-notes-not-kept	IssueView.qml	; remember(key, { notes: notes, more: more, notesAt: notesAt }) }	 }	qml	harness/tests/run160.py
+c-cap-11	IssueView.qml	while (order.length > 10)	while (order.length > 11)	qml	harness/tests/run160.py
+c-evict-newest	IssueView.qml	delete next[order.shift()]	delete next[order.pop()]	qml	harness/tests/run160.py
+c-always-described	IssueView.qml	readonly property bool described: issueReady || fromCache	readonly property bool described: true	qml	harness/tests/run160.py
+c-cache-wins	IssueView.qml	Object.assign({}, seen.issue, view.issue)	Object.assign({}, view.issue, seen.issue)	qml	harness/tests/run160.py
+c-signout-keeps	IssueView.qml	function onSigningOutChanged() { view.recent = ({}); view.recentOrder = [] }	function onSigningOutChanged() { }	qml	harness/tests/run160.py
+c-notes-dropped	IssueView.qml	notes = seen && seen.notes ? seen.notes : []	notes = []	qml	harness/tests/run160.py
+c-no-description	IssueView.qml	view.fromCache = true	view.fromCache = false	qml	harness/tests/run160.py
+# --- from v161.tsv
+# v0.1.61: calm tooltips. qml rows: tests/harness/tests/run161.py
+t-delay-400	components/IconTip.qml	delay: 500	delay: 400	qml	harness/tests/run161.py
+t-delay-none	components/IconTip.qml	delay: 500	delay: 0	qml	harness/tests/run161.py
+t-shown-while-folding	components/IconTip.qml	!(host && host.folding)	!(host && false)	qml	harness/tests/run161.py
+# --- from v162.tsv
+# v0.1.62: shortcuts screen like Settings. node rows: tests/logic.test.js; qml rows: tests/harness/tests/run162.py
+kp-chord-loose	logic/board.js	{ cap: p.replace(/_/g, " "), joined: true }	{ cap: p.replace(/_/g, " ") }	node	logic.test.js
+kp-underscore-kept	logic/board.js	: { cap: p.replace(/_/g, " ") })	: { cap: p })	node	logic.test.js
+kp-slash-as-cap	logic/board.js	if (word === "/") { out.push({ text: "/" }); return }	if (false) return	node	logic.test.js
+kg-row-dropped	logic/board.js	["s", "Settings"],\n    ["m",	["m",	node	logic.test.js
+kg-board-right	logic/board.js	  { title: "Setup panel", keys: [\n    ["Enter / Space", "Its main button"],\n    ["r", "Try again"]] },\n  { title: "Anywhere"	  { title: "Anywhere"	node	logic.test.js
+kv-board-three-left	KeysView.qml	Logic.keyGroups.slice(0, 4), Logic.keyGroups.slice(4)	Logic.keyGroups.slice(0, 3), Logic.keyGroups.slice(3)	qml	harness/tests/run162.py
+kv-no-card-fill	KeysView.qml	color: view.pane	color: "transparent"	qml	harness/tests/run162.py
+kv-chord-loose	KeysView.qml	x: part.modelData.joined ? -Style.space(3) : 0	x: 0	qml	harness/tests/run162.py
+kv-sep-dim	KeysView.qml	color: view.host.quiet\n          font.pixelSize: Style.font.caption\n        }\n      }	color: view.host.dim\n          font.pixelSize: Style.font.caption\n        }\n      }	qml	harness/tests/run162.py
+kv-note-loud	KeysView.qml	text: keyRow.note; color: view.host.quiet	text: keyRow.note; color: view.host.foreground	qml	harness/tests/run162.py
+kv-caps-narrow	KeysView.qml	readonly property real capsWidth: Style.space(122)	readonly property real capsWidth: Style.space(90)	qml	harness/tests/run162.py
+kv-tall-rows	KeysView.qml	implicitHeight: Style.space(26)	implicitHeight: Style.space(30)	qml	harness/tests/run162.py
+kv-old-title	KeysView.qml	font { pixelSize: Style.font.subtitle; bold: true }	font { pixelSize: Style.font.bodySmall; bold: true }	qml	harness/tests/run162.py
+kv-note-in-words	KeysView.qml	readonly property string what: String(modelData[1]).split(" · ")[0]	readonly property string what: String(modelData[1])	qml	harness/tests/run162.py
