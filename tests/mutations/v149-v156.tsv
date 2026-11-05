@@ -28,3 +28,80 @@ tip-name-only	BotsRow.qml	anchors.leftMargin: -(dot.width + bot.spacing); 	 	qml
 idle-name-bright	BotsRow.qml	color: bot.busy ? row.host.foreground : row.host.dim	color: row.host.foreground	qml	harness/tests/run151.py
 idle-dot-filled	BotsRow.qml	color: bot.modelData.state === "working" ? bot.tint : "transparent"	color: bot.modelData.state === "working" ? bot.tint : row.host.dim	qml	harness/tests/run151.py
 idle-last	BotsRow.qml	model: row.states	model: row.states.slice().sort(function(a, b) { return (a.state === "idle") - (b.state === "idle") })	qml	harness/tests/run151.py
+# --- from v152.tsv
+# v0.1.52 a quieter board (v152 design A); qml rows: tests/harness/tests/run152.py
+h-title-dot	BoardHeader.qml	" / " + host.boardName	" · " + host.boardName	qml	harness/tests/run152.py
+h-chevron-title	BoardHeader.qml	color: titleMouse.containsMouse ? host.accent : host.quiet	color: title.color	qml	harness/tests/run152.py
+h-star-accent	BoardHeader.qml	color: defaultMouse.containsMouse ? host.accent : host.dim	color: host.onDefault || defaultMouse.containsMouse ? host.accent : host.dim	qml	harness/tests/run152.py
+h-columns-gone	BoardHeader.qml	visible: host.view === "board" && host.boardState === "ready" && host.setup === ""	visible: false	qml	harness/tests/run152.py
+h-columns-everywhere	BoardHeader.qml	visible: host.view === "board" && host.boardState === "ready" && host.setup === ""	visible: true	qml	harness/tests/run152.py
+h-columns-no-toggle	BoardHeader.qml	onClicked: host.columnChips = !host.columnChips	onClicked: {}	qml	harness/tests/run152.py
+h-columns-no-count	BoardHeader.qml	(hiddenCount > 0 ? " " + hiddenCount : "")	""	qml	harness/tests/run152.py
+b-quiet-is-dim	Board.qml	readonly property color quiet: Qt.tint(foreground, Qt.rgba(background.r, background.g, background.b, 0.55))	readonly property color quiet: dim	qml	harness/tests/run152.py
+s-status-dim	BoardHeader.qml	!host.cached ? host.quiet : host.accent	!host.cached ? host.dim : host.accent	qml	harness/tests/run152.py
+c-chips-always	BoardView.qml	    visible: view.host.columnChips\n	    visible: true\n	qml	harness/tests/run152.py
+c-chips-gap-stays	BoardView.qml	topMargin: chips.visible ? view.host.gap : 0	topMargin: view.host.gap	qml	harness/tests/run152.py
+c-chips-height	BoardView.qml	height: visible ? implicitHeight : 0	height: implicitHeight	qml	harness/tests/run152.py
+k-pane-border	BoardView.qml	border { width: column.dropHot ? 2 : 0; color: column.tint }	border { width: column.dropHot ? 2 : 1; color: column.tint }	qml	harness/tests/run152.py
+k-count-dim	BoardView.qml	text: Logic.countLabel(column.modelData); color: view.host.quiet; font.pixelSize	text: Logic.countLabel(column.modelData); color: view.host.dim; font.pixelSize	qml	harness/tests/run152.py
+k-caps	BoardView.qml	font { bold: true; pixelSize: Style.font.bodySmall }	font { bold: true; pixelSize: Style.font.bodySmall; capitalization: Font.AllUppercase }	qml	harness/tests/run152.py
+k-name-always-bright	BoardView.qml	color: headerMouse.containsMouse || column.issues.length > 0 ? view.host.foreground : view.host.dim	color: view.host.foreground	qml	harness/tests/run152.py
+k-strip-count-bright	BoardView.qml	text: Logic.countLabel(column.modelData); color: view.host.dim; font.pixelSize	text: Logic.countLabel(column.modelData); color: view.host.foreground; font.pixelSize	qml	harness/tests/run152.py
+k-strip-name-caps	BoardView.qml	color: stripMouse.containsMouse ? view.host.foreground : view.host.quiet\n	color: stripMouse.containsMouse ? view.host.foreground : view.host.quiet; font.capitalization: Font.AllUppercase\n	qml	harness/tests/run152.py
+k-rule-back	BoardView.qml	              // Dot in the column's colour, the name, the count as a quiet number.\n	              Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: Math.max(1, Style.space(2)); color: column.tint }\n	qml	harness/tests/run152.py
+d-iid-in-title	BoardView.qml	text: card.modelData.title\n	text: "#" + card.modelData.iid + "  " + card.modelData.title\n	qml	harness/tests/run152.py
+d-iid-dim	BoardView.qml	text: "#" + card.modelData.iid\n                    color: view.host.quiet	text: "#" + card.modelData.iid\n                    color: view.host.dim	qml	harness/tests/run152.py
+d-meta-dim	BoardView.qml	Logic.age(card.modelData.createdAt, view.host.updatedAt)\n                    color: view.host.quiet	Logic.age(card.modelData.createdAt, view.host.updatedAt)\n                    color: view.host.dim	qml	harness/tests/run152.py
+d-card-outline	BoardView.qml	hovered ? column.tint : "transparent" }	hovered ? column.tint : Qt.rgba(fg.r, fg.g, fg.b, 0.1) }	qml	harness/tests/run152.py
+d-empty-italic	BoardView.qml	              leftPadding: Style.space(2)\n              color: view.host.quiet	              leftPadding: Style.space(2)\n              color: view.host.dim; font.italic: true	qml	harness/tests/run152.py
+d-bots-rule	BotsRow.qml	  // (0.1.52: no rule under the row; the gap to the board separates it.)	  Rectangle { anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom; height: 1; color: row.host.faint }	qml	harness/tests/run152.py
+# --- from v153.tsv
+# v0.1.53 Settings in four sections (v152 design A); qml rows: tests/harness/tests/run153.py
+s-no-general	SettingsView.qml	      Heading { text: "General" }\n	      // (no heading)\n	qml	harness/tests/run153.py
+s-rule-strong	SettingsView.qml	height: 1; color: Qt.rgba(view.fg.r, view.fg.g, view.fg.b, 0.12)	height: 1; color: Qt.rgba(view.fg.r, view.fg.g, view.fg.b, 0.3)	qml	harness/tests/run153.py
+s-no-bots-rule	SettingsView.qml	      Rule {}\n      Item { width: 1; height: Style.space(2) }\n      BotsSection {	      Item { width: 1; height: Style.space(2) }\n      BotsSection {	qml	harness/tests/run153.py
+s-heading-big	SettingsView.qml	font { pixelSize: Style.font.caption; bold: true; capitalization: Font.AllUppercase; letterSpacing: 1 }	font { pixelSize: Style.font.bodySmall; bold: true; capitalization: Font.AllUppercase; letterSpacing: 1 }	qml	harness/tests/run153.py
+s-refresh-heading	SettingsView.qml	Label { id: refreshHeading;	Heading { id: refreshHeading;	qml	harness/tests/run153.py
+s-seg-filled	SettingsView.qml	color: current ? Qt.rgba(view.host.accent.r, view.host.accent.g, view.host.accent.b, 0.18) :	color: current ? view.host.accent :	qml	harness/tests/run153.py
+s-seg-text-bg	SettingsView.qml	color: segment.current ? view.host.accent :	color: segment.current ? view.host.background :	qml	harness/tests/run153.py
+s-seg-border	SettingsView.qml	          border.width: 0\n	          border { width: 1; color: view.line }\n	qml	harness/tests/run153.py
+s-help-dim	SettingsView.qml	wrapMode: Text.Wrap; color: view.host.quiet; font.pixelSize: Style.font.caption }	wrapMode: Text.Wrap; color: view.host.dim; font.pixelSize: Style.font.caption }	qml	harness/tests/run153.py
+s-unaligned	SettingsView.qml	            width: Math.max(implicitWidth, Math.floor((view.width - Style.space(8) - 3 * Style.space(6)) / 4))\n	            // (natural width)\n	qml	harness/tests/run153.py
+s-check-filled	SettingsView.qml	color: on ? Qt.rgba(view.host.accent.r, view.host.accent.g, view.host.accent.b, 0.18) : "transparent"	color: on ? view.host.accent : "transparent"	qml	harness/tests/run153.py
+s-tick-bg	SettingsView.qml	visible: parent.on; text: "\uf00c"; color: view.host.accent;	visible: parent.on; text: "\uf00c"; color: view.host.background;	qml	harness/tests/run153.py
+s-off-border	SettingsView.qml	hot ? view.host.foreground : Qt.rgba(view.fg.r, view.fg.g, view.fg.b, 0.3) }	hot ? view.host.foreground : view.host.dim }	qml	harness/tests/run153.py
+s-name-always-fg	SettingsView.qml	text: chk.modelData.name; color: chk.on ? view.host.foreground : view.host.dim;	text: chk.modelData.name; color: view.host.foreground;	qml	harness/tests/run153.py
+s-account-fg	SettingsView.qml	: view.confirming ? view.host.foreground : view.host.dim	: view.host.foreground	qml	harness/tests/run153.py
+s-title-small	SettingsView.qml	text: "Settings"; font { pixelSize: Style.font.subtitle;	text: "Settings"; font { pixelSize: Style.font.bodySmall;	qml	harness/tests/run153.py
+b-heading-big	BotsSection.qml	    font { pixelSize: Style.font.caption; bold: true; capitalization: Font.AllUppercase; letterSpacing: 1 }\n  }\n  // A setting's name	    font { pixelSize: Style.font.bodySmall; bold: true; capitalization: Font.AllUppercase; letterSpacing: 1 }\n  }\n  // A setting's name	qml	harness/tests/run153.py
+b-intro-dim	BotsSection.qml	width: parent.width; wrapMode: Text.Wrap; color: sec.host.quiet; font.pixelSize: Style.font.caption	width: parent.width; wrapMode: Text.Wrap; color: sec.host.dim; font.pixelSize: Style.font.caption	qml	harness/tests/run153.py
+b-help-below	BotsSection.qml	      Hint { anchors.baseline: busyCaption.baseline; wrapMode: Text.NoWrap; text: "Open and Closed never count." }\n    }\n	    }\n    Hint { width: parent.width; text: "Open and Closed never count." }\n	qml	harness/tests/run153.py
+b-unaligned	BotsSection.qml	    width: Math.max(implicitWidth, Math.floor((sec.width - 3 * Style.space(6)) / 4))\n	    // (natural width)\n	qml	harness/tests/run153.py
+b-check-filled	BotsSection.qml	color: check.on ? Qt.rgba(sec.host.accent.r, sec.host.accent.g, sec.host.accent.b, 0.18) : "transparent"	color: check.on ? sec.host.accent : "transparent"	qml	harness/tests/run153.py
+b-list-title	BotsSection.qml	text: "On " + sec.host.project	text: "Bots on " + sec.host.project	qml	harness/tests/run153.py
+b-boxed	BotsSection.qml	    color: "transparent"\n    border { width: 0;	    color: Qt.rgba(sec.host.foreground.r, sec.host.foreground.g, sec.host.foreground.b, 0.035)\n    border { width: 1;	qml	harness/tests/run153.py
+b-bold-names	BotsSection.qml	            font.pixelSize: Style.font.bodySmall\n          }\n          Row {	            font { pixelSize: Style.font.bodySmall; bold: true }\n          }\n          Row {	qml	harness/tests/run153.py
+b-rule-dim	BotsSection.qml	color: sec.host.quiet; font.pixelSize: Style.font.bodySmall\n              text: !bot.ok	color: sec.host.dim; font.pixelSize: Style.font.bodySmall\n              text: !bot.ok	qml	harness/tests/run153.py
+# --- from v154.tsv
+# v0.1.54: the quiet Merge requests view. qml rows: tests/harness/tests/run154.py
+m-underline-all	components/ScopedList.qml	            visible: tab.on\n	            visible: true\n	qml	harness/tests/run154.py
+m-underline-dim	components/ScopedList.qml	            height: 2; radius: 1\n            color: view.host.accent	            height: 2; radius: 1\n            color: view.host.dim	qml	harness/tests/run154.py
+m-tab-off-dim	components/ScopedList.qml	tabMouse.containsMouse ? view.host.dim : view.host.quiet	tabMouse.containsMouse ? view.host.dim : view.host.dim	qml	harness/tests/run154.py
+m-tab-on-accent	components/ScopedList.qml	color: tab.on ? view.host.foreground :	color: tab.on ? view.host.accent :	qml	harness/tests/run154.py
+m-tabs-left	components/ScopedList.qml	      anchors { right: parent.right; verticalCenter: parent.verticalCenter }\n      spacing: Style.space(14)	      anchors { left: parent.left; leftMargin: Style.space(140); verticalCenter: parent.verticalCenter }\n      spacing: Style.space(14)	qml	harness/tests/run154.py
+m-count-dim	components/ScopedList.qml	objectName: view.names.count; text: String(item.modelData.count || 0); color: view.host.quiet	objectName: view.names.count; text: String(item.modelData.count || 0); color: view.host.dim	qml	harness/tests/run154.py
+m-empty-dim	components/ScopedList.qml	text: item.modelData.text || ""\n            color: view.host.quiet	text: item.modelData.text || ""\n            color: view.host.dim	qml	harness/tests/run154.py
+m-empty-indent	components/ScopedList.qml	            anchors.verticalCenter: parent.verticalCenter\n            text: item.modelData.text	            leftPadding: Style.space(8)\n            anchors.verticalCenter: parent.verticalCenter\n            text: item.modelData.text	qml	harness/tests/run154.py
+m-row-outline	components/ScopedList.qml	            border.width: 0\n	            border { width: current ? 1 : 0; color: view.host.accent }\n	qml	harness/tests/run154.py
+m-row-heavy	components/ScopedList.qml	view.host.foreground.b, 0.05) : "transparent"	view.host.foreground.b, 0.3) : "transparent"	qml	harness/tests/run154.py
+m-row-all-filled	components/ScopedList.qml	color: current ? Qt.rgba(	color: true ? Qt.rgba(	qml	harness/tests/run154.py
+m-bar-all	components/ScopedList.qml	              visible: rowBox.current\n	              visible: true\n	qml	harness/tests/run154.py
+m-bar-dim	components/ScopedList.qml	width: 2; height: parent.height - Style.space(12); radius: 1\n              color: view.host.accent	width: 2; height: parent.height - Style.space(12); radius: 1\n              color: view.host.dim	qml	harness/tests/run154.py
+m-bar-full	components/ScopedList.qml	width: 2; height: parent.height - Style.space(12);	width: 2; height: parent.height;	qml	harness/tests/run154.py
+m-bar-inset	components/ScopedList.qml	anchors { left: parent.left; verticalCenter: parent.verticalCenter }\n              width: 2	anchors { left: parent.left; leftMargin: Style.space(4); verticalCenter: parent.verticalCenter }\n              width: 2	qml	harness/tests/run154.py
+m-status-dim	MrsView.qml	color: mr.status.color !== "" ? mr.status.color : view.host.dim\n	color: view.host.dim\n	qml	harness/tests/run154.py
+m-meta-dim	MrsView.qml	        elide: Text.ElideRight\n        color: view.host.quiet	        elide: Text.ElideRight\n        color: view.host.dim	qml	harness/tests/run154.py
+m-age-dim	MrsView.qml	text: Logic.age(mr.row.updatedAt); color: view.host.quiet	text: Logic.age(mr.row.updatedAt); color: view.host.dim	qml	harness/tests/run154.py
+m-tab-no-click	components/ScopedList.qml	onClicked: view.setMode(tab.modelData.mode)	onClicked: {}	qml	harness/tests/run154.py
+m-heading-back	components/ScopedList.qml	    implicitHeight: tabs.implicitHeight\n	    implicitHeight: tabs.implicitHeight\n    BoardText { x: 300; text: "Merge requests" }\n	qml	harness/tests/run154.py
+m-close-back	components/ScopedList.qml	    implicitHeight: tabs.implicitHeight\n	    implicitHeight: tabs.implicitHeight\n    GlyphButton { x: 300; host: view.host; glyph: "\uf00d"; onClicked: view.host.back() }\n	qml	harness/tests/run154.py
