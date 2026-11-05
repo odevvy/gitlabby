@@ -29,6 +29,7 @@
       "refreshIntervalSec": 60,
       "openLinks": "browser",
       "iconUnlit": false,
+      "showAvatars": true,
       "defaultCollapsed": [
         "closed",
         "research",

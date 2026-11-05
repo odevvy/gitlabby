@@ -94,6 +94,10 @@ Panel {
   readonly property bool iconUnlit: saved("iconUnlit", false) === true
   readonly property bool iconLit: !iconUnlit && !!feed && feed.unseenAlerts > 0
   function setIconUnlit(on) { persist({ iconUnlit: on === true }) }
+  // Avatar pictures come from outside sites (Gravatar and the like), which see
+  // the shell's IP; off, every avatar is its initials circle (Avatar.qml).
+  readonly property bool showAvatars: saved("showAvatars", true) !== false
+  function setShowAvatars(on) { persist({ showAvatars: on === true }) }
   readonly property string linkMode: String(saved("openLinks", "browser")) === "app" ? "app" : "browser"
   function setLinkMode(mode) { persist({ openLinks: mode === "app" ? "app" : "browser" }) }
   // The interval actually used: the setting, faster while cards move, slower
