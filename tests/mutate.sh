@@ -4,8 +4,7 @@
 # test, a path under tests/: run.sh (kind sh), logic.test.js (kind node) or a
 # harness test such as harness/tests/run141.py (kind qml). A mutation must make
 # its test fail. \n in from/to is a newline. Lines starting with # are notes.
-# Usage: mutate.sh <plugin-dir> <spec>... For rows without a test column (the old
-# per-release files) qml rows use the harness test given with --qml <test>.
+# Usage: mutate.sh <plugin-dir> <spec>...
 # PYTHON: an interpreter with PySide6 (python3).
 # mutate.sh --check <plugin-dir> <spec>...: only that every row's `from` is still
 # in its file and its test exists (no test runs; a second or two), so a row can't
@@ -19,7 +18,7 @@ if [[ $1 == --check ]]; then
       src=$(cat "$S/$file" 2>/dev/null) || src=""
       [[ $src == *"${from//\\n/$'\n'}"* ]] || { echo "stale $(basename "$spec") $name"; bad=1; }
       case $kind:$test in
-        sh:run.sh|node:logic.test.js|sh:|node:|qml:) ;;
+        sh:run.sh|node:logic.test.js) ;;
         qml:harness/tests/*.py) [[ -f $S/tests/$test ]] || { echo "notest $(basename "$spec") $name"; bad=1; } ;;
         *) echo "notest $(basename "$spec") $name"; bad=1 ;;
       esac
@@ -27,8 +26,7 @@ if [[ $1 == --check ]]; then
   done
   exit $bad
 fi
-S=$(cd "$1" && pwd); shift; survived=0; qt=""
-[[ $1 == --qml ]] && { qt=$2; shift 2; }
+S=$(cd "$1" && pwd); shift; survived=0
 w=$(mktemp -d); trap 'rm -rf "$w"' EXIT
 for spec in "$@"; do
 while IFS= read -r line; do
@@ -39,10 +37,7 @@ while IFS= read -r line; do
   F="$from" T2="$to" python3 -c "
 import os; p='$w/p/$file'; s=open(p).read(); f=os.environ['F'].replace('\\\\n','\n'); t=os.environ['T2'].replace('\\\\n','\n')
 assert f in s; open(p,'w').write(s.replace(f,t,1))" 2>/dev/null || { echo "?? $name: pattern not found"; survived=1; continue; }
-  [[ -z $test ]] && case $kind in sh) test=run.sh ;; node) test=logic.test.js ;; esac
   case $kind:$test in
-    qml:) [[ -n $qt ]] || { echo "?? $name: no test (--qml)"; survived=1; continue; }
-      out=$("${PYTHON:-python3}" "$qt" "$w/p" 2>&1 | grep -E '^passed|LOAD FAILED|Traceback' | head -1) ;;
     sh:run.sh) out=$(bash "$w/p/tests/run.sh" 2>&1 | tail -1) ;;
     node:logic.test.js) out=$(cd "$w/p" && node --test tests/logic.test.js 2>&1 | sed -n 's/^ℹ fail \([0-9]*\)$/failed \1/p') ;;
     qml:harness/tests/*.py) out=$("${PYTHON:-python3}" "$S/tests/$test" "$w/p" 2>&1 | grep -E '^passed|LOAD FAILED|Traceback' | head -1) ;;

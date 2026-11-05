@@ -894,8 +894,10 @@ The QML views have offscreen tests too: `tests/harness/` loads a copy of
 the plugin with stand-ins for Quickshell and Omarchy's `qs.Commons`/`qs.Ui`
 (`tests/harness/stubs`, and `tests/harness15` at 1.5x scale) into PySide6,
 answers its board-fetch calls with fixtures, and checks what is on screen.
-`tests/mutations/` lists deliberate bugs (one per line: name, file, from,
-to, sh|qml|node); each must make its test fail. They need a Python with
+`tests/mutations/` lists deliberate bugs in eight files (one per line: name,
+file, from, to, sh|qml|node, test). The test column names what must fail:
+`run.sh`, `logic.test.js` or a view test such as `harness/tests/run144.py`.
+They need a Python with
 PySide6, kept out of the system Python:
 
 ```bash
@@ -903,8 +905,8 @@ python -m venv ~/.cache/ogb-tests && ~/.cache/ogb-tests/bin/pip install PySide6-
 export PYTHON=~/.cache/ogb-tests/bin/python
 tests/harness/all.sh                                  # every view test, 4 at a time (about 1.5 min)
 $PYTHON tests/harness/tests/run144.py .               # one of them
-tests/mutate.sh . tests/mutations/v144.tsv tests/harness/tests/run144.py
-tests/mutate.sh --check . tests/mutations/*.tsv       # rows whose pattern is gone (no tests run)
+tests/mutate.sh . tests/mutations/v141b-v148.tsv      # each row against its own test
+tests/mutate.sh --check . tests/mutations/*.tsv       # rows whose pattern or test is gone (no tests run)
 ```
 
 `HARNESS_JOBS` sets how many view tests run at once. The tests on two
@@ -912,9 +914,10 @@ screens (one service, two boards) share `tests/harness/two.py`; waits on
 an animation use `Harness.until`, not a fixed sleep. A view test removes its temp copy
 even when it stops early, and `all.sh` runs them in a TMPDIR of its own that
 it deletes at the end. `tests/run.sh` fails
-when a mutation row no longer matches its file, apart from the ones listed
-in `tests/mutations/stale.known` (none since 0.1.82: the 54 rows whose code
-was rewritten were dropped; they mutated nothing). In `board-fetch`, merge
+when a mutation row no longer matches its file or names no existing test,
+apart from the ones listed in `tests/mutations/stale.known` (none since
+0.1.82: the 54 rows whose code was rewritten were dropped; they mutated
+nothing). In `board-fetch`, merge
 requests and to-dos read the same way: `mrs_graphql || mrs_rest`,
 `todos_graphql || todos_rest`.
 
