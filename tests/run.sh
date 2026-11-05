@@ -1244,6 +1244,7 @@ check "no token leak" '.' "$(grep -qiE 'glpat|bearer' <<<"$all" && echo false ||
 stale=$(bash "$here/mutate.sh" --check "$here/.." "$here"/mutations/*.tsv)
 check "mutation rows: none stale but the known ones" '.' "$([[ $stale == "$(<"$here/mutations/stale.known")" ]] && echo true || echo false)"
 check "mutation rows: a moved pattern shows as stale" '.' "$(printf 'x\tboard-fetch\tno such text\tq\tsh\n' >"$work/m.tsv"; [[ $(bash "$here/mutate.sh" --check "$here/.." "$work/m.tsv") == "stale m.tsv x" ]] && echo true || echo false)"
+check "mutation rows: a row naming a missing test shows as notest" '.' "$(printf 'y\tBoard.qml\timport QtQuick\tq\tqml\tharness/tests/nope.py\n' >"$work/n.tsv"; [[ $(bash "$here/mutate.sh" --check "$here/.." "$work/n.tsv") == "notest n.tsv y" ]] && echo true || echo false)"
 
 echo "passed $pass, failed $fail"
 ((fail == 0))
