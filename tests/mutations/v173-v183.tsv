@@ -1,0 +1,47 @@
+# Mutation rows from v173.tsv to v183.tsv (folded in 0.1.85). Columns: name, file, from, to, kind, test.
+# --- from v173.tsv
+mode-always-app	Board.qml	String(saved("openLinks", "browser")) === "app" ? "app" : "browser"	"app"	qml	harness/tests/run173.py
+mode-default-app	Board.qml	String(saved("openLinks", "browser")) === "app" ? "app" : "browser"	String(saved("openLinks", "app")) !== "browser" ? "app" : "browser"	qml	harness/tests/run173.py
+mode-loose	Board.qml	String(saved("openLinks", "browser")) === "app"	String(saved("openLinks", "browser")).toLowerCase().indexOf("app") >= 0	qml	harness/tests/run173.py
+open-ignores-mode	Board.qml	[linkMode === "app" ? "omarchy-launch-webapp" : "omarchy-launch-browser", link]	["omarchy-launch-browser", link]	qml	harness/tests/run173.py
+open-modes-swapped	Board.qml	linkMode === "app" ? "omarchy-launch-webapp" : "omarchy-launch-browser"	linkMode === "app" ? "omarchy-launch-browser" : "omarchy-launch-webapp"	qml	harness/tests/run173.py
+open-stays	Board.qml	"omarchy-launch-browser", link])\n    close()	"omarchy-launch-browser", link])	qml	harness/tests/run173.py
+save-drops-others	Board.qml	persist({ openLinks	bar.shell.updateEntryInline(moduleName, { id: moduleName, openLinks	qml	harness/tests/run173.py
+save-raw	Board.qml	{ openLinks: mode === "app" ? "app" : "browser" }	{ openLinks: "app" }	qml	harness/tests/run173.py
+seg-current-wrong	SettingsView.qml	readonly property bool current: view.host.linkMode === modelData.mode	readonly property bool current: modelData.mode === "browser"	qml	harness/tests/run173.py
+seg-order	SettingsView.qml	model: [{ mode: "browser", label: "Browser tab" }, { mode: "app", label: "App window" }]	model: [{ mode: "app", label: "App window" }, { mode: "browser", label: "Browser tab" }]	qml	harness/tests/run173.py
+row-left	SettingsView.qml	x: linkRow.oneLine ? linkRow.width - width : 0	x: 0	qml	harness/tests/run173.py
+note-gone	SettingsView.qml	Help { objectName: "linkNote"; text: "App window: its own window, no tabs. Needs a Chromium-based browser." }	Item { objectName: "linkNote" }	qml	harness/tests/run173.py
+note-loud	SettingsView.qml	Help { objectName: "linkNote"	Label { objectName: "linkNote"	qml	harness/tests/run173.py
+row-no-gap	SettingsView.qml	      Item { width: 1; height: Style.space(2) }\n      // Open links in	      // Open links in	qml	harness/tests/run173.py
+# --- from v174.tsv
+notify-ignores-links	logic/alerts.js	links === "app" ? "omarchy-launch-webapp" : "omarchy-launch-browser"	"omarchy-launch-browser"	node	logic.test.js
+notify-xdg-again	logic/alerts.js	links === "app" ? "omarchy-launch-webapp" : "omarchy-launch-browser"	links === "app" ? "omarchy-launch-webapp" : "xdg-open"	node	logic.test.js
+notify-always-app	logic/alerts.js	links === "app" ? "omarchy-launch-webapp"	links !== "nope" ? "omarchy-launch-webapp"	node	logic.test.js
+notify-loose	logic/alerts.js	links === "app" ?	String(links).toLowerCase() === "app" ?	node	logic.test.js
+notify-any-url	logic/alerts.js	if (httpsUrl(ev.url)) argv	if (ev.url) argv	node	logic.test.js
+watch-no-links	Board.qml	, links: linkMode } : null	 } : null	qml	harness/tests/run174.py
+watch-links-fixed	Board.qml	links: linkMode }	links: "app" }	qml	harness/tests/run174.py
+svc-ignores-links	BoardService.qml	Logic.notifyArgv(ev, cfg.links)	Logic.notifyArgv(ev)	qml	harness/tests/run174.py
+# --- from v175.tsv
+count-none	BoardService.qml	unseenAlerts += events.length	var none = events.length	qml	harness/tests/run175.py
+count-once-per-answer	BoardService.qml	unseenAlerts += events.length	unseenAlerts = 1	qml	harness/tests/run175.py
+seen-noop	BoardService.qml	function seenAlerts() { unseenAlerts = 0 }	function seenAlerts() {}	qml	harness/tests/run175.py
+open-keeps-dot	Board.qml	if (opened) { feed.seenAlerts(); view	if (opened) { view	qml	harness/tests/run175.py
+open-popup-lights	Board.qml	function onUnseenAlertsChanged() { if (root.opened && root.feed.unseenAlerts > 0) root.feed.seenAlerts() }	function onUnseenAlertsChanged() {}	qml	harness/tests/run175.py
+dot-always	Board.qml	visible: root.iconLit	visible: true	qml	harness/tests/run175.py
+dot-big	Board.qml	width: Style.space(5); height: width; radius: width / 2	width: Style.space(9); height: width; radius: width / 2	qml	harness/tests/run175.py
+dot-square	Board.qml	width: Style.space(5); height: width; radius: width / 2	width: Style.space(5); height: width; radius: 0	qml	harness/tests/run175.py
+dot-left	Board.qml	x: Math.round(button.width / 2 + Style.space(4))	x: Math.round(button.width / 2 - Style.space(9))	qml	harness/tests/run175.py
+dot-low	Board.qml	y: Math.round(button.height / 2 - Style.space(9))	y: Math.round(button.height / 2 + Style.space(2))	qml	harness/tests/run175.py
+dot-loud	Board.qml	    color: root.accent\n  }\n  Connections	    color: "red"\n  }\n  Connections	qml	harness/tests/run175.py
+tip-always	Board.qml	(root.iconLit ? " · an alert came" : "")	" · an alert came"	qml	harness/tests/run175.py
+unlit-ignored	Board.qml	!iconUnlit && !!feed	!!feed	qml	harness/tests/run175.py
+unlit-loose	Board.qml	saved("iconUnlit", false) === true	!!saved("iconUnlit", false)	qml	harness/tests/run175.py
+unlit-default-on	Board.qml	saved("iconUnlit", false) === true	saved("iconUnlit", true) !== false	qml	harness/tests/run175.py
+unlit-save-raw	Board.qml	{ iconUnlit: on === true }	{ iconUnlit: on }	qml	harness/tests/run175.py
+box-ignores-setting	SettingsView.qml	on: view.host.iconUnlit; hot	on: false; hot	qml	harness/tests/run175.py
+click-always-true	SettingsView.qml	view.host.setIconUnlit(!view.host.iconUnlit)	view.host.setIconUnlit(true)	qml	harness/tests/run175.py
+click-box-only	SettingsView.qml	width: unlitLine.width + Style.space(8)	width: Style.space(14)	qml	harness/tests/run175.py
+unlit-note-loud	SettingsView.qml	Help { objectName: "unlitNote"	Label { objectName: "unlitNote"	qml	harness/tests/run175.py
+unlit-note-words	SettingsView.qml	Otherwise a small dot on it after an alert, until you open the board.	A dot after an alert.	qml	harness/tests/run175.py
