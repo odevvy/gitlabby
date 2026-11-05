@@ -172,3 +172,33 @@ pace-words-no-alerts	logic/board.js	return t + (closedToo ? " · also while clos
 note-gone	SettingsView.qml	      Help { text: "Slows down, up to 4x	      BoardText { visible: false; text: "Slows down, up to 4x	qml	harness/tests/run170.py
 note-loud	SettingsView.qml	      Help { text: "Slows down, up to 4x	      Label { text: "Slows down, up to 4x	qml	harness/tests/run170.py
 note-dropped	SettingsView.qml	      Help { text: "Slows down, up to 4x, while the board stays quiet; any change brings it back." }\n	\n	qml	harness/tests/run170.py
+# --- from v171.tsv
+# v0.1.71 (v171 design 1A, 2, 3A): even gaps, one Updated on Merge requests, the read-only chip (qml: tests/harness/tests/run171.py)
+bots-padding-back	BotsRow.qml	implicitHeight: flow.implicitHeight	implicitHeight: flow.implicitHeight + Style.space(10)	qml	harness/tests/run171.py
+bots-padding-small	BotsRow.qml	implicitHeight: flow.implicitHeight	implicitHeight: flow.implicitHeight + Style.space(3)	qml	harness/tests/run171.py
+chip-loud	BoardHeader.qml	textColor: host.quiet	textColor: host.foreground	qml	harness/tests/run171.py
+chip-far	BoardHeader.qml	anchors { left: tabs.right; leftMargin: Style.space(10); verticalCenter: parent.verticalCenter }\n    label: "read-only"	anchors { left: tabs.right; leftMargin: Style.space(24); verticalCenter: parent.verticalCenter }\n    label: "read-only"	qml	harness/tests/run171.py
+status-over-chip	BoardHeader.qml	left: readOnlyChip.visible ? readOnlyChip.right : header.tabsShown	left: false ? readOnlyChip.right : header.tabsShown	qml	harness/tests/run171.py
+# --- from v172.tsv
+copy-any-url	Board.qml	var link = row ? Logic.httpsUrl(row.url) : ""	var link = row ? String(row.url || "") : ""	qml	harness/tests/run172.py
+copy-opens	Board.qml	Quickshell.execDetached(["wl-copy", link])	Quickshell.execDetached(["omarchy-launch-browser", link])	qml	harness/tests/run172.py
+copy-closes	Board.qml	    copiedTimer.restart()\n    return true	    copiedTimer.restart()\n    close()\n    return true	qml	harness/tests/run172.py
+note-not-shown	Board.qml	copiedNote !== "" ? copiedNote : updating	updating	qml	harness/tests/run172.py
+note-stays	Board.qml	onTriggered: root.copiedNote = ""	onTriggered: {}	qml	harness/tests/run172.py
+note-no-restart	Board.qml	copiedTimer.restart()	copiedTimer.start()	qml	harness/tests/run172.py
+note-loud	BoardHeader.qml	host.boardState === "ready" && host.message === ""	host.boardState === "ready" && host.message === "" && host.copiedNote === ""	qml	harness/tests/run172.py
+y-mr-hash	BoardKeys.qml	host.copyLink(mrsView.rows[mrsView.cursor], "!")	host.copyLink(mrsView.rows[mrsView.cursor], "#")	qml	harness/tests/run172.py
+y-mr-first	BoardKeys.qml	mrsView.rows[mrsView.cursor]	mrsView.rows[0]	qml	harness/tests/run172.py
+y-board-off	BoardKeys.qml	host.view === "board" ? host.cursorIssue() : null, "#")	null, "#")	qml	harness/tests/run172.py
+y-issue-off	BoardKeys.qml	host.copyLink(host.view === "issue" ? issueView.issue : host	host.copyLink(host.view === "nope" ? issueView.issue : host	qml	harness/tests/run172.py
+card-right-off	BoardView.qml	acceptedButtons: Qt.LeftButton | Qt.RightButton\n                  onPressed	onPressed	qml	harness/tests/run172.py
+card-right-opens	BoardView.qml	if (mouse.button === Qt.RightButton) { view.host.copyLink(card.modelData, "#"); return }	if (mouse.button === Qt.RightButton) { view.host.openIssue(card.modelData); return }	qml	harness/tests/run172.py
+card-right-drags	BoardView.qml	if (!(pressedButtons & Qt.LeftButton)) return	if (!pressed) return	qml	harness/tests/run172.py
+card-right-press	BoardView.qml	onPressed: function(mouse) { if (mouse.button !== Qt.LeftButton) return; pressedAt	onPressed: function(mouse) { pressedAt	qml	harness/tests/run172.py
+card-left-copies	BoardView.qml	if (mouse.button === Qt.RightButton) { view.host.copyLink(card.modelData, "#"); return }	if (true) { view.host.copyLink(card.modelData, "#"); return }	qml	harness/tests/run172.py
+mr-right-off	components/ScopedList.qml	acceptedButtons: Qt.LeftButton | Qt.RightButton\n              onClicked	onClicked	qml	harness/tests/run172.py
+mr-right-opens	components/ScopedList.qml	if (mouse.button === Qt.RightButton) view.host.copyLink	if (mouse.button === Qt.NoButton) view.host.copyLink	qml	harness/tests/run172.py
+mr-left-copies	components/ScopedList.qml	if (mouse.button === Qt.RightButton) view.host.copyLink(rowBox.row, view.copySign(rowBox.row)); else view.host.openUrl(rowBox.row.url)	view.host.copyLink(rowBox.row, view.copySign(rowBox.row))	qml	harness/tests/run172.py
+keys-no-board-y	logic/board.js	    ["y", "Copy the link · or right-click"],\n    ["Shift+H / L"	    ["Shift+H / L"	node	logic.test.js
+keys-no-issue-y	logic/board.js	    ["y", "Copy the link"],\n	\n	node	logic.test.js
+keys-mr-no-right	logic/board.js	    ["y", "Copy the link · or right-click"],\n    ["r", "Refresh the lists"]	    ["y", "Copy the link"],\n    ["r", "Refresh the lists"]	node	logic.test.js

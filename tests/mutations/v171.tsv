@@ -1,6 +1,0 @@
-# v0.1.71 (v171 design 1A, 2, 3A): even gaps, one Updated on Merge requests, the read-only chip (qml: tests/harness/tests/run171.py)
-bots-padding-back	BotsRow.qml	implicitHeight: flow.implicitHeight	implicitHeight: flow.implicitHeight + Style.space(10)	qml
-bots-padding-small	BotsRow.qml	implicitHeight: flow.implicitHeight	implicitHeight: flow.implicitHeight + Style.space(3)	qml
-chip-loud	BoardHeader.qml	textColor: host.quiet	textColor: host.foreground	qml
-chip-far	BoardHeader.qml	anchors { left: tabs.right; leftMargin: Style.space(10); verticalCenter: parent.verticalCenter }\n    label: "read-only"	anchors { left: tabs.right; leftMargin: Style.space(24); verticalCenter: parent.verticalCenter }\n    label: "read-only"	qml
-status-over-chip	BoardHeader.qml	left: readOnlyChip.visible ? readOnlyChip.right : header.tabsShown	left: false ? readOnlyChip.right : header.tabsShown	qml
