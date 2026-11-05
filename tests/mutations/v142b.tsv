@@ -1,2 +1,0 @@
-labels-no-ttl	IssueView.qml	 && Date.now() - labelsAt < 300000) return	) return	qml
-labels-reuse-error	IssueView.qml	labelsState === "ready" && Date.now()	labelsState !== "loading" && labelsState !== "" && Date.now()	qml
