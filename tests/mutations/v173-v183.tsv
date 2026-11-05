@@ -153,3 +153,16 @@ k-r-off	BoardKeys.qml	    else if (key === "r" && host.view === "todos") todoVie
 k-o-off	BoardKeys.qml	    else if (key === "o" && host.view === "todos") todoView.activate()\n	\n	qml	harness/tests/run177b.py
 k-y-off	BoardKeys.qml	    else if (key === "y" && host.view === "todos") todoView.copyCurrent()\n	\n	qml	harness/tests/run177b.py
 v-order	TodoView.qml	return [["todos", "To-dos", a.todos, "No pending to-dos."],\n            ["assigned", "Assigned to you", a.assigned, "No open issues assigned to you."]]	return [["assigned", "Assigned to you", a.assigned, "No open issues assigned to you."],\n            ["todos", "To-dos", a.todos, "No pending to-dos."]]	qml	harness/tests/run177b.py
+# --- from v178.tsv
+m-check-blind	tests/mutate.sh	"* ]] || { echo "stale	"* ]] || true || { echo "stale	sh	run.sh
+# --- from v183.tsv
+signin-raw-host	logic/core.js	return h !== "" && h !== "gitlab.com" && /^[a-z0-9.-]+$/.test(h) ? "glab auth login --hostname " + h : "glab auth login"	return host && host !== "gitlab.com" ? "glab auth login --hostname " + host : "glab auth login"	node	logic.test.js
+signin-board-fixed	Board.qml	Logic.signInCommand(gitlabHost)	"glab auth login"	qml	harness/tests/run166.py
+link-check-loose	logic/markdown.js	  return Core.httpsUrl(value)\n	  return /^https:\/\//.test(value) ? value : ""\n	node	logic.test.js
+avatars-ignored	components/Avatar.qml	source: avatar.host.showAvatars ? avatar.person.avatar || "" : ""	source: avatar.person.avatar || ""	qml	harness/tests/run183.py
+avatars-default-off	Board.qml	saved("showAvatars", true) !== false	saved("showAvatars", false) === true	qml	harness/tests/run183.py
+avatars-save-raw	Board.qml	persist({ showAvatars: on === true })	persist({ showAvatars: on })	qml	harness/tests/run183.py
+circle-flat	components/Avatar.qml	color: Qt.tint(host.background, Qt.rgba(tone.r, tone.g, tone.b, 0.30))	color: host.faint	qml	harness/tests/run183.py
+circle-hue-random	components/Avatar.qml	return (Math.floor(h / 45) * 45) / 360	return Math.random()	qml	harness/tests/run183.py
+avatars-check-dead	SettingsView.qml	onClicked: view.host.setShowAvatars(!view.host.showAvatars)	onClicked: {}	qml	harness/tests/run183.py
+avatars-check-stuck	SettingsView.qml	on: view.host.showAvatars;	on: true;	qml	harness/tests/run183.py
