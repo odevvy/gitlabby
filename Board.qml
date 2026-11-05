@@ -57,7 +57,7 @@ Panel {
   readonly property string gitlabHost: Logic.serverHost(saved("gitlabHost", "gitlab.com")) || "gitlab.com"
   readonly property bool onGitlabCom: gitlabHost === "gitlab.com"
   readonly property string projectKey: Logic.serverKey(gitlabHost, project)
-  readonly property string loginCommand: "glab auth login" + (onGitlabCom ? "" : " --hostname " + gitlabHost)
+  readonly property string loginCommand: Logic.signInCommand(gitlabHost)  // runs in a shell: see Logic.signInCommand
   // The setting as saved: Settings shows it, with the error, when it isn't a
   // bare name (the board then uses gitlab.com until it is fixed there).
   readonly property string savedHost: String(saved("gitlabHost", "gitlab.com"))
