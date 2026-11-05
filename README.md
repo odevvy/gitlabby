@@ -516,6 +516,9 @@ board.
 - Cards show the title first, then one quiet line: the issue number, up to
   three assignee avatars (two plus `+N`), the comment count, and the age (`45m`, `3h`, `4d`, `2w`, `6mo`, `1y`). Avatars show initials
   until the image loads from GitLab's `https` URL, or if it doesn't.
+  The pictures often come from outside sites such as Gravatar, which see your
+  IP address. General > **Show avatars** (on by default) turns them off: every
+  avatar is then its initials circle and no picture is requested.
   Every avatar is cut round by one shared mask, so a full board keeps a
   single mask texture instead of one per avatar.
 - Collapsing or hiding a column animates in 150 ms: the column, the popup's
@@ -752,6 +755,23 @@ works; glab doesn't touch it). The token stays valid on GitLab; revoke it in
 your GitLab user settings if you need to. The saved boards in
 `~/.cache/odevvy.gitlab-board` are deleted with it, and the popup shows the
 sign-in panel.
+
+### Permissions
+
+| What | glab token scope |
+|---|---|
+| Board, issues, comments, labels, Merge requests, To-do, alerts | `read_api` is enough |
+| Moving cards, bulk moves, adding or removing labels, close and reopen, posting a comment | `api` |
+
+With a `read_api` token everything reads as usual, and each write stops with
+GitLab's refusal in the header (nothing changes on GitLab). `glab auth login`
+asks for `api` by default; create a `read_api` personal access token and paste
+it there if you only want to look.
+
+The **Sign in** button runs `glab auth login` (with `--hostname` and your
+server's name on your own GitLab) in Omarchy's floating terminal. The server
+name is checked first (letters, digits, dots and dashes only), so nothing else
+reaches that terminal's shell.
 
 ### View-only projects
 

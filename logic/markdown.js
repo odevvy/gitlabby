@@ -20,11 +20,12 @@ function people(issue) {
     .filter(function(part) { return part !== "" }).join(" · ")
 }
 // A Markdown link to open: absolute https as is, GitLab-relative paths on
-// the issue's host; anything else "".
+// the issue's host; anything else "". The same check as Board.openUrl
+// (Core.httpsUrl), so the tooltip never shows a link a click won't open.
 function linkUrl(link, issueUrl) {
   var value = String(link || "")
   if (/^\//.test(value) && issueUrl) value = String(issueUrl).replace(/^(https:\/\/[^\/]+).*$/, "$1") + value
-  return /^https:\/\//.test(value) ? value : ""
+  return Core.httpsUrl(value)
 }
 // GitLab Markdown to the HTML subset Text.RichText draws, so headings,
 // spacing, bullets and code can be styled (Text.MarkdownText can't be).

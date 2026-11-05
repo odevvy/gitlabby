@@ -36,8 +36,8 @@ q-default-not-saved	Board.qml	    } else if (p.board) {	    } else if (false) {	
 q-default-written-always	Board.qml	    } else if (p.board) {	    } else {	qml
 q-no-hostname-arg	Board.qml	concat(args, ["--hostname", gitlabHost])	concat(args)	qml
 q-cache-no-host	Board.qml	cacheProcess.command = helperCommand(["cached", "--project", project, "--board", boardId])	cacheProcess.command = [helperPath(), "cached", "--project", project, "--board", boardId]	qml
-q-login-plain	Board.qml	"glab auth login" + (onGitlabCom ? "" : " --hostname " + gitlabHost)	"glab auth login"	qml
-q-login-always	Board.qml	"glab auth login" + (onGitlabCom ? "" : " --hostname " + gitlabHost)	"glab auth login --hostname " + gitlabHost	qml
+q-login-plain	logic/core.js	? "glab auth login --hostname " + h :	? "glab auth login" :	qml
+q-login-always	logic/core.js	h !== "" && h !== "gitlab.com" && 	h !== "" && 	qml
 q-signin-fixed	Board.qml	"omarchy-launch-floating-terminal-with-presentation", loginCommand]	"omarchy-launch-floating-terminal-with-presentation", "glab auth login"]	qml
 q-no-switch	Board.qml	  onGitlabHostChanged: switchServer()	  onGitlabHostChanged: {}	qml
 q-switch-keeps-session	Board.qml	    feed.setHost(gitlabHost)\n    session++	    feed.setHost(gitlabHost)	qml

@@ -9,7 +9,9 @@ workflow:
     - if: $CI_COMMIT_BRANCH
 
 check:
-  image: alpine:3.22
+  # Pinned by digest (the multi-arch index of alpine:3.22 on 2026-11-04), so a
+  # re-pushed tag can't change what runs. To move on: docker buildx imagetools inspect alpine:3.22
+  image: alpine:3.22@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
   variables:
     # Omarchy v4.0.6 (the version on logain), pinned by commit and checksum.
     OMARCHY_COMMIT: 237f1b4071a0bff2296c6d740ba2b9fd695ebfa0

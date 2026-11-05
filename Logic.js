@@ -35,6 +35,7 @@ var savedNote = Core.savedNote
 var httpsUrl = Core.httpsUrl
 var oneLine = Core.oneLine
 var serverHost = Core.serverHost
+var signInCommand = Core.signInCommand
 var serverKey = Core.serverKey
 // labels.js
 var labelStyle = Labels.labelStyle

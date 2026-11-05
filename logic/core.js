@@ -51,6 +51,13 @@ function oneLine(text, max) {
 // The GitLab server setting, as glab's --hostname takes it: a bare name, any
 // case, with https:// and a trailing / dropped. "" when it is not one: http,
 // a port or a path (those belong in glab's own config for the host).
+// The sign-in command (Setup's Sign in runs it in a shell: Omarchy's terminal
+// wrapper is bash -c): the host only after the same check as serverHost, and
+// only letters, digits, dots and dashes, so nothing in it can reach the shell.
+function signInCommand(host) {
+  var h = serverHost(host)
+  return h !== "" && h !== "gitlab.com" && /^[a-z0-9.-]+$/.test(h) ? "glab auth login --hostname " + h : "glab auth login"
+}
 function serverHost(raw) {
   var h = String(raw === undefined || raw === null ? "" : raw).trim().toLowerCase()
   if (h.indexOf("https://") === 0) h = h.slice(8)
@@ -65,4 +72,4 @@ function serverKey(host, project) {
   return !host || host === "gitlab.com" ? project : host + ":" + project
 }
 
-if (typeof module !== "undefined") module.exports = { plainJson: plainJson, lowerList: lowerList, has: has, toggled: toggled, countLabel: countLabel, escaped: escaped, plain: plain, copied: copied, age: age, savedNote: savedNote, httpsUrl: httpsUrl, oneLine: oneLine, serverHost: serverHost, serverKey: serverKey }
+if (typeof module !== "undefined") module.exports = { plainJson: plainJson, lowerList: lowerList, has: has, toggled: toggled, countLabel: countLabel, escaped: escaped, plain: plain, copied: copied, age: age, savedNote: savedNote, httpsUrl: httpsUrl, oneLine: oneLine, serverHost: serverHost, serverKey: serverKey, signInCommand: signInCommand }
