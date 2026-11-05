@@ -1,6 +1,0 @@
-w-own-per-view	Board.qml	contentWidth: panel.fittedContentWidth(Math.max(Style.space(760),	contentWidth: panel.fittedContentWidth(Math.max(root.view === "settings" ? Style.space(520) : Style.space(760),	qml
-w-low-floor	Board.qml	contentWidth: panel.fittedContentWidth(Math.max(Style.space(760),	contentWidth: panel.fittedContentWidth(Math.max(Style.space(520),	qml
-w-not-board	Board.qml	root.shownBoardWidth) + panel.padding * 2 + Style.space(4)))	0) + panel.padding * 2 + Style.space(4)))	qml
-h-own-per-view	Board.qml	contentHeight: panel.fittedContentHeight(Style.space(640), Style.space(640))	contentHeight: panel.fittedContentHeight(keyCatcher.implicitHeight, Style.space(640))	qml
-h-no-cap	Board.qml	contentHeight: panel.fittedContentHeight(Style.space(640), Style.space(640))	contentHeight: panel.fittedContentHeight(keyCatcher.implicitHeight)	qml
-h-ignores-screen	Board.qml	contentHeight: panel.fittedContentHeight(Style.space(640), Style.space(640))	contentHeight: Style.space(640)	qml

@@ -68,3 +68,13 @@ kv-caps-narrow	KeysView.qml	readonly property real capsWidth: Style.space(122)	r
 kv-tall-rows	KeysView.qml	implicitHeight: Style.space(26)	implicitHeight: Style.space(30)	qml	harness/tests/run162.py
 kv-old-title	KeysView.qml	font { pixelSize: Style.font.subtitle; bold: true }	font { pixelSize: Style.font.bodySmall; bold: true }	qml	harness/tests/run162.py
 kv-note-in-words	KeysView.qml	readonly property string what: String(modelData[1]).split(" · ")[0]	readonly property string what: String(modelData[1])	qml	harness/tests/run162.py
+# --- from v163.tsv
+status-says-refreshing	Board.qml	    if (move) return "Moving #" + move.iid + "…"	    if (move) return "Moving #" + move.iid + "…"\n    if (refreshing) return "Refreshing…"	qml	harness/tests/run130.py
+error-over-refresh	Board.qml	refreshError !== "" && !refreshing)	refreshError !== "")	qml	harness/tests/run130.py
+# --- from v164.tsv
+w-own-per-view	Board.qml	contentWidth: panel.fittedContentWidth(Math.max(Style.space(760),	contentWidth: panel.fittedContentWidth(Math.max(root.view === "settings" ? Style.space(520) : Style.space(760),	qml	harness/tests/run134.py
+w-low-floor	Board.qml	contentWidth: panel.fittedContentWidth(Math.max(Style.space(760),	contentWidth: panel.fittedContentWidth(Math.max(Style.space(520),	qml	harness/tests/run134.py
+w-not-board	Board.qml	root.shownBoardWidth) + panel.padding * 2 + Style.space(4)))	0) + panel.padding * 2 + Style.space(4)))	qml	harness/tests/run134.py
+h-own-per-view	Board.qml	contentHeight: panel.fittedContentHeight(Style.space(640), Style.space(640))	contentHeight: panel.fittedContentHeight(keyCatcher.implicitHeight, Style.space(640))	qml	harness/tests/run134.py
+h-no-cap	Board.qml	contentHeight: panel.fittedContentHeight(Style.space(640), Style.space(640))	contentHeight: panel.fittedContentHeight(keyCatcher.implicitHeight)	qml	harness/tests/run134.py
+h-ignores-screen	Board.qml	contentHeight: panel.fittedContentHeight(Style.space(640), Style.space(640))	contentHeight: Style.space(640)	qml	harness/tests/run134.py
