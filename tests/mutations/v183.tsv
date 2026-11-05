@@ -6,3 +6,5 @@ avatars-default-off	Board.qml	saved("showAvatars", true) !== false	saved("showAv
 avatars-save-raw	Board.qml	persist({ showAvatars: on === true })	persist({ showAvatars: on })	qml
 circle-flat	components/Avatar.qml	color: Qt.tint(host.background, Qt.rgba(tone.r, tone.g, tone.b, 0.30))	color: host.faint	qml
 circle-hue-random	components/Avatar.qml	return (Math.floor(h / 45) * 45) / 360	return Math.random()	qml
+avatars-check-dead	SettingsView.qml	onClicked: view.host.setShowAvatars(!view.host.showAvatars)	onClicked: {}	qml
+avatars-check-stuck	SettingsView.qml	on: view.host.showAvatars;	on: true;	qml

@@ -279,6 +279,26 @@ Item {
         }
       }
       Help { objectName: "unlitNote"; text: "Otherwise a small dot on it after an alert, until you open the board." }
+      // Avatar pictures (Board.showAvatars); off, initials instead.
+      Item {
+        id: avatarsRow
+        objectName: "avatarsRow"
+        width: parent.width; implicitHeight: Style.space(22)
+        Row {
+          id: avatarsLine
+          anchors.verticalCenter: parent.verticalCenter
+          spacing: Style.space(8)
+          CheckBox { objectName: "avatarsCheck"; anchors.verticalCenter: parent.verticalCenter; on: view.host.showAvatars; hot: avatarsMouse.containsMouse }
+          Label { anchors.verticalCenter: parent.verticalCenter; text: "Show avatars" }
+        }
+        MouseArea {
+          id: avatarsMouse
+          width: avatarsLine.width + Style.space(8); height: parent.height
+          hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+          onClicked: view.host.setShowAvatars(!view.host.showAvatars)
+        }
+      }
+      Help { objectName: "avatarsNote"; text: "Pictures come from sites like Gravatar, which can see your IP. Off: initials instead." }
       Item { width: 1; height: Style.space(2) }
       Label { text: "Start collapsed" }
       Help { text: "New boards fold these. Your per-board choice wins." }
