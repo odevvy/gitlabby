@@ -1,0 +1,31 @@
+# Mutation rows from v118.tsv to v126.tsv (folded in 0.1.85). Columns: name, file, from, to, kind, test.
+# --- from v118.tsv
+logout-no-hostname	board-fetch	bounded auth logout --hostname "$hostname"	bounded auth logout	sh	run.sh
+logout-keeps-cache	board-fetch	[[ -z $cache_root ]] || rm -rf -- "$cache_dir"	[[ -z $cache_root ]] || true	sh	run.sh
+cache-gone-even-on-failure	board-fetch	if [[ $cmd == logout ]]; then\n	if [[ $cmd == logout ]]; then\n  rm -rf -- "$cache_dir"\n	sh	run.sh
+whoami-whole-user	board-fetch	{state: "ready", message: "", user: .username}	{state: "ready", message: "", user: .username, raw: .}	sh	run.sh
+whoami-unbounded	board-fetch	    get user >"$tmp/u"	    glab api --hostname "$hostname" --method GET user >"$tmp/u"	sh	run.sh
+logout-after-auth-check	board-fetch	if [[ $cmd == logout ]]; then	if [[ $cmd == logout ]] && bounded auth status --hostname "$hostname" >/dev/null; then	sh	run.sh
+logout-says-ready	board-fetch	emit logged-out "Signed out of $hostname."	emit ready "Signed out of $hostname."	sh	run.sh
+whoami-saved	board-fetch	    get user >"$tmp/u"	    mkdir -p "$cache_dir"; get user >"$tmp/u"	sh	run.sh
+no-account-check	Board.qml	if (name === "settings" && view !== "settings") checkAccount()		qml	harness/tests/run118.py
+no-confirm	SettingsView.qml	onClicked: view.confirming = true	onClicked: view.host.signOut()	qml	harness/tests/run118.py
+board-kept-in-memory	Board.qml	columns = []; projects = []; pickerBoards = []; cached = false; account = ""	cached = false	qml	harness/tests/run118.py
+refresh-while-signing-out	Board.qml	    if (signingOut) return\n		qml	harness/tests/run118.py
+logout-error-ignored	Board.qml	if (data.state !== "logged-out") { accountError = String(data.message || "Could not sign out."); return }	if (data.state !== "logged-out") return	qml	harness/tests/run118.py
+no-setup-after-signout	Board.qml	message = String(data.message || ""); boardState = "logged-out"	message = String(data.message || ""); boardState = "error"	qml	harness/tests/run118.py
+# --- from v119.tsv
+# dropped in 0.1.85: setup-own-height (the popup is a fixed 640 high since 0.1.64, so the setup panel's own height changes nothing)
+try-again-main	SetupView.qml	label: "Try again"; main: setupView.step === "error"	label: "Try again"; main: true	qml	harness/tests/run119.py
+# --- from v120.tsv
+guard-off	board-fetch	[[ $kind == free ]] ||	true ||	sh	run.sh
+case-sensitive-status	board-fetch	| map(ascii_downcase) | unique;	| unique;	sh	run.sh
+labels-not-filtered	board-fetch	select((.name | type) == "string" and (.name | ascii_downcase | IN($status[]) | not))	select((.name | type) == "string")	sh	run.sh
+overwrite-labels	board-fetch	{remove_labels: $r}	{labels: $r}	sh	run.sh
+add-creates	board-fetch	[[ $known == true ]] ||	true ||	sh	run.sh
+logic-offers-status	logic/labels.js	&& !has(status, l.name) &&	&&	node	logic.test.js
+qml-status-removable	IssueView.qml	view.editing && !Logic.has(view.status, name)	view.editing	qml	harness/tests/run120.py
+qml-no-client-guard	IssueView.qml	|| !issueReady || Logic.has(status, name)) return	|| !issueReady) return	qml	harness/tests/run120.py
+qml-no-refresh	IssueView.qml	    host.refresh()  // the card on the board		qml	harness/tests/run120.py
+status-not-faded	IssueView.qml	 || (view.editing && !removable)		qml	harness/tests/run120.py
+no-workflow-labels	board-fetch	| strings] + workflow | map(ascii_downcase)	| strings] + [] | map(ascii_downcase)	sh	run.sh
