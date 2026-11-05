@@ -44,3 +44,46 @@ menu-not-auto	BotsSection.qml	menuOpen = k === "list"	menuOpen = false	qml	harne
 pick-keeps-open	BotsSection.qml	pick = name; menuOpen = false	pick = name	qml	harness/tests/run129.py
 noowner-hidden	BotsSection.qml	label: "cards no bot owns"; enabled: !sec.hasNoOwner;	label: "cards no bot owns"; visible: !sec.hasNoOwner;	qml	harness/tests/run129.py
 tip-offcard	BotsRow.qml	    return Math.max(-at, Math.min(0, row.width - at - width))	    return 0	qml	harness/tests/run129.py
+# --- from v130.tsv
+# dropped in 0.1.85: refreshing-over-saved (only delays a refresh error over a saved copy until that refresh ends, a moment later)
+refreshing-red	BoardHeader.qml	host.boardState === "ready" && !host.refreshing) ? host.urgent	host.boardState === "ready") ? host.urgent	qml	harness/tests/run130.py
+# --- from v130b.tsv
+glyph-no-tip	IssueView.qml	tip: "Back to the board (Esc)"; 	/* no tip */ 	node	logic.test.js
+tip-off-card	components/IconTip.qml	x = Math.max(-at, Math.min(want, area.width - at - w))	x = want	qml	harness/tests/run130b.py
+tip-area-null	Board.qml	readonly property Item tipArea: keyCatcher	readonly property Item tipArea: null	qml	harness/tests/run130b.py
+tip-never	components/IconTip.qml	visible: shown && text !== ""	visible: false	qml	harness/tests/run130b.py
+glyph-tip-unbound	components/GlyphButton.qml	text: button.tip }	text: "" }	qml	harness/tests/run130b.py
+column-tip-no-name	BoardView.qml	text: "Collapse " + column.modelData.name	text: "Collapse"	qml	harness/tests/run130b.py
+done-tip-no-key	IssueView.qml	"Done editing (Esc)"	"Done editing"	qml	harness/tests/run130b.py
+star-default-dead	BoardHeader.qml	enabled: host.project !== ""; hoverEnabled: true; cursorShape: host.onDefault	enabled: !host.onDefault && host.project !== ""; hoverEnabled: true; cursorShape: host.onDefault	qml	harness/tests/run130b.py
+settings-as-qt-gave	Board.qml	readonly property var savedSettings: Logic.plainJson(settings)	readonly property var savedSettings: settings	qml	harness/tests/run130b.py
+plainjson-noop	logic/core.js	var v = JSON.parse(JSON.stringify(value)); return	var v = value; return	node	logic.test.js
+two-parsers	logic/bots.js	var bots = c.bots.filter(botUsable).map(	var bots = c.bots.filter(function(b) { return b && b.name }).map(	node	logic.test.js
+editor-own-read	BotsSection.qml	host.saved("bots", null)	host.settings.bots || null	qml	harness/tests/run130b.py
+# --- from v132.tsv
+pl-any-column	board-fetch	select(.kind == "label" and (.name | ascii_downcase) == "review") | .issues[].iid]	select(.kind == "label") | .issues[].iid]	sh	run.sh
+pl-case-sensitive	board-fetch	[.columns[] | select(.kind == "label" and (.name | ascii_downcase) == "review")	[.columns[] | select(.kind == "label" and .name == "review")	sh	run.sh
+pl-no-cap	board-fetch	| unique | .[:15][]	| unique | .[]	sh	run.sh
+pl-merged-wins	board-fetch	sort_by([(.state == "opened"), (.updated_at // "")])	sort_by([(.updated_at // "")])	sh	run.sh
+pl-closed-counts	board-fetch	select(.state == "opened" or .state == "merged")	select(.state != "x")	sh	run.sh
+pl-get-emits	board-fetch	peek "$base/issues/$iid/related_merge_requests"	get "$base/issues/$iid/related_merge_requests"	sh	run.sh
+pl-http-ok	board-fetch	{status: $s, url: (.web_url | https)}	{status: $s, url: .web_url}	sh	run.sh
+pl-manual-shows	board-fetch	scheduled: "pending", canceled: "canceled"}	scheduled: "pending", canceled: "canceled", manual: "pending"}	sh	run.sh
+pl-canceling-lost	board-fetch	running: "running", canceling: "running",	running: "running",	sh	run.sh
+pl-all-columns-get-it	board-fetch	.columns |= map(if .kind == "label" and (.name | ascii_downcase) == "review"	.columns |= map(if true	sh	run.sh
+pl-serial-unbounded	board-fetch	while (($(jobs -rp | wc -l) >= 4)); do wait -n; done	while (($(jobs -rp | wc -l) >= 99)); do wait -n; done	sh	run.sh
+mark-http	logic/board.js	var url = /^https:\/\//.test(String(p.url || "")) ? String(p.url) : ""	var url = String(p.url || "")	node	logic.test.js
+mark-unknown	logic/board.js	if (!Object.prototype.hasOwnProperty.call(pipelineMarks, status)) return null	if (!pipelineMarks[status]) return { glyph: "?", color: "#fff", url: "", tip: "" }	node	logic.test.js
+mark-mr-unchecked	logic/board.js	var on = /^[!#A-Za-z0-9_.\/-]+$/.test(String(p.mr || "")) ? " on " + p.mr : ""	var on = p.mr ? " on " + p.mr : ""	node	logic.test.js
+mark-same-glyph	logic/board.js	failed: { glyph: "\uf057"	failed: { glyph: "\uf058"	node	logic.test.js
+mark-tip-always-open	logic/board.js	(url ? ": open it on GitLab" : "")	": open it on GitLab"	node	logic.test.js
+ui-no-mark	BoardView.qml	pipeline: card.modelData.pipeline || null	pipeline: null	qml	harness/tests/run132.py
+ui-under-cardmouse	BoardView.qml	                PipelineMark {\n                  id: pipelineMark	                PipelineMark {\n                  z: -1\n                  id: pipelineMark	qml	harness/tests/run132.py
+ui-overlaps-age	BoardView.qml	x: footer.x + meta.x - width - Style.space(8)	x: footer.x + meta.x - width / 2	qml	harness/tests/run132.py
+ui-wrong-row	BoardView.qml	y: footer.y + (footer.height - height) / 2	y: footer.y - height	qml	harness/tests/run132.py
+ui-click-ignores-url	components/PipelineMark.qml	onClicked: if (mark.info && mark.info.url !== "") mark.host.openUrl(mark.info.url)	onClicked: mark.host.openIssue({ iid: 0 })	qml	harness/tests/run132.py
+ui-no-tip	components/PipelineMark.qml	IconTip { host: mark.host; shown: mouse.containsMouse;	IconTip { host: mark.host; shown: false;	qml	harness/tests/run132.py
+ui-hand-always	components/PipelineMark.qml	cursorShape: mark.info && mark.info.url !== "" ? Qt.PointingHandCursor : Qt.ArrowCursor	cursorShape: Qt.PointingHandCursor	qml	harness/tests/run132.py
+ui-theme-color	components/PipelineMark.qml	color: info ? info.color : "transparent"	color: host.dim	qml	harness/tests/run132.py
+ui-always-visible	components/PipelineMark.qml	visible: info !== null	visible: true	qml	harness/tests/run132.py
+pl-one-at-a-time	board-fetch	pipeline_of "$riid" &	pipeline_of "$riid"	sh	run.sh
