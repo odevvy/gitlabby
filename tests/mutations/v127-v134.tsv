@@ -1,0 +1,46 @@
+# Mutation rows from v127.tsv to v134.tsv (folded in 0.1.85). Columns: name, file, from, to, kind, test.
+# --- from v127.tsv
+edit-in-place	logic/core.js	return plain(raw) ? JSON.parse(JSON.stringify(raw)) : {}	return plain(raw) ? raw : {}	node	logic.test.js
+first-bot-no-busy	logic/bots.js	{ busyLists: (labelColumns || []).slice(), bots: [] }	{ busyLists: [], bots: [] }	node	logic.test.js
+last-keeps-entry	logic/bots.js	if (found.entry.bots.length === 0) delete next[project]	if (false) delete next[project]	node	logic.test.js
+busy-case-sensitive	logic/bots.js	return String(n).toLowerCase() !== key	return String(n) !== String(column)	node	logic.test.js
+string-setting-ok	logic/bots.js	if (!plain(raw)) return { problem: "setting", entry: null }	if (!plain(raw)) return { problem: "", entry: null }	node	logic.test.js
+name-taken-case	logic/bots.js	String(b.name || "").trim().toLowerCase() === key	String(b.name || "") === String(name)	node	logic.test.js
+persist-ignores-bots	Board.qml	for (var k in p) if (k !== "board") entry[k] = p[k]	for (var k in p) if (k !== "board" && k !== "bots") entry[k] = p[k]	qml	harness/tests/run127.py
+esc-keeps-form	BoardKeys.qml	else if (host.view === "settings" && settingsView.adding) settingsView.cancelAdd()	else if (false) settingsView.cancelAdd()	qml	harness/tests/run127.py
+offers-columns	BotsSection.qml	Logic.statusLabels(fetchedStatus, host.columns).concat(ownerLabels)	ownerLabels	qml	harness/tests/run127.py
+offers-taken	BotsSection.qml	.concat(ownerLabels)	.concat([])	qml	harness/tests/run127.py
+dup-allowed	BotsSection.qml	readonly property bool ready: newName !== "" && !taken &&	readonly property bool ready: newName !== "" &&	qml	harness/tests/run127.py
+no-owner-twice	BotsSection.qml	label: "cards no bot owns"; enabled: !sec.hasNoOwner;	label: "cards no bot owns"; enabled: true;	qml	harness/tests/run127.py
+no-flag-label	BotsSection.qml	? "not a label here"	? ""	qml	harness/tests/run127.py
+no-flag-column	BotsSection.qml	? "not a column here"	? ""	qml	harness/tests/run127.py
+malformed-unsaid	BotsSection.qml	text: !bot.ok ? "ignored: needs a name and a label or a column"	text: !bot.ok ? ""	qml	harness/tests/run127.py
+problem-unsaid	BotsSection.qml	text: sec.found.problem === "setting" ? "The bots	text: false ? "The bots	qml	harness/tests/run127.py
+remove-first	BotsSection.qml	onClicked: sec.remove(bot.index)	onClicked: sec.remove(0)	qml	harness/tests/run127.py
+busy-dead	BotsSection.qml	onClicked: sec.toggleBusy(modelData)	onClicked: sec.pick = sec.pick	qml	harness/tests/run127.py
+form-unfocused	BotsSection.qml	    nameField.forceActiveFocus()	    nameField.text = ""	qml	harness/tests/run127.py
+labels-not-on-open	SettingsView.qml	if (visible && botsSection.bots.length > 0) loadLabels()	if (false) loadLabels()	qml	harness/tests/run127.py
+add-no-labels	BotsSection.qml	    wantLabels()	    adding = true	qml	harness/tests/run127.py
+picker-adds	BotsSection.qml	choose: true; selected: sec.pick	choose: false; selected: sec.pick	qml	harness/tests/run127.py
+# --- from v128.tsv
+plus-suffix-dropped	logic/core.js	(column.capped ? "+" : "")	("")	node	logic.test.js
+plus-always	logic/core.js	(column.capped ? "+" : "")	("+")	node	logic.test.js
+summary-plain-count	BoardView.qml	label: modelData.name + " " + Logic.countLabel(modelData)	label: modelData.name + " " + (modelData.issues || []).length	qml	harness/tests/run128.py
+strip-plain-count	BoardView.qml	text: Logic.countLabel(column.modelData); color: view.host.dim	text: String(column.issues.length); color: view.host.dim	qml	harness/tests/run128.py
+header-plain-count	BoardView.qml	text: Logic.countLabel(column.modelData); color: view.host.quiet	text: String(column.issues.length); color: view.host.quiet	qml	harness/tests/run128.py
+fetch-no-extra	board-fetch	per_page=$((closed_cap + 1))	per_page=$closed_cap	sh	run.sh
+capped-at-20	board-fetch	($fetchedClosed | length > $cap) as $capped	($fetchedClosed | length >= $cap) as $capped	sh	run.sh
+shows-21	board-fetch	$fetchedClosed[:$cap] as $rawClosed	$fetchedClosed as $rawClosed	sh	run.sh
+no-capped-flag	board-fetch	(if $capped then {capped: true} else {} end)	{}	sh	run.sh
+form-row-no-wrap	BotsSection.qml	Flow {\n              id: choiceRow	Row {\n              id: choiceRow	qml	harness/tests/run128.py
+form-flow-no-width	BotsSection.qml	id: choiceRow\n              width: parent.width; spacing	id: choiceRow\n              spacing	qml	harness/tests/run128.py
+# --- from v129.tsv
+dot-no-column	BotsRow.qml	readonly property color tint: Logic.dotColor(modelData.color, String(row.host.background)) || row.host.accent	readonly property color tint: row.host.accent	qml	harness/tests/run129.py
+dot-no-fallback	BotsRow.qml	String(row.host.background)) || row.host.accent	String(row.host.background)) || modelData.color	qml	harness/tests/run129.py
+contrast-ignored	logic/labels.js	(Math.min(a, b) + 0.05) >= 2 ? color : ""	(Math.min(a, b) + 0.05) >= 0 ? color : ""	node	logic.test.js
+reason-missing	BotsSection.qml	: newName === "" ? "Name the bot to add it."	: newName === "" ? ""	qml	harness/tests/run129.py
+taken-reason-generic	BotsSection.qml	"There's already a bot named " + newName + "."	"Choose a label to add " + newName + "."	qml	harness/tests/run129.py
+menu-not-auto	BotsSection.qml	menuOpen = k === "list"	menuOpen = false	qml	harness/tests/run129.py
+pick-keeps-open	BotsSection.qml	pick = name; menuOpen = false	pick = name	qml	harness/tests/run129.py
+noowner-hidden	BotsSection.qml	label: "cards no bot owns"; enabled: !sec.hasNoOwner;	label: "cards no bot owns"; visible: !sec.hasNoOwner;	qml	harness/tests/run129.py
+tip-offcard	BotsRow.qml	    return Math.max(-at, Math.min(0, row.width - at - width))	    return 0	qml	harness/tests/run129.py
