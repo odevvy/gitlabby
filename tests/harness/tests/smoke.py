@@ -2,7 +2,7 @@
 # the settings, the picker, and the first-run panels. Usage: smoke.py <src> [board.png]
 import sys; sys.path.insert(0, __import__("os").path.dirname(__import__("os").path.dirname(__import__("os").path.abspath(__file__))))
 from lib import *
-h = Harness(sys.argv[1], {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": "group/app"})
+h = Harness(sys.argv[1], {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": "group/app"})
 from fixtures import BOARD
 h.ok("S1 default project from settings", h.ev("root.project") == "group/app")
 h.ev("root.opened = true"); h.spin(80)
