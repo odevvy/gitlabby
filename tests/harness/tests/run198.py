@@ -35,7 +35,8 @@ h.ok("G3 inset hover fills exist", len(hovers) >= 2, len(hovers))
 # Inset: hover width < menu width; has radius; no accent border width when idle
 hw = hovers[0].width()
 mw = jm.width()
-h.ok("G4 hover inset narrower than menu", hw < mw - 4, (hw, mw))
+lm = hev("(function(){ var m=null; function w(o){ if(!o)return; if(o.objectName==='jumpHover'){ m=o; return } var ch=o.children||[]; for(var i=0;i<ch.length;i++) w(ch[i]) } w(header); return m ? m.anchors.leftMargin : -1 })()")
+h.ok("G4 hover inset narrower than menu", hw < mw - 4 and lm >= 4, (hw, mw, lm))
 h.ok("G5 hover has rounded corners", float(hovers[0].property("radius") or 0) >= 3, hovers[0].property("radius"))
 # Hover fill is fill-only (no accent outline), unlike the old edge-to-edge row border.
 has_border = hev("(function(){ var m=null; function w(o){ if(!o)return; if(o.objectName==='jumpHover'){ m=o; return } var ch=o.children||[]; for(var i=0;i<ch.length;i++) w(ch[i]) } w(header); return m ? m.border.width : -1 })()")
