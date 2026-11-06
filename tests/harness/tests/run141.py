@@ -17,7 +17,7 @@ def ok(n, c, e=""): ALL.append(bool(c)); h.ok(n, c, e)
 def shot(name):
     QTest.mouseMove(h.win, QPoint(1, 1)); h.spin(80)
     if out: h.grab_card(os.path.join(out, name + ".png"))
-h = Harness(src, {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": ["open", "research", "Closed"], "bots": FOUR})
+h = Harness(src, {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": ["open", "research", "Closed"], "bots": FOUR})
 h.ev("panel.availableCardHeight = %d; panel.availableCardWidth = 1460" % DESK)
 h.ev("root.opened = true"); h.spin(60); h.answer("board", board()); h.spin(150)
 col = lambda name: "root.columns.filter(function(c){ return c.name === %s })[0]" % json.dumps(name)
