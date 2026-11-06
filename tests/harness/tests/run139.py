@@ -23,7 +23,7 @@ def shift(k, t):
     h.spin(60)
 def start(settings=None):
     global h
-    base = {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": ["open", "research", "Closed"], "bots": FOUR}
+    base = {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": ["open", "research", "Closed"], "bots": FOUR}
     base.update(settings or {})
     h = Harness(src, base)
     h.ev("panel.availableCardHeight = %d; panel.availableCardWidth = 1460" % DESK)

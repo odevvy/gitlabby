@@ -21,7 +21,7 @@ def shot(name):
     if out: h.grab_card(os.path.join(out, name + ".png"))
 def start():
     global h
-    h = Harness(src, {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": ["open", "research", "Closed"], "bots": FOUR})
+    h = Harness(src, {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": ["open", "research", "Closed"], "bots": FOUR})
     h.ev("panel.availableCardHeight = %d; panel.availableCardWidth = 1460" % DESK)
     h.ev("root.opened = true"); h.spin(60); h.answer("board", board()); h.spin(150)
 def shift(k, t):
