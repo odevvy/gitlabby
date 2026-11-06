@@ -19,7 +19,7 @@ def board(todo=(20, 21), review=(50,), progress=(), stamp="15:26"):
             "fallback": False, "message": "", "columns": [dict({"name": n, "kind": k, "issues": iss.get(n, [])}, **({"listId": i, "color": c} if c else {})) for i, (n, k, c) in enumerate(COLS)]}
 ALL = []
 def ok(n, c, e=""): ALL.append(bool(c)); h.ok(n, c, e)
-h = Harness(src, {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": P, "refreshIntervalSec": 60})
+h = Harness(src, {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": P, "refreshIntervalSec": 60})
 cad = lambda: h.ev("root.cadence")
 tickets = lambda: h.ev("root.feed.tickets")
 def age(sec): h.ev("(function(){ var f = root.feed, a = {}; for (var k in f.answers) a[k] = Object.assign({}, f.answers[k], { startedAt: Date.now() - %d }); f.answers = a })()" % (sec * 1000))

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Data helper for the Omarchy GitLab Board widget. Prints one JSON object.
+# Data helper for the Omarchy GitLabby widget (a GitLab issue board). Prints one JSON object.
 # Auth stays in glab's own store; this script never reads, prints, or stores a
 # token, and never prints glab's stderr.
 #
@@ -142,7 +142,7 @@ check_args
 # on two servers never shares one; gitlab.com's names are as before.
 cache_root=${XDG_CACHE_HOME:-}
 [[ $cache_root == /* ]] || cache_root=${HOME:+$HOME/.cache}
-cache_dir=$cache_root/odevvy.gitlab-board
+cache_dir=$cache_root/odevvy.gitlabby
 host_tag=""
 [[ $hostname == gitlab.com ]] || host_tag="$hostname~"
 cache_base=$cache_dir/$host_tag$(jq -rn --arg p "$project" '$p | @uri')-${board_id:-first}
@@ -189,7 +189,7 @@ bounded() {
 # private runtime dir; none is written now, and signing out or a failed read
 # removes one an older version left.
 auth_mark=""
-[[ $runtime == "${XDG_RUNTIME_DIR:-}" ]] && auth_mark=$runtime/odevvy.gitlab-board-auth-$hostname
+[[ $runtime == "${XDG_RUNTIME_DIR:-}" ]] && auth_mark=$runtime/odevvy.gitlabby-auth-$hostname
 forget_auth() { [[ -z $auth_mark ]] || rm -f "$auth_mark" 2>/dev/null; }
 # Sign out: glab drops the host's token from its config and keyring. glab
 # auth logout never prompts (--hostname is required); it works offline. Then the

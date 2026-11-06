@@ -29,7 +29,7 @@ def fetch(nclosed):
     shutil.rmtree(work); return json.loads(r.stdout)
 MORE, EXACT = fetch(35), fetch(20)
 cm = next(c for c in MORE["columns"] if c["kind"] == "closed"); ce = next(c for c in EXACT["columns"] if c["kind"] == "closed")
-h = Harness(src, {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": "firelink21/phrase41", "defaultCollapsed": ["open", "research", "closed"]})
+h = Harness(src, {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": "firelink21/phrase41", "defaultCollapsed": ["open", "research", "closed"]})
 h.ok("C0 board-fetch: 35 closed on GitLab -> the latest 20, capped; exactly 20 -> not capped",
      len(cm["issues"]) == 20 and cm.get("capped") is True and len(ce["issues"]) == 20 and "capped" not in ce, [len(cm["issues"]), cm.get("capped"), ce.get("capped")])
 h.ev("root.opened = true"); h.spin(80); h.answer("board", MORE); h.spin(400)

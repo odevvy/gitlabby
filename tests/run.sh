@@ -517,7 +517,7 @@ check "A whoami: one GET of /user, no auth check first" '.' "$([[ $(sed -n 1p "$
 # Reads go first; only a failed read runs the check (signed out or refused
 # tells logged-out apart from a network error). Writes check first, every time.
 # No mark is written any more; one an older version left is removed.
-ert="$work/ert"; mkdir -p "$ert"; chmod 700 "$ert"; mark="$ert/odevvy.gitlab-board-auth-gitlab.com"
+ert="$work/ert"; mkdir -p "$ert"; chmod 700 "$ert"; mark="$ert/odevvy.gitlabby-auth-gitlab.com"
 auths() { grep -c '^auth status' "$FAKE_LOG"; }
 : >"$FAKE_LOG"; out=$(XDG_RUNTIME_DIR=$ert "$fetch" whoami)
 check "E a read: no auth check, one GET" '.user == "dev1"' "$out"
@@ -562,7 +562,7 @@ rm -rf "$XDG_CACHE_HOME"; "$fetch" whoami >/dev/null
 check "A whoami: nothing saved" '.' "$([[ -e $XDG_CACHE_HOME ]] && echo false || echo true)"
 fx boards <<<'[{"id":7,"name":"Dev","lists":[]}]'; fx open <<<'[]'; fx closed <<<'[]'
 "$fetch" --project group/app --board 7 >/dev/null
-adir=$XDG_CACHE_HOME/odevvy.gitlab-board
+adir=$XDG_CACHE_HOME/odevvy.gitlabby
 check "A (a saved board exists)" '.' "$([[ -n $(find "$adir" -name '*.json') ]] && echo true || echo false)"
 out=$(: >"$FAKE_LOG"; FAKE_LOGOUT=fail "$fetch" logout)
 check "A logout failure: error, saved boards kept" '.state == "error"' "$out"
@@ -586,7 +586,7 @@ reset
 fx boards <<<'[{"id":7,"name":"Dev","lists":[{"id":11,"position":0,"label":{"name":"todo"}}]},{"id":8,"name":"Ops","lists":[]}]'
 fx open <<<'[{"iid":1,"title":"a","state":"opened","labels":["todo"],"web_url":"https://x/1"}]'
 fx closed <<<'[]'
-kdir=$XDG_CACHE_HOME/odevvy.gitlab-board; kfile=$kdir/group%2Fapp-7@me.json
+kdir=$XDG_CACHE_HOME/odevvy.gitlabby; kfile=$kdir/group%2Fapp-7@me.json
 rm -rf "$XDG_CACHE_HOME"
 out=$("$fetch" --project group/app --board 7)
 check "K saved as printed" '.' "$([[ -f $kfile && $(cat "$kfile") == "$out" ]] && echo true || echo false)"
@@ -627,9 +627,9 @@ check "K cache not writable: board still ready" '.state == "ready" and .columns[
 rm -f "$XDG_CACHE_HOME"
 mkdir -p "$work/home"
 check "K XDG_CACHE_HOME unset: ~/.cache" '.' "$(XDG_CACHE_HOME='' HOME="$work/home" "$fetch" --project group/app --board 7 >/dev/null
-  [[ -f $work/home/.cache/odevvy.gitlab-board/group%2Fapp-7@me.json ]] && echo true || echo false)"
+  [[ -f $work/home/.cache/odevvy.gitlabby/group%2Fapp-7@me.json ]] && echo true || echo false)"
 check "K relative XDG_CACHE_HOME ignored" '.' "$(cd "$work" && XDG_CACHE_HOME=rel HOME="$work/home2" "$fetch" --project group/app --board 7 >/dev/null
-  [[ ! -e $work/rel && -f $work/home2/.cache/odevvy.gitlab-board/group%2Fapp-7@me.json ]] && echo true || echo false)"
+  [[ ! -e $work/rel && -f $work/home2/.cache/odevvy.gitlabby/group%2Fapp-7@me.json ]] && echo true || echo false)"
 # Saved per account (glab config get user): another account never sees it.
 rm -rf "$XDG_CACHE_HOME"; out=$("$fetch" --project group/app --board 7)
 check "K other account: none" '. == {"state":"none"}' "$(FAKE_USER=someone "$fetch" cached --project group/app --board 7)"
@@ -644,7 +644,7 @@ done
 echo "$out" >"$kdir/group%2Fapp-7.json"
 "$fetch" --project group/app --board 7 >/dev/null
 check "K the copy from before accounts is removed, never read" '.' "$([[ ! -e $kdir/group%2Fapp-7.json ]] && echo true || echo false)"
-saved=("$work"/home*/.cache/odevvy.gitlab-board/*)
+saved=("$work"/home*/.cache/odevvy.gitlabby/*)
 check "K no token in any saved copy" '.' "$([[ ${#saved[@]} == 2 && -f ${saved[0]} ]] && ! grep -qiE 'glpat|bearer' "${saved[@]}" && echo true || echo false)"
 
 # --- L: labels: read the editable ones, add or remove one at a time ------------
@@ -853,7 +853,7 @@ pl_out=$out
 # Finished pipelines (passed, failed, canceled) are reused for 2 minutes: the
 # next refresh asks only about the others (5: no MR, 6: no access, 7: running,
 # 8: none, 9: manual), and a newer answer for 3 is not seen yet.
-pf="$XDG_CACHE_HOME/odevvy.gitlab-board/group%2Fapp-first@me.pipes.json"
+pf="$XDG_CACHE_HOME/odevvy.gitlabby/group%2Fapp-first@me.pipes.json"
 check "PC kept beside the board, 600, no token, finished and running with the time" '.' "$([[ -f $pf && $(stat -c %a "$pf") == 600 ]] && ! grep -qiE 'glpat|bearer' "$pf" &&
   jq -e 'keys == ["10","3","4","7"] and (.["3"] | .status == "passed" and (.at | type) == "number")' "$pf" >/dev/null && echo true || echo false)"
 printf '[%s]' "$(mr 31 opened 2026-01-01 running https://gitlab.com/p/31)" | fx related-3
@@ -874,7 +874,7 @@ check "PC after 2 minutes: all eight asked" '.' "$([[ $(grep -c '/related_merge_
 check "PC another account asks for its own" '.' "$([[ $(grep -c '/related_merge_requests$' "$FAKE_LOG") == 8 ]] && echo true || echo false)"
 echo 'not json' >"$pf"; out=$("$fetch" --project group/app)
 check "PC an unreadable pipelines file: asked, board fine" '.state == "ready" and ('"$pipes"' | .["3"].status == "running")' "$out"
-fresh_pipes() { rm -f "$XDG_CACHE_HOME"/odevvy.gitlab-board/*.pipes.json; }
+fresh_pipes() { rm -f "$XDG_CACHE_HOME"/odevvy.gitlabby/*.pipes.json; }
 # Each status word GitLab uses.
 for st in success:passed failed:failed running:running canceling:running pending:pending created:pending waiting_for_resource:pending preparing:pending scheduled:pending canceled:canceled skipped:null manual:null; do
   printf '[%s]' "$(mr 31 opened 2026-01-01 "${st%%:*}" https://gitlab.com/p/31)" | fx related-3; fresh_pipes
@@ -918,7 +918,7 @@ check "IP closed fails: its own message" '.state == "error" and .message == "Cou
 mv "$FAKE_DIR/closed.off" "$FAKE_DIR/closed.json"
 check "IP closed hangs: the timeout message" '.state == "error" and .message == "GitLab did not answer within 30 seconds."' "$(FAKE_HANG='state=closed' "$fetch" --project group/app)"
 check "IP open hangs: the timeout message" '.state == "error" and .message == "GitLab did not answer within 30 seconds."' "$(FAKE_HANG='state=opened' "$fetch" --project group/app)"
-ipr="$work/iprt"; mkdir -p "$ipr"; chmod 700 "$ipr"; echo "$EPOCHSECONDS" >"$ipr/odevvy.gitlab-board-auth-gitlab.com"
+ipr="$work/iprt"; mkdir -p "$ipr"; chmod 700 "$ipr"; echo "$EPOCHSECONDS" >"$ipr/odevvy.gitlabby-auth-gitlab.com"
 check "IP a list fails with a fresh sign-in mark, signed out: logged-out" '.state == "logged-out"' "$(mv "$FAKE_DIR/closed.json" "$FAKE_DIR/closed.off"; FAKE_AUTH=no XDG_RUNTIME_DIR=$ipr "$fetch" --project group/app)"
 mv "$FAKE_DIR/closed.off" "$FAKE_DIR/closed.json"
 check "IP no token in output" '.' "$(grep -qiE 'glpat|bearer' <<<"$out" && echo false || echo true)"
@@ -1213,11 +1213,11 @@ check "S GraphQL too" '.' "$(grep -q "^api --hostname $H graphql " "$FAKE_LOG" &
 check "S the sign-in check and the account lookup too" '.' "$(grep -q "^auth status --hostname $H\$" "$FAKE_LOG" && grep -q "^config get user --host $H\$" "$FAKE_LOG" && echo true || echo false)"
 check "S signed out: the login command names the server" '.state == "logged-out" and (.message | endswith("glab auth login --hostname gitlab.example.com"))' "$(FAKE_AUTH=no "$fetch" --project group/app --board 7 --hostname $H)"
 check "S gitlab.com's login hint is as before" '.message | endswith("Run: glab auth login")' "$(FAKE_AUTH=no "$fetch" --project group/app --board 7)"
-check "S saved board: its own file, the server's name first" '.' "$([[ -f $XDG_CACHE_HOME/odevvy.gitlab-board/gitlab.example.com~group%2Fapp-7@me.json ]] && echo true || echo false)"
+check "S saved board: its own file, the server's name first" '.' "$([[ -f $XDG_CACHE_HOME/odevvy.gitlabby/gitlab.example.com~group%2Fapp-7@me.json ]] && echo true || echo false)"
 check "S gitlab.com doesn't see it" '. == {"state":"none"}' "$("$fetch" cached --project group/app --board 7)"
 check "S the server reads it back" '.cached == true and .project == "group/app"' "$("$fetch" cached --project group/app --board 7 --hostname $H)"
 "$fetch" --project group/app --board 7 >/dev/null
-check "S gitlab.com's file keeps its old name" '.' "$([[ -f $XDG_CACHE_HOME/odevvy.gitlab-board/group%2Fapp-7@me.json ]] && echo true || echo false)"
+check "S gitlab.com's file keeps its old name" '.' "$([[ -f $XDG_CACHE_HOME/odevvy.gitlabby/group%2Fapp-7@me.json ]] && echo true || echo false)"
 check "S another server doesn't see gitlab.com's" '. == {"state":"none"}' "$("$fetch" cached --project group/app --board 7 --hostname other.example.org)"
 for bad in "https://$H" "$H/gitlab" "$H:8443" "http://$H" "-$H" "$H." "a..b" "" "a b" "$H/../x" "$(printf 'x%.0s' {1..254})"; do
   : >"$FAKE_LOG"; out=$("$fetch" --project group/app --hostname "$bad")

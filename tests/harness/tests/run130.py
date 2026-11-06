@@ -9,7 +9,7 @@ import sys, os, json; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path
 from lib import *
 from fixtures import BOARD
 out = sys.argv[2] if len(sys.argv) > 2 else None
-h = Harness(sys.argv[1], {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": "group/app"})
+h = Harness(sys.argv[1], {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": "group/app"})
 status = lambda: h.ev("header.status.text")
 same = lambda a, b: abs(a.redF() - b.redF()) < 0.01 and abs(a.greenF() - b.greenF()) < 0.01 and abs(a.blueF() - b.blueF()) < 0.01
 def shot(name): QTest.mouseMove(h.win, QPoint(1, 1)); h.spin(60); out and h.grab_card(os.path.join(out, name + ".png"))

@@ -15,7 +15,7 @@ BOARD = {"state": "ready", "project": P, "updatedAt": "2026-10-31T13:20:00Z", "m
     {"name": "review", "kind": "label", "listId": 4, "color": "#a855f7", "issues": [iss(135, ["review", "auth-mail"])]},
     {"name": "Closed", "kind": "closed", "issues": []}]}
 BOTS = {P: {"busyLists": ["in progress", "review"], "bots": [{"name": "App UI", "label": "app-ui"}, {"name": "Auth & Mail", "label": "auth-mail"}, {"name": "Spec QA", "list": "review"}]}}
-h = Harness(src, {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": [], "bots": BOTS})
+h = Harness(src, {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": [], "bots": BOTS})
 h.ev("panel.availableCardHeight = 900; panel.availableCardWidth = 1460")
 h.ev("root.opened = true"); h.spin(60); h.answer("board", BOARD); h.spin(150)
 row = h.cls("BotsRow")

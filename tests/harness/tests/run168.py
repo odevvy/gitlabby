@@ -5,7 +5,7 @@
 import sys, os, json; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from lib import *
 from fixtures import BOARD
-h = Harness(sys.argv[1], {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": "group/app", "defaultCollapsed": [], "boardStates": {}, "refreshIntervalSec": 60})
+h = Harness(sys.argv[1], {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": "group/app", "defaultCollapsed": [], "boardStates": {}, "refreshIntervalSec": 60})
 h.ev("panel.availableCardHeight = 520; panel.availableCardWidth = 1460")
 h.ev("root.opened = true"); h.spin(60); h.answer("board", BOARD); h.spin(200)
 def ctx(cls): v = h.cls(cls); return h.ctx_of(v), v

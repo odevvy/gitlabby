@@ -131,7 +131,7 @@ Item {
     anchors.verticalCenter: parent.verticalCenter
     width: Math.max(0, Math.min(implicitWidth, header.titleRoom))
     elide: Text.ElideRight
-    text: host.project === "" ? "GitLab board" : host.project + (host.boardName !== "" ? " / " + host.boardName : "")
+    text: host.project === "" ? "GitLabby" : host.project + (host.boardName !== "" ? " / " + host.boardName : "")
     color: titleMouse.containsMouse ? host.accent : host.foreground
     font { pixelSize: Style.font.title; bold: true }
   }

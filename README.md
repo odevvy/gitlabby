@@ -1,6 +1,6 @@
-# GitLab Board for Omarchy
+# GitLabby for Omarchy
 
-A bar icon that opens a GitLab issue board in a popup: the board's lists as
+A bar icon (plugin id `odevvy.gitlabby`) that opens a GitLab issue board in a popup: the board's lists as
 columns in their label colors, issue details with comments and labels, and
 drag-to-move.
 
@@ -211,7 +211,7 @@ The card stays where it is until you confirm, and the board doesn't refresh
 under the question.
 
 ```bash
-omarchy bar set odevvy.gitlab-board confirmMoves '["firelink21/phrase41"]' --json
+omarchy bar set odevvy.gitlabby confirmMoves '["firelink21/phrase41"]' --json
 ```
 
 The value is the whole list (project paths, any case); `'[]'` turns it off.
@@ -389,10 +389,10 @@ terminal (this replaces the whole `bots` value, so include every project you
 use it for):
 
 ```bash
-omarchy bar set odevvy.gitlab-board bots '{"firelink21/phrase41":{"busyLists":["approved","in progress","review"],"bots":[{"name":"App UI","label":"app-ui"},{"name":"API Engineer","label":"api"},{"name":"Auth & Mail","label":"auth-mail"},{"name":"Product Lead","label":""},{"name":"Spec QA","list":"review"}]}}' --json
+omarchy bar set odevvy.gitlabby bots '{"firelink21/phrase41":{"busyLists":["approved","in progress","review"],"bots":[{"name":"App UI","label":"app-ui"},{"name":"API Engineer","label":"api"},{"name":"Auth & Mail","label":"auth-mail"},{"name":"Product Lead","label":""},{"name":"Spec QA","list":"review"}]}}' --json
 ```
 
-Remove it with `omarchy bar set odevvy.gitlab-board bots '{}' --json`.
+Remove it with `omarchy bar set odevvy.gitlabby bots '{}' --json`.
 
 ## Alerts
 
@@ -416,7 +416,7 @@ default and saved per project (`alerts` in the widget's settings):
   each with its head pipeline's id, status and link), only while the box is
   on; with only this box on, that query is all that runs, not the board.
 
-They come as Omarchy notifications under the app name `GitLab board`, low
+They come as Omarchy notifications under the app name `GitLabby`, low
 urgency, so Do Not Disturb holds them (they wait in the notification
 history). Clicking one opens the issue or merge request, or the board for
 several cards or a bot (the project's merge requests for several pipelines), as Settings > **Open links in** says: a browser tab
@@ -553,7 +553,7 @@ To open the popup with a key, add this to `~/.config/hypr/bindings.lua`,
 then run `hyprctl reload`:
 
 ```lua
-o.bind("SUPER + CTRL + G", "GitLab board", "omarchy-shell shell toggle odevvy.gitlab-board")
+o.bind("SUPER + CTRL + G", "GitLabby", "omarchy-shell shell toggle odevvy.gitlabby")
 ```
 
 Omarchy's own `SUPER + CTRL + 1`…`9` also open the right section's bar panels by
@@ -688,10 +688,10 @@ the board, the project list, the account and the merge requests on screen,
 and loads that server's default board (or the picker).
 
 ```bash
-omarchy bar set odevvy.gitlab-board defaultProject group/project
-omarchy bar set odevvy.gitlab-board refreshIntervalSec 120
-omarchy bar set odevvy.gitlab-board openLinks app
-omarchy bar set odevvy.gitlab-board gitlabHost gitlab.example.com   # then: glab auth login --hostname gitlab.example.com
+omarchy bar set odevvy.gitlabby defaultProject group/project
+omarchy bar set odevvy.gitlabby refreshIntervalSec 120
+omarchy bar set odevvy.gitlabby openLinks app
+omarchy bar set odevvy.gitlabby gitlabHost gitlab.example.com   # then: glab auth login --hostname gitlab.example.com
 ```
 
 The board you're browsing isn't saved. v0.1.2 drops older keys (`project`,
@@ -701,14 +701,14 @@ Open afterwards sticks.
 
 After each board load, `board-fetch` saves a copy of the board (the JSON the
 popup shows; never anything from glab's login) in
-`~/.cache/odevvy.gitlab-board/` (or `$XDG_CACHE_HOME`), one file per project
+`~/.cache/odevvy.gitlabby/` (or `$XDG_CACHE_HOME`), one file per project
 and board, saved per glab account (from `glab config get user`, a local
 read; no saved account gives `unknown`), so after switching accounts the
 popup never starts on the other account's board. Another server's copies
 start with its name (`gitlab.example.com~group%2Fapp-7@me.json`), so the same
 project path on two servers never shares one. It is readable only by you.
 Clear it with
-`rm -rf ~/.cache/odevvy.gitlab-board`.
+`rm -rf ~/.cache/odevvy.gitlabby`.
 
 ## Your own GitLab
 
@@ -753,7 +753,7 @@ computer.` (the server's name in place of gitlab.com on another one), then runs
 in your terminal is signed out too (a `GITLAB_TOKEN` in your environment still
 works; glab doesn't touch it). The token stays valid on GitLab; revoke it in
 your GitLab user settings if you need to. The saved boards in
-`~/.cache/odevvy.gitlab-board` are deleted with it, and the popup shows the
+`~/.cache/odevvy.gitlabby` are deleted with it, and the popup shows the
 sign-in panel.
 
 ### Permissions
@@ -806,7 +806,7 @@ Writes (move, labels, close, reopen, comment, bulk) run it first, every time,
 so nothing is sent while signed out. On a public project, reads work without a
 login, so a sign-out in the terminal shows there only at the next write or
 failed read. (Up to 0.1.58 a passed check left a mark holding only the time in
-`$XDG_RUNTIME_DIR/odevvy.gitlab-board-auth-<host>`; none is written now, and
+`$XDG_RUNTIME_DIR/odevvy.gitlabby-auth-<host>`; none is written now, and
 one left behind is removed at sign-out or after a failed read.)
 
 ```bash
@@ -945,9 +945,9 @@ reloads the plugin.
 ## Update, roll back, remove
 
 ```bash
-omarchy plugin update odevvy.gitlab-board   # after checking out the version you want
+omarchy plugin update odevvy.gitlabby   # after checking out the version you want
 omarchy-restart-shell
-omarchy plugin remove odevvy.gitlab-board
+omarchy plugin remove odevvy.gitlabby
 ```
 
 Moves and comments already made stay on GitLab.

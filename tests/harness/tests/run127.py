@@ -22,7 +22,7 @@ cls_is = lambda it, n: it.metaObject().className().startswith(n)
 ALL = []  # several harnesses (one per starting setting); one total at the end
 def start(bots, shot=None):
     global h, sec, sev
-    s = {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": ["open", "research"]}
+    s = {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": ["open", "research"]}
     if bots is not None: s["bots"] = bots
     h = Harness(sys.argv[1], s)
     h.ev("panel.availableCardHeight = 1000"); h.ev("panel.contentWidth = 790")  # his popup: ~820 wide

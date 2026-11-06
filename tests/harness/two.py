@@ -12,7 +12,7 @@ out = sys.argv[2] if len(sys.argv) > 2 else None
 O406 = os.environ.get("OMARCHY_PATH", os.path.expanduser("~/.local/share/omarchy"))  # Omarchy 4.0.6 checkout
 P = "group/app"
 BOTS = {P: {"busyLists": ["in progress", "review"], "bots": [{"name": "App UI", "label": "app-ui"}, {"name": "API", "label": "api"}]}}
-BASE = {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": P, "defaultBoardId": "7", "defaultBoardName": "Development", "refreshIntervalSec": 60,
+BASE = {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": P, "defaultBoardId": "7", "defaultBoardName": "Development", "refreshIntervalSec": 60,
             "bots": BOTS}
 def row(i, labels, title=None): return {"iid": i, "title": title or "Card %d" % i, "labels": labels, "url": "https://gitlab.com/%s/-/issues/%d" % (P, i), "createdAt": "2026-10-29T12:00:00Z", "notes": 0, "assignees": []}
 def board(todo, prog, review, bid=7, name="Development"):
@@ -34,7 +34,7 @@ Item {
   BoardService { id: svc; objectName: "svc" }
   component Shell: QtObject {
     property var writes: []
-    function serviceFor(id) { return id === "odevvy.gitlab-board" ? svc : null }
+    function serviceFor(id) { return id === "odevvy.gitlabby" ? svc : null }
     function updateEntryInline(id, s) { writes = writes.concat([s]); return true }
   }
   component Bar: QtObject { property var shell: Shell {} }

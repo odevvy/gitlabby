@@ -6,7 +6,7 @@ import sys, os; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspa
 from lib import *
 from fixtures import BOARD
 P = "group/app"
-h = Harness(sys.argv[1], {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": [], "boardStates": {}, "refreshIntervalSec": 60})
+h = Harness(sys.argv[1], {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": [], "boardStates": {}, "refreshIntervalSec": 60})
 h.ev("panel.availableCardHeight = 620; panel.availableCardWidth = 1020")
 h.ev("root.opened = true"); h.spin(60); h.answer("board", BOARD); h.spin(300)
 ACC = lambda scopes: {"state": "ready", "message": "", "project": P, "level": 30, "scopes": scopes}

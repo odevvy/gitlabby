@@ -14,7 +14,7 @@ P = "firelink21/phrase41"
 exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "run134.py")).read().split("ALL = []")[0].split("P = \"firelink21/phrase41\"")[1])
 ALL = []
 def ok(n, c, e=""): ALL.append(bool(c)); h.ok(n, c, e)
-h = Harness(src, {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": ["open", "research", "Closed"], "bots": FOUR})
+h = Harness(src, {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": ["open", "research", "Closed"], "bots": FOUR})
 h.ev("panel.availableCardHeight = %d; panel.availableCardWidth = 1460" % DESK)
 h.ev("root.opened = true"); h.spin(60); h.answer("board", board()); h.spin(150)
 h.ev("root.showView('settings')"); h.spin(60); h.answer("whoami", {"state": "ready", "message": "", "user": "o_devvy"}); h.spin(60)
@@ -47,12 +47,12 @@ CASES = [("notification-review", "#42 is in review", "#42 Login form shows the w
          ("notification-batch", "3 cards entered review", "#42 Login form shows the wrong…, #43 Rate limit the mail…, #47 Settings page +0 more · firelink21/phrase41".replace(" +0 more", "")),
          ("notification-idle", "Stopped working: API Engineer", "On firelink21/phrase41: API Engineer is waiting in review")]
 for name, head, body in CASES:
-    styled = json.loads(subprocess.run(["node", "-e", "console.log(JSON.stringify(require(%s).styledBody(%s, 'GitLab board', '')))" % (json.dumps(NL), json.dumps(body))], capture_output=True, text=True).stdout)
+    styled = json.loads(subprocess.run(["node", "-e", "console.log(JSON.stringify(require(%s).styledBody(%s, 'GitLabby', '')))" % (json.dumps(NL), json.dumps(body))], capture_output=True, text=True).stdout)
     qml = """import QtQuick
 Rectangle { width: 560; height: col.implicitHeight + 36; color: "#1f2530"; border { width: 2; color: "#e68e59" }
   Text { id: g; x: 18; y: 18; text: "\\uf296"; color: "#e68e59"; font { family: "JetBrainsMono Nerd Font"; pixelSize: 26 } }
   Column { id: col; x: 64; y: 18; width: parent.width - 82; spacing: 6
-    Text { width: parent.width; text: "GitLab board  ·  now"; color: "#8a8f98"; font { family: "JetBrainsMono Nerd Font"; pixelSize: 14 } }
+    Text { width: parent.width; text: "GitLabby  ·  now"; color: "#8a8f98"; font { family: "JetBrainsMono Nerd Font"; pixelSize: 14 } }
     Text { width: parent.width; text: %s; textFormat: Text.PlainText; color: "#e8e3d8"; elide: Text.ElideRight; font { family: "JetBrainsMono Nerd Font"; pixelSize: 17; bold: true } }
     Text { width: parent.width; text: %s; textFormat: Text.StyledText; wrapMode: Text.Wrap; color: "#c3beb4"; font { family: "JetBrainsMono Nerd Font"; pixelSize: 15 } } } }
 """ % (json.dumps(head), json.dumps(styled))

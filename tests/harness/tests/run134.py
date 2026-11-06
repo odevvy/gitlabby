@@ -35,7 +35,7 @@ def shot(name): QTest.mouseMove(h.win, QPoint(1, 1)); h.spin(80); out and h.grab
 cls_is = lambda it, n: it.metaObject().className().startswith(n)
 def start(free, width=1460, n=1):
     global h
-    h = Harness(src, {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": ["open", "research", "Closed"], "bots": FOUR})
+    h = Harness(src, {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": ["open", "research", "Closed"], "bots": FOUR})
     h.ev("panel.availableCardHeight = %d; panel.availableCardWidth = %d" % (free, width))
     h.ev("root.opened = true"); h.spin(60); h.answer("board", board(n)); h.spin(150)
 def settings():

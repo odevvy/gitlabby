@@ -16,7 +16,7 @@ Harness.click = _click_seen
 from fixtures import BOARD
 pngs = dict(zip(["refresh", "bots", "move", "slash", "signout", "help"], sys.argv[2:8]))
 shot = lambda name: pngs.get(name) and h.grab_card(pngs[name])
-h = Harness(sys.argv[1], {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": "group/app"})
+h = Harness(sys.argv[1], {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": "group/app"})
 button = lambda label: h.visible(lambda it: it.metaObject().className().startswith("ActionButton") and it.property("label") == label)
 pill = lambda label: h.visible(lambda it: it.metaObject().className().startswith("Pill") and it.property("label") == label)
 texts = lambda: [it.property("text") for it in h.visible(lambda it: it.metaObject().className().startswith("BoardText")) if it.property("text")]

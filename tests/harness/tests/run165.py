@@ -11,7 +11,7 @@ import sys, os, json, copy; sys.path.insert(0, os.path.dirname(os.path.dirname(o
 from lib import *
 P, H = "group/app", "gitlab.example.com"
 BOTS = {"busyLists": ["in progress", "review"], "bots": [{"name": "App UI", "label": "app-ui"}, {"name": "API", "label": "api"}]}
-SETTINGS = {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": P, "defaultBoardId": "7", "defaultBoardName": "Development",
+SETTINGS = {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": P, "defaultBoardId": "7", "defaultBoardName": "Development",
             "refreshIntervalSec": 60, "defaultCollapsed": ["closed"], "boardStates": {}, "bots": {P: BOTS}, "alerts": {P: {"review": True, "idle": True}}}
 def row(i, labels, host="gitlab.com"): return {"iid": i, "title": "Card %d" % i, "labels": labels, "url": "https://%s/%s/-/issues/%d" % (host, P, i), "createdAt": "2026-10-29T12:00:00Z", "notes": 0, "assignees": []}
 def board(prog, review, host="gitlab.com"):

@@ -5,7 +5,7 @@
 import sys, os; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from lib import *
 from fixtures import BOARD
-h = Harness(sys.argv[1], {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": "group/app"})
+h = Harness(sys.argv[1], {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": "group/app"})
 ALL = []
 def ok(n, c, e=""): ALL.append(bool(c)); h.ok(n, c, e)
 LABELS = {"state": "ready", "message": "", "status": ["todo", "review"], "labels": [{"name": "bug", "color": "#dc2626", "textColor": None}, {"name": "ux", "color": "#6366f1", "textColor": None}]}

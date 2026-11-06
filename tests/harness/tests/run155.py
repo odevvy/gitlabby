@@ -21,7 +21,7 @@ WIDE = board(["research", "todo", "approved", "in progress", "review"])
 def mr(iid): return {"iid": iid, "title": "MR %d" % iid, "url": "https://gitlab.com/%s/-/merge_requests/%d" % (P, iid), "draft": False, "project": P, "branch": "b", "updatedAt": "2026-10-31T13:00:00Z",
                      "status": "mergeable", "author": {"username": "a", "name": "A", "avatar": ""}, "pipeline": None, "reviewers": []}
 ANS = {"state": "ready", "message": "", "scope": "all", "updatedAt": "2026-10-31T13:20:00Z", "review": [mr(1), mr(2)], "mine": []}
-h = Harness(src, {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": ["open", "closed"]})
+h = Harness(src, {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": ["open", "closed"]})
 h.ev("panel.availableCardHeight = 900; panel.availableCardWidth = 1460")
 h.ev("root.opened = true"); h.spin(60); h.answer("board", WIDE); h.spin(200)
 same = lambda a, c: abs(a.redF() - c.redF()) < 0.01 and abs(a.greenF() - c.greenF()) < 0.01 and abs(a.blueF() - c.blueF()) < 0.01 and abs(a.alphaF() - c.alphaF()) < 0.02

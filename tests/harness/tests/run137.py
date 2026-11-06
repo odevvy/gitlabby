@@ -15,7 +15,7 @@ P = "firelink21/phrase41"
 exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "run134.py")).read().split("ALL = []")[0].split("P = \"firelink21/phrase41\"")[1])
 ALL = []
 def ok(n, c, e=""): ALL.append(bool(c)); h.ok(n, c, e)
-h = Harness(src, {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": ["open", "research", "Closed"]})
+h = Harness(src, {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": ["open", "research", "Closed"]})
 h.ev("panel.availableCardHeight = %d; panel.availableCardWidth = 1460" % DESK)
 h.ev("root.opened = true"); h.spin(60); h.answer("board", board()); h.spin(150)
 def who(u, n, st): return {"username": u, "name": n, "avatar": "", "state": st}

@@ -11,7 +11,7 @@ def iss(iid, labels, notes=0): return {"iid": iid, "title": "Issue %d" % iid, "l
 def col_(n, i, iids): return {"name": n, "kind": "label", "listId": i, "color": "#5b9bd5", "issues": [iss(x, [n]) for x in iids]}
 BASE = {"state": "ready", "project": P, "updatedAt": "2026-10-31T13:20:00Z", "message": "", "labelColors": {}, "boards": [{"id": 1, "name": "Development"}], "board": {"id": 1, "name": "Development"}, "fallback": False,
         "columns": [{"name": "Open", "kind": "open", "issues": []}, col_("todo", 1, [11, 12, 13, 14]), col_("doing", 2, [21, 22]), col_("review", 3, [31]), {"name": "Closed", "kind": "closed", "issues": []}]}
-h = Harness(src, {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": ["open", "closed"]})
+h = Harness(src, {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": ["open", "closed"]})
 h.ev("panel.availableCardHeight = 1200; panel.availableCardWidth = 2400")
 h.ev("root.opened = true"); h.spin(60); h.answer("board", BASE); h.spin(300)
 def md(it): v = it.property("modelData"); return v.toVariant() if hasattr(v, "toVariant") else v
