@@ -17,7 +17,8 @@ PanelKeyCatcher {
   readonly property Item setupView: views.setup || null
 
   onCloseRequested: {
-    if (host.pendingMove) host.cancelMove()
+    if (host.headerMenu !== "") host.headerMenu = ""
+    else if (host.pendingMove) host.cancelMove()
     else if (host.view === "board" && bulkBar.stepBack()) {}
     else if (host.view === "issue" && issueView.confirming) issueView.confirming = false
     else if (host.view === "issue" && issueView.editing) issueView.doneEditing()  // labels still loading: the filter is off

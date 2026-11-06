@@ -9,5 +9,6 @@ module.exports = Object.assign({},
   require("./alerts.js"),
   require("./mrs.js"),
   require("./bulk.js"),
-  require("./access.js")
+  require("./access.js"),
+  require("./favorites.js")
 )

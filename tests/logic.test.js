@@ -511,7 +511,7 @@ test("icon buttons: every GlyphButton, header button and tab has a tip, and ever
   assert.ok(tips.length >= 17, "found " + tips.length)  // 6 GlyphButtons, 11 IconTips (v0.1.30)
   const bracketed = tips.flatMap(t => [...t.matchAll(/\(([^()"]+)\)"/g)].map(m => m[1]))
   for (const k of bracketed) assert.ok(keys.has(k), "'" + k + "' in a tip is not a shortcut")
-  assert.deepEqual([...new Set(bracketed)].sort(), ["?", "Esc", "e", "m", "o", "p", "r", "s", "t", "x"])
+  assert.deepEqual([...new Set(bracketed)].sort(), ["?", "Esc", "e", "m", "o", "r", "s", "t", "x"])  // p opens the picker from keys; title tip is starred boards
 })
 
 // v0.1.30 regression: his saved setting, exactly as in shell.json. Omarchy
@@ -1281,3 +1281,18 @@ test("accessLine: the token's scopes for Settings > Account, never the token", (
   assert.equal(line(["api", "read_user"]), "Access: api, read_user \u00b7 read and write. Only moving cards, labels and comments need api; read_api is enough to look.")
   assert.equal(line(["read_user"]), "Access: read_user")
 })
+
+test("favorites: jump list merges default, toggles, workflow label name", () => {
+  assert.deepEqual(L.jumpBoards([], "g/p", "7", "Dev"), [{ project: "g/p", id: "7", name: "Dev", isDefault: true }])
+  assert.deepEqual(L.jumpBoards([{ project: "g/o", id: "9", name: "Ops" }], "g/p", "7", "Dev").map(x => x.project), ["g/p", "g/o"])
+  assert.equal(L.jumpLabel({ project: "g/p", id: "", name: "" }), "g/p / Workflow labels")
+  assert.equal(L.boardLabel("Workflow labels (no boards)", ""), "Workflow labels")
+  assert.equal(L.isFavorite([{ project: "g/p", id: "7", name: "Dev" }], "g/p", "7"), true)
+  assert.equal(L.isFavorite([], "g/p", "7"), false)
+  const on = L.toggledFavorite([], { project: "g/p", id: "", name: "Workflow labels" })
+  assert.deepEqual(on, [{ project: "g/p", id: "", name: "Workflow labels" }])
+  assert.deepEqual(L.toggledFavorite(on, { project: "g/p", id: "", name: "Workflow labels" }), [])
+  assert.deepEqual(L.hostFavorites([{ project: "a/b", id: "1", name: "X" }], {}, "gitlab.com", true), [{ project: "a/b", id: "1", name: "X" }])
+  assert.deepEqual(L.hostFavorites([], { "gitlab.example.com": [{ project: "a/b", id: "1", name: "X" }] }, "gitlab.example.com", false), [{ project: "a/b", id: "1", name: "X" }])
+})
+

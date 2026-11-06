@@ -7,6 +7,7 @@
 .import "logic/mrs.js" as Mrs
 .import "logic/bulk.js" as Bulk
 .import "logic/access.js" as Access
+.import "logic/favorites.js" as Favorites
 
 // Pure logic for the board and the issue view, split by concern into logic/*.js.
 // No Qt there, so tests/logic.test.js runs it under node (through
@@ -145,3 +146,11 @@ var accessNote = Access.accessNote
 var accessHint = Access.accessHint
 var accessLine = Access.accessLine
 var patUrl = Access.patUrl
+// favorites.js
+var favoriteKey = Favorites.favoriteKey
+var boardLabel = Favorites.boardLabel
+var jumpLabel = Favorites.jumpLabel
+var hostFavorites = Favorites.hostFavorites
+var jumpBoards = Favorites.jumpBoards
+var isFavorite = Favorites.isFavorite
+var toggledFavorite = Favorites.toggledFavorite

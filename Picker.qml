@@ -113,11 +113,11 @@ Item {
         id: itemMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
         onClicked: view.onProjects ? view.host.pickProject(item.modelData.path) : view.host.pickBoard(item.modelData)
       }
-      // Star = default board (one per widget); clicking it does not switch boards.
+      // Star = favorite for the header jump list; clicking it does not switch boards.
       BoardText {
         id: star
         visible: !view.onProjects
-        readonly property bool on: visible && view.host.isDefaultBoard(item.modelData)
+        readonly property bool on: visible && view.host.isFavoriteBoard(item.modelData)
         anchors { right: parent.right; rightMargin: Style.space(8); verticalCenter: parent.verticalCenter }
         text: on ? "\uf005" : "\uf006"
         color: on || starMouse.containsMouse ? view.host.accent : view.host.dim
@@ -125,9 +125,9 @@ Item {
         MouseArea {
           id: starMouse; anchors.fill: parent; anchors.margins: -Style.space(6)
           hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-          onClicked: view.host.setDefault(item.modelData)
+          onClicked: view.host.toggleFavorite(item.modelData)
         }
-        IconTip { host: view.host; shown: starMouse.containsMouse; text: star.on ? "Your default board" : "Make this your default board" }
+        IconTip { host: view.host; shown: starMouse.containsMouse; text: star.on ? "Remove from starred boards" : "Add to starred boards" }
       }
     }
   }

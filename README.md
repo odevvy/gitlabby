@@ -32,17 +32,23 @@ The popup checks again only when it opens or you click **Try again** (or press `
 never polls. Offline or GitLab errors show the reason instead of a sign-in
 prompt.
 
-## Default board
+## Default board and starred boards
 
-Every shell start opens the default board; browsing other boards in the
-picker doesn't change it. To change it, click the star on a board's row in
-the picker's board step. The header shows a star on the default board and a
-**Default** button that takes you back everywhere else.
+Every shell start opens the default board; browsing other boards doesn't
+change it. The header shows a filled star on the default board. Everywhere
+else, **☆ Default** opens a small menu: go to your default, or make the board
+on screen the default.
+
+The title (`group/project / Board ▾`) opens your **starred boards** jump list
+(the default is always listed, marked Default). Pick a row to switch, or
+**Browse all projects…** for the full picker. In the picker's board step, the
+star adds or removes a board from that list (it no longer sets the default).
 
 ## Popup
 
-- The title, `group/project / Board ▾`, opens the picker: pick a project (type
-  to filter your projects, up to 500, most recently active first), then one of its boards.
+- The title, `group/project / Board ▾`, opens starred boards (or the picker when
+  none are set). **Browse all projects…** still opens the picker: pick a project
+  (type to filter, up to 500, most recently active first), then one of its boards.
 - After the title, the **Board**, **Merge requests** and **To-do** tabs switch
   between the three views (the current one is underlined; the Merge requests tab
   shows how many wait on your review, the To-do tab how many to-dos are pending). On the right: `Updated`, then the refresh, columns
@@ -670,6 +676,8 @@ Settings live on the widget's entry in `~/.config/omarchy/shell.json`:
 | `gitlabHost` | The GitLab server, by its bare name (default `gitlab.com`; `https://` and a trailing `/` are dropped). `http://`, a port or a path aren't accepted here (the server is then `gitlab.com`, and Settings shows the value with its error until you fix it): set those in glab's own config for the host (`api_protocol`, `api_host`, `subfolder`). Every `board-fetch` call gets it as `--hostname` |
 | `defaultProject` | Default project: path or numeric id. Empty (the default): the first board you open |
 | `defaultBoardId`, `defaultBoardName` | Default board; empty means the project's first board |
+| `favorites` | Starred boards on gitlab.com: `[{ "project", "id", "name" }, …]` (jump list). Default `[]` |
+| `serverFavorites` | Starred boards on each other server: `{ "host": [{ "project", "id", "name" }, …] }`. Default `{}` |
 | `refreshIntervalSec` | Refresh interval in seconds |
 | `iconUnlit` | `true`: no dot on the bar icon after an alert (Settings > Keep the bar icon unlit). Default `false` |
 | `openLinks` | Where links open: `browser` (the default; a tab, `omarchy-launch-browser`) or `app` (its own window, `omarchy-launch-webapp`; needs a Chromium-based browser). Anything else is `browser` |

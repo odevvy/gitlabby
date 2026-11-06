@@ -75,7 +75,7 @@ tip_is("H3 keyboard:", h.ev("header.keysButton"), "Keyboard shortcuts (?)")
 key("?"); ok("H3k ? opens the shortcuts", view() == "keys")
 tip_is("H4 the Keys view's ✕:", glyph("KeysView")[0], "Back to the board (Esc)")
 esc(); ok("H4k Esc: back to the board", view() == "board")
-tip_is("H5 title and caret:", h.ev("header.chevron"), "Switch project or board (p)")
+tip_is("H5 title and caret:", h.ev("header.chevron"), "Starred boards")
 key("p"); ok("H5k p opens the picker", view() == "picker")
 h.answer("projects", {"state": "ready", "projects": [{"id": 1, "path": P}]}); h.spin(60)
 tip_is("H6 the picker's ✕:", [g for g in glyph("Picker") if g.property("glyph") == "\uf00d"][0], "Back to the board (Esc)")
@@ -83,10 +83,10 @@ h.ev("root.pickProject('group/app')"); h.spin(50); h.answer("boards", {"state": 
 tip_is("H7 the board step's ‹:", [g for g in glyph("Picker") if g.property("glyph") == "\uf053"][0], "Back to projects")
 stars = [it for it in h.visible(lambda it: cls_is(it, "BoardText") and it.property("text") in ("\uf005", "\uf006")) if any(cls_is(p, "Picker") for p in ancestors(it))]
 t = [hover(s) for s in stars]
-ok("H8 the picker's stars: one 'Your default board', the rest 'Make this your default board', inside", sorted(x[0][0] for x in t if len(x) == 1) == sorted(["Your default board"] + ["Make this your default board"] * (len(stars) - 1)) and all(x[0][1] for x in t), t)
+ok("H8 the picker's stars: favorites tip (Add / Remove), inside", sorted(x[0][0] for x in t if len(x) == 1) == sorted(["Add to starred boards"] * len(stars)) and all(x[0][1] for x in t), t)
 esc(); ok("H6k Esc: back to the board", view() == "board")
 dm = h.ev("header.defaultMark")
-tip_is("H9 the header star (default board):", dm, "Your default board" if h.ev("root.onDefault") else "Go to your default board")
+tip_is("H9 the header star (default board):", dm, "Your default board" if h.ev("root.onDefault") else "Default board")
 # --- columns ---------------------------------------------------------------------------
 strips = [it for it in h.visible(lambda it: cls_is(it, "QQuickMouseArea") and it.property("hoverEnabled")) if any(cls_is(p, "BoardView") for p in ancestors(it))]
 names = [c["name"] for c in h.ev("root.columns")]
