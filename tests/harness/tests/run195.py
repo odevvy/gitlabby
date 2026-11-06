@@ -79,11 +79,27 @@ h.ev("root.openPicker()"); h.spin(60)
 h.answer("projects", {"state": "ready", "projects": [{"id": 1, "path": "group/app"}, {"id": 2, "path": "group/wf"}]}); h.spin(60)
 h.ev("root.pickProject('group/wf')"); h.spin(50)
 h.answer("boards", {"state": "ready", "boards": [{"id": 1, "name": "Main"}, {"id": "", "name": "Workflow labels (no boards)"}]}); h.spin(80)
-h.ok("P0 picker boards: star is favorite, not default tip", True)
-# Toggle favorite on Main via API (same as star click)
+# Click the picker board-row star (not the header Default mark).
+cls_is = lambda it, n: it.metaObject().className().startswith(n)
+def ancestors(it):
+    while it is not None:
+        yield it
+        it = it.parentItem()
+stars = sorted(
+    [it for it in h.visible(lambda it: cls_is(it, "BoardText") and it.property("text") in ("\uf005", "\uf006"))
+     if any(cls_is(p, "Picker") for p in ancestors(it))],
+    key=lambda it: h.scene(it).y())
+h.ok("P0 picker shows board-row stars", len(stars) >= 2, len(stars))
+before_def = (hev("root.defaultProject"), hev("root.defaultBoardId"))
 n = len(writes())
-h.ev("root.toggleFavorite({ id: 1, name: 'Main' })"); h.spin(40)
-h.ok("P1 favoriting Main persists under favorites", hev("Logic.isFavorite(root.hostFavorites, 'group/wf', '1')") is True and len(writes()) > n)
+# Top star is Main (id 1); click it
+h.click(stars[0]); h.spin(60)
+h.ok("P1 star click favorites Main (not setDefault)",
+     hev("Logic.isFavorite(root.hostFavorites, 'group/wf', '1')") is True
+     and (hev("root.defaultProject"), hev("root.defaultBoardId")) == before_def
+     and len(writes()) > n,
+     (hev("Logic.isFavorite(root.hostFavorites, 'group/wf', '1')"), before_def,
+      (hev("root.defaultProject"), hev("root.defaultBoardId")), len(writes()) - n))
 # Workflow-label board (empty id)
 h.ev("root.toggleFavorite({ id: '', name: 'Workflow labels (no boards)' })"); h.spin(40)
 h.ok("P2 workflow board favorited with short name", hev("(function(){ var f = root.hostFavorites; for (var i = 0; i < f.length; i++) if (f[i].project === 'group/wf' && f[i].id === '') return f[i].name; return '' })()") == "Workflow labels")
