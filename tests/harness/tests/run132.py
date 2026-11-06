@@ -7,7 +7,7 @@ import sys, os, json, copy; sys.path.insert(0, os.path.dirname(os.path.dirname(o
 from lib import *
 from fixtures import BOARD
 out = sys.argv[2] if len(sys.argv) > 2 else None
-h = Harness(sys.argv[1], {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": "group/app", "defaultCollapsed": ["closed"]})
+h = Harness(sys.argv[1], {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": "group/app", "defaultCollapsed": ["closed"]})
 P = "https://gitlab.com/group/app/-/pipelines/"
 def card(iid, title, pipeline=None, **kw):
     c = {"iid": iid, "title": title, "labels": ["review"], "url": "https://gitlab.com/group/app/-/issues/%d" % iid,

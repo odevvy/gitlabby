@@ -37,7 +37,7 @@ def ancestors(it):
     while it is not None: yield it; it = it.parentItem()
 
 # --- the 0.1.29 bug: his exact settings, handed over through Qt ------------------------
-HIS = json.loads('''{"id":"odevvy.gitlab-board","boardStates":{"firelink21/phrase41#11714661":{"collapsed":["open","research","closed"],"hidden":[]}},"bots":{"firelink21/phrase41":{"bots":[{"label":"app-ui","name":"App UI"},{"label":"api","name":"API Engineer"},{"label":"auth-mail","name":"Auth & Mail"},{"name":"Product Lead","label":""}],"busyLists":["approved","in progress","review"]}},"defaultBoardId":"","defaultBoardName":"","defaultCollapsed":["closed","research","open"],"defaultProject":"firelink21/phrase41","refreshIntervalSec":120,"settingsRevision":2}''')
+HIS = json.loads('''{"id":"odevvy.gitlabby","boardStates":{"firelink21/phrase41#11714661":{"collapsed":["open","research","closed"],"hidden":[]}},"bots":{"firelink21/phrase41":{"bots":[{"label":"app-ui","name":"App UI"},{"label":"api","name":"API Engineer"},{"label":"auth-mail","name":"Auth & Mail"},{"name":"Product Lead","label":""}],"busyLists":["approved","in progress","review"]}},"defaultBoardId":"","defaultBoardName":"","defaultCollapsed":["closed","research","open"],"defaultProject":"firelink21/phrase41","refreshIntervalSec":120,"settingsRevision":2}''')
 Q = "firelink21/phrase41"
 h = Harness(sys.argv[1], None)
 h.ev("root").setProperty("settings", HIS)  # as Omarchy does: QVariantMap, lists as Qt sequences
@@ -65,7 +65,7 @@ h.stop_all(); finish()
 
 # --- the header ------------------------------------------------------------------
 P = "group/app"
-h = Harness(sys.argv[1], {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": P})
+h = Harness(sys.argv[1], {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": P})
 h.ev("root.opened = true"); h.spin(80); h.answer("board", BOARD); h.spin(120)
 tip_is("H1 refresh:", h.ev("header.refreshButton"), "Refresh (r)"); shot("tip-refresh")
 h.stop_all(); key("r"); ok("H1k r refreshes", bool(h.running("board"))); h.answer("board", BOARD)
