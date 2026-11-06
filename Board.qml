@@ -871,6 +871,18 @@ Panel {
         }
       }
 
+      // Dismiss jump/default menus: click outside the elevated header closes
+      // them without activating the board underneath.
+      MouseArea {
+        id: headerMenuDismiss
+        objectName: "headerMenuDismiss"
+        anchors.fill: parent
+        visible: root.headerMenu !== ""
+        enabled: visible
+        z: 20
+        onClicked: root.headerMenu = ""
+      }
+
       BoardHeader {
         id: header
         host: root
