@@ -254,7 +254,7 @@ Item {
     // screen), as Omarchy's Ui/Button.qml spins its icon, and finishes the
     // turn it is on, so it always stops upright. The timer's doesn't spin it.
     RotationAnimation on rotation { running: host.loudRefresh; alwaysRunToEnd: true; loops: Animation.Infinite; from: 0; to: 360; duration: 900 }
-    onClicked: host.refresh()
+    onClicked: { host.headerMenu = ""; host.refresh() }
   }
   // Show or hide columns: opens the column row under the bots (board only).
   // Shows how many are hidden, so a hidden column is never forgotten.
@@ -266,7 +266,7 @@ Item {
     text: "\uf0db" + (hiddenCount > 0 ? " " + hiddenCount : "")
     active: host.columnChips
     tip: hiddenCount > 0 ? "Show or hide columns (" + hiddenCount + " hidden)" : "Show or hide columns"
-    onClicked: host.columnChips = !host.columnChips
+    onClicked: { host.headerMenu = ""; host.columnChips = !host.columnChips }
   }
   // The keyboard shortcuts (KeysView), like ? does.
   HeadButton {
@@ -292,7 +292,8 @@ Item {
     objectName: "defaultMenu"
     visible: host.headerMenu === "default"
     z: 30
-    anchors { top: defaultMark.bottom; topMargin: Style.space(4); left: defaultMark.left }
+    clip: true
+    anchors { top: defaultMark.bottom; topMargin: Style.space(10); left: defaultMark.left }
     width: Style.space(260)
     height: defaultMenuCol.implicitHeight + Style.space(8)
     radius: Style.space(6)
@@ -307,17 +308,23 @@ Item {
           { id: "go", label: "Go to your default board" },
           { id: "make", label: "Make this your default" }
         ]
-        delegate: Rectangle {
+        delegate: Item {
           id: defRow
           required property var modelData
           width: defaultMenuCol.width; height: Style.space(28)
-          color: defMouse.containsMouse ? header.hoverFill : "transparent"
-          border { width: defMouse.containsMouse ? 1 : 0; color: host.accent }
+          readonly property bool rowHovered: defMouse.containsMouse
+          Rectangle {
+            objectName: "defHover"
+            anchors { fill: parent; leftMargin: Style.space(4); rightMargin: Style.space(4); topMargin: Style.space(2); bottomMargin: Style.space(2) }
+            radius: Style.space(4)
+            border.width: 0
+            color: defRow.rowHovered ? header.hoverFill : "transparent"
+          }
           BoardText {
             anchors { left: parent.left; leftMargin: Style.space(10); verticalCenter: parent.verticalCenter; right: parent.right; rightMargin: Style.space(10) }
             elide: Text.ElideRight
             text: defRow.modelData.label
-            color: defMouse.containsMouse ? host.foreground : host.dim
+            color: defRow.rowHovered ? host.foreground : host.dim
             font.pixelSize: Style.font.bodySmall
           }
           MouseArea {
@@ -338,7 +345,8 @@ Item {
     objectName: "jumpMenu"
     visible: host.headerMenu === "jump"
     z: 30
-    anchors { top: title.bottom; topMargin: Style.space(4); left: title.left }
+    clip: true
+    anchors { top: title.bottom; topMargin: Style.space(10); left: title.left }
     width: Math.min(header.width - Style.space(16), Style.space(420))
     height: jumpMenuCol.implicitHeight + Style.space(8)
     radius: Style.space(6)
@@ -349,13 +357,22 @@ Item {
       y: Style.space(4); width: parent.width
       Repeater {
         model: host.jumpBoards
-        delegate: Rectangle {
+        delegate: Item {
           id: jumpRow
           required property var modelData
+          required property int index
           readonly property bool isDefaultRow: jumpRow.modelData.isDefault === true
+          // × MouseArea sits above jumpMouse; count it as hovered too.
+          readonly property bool rowHovered: jumpMouse.containsMouse || xMouse.containsMouse
           width: jumpMenuCol.width; height: Style.space(56)
-          color: jumpMouse.containsMouse ? header.hoverFill : "transparent"
-          border { width: jumpMouse.containsMouse ? 1 : 0; color: host.accent }
+          Rectangle {
+            id: jumpHover
+            objectName: "jumpHover"
+            anchors { fill: parent; leftMargin: Style.space(4); rightMargin: Style.space(4); topMargin: Style.space(2); bottomMargin: Style.space(2) }
+            radius: Style.space(4)
+            border.width: 0
+            color: jumpRow.rowHovered ? header.hoverFill : "transparent"
+          }
           BoardText {
             id: jumpStar
             anchors { left: parent.left; leftMargin: Style.space(10); verticalCenter: parent.verticalCenter }
@@ -375,7 +392,7 @@ Item {
               width: parent.width
               elide: Text.ElideRight
               text: Logic.boardLabel(jumpRow.modelData.name, jumpRow.modelData.id)
-              color: jumpMouse.containsMouse ? host.foreground : host.foreground
+              color: host.foreground
               font.pixelSize: Style.font.bodySmall
             }
             BoardText {
@@ -406,6 +423,7 @@ Item {
             onClicked: host.jumpTo(jumpRow.modelData)
           }
           MouseArea {
+            id: xMouse
             // Above the row: × unfavorites without jumping; menu stays open.
             anchors.fill: jumpRemove; anchors.margins: -Style.space(6)
             visible: jumpRemove.visible
@@ -422,14 +440,21 @@ Item {
         width: parent.width; height: 1
         color: Qt.rgba(host.foreground.r, host.foreground.g, host.foreground.b, 0.12)
       }
-      Rectangle {
+      Item {
         id: browseRow
         width: jumpMenuCol.width; height: Style.space(28)
-        color: browseMouse.containsMouse ? header.hoverFill : "transparent"
+        readonly property bool rowHovered: browseMouse.containsMouse
+        Rectangle {
+          objectName: "browseHover"
+          anchors { fill: parent; leftMargin: Style.space(4); rightMargin: Style.space(4); topMargin: Style.space(2); bottomMargin: Style.space(2) }
+          radius: Style.space(4)
+          border.width: 0
+          color: browseRow.rowHovered ? header.hoverFill : "transparent"
+        }
         BoardText {
           anchors { left: parent.left; leftMargin: Style.space(10); verticalCenter: parent.verticalCenter; right: parent.right; rightMargin: Style.space(10) }
           text: "Browse all projects…"
-          color: browseMouse.containsMouse ? host.foreground : host.dim
+          color: browseRow.rowHovered ? host.foreground : host.dim
           font.pixelSize: Style.font.bodySmall
         }
         MouseArea {
