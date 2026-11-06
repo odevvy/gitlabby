@@ -22,8 +22,8 @@ import "components"
 // in shell.json.
 Panel {
   id: root
-  moduleName: "odevvy.gitlab-board"
-  ipcTarget: "odevvy.gitlab-board"
+  moduleName: "odevvy.gitlabby"
+  ipcTarget: "odevvy.gitlabby"
 
   readonly property color foreground: Commons.Color.popups.text
   readonly property color accent: Commons.Color.accent
@@ -739,7 +739,7 @@ Panel {
     id: button
     anchors.fill: parent; bar: root.bar
     text: root.icon
-    tooltipText: "GitLab board" + (root.project !== "" ? " · " + root.project : "") + (root.iconLit ? " · an alert came" : "")
+    tooltipText: "GitLabby" + (root.project !== "" ? " · " + root.project : "") + (root.iconLit ? " · an alert came" : "")
     onPressed: function(buttonCode) {
       if (buttonCode === Qt.RightButton || buttonCode === Qt.MiddleButton) root.refresh()
       else root.toggle()

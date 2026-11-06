@@ -18,16 +18,16 @@ def settle():
 LAST = [A]
 def feed_answer(data): LAST[0] = data; answer(data)
 spin(150)
-ok("D0 no alert yet: no dot on either screen", dots() == [False, False] and tips() == ["GitLab board · group/app"] * 2, (dots(), tips()))
+ok("D0 no alert yet: no dot on either screen", dots() == [False, False] and tips() == ["GitLabby · group/app"] * 2, (dots(), tips()))
 bg(); feed_answer(A)
 ok("D1 the first load announces nothing: no dot", dots() == [False, False])
 age(); bg(); feed_answer(B)
-ok("D2 an alert: a dot on both screens, and the tip says why", len(notes()) == 1 and dots() == [True, True] and tips() == ["GitLab board · group/app · an alert came"] * 2, (len(notes()), dots(), tips()))
+ok("D2 an alert: a dot on both screens, and the tip says why", len(notes()) == 1 and dots() == [True, True] and tips() == ["GitLabby · group/app · an alert came"] * 2, (len(notes()), dots(), tips()))
 w, h_, dx, dy, ds = (ev("a", e) for e in ("button.width", "button.height", "alertDot.x", "alertDot.y", "alertDot.width"))
 ok("D3 small (5 points), round, at the icon's top right, inside the button", ds == 5 and ev("a", "alertDot.radius") == 2.5 and dx > w / 2 and dx + ds <= w and dy >= 0 and dy + ds < h_ / 2, (w, h_, dx, dy, ds))
 ok("D4 in the accent", ev("a", "String(alertDot.color) === String(root.accent)"))
 ev("b", "root.opened = true"); spin(120); settle()
-ok("D5 opening the popup on one screen clears both", dots() == [False, False] and ev("a", "root.feed.unseenAlerts") == 0 and tips() == ["GitLab board · group/app"] * 2, (dots(), tips()))
+ok("D5 opening the popup on one screen clears both", dots() == [False, False] and ev("a", "root.feed.unseenAlerts") == 0 and tips() == ["GitLabby · group/app"] * 2, (dots(), tips()))
 age(); ev("b", "root.refresh(true)"); spin(60); feed_answer(C); spin(100)
 ok("D6 an alert while a popup is open: no dot", len(notes()) == 2 and dots() == [False, False], (len(notes()), dots()))
 ev("b", "root.opened = false"); spin(120)
@@ -43,7 +43,7 @@ wr = (ev("a", "root.bar.shell.writes") or [])[w0:]
 ok("U1 setIconUnlit(true) saves iconUnlit: true with the rest", wr and wr[-1].get("iconUnlit") is True and wr[-1].get("alerts") == SETTINGS["alerts"] and wr[-1].get("defaultProject") == P, wr and wr[-1])
 for k in ("a", "b"): ev(k, "root.settings = Object.assign({}, root.settings, { iconUnlit: true })")
 spin(60)
-ok("U2 kept unlit: no dot on either screen, the plain tip, the alert still sent", dots() == [False, False] and tips() == ["GitLab board · group/app"] * 2 and len(notes()) == 4, (dots(), tips()))
+ok("U2 kept unlit: no dot on either screen, the plain tip, the alert still sent", dots() == [False, False] and tips() == ["GitLabby · group/app"] * 2 and len(notes()) == 4, (dots(), tips()))
 odd = []
 for v in ["true", 1, "yes"]:
     for k in ("a", "b"): ev(k, "root.settings = Object.assign({}, root.settings, { iconUnlit: %s })" % json.dumps(v))

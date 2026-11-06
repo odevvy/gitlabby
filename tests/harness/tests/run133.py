@@ -10,7 +10,7 @@ from lib import *
 from fixtures import BOARD
 from PySide6.QtGui import QImage, QPainter, QColor
 out = sys.argv[2] if len(sys.argv) > 2 else None
-SETTINGS = {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": "group/app", "defaultBoardId": "7", "defaultBoardName": "Development", "refreshIntervalSec": 60}
+SETTINGS = {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": "group/app", "defaultBoardId": "7", "defaultBoardName": "Development", "refreshIntervalSec": 60}
 MAIN = """import QtQuick
 import QtQuick.Window
 Item {
@@ -19,7 +19,7 @@ Item {
   // bar.shell as Omarchy gives a third-party widget under the built-in bar: own service only.
   component Shell: QtObject {
     property var writes: []
-    function serviceFor(id) { return id === "odevvy.gitlab-board" ? svc : null }
+    function serviceFor(id) { return id === "odevvy.gitlabby" ? svc : null }
     function updateEntryInline(id, s) { writes = writes.concat([s]); return true }
   }
   component Bar: QtObject { property var shell: Shell {} }
