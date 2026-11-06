@@ -35,7 +35,7 @@ h-chevron-title	BoardHeader.qml	color: titleMouse.containsMouse ? host.accent : 
 h-star-accent	BoardHeader.qml	color: defaultMouse.containsMouse ? host.accent : host.dim	color: host.onDefault || defaultMouse.containsMouse ? host.accent : host.dim	qml	harness/tests/run152.py
 h-columns-gone	BoardHeader.qml	visible: host.view === "board" && host.boardState === "ready" && host.setup === ""	visible: false	qml	harness/tests/run152.py
 h-columns-everywhere	BoardHeader.qml	visible: host.view === "board" && host.boardState === "ready" && host.setup === ""	visible: true	qml	harness/tests/run152.py
-h-columns-no-toggle	BoardHeader.qml	onClicked: host.columnChips = !host.columnChips	onClicked: {}	qml	harness/tests/run152.py
+h-columns-no-toggle	BoardHeader.qml	onClicked: { host.headerMenu = ""; host.columnChips = !host.columnChips }	onClicked: {}	qml	harness/tests/run152.py
 h-columns-no-count	BoardHeader.qml	(hiddenCount > 0 ? " " + hiddenCount : "")	""	qml	harness/tests/run152.py
 b-quiet-is-dim	Board.qml	readonly property color quiet: Qt.tint(foreground, Qt.rgba(background.r, background.g, background.b, 0.55))	readonly property color quiet: dim	qml	harness/tests/run152.py
 s-status-dim	BoardHeader.qml	!host.cached ? host.quiet : host.accent	!host.cached ? host.dim : host.accent	qml	harness/tests/run152.py
