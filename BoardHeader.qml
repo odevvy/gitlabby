@@ -145,8 +145,8 @@ Item {
   MouseArea {
     id: titleMouse
     x: title.x; width: chevron.x + chevron.width - title.x; height: parent.height
-    hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: host.openPicker()
-    IconTip { host: header.host; shown: titleMouse.containsMouse; text: "Switch project or board (p)" }
+    hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: host.openJumpMenu()
+    IconTip { host: header.host; shown: titleMouse.containsMouse && host.headerMenu === ""; text: "Starred boards" }
   }
   BoardText {
     id: defaultMark
@@ -157,9 +157,9 @@ Item {
     MouseArea {
       id: defaultMouse; anchors.fill: parent; anchors.margins: -Style.space(4)
       enabled: host.project !== ""; hoverEnabled: true; cursorShape: host.onDefault ? Qt.ArrowCursor : Qt.PointingHandCursor
-      onClicked: if (!host.onDefault) host.openDefault()
+      onClicked: if (!host.onDefault) host.openDefaultMenu()
     }
-    IconTip { host: header.host; shown: defaultMouse.containsMouse; text: host.onDefault ? "Your default board" : "Go to your default board" }
+    IconTip { host: header.host; shown: defaultMouse.containsMouse && host.headerMenu === ""; text: host.onDefault ? "Your default board" : "Default board" }
   }
   // Board · Merge requests: the two views, after a hairline.
   Rectangle {
@@ -284,5 +284,121 @@ Item {
     active: host.view === "settings"
     tip: "Settings (s)"
     onClicked: host.toggleView("settings")
+  }
+
+  // A · outline Default: Go to your default / Make this your default.
+  Rectangle {
+    id: defaultMenu
+    objectName: "defaultMenu"
+    visible: host.headerMenu === "default"
+    z: 30
+    anchors { top: defaultMark.bottom; topMargin: Style.space(4); left: defaultMark.left }
+    width: Style.space(260)
+    height: defaultMenuCol.implicitHeight + Style.space(8)
+    radius: Style.space(6)
+    color: host.background
+    border { width: 1; color: Qt.rgba(host.foreground.r, host.foreground.g, host.foreground.b, 0.2) }
+    Column {
+      id: defaultMenuCol
+      y: Style.space(4); width: parent.width
+      spacing: 0
+      Repeater {
+        model: [
+          { id: "go", label: "Go to your default board" },
+          { id: "make", label: "Make this your default" }
+        ]
+        delegate: Rectangle {
+          id: defRow
+          required property var modelData
+          width: defaultMenuCol.width; height: Style.space(28)
+          color: defMouse.containsMouse ? header.hoverFill : "transparent"
+          border { width: defMouse.containsMouse ? 1 : 0; color: host.accent }
+          BoardText {
+            anchors { left: parent.left; leftMargin: Style.space(10); verticalCenter: parent.verticalCenter; right: parent.right; rightMargin: Style.space(10) }
+            elide: Text.ElideRight
+            text: defRow.modelData.label
+            color: defMouse.containsMouse ? host.foreground : host.dim
+            font.pixelSize: Style.font.bodySmall
+          }
+          MouseArea {
+            id: defMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+            onClicked: {
+              if (defRow.modelData.id === "go") host.openDefault()
+              else host.setDefaultCurrent()
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // B · title: starred boards, then Browse all projects…
+  Rectangle {
+    id: jumpMenu
+    objectName: "jumpMenu"
+    visible: host.headerMenu === "jump"
+    z: 30
+    anchors { top: title.bottom; topMargin: Style.space(4); left: title.left }
+    width: Math.min(header.width - Style.space(16), Style.space(360))
+    height: jumpMenuCol.implicitHeight + Style.space(8)
+    radius: Style.space(6)
+    color: host.background
+    border { width: 1; color: Qt.rgba(host.foreground.r, host.foreground.g, host.foreground.b, 0.2) }
+    Column {
+      id: jumpMenuCol
+      y: Style.space(4); width: parent.width
+      Repeater {
+        model: host.jumpBoards
+        delegate: Rectangle {
+          id: jumpRow
+          required property var modelData
+          width: jumpMenuCol.width; height: Style.space(28)
+          color: jumpMouse.containsMouse ? header.hoverFill : "transparent"
+          border { width: jumpMouse.containsMouse ? 1 : 0; color: host.accent }
+          BoardText {
+            id: jumpStar
+            anchors { left: parent.left; leftMargin: Style.space(10); verticalCenter: parent.verticalCenter }
+            text: "\uf005"; color: host.accent; font.pixelSize: Style.font.bodySmall
+          }
+          BoardText {
+            anchors { left: jumpStar.right; leftMargin: Style.space(8); verticalCenter: parent.verticalCenter; right: jumpDefault.visible ? jumpDefault.left : parent.right; rightMargin: Style.space(8) }
+            elide: Text.ElideMiddle
+            text: Logic.jumpLabel(jumpRow.modelData)
+            color: jumpMouse.containsMouse ? host.foreground : host.dim
+            font.pixelSize: Style.font.bodySmall
+          }
+          BoardText {
+            id: jumpDefault
+            visible: jumpRow.modelData.isDefault === true
+            anchors { right: parent.right; rightMargin: Style.space(10); verticalCenter: parent.verticalCenter }
+            text: "Default"; color: host.quiet; font.pixelSize: Style.font.caption
+          }
+          MouseArea {
+            id: jumpMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+            onClicked: host.jumpTo(jumpRow.modelData)
+          }
+        }
+      }
+      Rectangle {
+        visible: host.jumpBoards.length > 0
+        width: parent.width; height: 1
+        color: Qt.rgba(host.foreground.r, host.foreground.g, host.foreground.b, 0.12)
+      }
+      Rectangle {
+        id: browseRow
+        width: jumpMenuCol.width; height: Style.space(28)
+        color: browseMouse.containsMouse ? header.hoverFill : "transparent"
+        BoardText {
+          anchors { left: parent.left; leftMargin: Style.space(10); verticalCenter: parent.verticalCenter; right: parent.right; rightMargin: Style.space(10) }
+          text: "Browse all projects…"
+          color: browseMouse.containsMouse ? host.foreground : host.dim
+          font.pixelSize: Style.font.bodySmall
+        }
+        MouseArea {
+          id: browseMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+          onClicked: host.openBrowse()
+        }
+      }
+    }
   }
 }
