@@ -145,7 +145,7 @@ f-no-folding	Board.qml	function startFold() { folding = true; foldClock.restart(
 f-never-ends	Board.qml	onTriggered: root.folding = false	onTriggered: root.folding = true	qml	harness/tests/run156.py
 f-answers-not-held	Board.qml	bulkBar.armed || folding	bulkBar.armed	qml	harness/tests/run156.py
 w-popup-snaps	Board.qml	: root.shownBoardWidth) + panel.padding	: root.boardWidth) + panel.padding	qml	harness/tests/run156.py
-w-popup-always	Board.qml	Behavior on shownBoardWidth { enabled: root.folding;	Behavior on shownBoardWidth { enabled: true;	qml	harness/tests/run156.py
+w-popup-always	Board.qml	enabled: root.folding || root.widthAnim	enabled: true	qml	harness/tests/run156.py
 c-column-always	BoardView.qml	Behavior on width { enabled: view.host.folding;	Behavior on width { enabled: true;	qml	harness/tests/run156.py
 c-column-slow	BoardView.qml	enabled: view.host.folding; NumberAnimation { duration: 150	enabled: view.host.folding; NumberAnimation { duration: 400	qml	harness/tests/run156.py
 c-column-snaps	BoardView.qml	Behavior on width { enabled: view.host.folding;	Behavior on width { enabled: false;	qml	harness/tests/run156.py
