@@ -6,7 +6,7 @@ import sys, os, json; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path
 from lib import *
 from fixtures import BOARD
 P, H = "group/app", "gitlab.example.com"
-SETTINGS = {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": P, "defaultBoardId": "7", "defaultBoardName": "Development",
+SETTINGS = {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": P, "defaultBoardId": "7", "defaultBoardName": "Development",
             "refreshIntervalSec": 60, "defaultCollapsed": ["closed"], "boardStates": {}}
 h = Harness(sys.argv[1], SETTINGS)
 writes = lambda: h.ev("root.bar.shell.writes") or []
