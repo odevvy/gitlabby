@@ -332,14 +332,14 @@ Item {
     }
   }
 
-  // B · title: starred boards, then Browse all projects…
+  // B · title: starred boards (roomy two-line rows), then Browse all projects…
   Rectangle {
     id: jumpMenu
     objectName: "jumpMenu"
     visible: host.headerMenu === "jump"
     z: 30
     anchors { top: title.bottom; topMargin: Style.space(4); left: title.left }
-    width: Math.min(header.width - Style.space(16), Style.space(360))
+    width: Math.min(header.width - Style.space(16), Style.space(420))
     height: jumpMenuCol.implicitHeight + Style.space(8)
     radius: Style.space(6)
     color: Qt.rgba(host.background.r, host.background.g, host.background.b, 1)
@@ -352,7 +352,8 @@ Item {
         delegate: Rectangle {
           id: jumpRow
           required property var modelData
-          width: jumpMenuCol.width; height: Style.space(28)
+          readonly property bool isDefaultRow: jumpRow.modelData.isDefault === true
+          width: jumpMenuCol.width; height: Style.space(56)
           color: jumpMouse.containsMouse ? header.hoverFill : "transparent"
           border { width: jumpMouse.containsMouse ? 1 : 0; color: host.accent }
           BoardText {
@@ -360,22 +361,59 @@ Item {
             anchors { left: parent.left; leftMargin: Style.space(10); verticalCenter: parent.verticalCenter }
             text: "\uf005"; color: host.accent; font.pixelSize: Style.font.bodySmall
           }
-          BoardText {
-            anchors { left: jumpStar.right; leftMargin: Style.space(8); verticalCenter: parent.verticalCenter; right: jumpDefault.visible ? jumpDefault.left : parent.right; rightMargin: Style.space(8) }
-            elide: Text.ElideMiddle
-            text: Logic.jumpLabel(jumpRow.modelData)
-            color: jumpMouse.containsMouse ? host.foreground : host.dim
-            font.pixelSize: Style.font.bodySmall
+          Column {
+            id: jumpLabels
+            anchors {
+              left: jumpStar.right; leftMargin: Style.space(8)
+              verticalCenter: parent.verticalCenter
+              right: jumpRow.isDefaultRow ? jumpDefault.left : jumpRemove.left
+              rightMargin: Style.space(8)
+            }
+            spacing: Style.space(2)
+            BoardText {
+              objectName: "jumpBoardName"
+              width: parent.width
+              elide: Text.ElideRight
+              text: Logic.boardLabel(jumpRow.modelData.name, jumpRow.modelData.id)
+              color: jumpMouse.containsMouse ? host.foreground : host.foreground
+              font.pixelSize: Style.font.bodySmall
+            }
+            BoardText {
+              objectName: "jumpProject"
+              width: parent.width
+              elide: Text.ElideMiddle
+              text: String(jumpRow.modelData.project || "")
+              color: host.dim
+              font.pixelSize: Style.font.caption
+            }
           }
           BoardText {
             id: jumpDefault
-            visible: jumpRow.modelData.isDefault === true
+            objectName: "jumpDefaultBadge"
+            visible: jumpRow.isDefaultRow
             anchors { right: parent.right; rightMargin: Style.space(10); verticalCenter: parent.verticalCenter }
             text: "Default"; color: host.quiet; font.pixelSize: Style.font.caption
+          }
+          BoardText {
+            id: jumpRemove
+            objectName: "jumpUnfavorite"
+            visible: !jumpRow.isDefaultRow
+            anchors { right: parent.right; rightMargin: Style.space(10); verticalCenter: parent.verticalCenter }
+            text: "\uf00d"; color: host.dim; font.pixelSize: Style.font.bodySmall
           }
           MouseArea {
             id: jumpMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
             onClicked: host.jumpTo(jumpRow.modelData)
+          }
+          MouseArea {
+            // Above the row: × unfavorites without jumping; menu stays open.
+            anchors.fill: jumpRemove; anchors.margins: -Style.space(6)
+            visible: jumpRemove.visible
+            enabled: jumpRemove.visible
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            z: 2
+            onClicked: host.unfavoriteJump(jumpRow.modelData)
           }
         }
       }
