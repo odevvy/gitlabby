@@ -14,7 +14,7 @@ P = "group/app"
 BOARD = {"state": "ready", "project": P, "updatedAt": "2026-10-31T13:20:00Z", "message": "", "labelColors": {}, "boards": [{"id": 1, "name": "Dev"}], "board": {"id": 1, "name": "Dev"}, "fallback": False,
   "columns": [{"name": "Open", "kind": "open", "issues": []}] + [{"name": n, "kind": "label", "listId": i, "color": "#5b9bd5", "issues": []} for i, n in enumerate(["research", "todo", "approved", "in progress", "review"])] + [{"name": "Closed", "kind": "closed", "issues": []}]}
 BOTS = {P: {"busyLists": ["approved", "review"], "bots": [{"name": "App UI", "label": "app-ui"}, {"name": "Spec QA", "list": "review"}]}}
-h = Harness(src, {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": ["open", "closed"], "bots": BOTS, "alerts": {P: {"review": True}}})
+h = Harness(src, {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": ["open", "closed"], "bots": BOTS, "alerts": {P: {"review": True}}})
 h.ev("panel.availableCardHeight = 1400; panel.availableCardWidth = 1460")
 h.ev("root.opened = true"); h.spin(60); h.answer("board", BOARD); h.spin(150)
 h.ev("root.showView('settings')"); h.spin(150); h.answer("whoami", {"state": "ready", "message": "", "user": "o_devvy"}); h.spin(80)

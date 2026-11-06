@@ -17,7 +17,7 @@ def mr(iid, title, status):
     return {"iid": iid, "title": title, "url": "https://gitlab.com/%s/-/merge_requests/%d" % (P, iid), "draft": False, "project": P, "branch": "b%d" % iid,
             "updatedAt": "2026-10-31T13:00:00Z", "status": status, "author": {"username": "o", "name": "odevvy", "avatar": ""}, "pipeline": None, "reviewers": []}
 ANS = {"state": "ready", "message": "", "scope": "all", "updatedAt": "2026-10-31T13:20:00Z", "review": [], "mine": [mr(132, "docs: apply #126", "mergeable"), mr(131, "feat: alerts", "conflict")]}
-h = Harness(src, {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": []})
+h = Harness(src, {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": []})
 h.ev("panel.availableCardHeight = 900; panel.availableCardWidth = 1460")
 h.ev("root.opened = true"); h.spin(60); h.answer("board", BOARD); h.spin(150)
 h.ev("root.showView('mrs')"); h.spin(80); h.answer("mrs", ANS); h.spin(150)

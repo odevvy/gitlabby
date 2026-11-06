@@ -18,7 +18,7 @@ BOARD = {"state": "ready", "project": P, "updatedAt": "2026-10-31T13:20:00Z", "m
     {"name": "todo", "kind": "label", "listId": 2, "color": "#5b9bd5", "issues": []},
     {"name": "review", "kind": "label", "listId": 4, "color": "#a855f7", "issues": [iss(135, ["review"], "Magic link: expire after one use")]},
     {"name": "Closed", "kind": "closed", "issues": [iss(90, [])]}]}
-h = Harness(src, {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": ["open", "closed"], "bots": {P: {"busyLists": ["review"], "bots": [{"name": "QA", "list": "review"}]}}})
+h = Harness(src, {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": ["open", "closed"], "bots": {P: {"busyLists": ["review"], "bots": [{"name": "QA", "list": "review"}]}}})
 h.ev("panel.availableCardHeight = 900; panel.availableCardWidth = 1460")
 h.ev("root.opened = true"); h.spin(60); h.answer("board", BOARD); h.spin(200)
 same = lambda a, c: abs(a.redF() - c.redF()) < 0.01 and abs(a.greenF() - c.greenF()) < 0.01 and abs(a.blueF() - c.blueF()) < 0.01
