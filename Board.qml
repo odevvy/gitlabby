@@ -858,6 +858,8 @@ Panel {
         mrsScope: mrsView.scope
         todoScope: todoView.scope
         width: parent.width
+        // Overflowing jump/default menus must paint above BotsRow and the board.
+        z: root.headerMenu !== "" ? 40 : 0
       }
 
       BotsRow {

@@ -296,7 +296,7 @@ Item {
     width: Style.space(260)
     height: defaultMenuCol.implicitHeight + Style.space(8)
     radius: Style.space(6)
-    color: host.background
+    color: Qt.rgba(host.background.r, host.background.g, host.background.b, 1)
     border { width: 1; color: Qt.rgba(host.foreground.r, host.foreground.g, host.foreground.b, 0.2) }
     Column {
       id: defaultMenuCol
@@ -342,7 +342,7 @@ Item {
     width: Math.min(header.width - Style.space(16), Style.space(360))
     height: jumpMenuCol.implicitHeight + Style.space(8)
     radius: Style.space(6)
-    color: host.background
+    color: Qt.rgba(host.background.r, host.background.g, host.background.b, 1)
     border { width: 1; color: Qt.rgba(host.foreground.r, host.foreground.g, host.foreground.b, 0.2) }
     Column {
       id: jumpMenuCol
