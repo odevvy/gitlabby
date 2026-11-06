@@ -1,0 +1,19 @@
+# Mutation rows from 0.1.95 on. Columns: name, file, from, to, kind, test.
+# v0.1.95: Default menu + starred jump list
+fav-no-default-merge	logic/favorites.js	if (dp !== "") add({ project: dp, id: defId, name: defName }, true)	if (false) add({ project: dp, id: defId, name: defName }, true)	node	logic.test.js
+fav-toggle-noop	logic/favorites.js	if (!found) out.push(e)	if (false) out.push(e)	node	logic.test.js
+fav-workflow-raw	logic/favorites.js	var cut = n.indexOf(" (")
+  return cut > 0 ? n.slice(0, cut) : n	return n	node	logic.test.js
+hdr-default-opens-go	BoardHeader.qml	onClicked: if (!host.onDefault) host.openDefaultMenu()	onClicked: if (!host.onDefault) host.openDefault()	qml	harness/tests/run195.py
+hdr-title-opens-picker	BoardHeader.qml	onClicked: host.openJumpMenu()	onClicked: host.openPicker()	qml	harness/tests/run195.py
+hdr-no-make-default	Board.qml	function setDefaultCurrent() {
+    project = project; boardId = boardId; boardName = boardName
+    persist({ board: { project: project, id: boardId || resolvedBoardId, name: boardName } })
+    headerMenu = ""
+  }	function setDefaultCurrent() { headerMenu = "" }	qml	harness/tests/run195.py
+pk-star-sets-default	Picker.qml	onClicked: view.host.toggleFavorite(item.modelData)	onClicked: view.host.setDefaultCurrent()	qml	harness/tests/run195.py
+pk-star-tip-default	Picker.qml	text: star.on ? "Remove from starred boards" : "Add to starred boards"	text: star.on ? "Your default board" : "Make this your default board"	qml	harness/tests/run130b.py
+jump-empty-stays	Board.qml	if (jumpBoards.length === 0) openPicker()
+    else headerMenu = headerMenu === "jump" ? "" : "jump"	headerMenu = headerMenu === "jump" ? "" : "jump"	qml	harness/tests/run195.py
+esc-ignores-menu	BoardKeys.qml	if (host.headerMenu !== "") host.headerMenu = ""
+    else if (host.pendingMove) host.cancelMove()	if (host.pendingMove) host.cancelMove()	qml	harness/tests/run195.py
