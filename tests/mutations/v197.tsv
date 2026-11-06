@@ -1,0 +1,8 @@
+# Mutation rows from 0.1.97 on. Columns: name, file, from, to, kind, test.
+# v0.1.97: roomier jump rows + × unfavorite; widthAnim on board switch
+jump-one-line	BoardHeader.qml	text: Logic.boardLabel(jumpRow.modelData.name, jumpRow.modelData.id)	text: Logic.jumpLabel(jumpRow.modelData)	qml	harness/tests/run197.py
+jump-short-row	BoardHeader.qml	width: jumpMenuCol.width; height: Style.space(56)	width: jumpMenuCol.width; height: Style.space(28)	qml	harness/tests/run197.py
+jump-x-on-default	BoardHeader.qml	visible: !jumpRow.isDefaultRow	visible: true	qml	harness/tests/run197.py
+jump-x-jumps	BoardHeader.qml	onClicked: host.unfavoriteJump(jumpRow.modelData)	onClicked: host.jumpTo(jumpRow.modelData)	qml	harness/tests/run197.py
+width-no-switch	Board.qml	if (project !== "") startWidthAnim()	if (false) startWidthAnim()	qml	harness/tests/run197.py
+width-beh-fold-only	Board.qml	enabled: root.folding || root.widthAnim	enabled: root.folding	qml	harness/tests/run197.py

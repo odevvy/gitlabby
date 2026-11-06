@@ -277,9 +277,9 @@ Panel {
     foldSave.restart()
   }
   function saveFolds() { if (foldsUnsaved) persist() }
-  // folding: true for a moment after a fold or hide. Only then do the column
-  // and the popup's width animate (board and view switches stay
-  // instant), and answers wait (held).
+  // folding: true for a moment after a fold or hide. Columns and the popup
+  // width animate, and answers wait (held). Board switches use widthAnim
+  // instead — same 150ms motion, without holding refresh.
   property bool folding: false
   function startFold() { folding = true; foldClock.restart() }
   function toggleCollapsed(name) { startFold(); storeBoard(Logic.toggled(collapsedList(), name), hiddenList()) }
@@ -293,9 +293,17 @@ Panel {
   }
   Timer { id: foldSave; interval: 2000; onTriggered: root.saveFolds() }
   Timer { id: foldClock; interval: 200; onTriggered: root.folding = false }
-  // The popup edge follows the columns while they fold.
+  // Short-lived: animate shownBoardWidth on board switch without setting held.
+  property bool widthAnim: false
+  function startWidthAnim() { widthAnim = true; widthAnimClock.restart() }
+  Timer { id: widthAnimClock; interval: 200; onTriggered: root.widthAnim = false }
+  // The popup edge follows the columns while they fold or the board switches.
   property real shownBoardWidth: boardWidth
-  Behavior on shownBoardWidth { enabled: root.folding; NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+  Behavior on shownBoardWidth {
+    id: boardWidthBeh
+    enabled: root.folding || root.widthAnim
+    NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
+  }
   // One-time update to settings revision 2 (v0.1.3): Open joins the collapsed
   // defaults and every saved board, without touching anything else. Runs again
   // only if it could not be saved.
@@ -523,6 +531,8 @@ Panel {
   }
   function pickBoard(b) { switchTo(pickerProject, String(b.id || ""), b.id ? String(b.name) : "") }
   function switchTo(path, id, name) {
+    // Animate popup width when leaving an already-open board (not first pick).
+    if (project !== "") startWidthAnim()
     project = path
     boardId = id
     boardName = name
@@ -563,6 +573,15 @@ Panel {
   }
   function toggleFavorite(b) {
     persistFavorites(Logic.toggledFavorite(hostFavorites, favoriteEntry(pickerProject, b)))
+  }
+  // Jump-list ×: remove a non-default favorite; leave the menu open (no jump).
+  function unfavoriteJump(entry) {
+    if (!entry || entry.isDefault === true) return
+    persistFavorites(Logic.toggledFavorite(hostFavorites, {
+      project: String(entry.project || ""),
+      id: String(entry.id || ""),
+      name: String(entry.name || "")
+    }))
   }
   // Make the board on screen the default (header menu). Freezes browsing
   // bindings the same way the old picker setDefault did.
@@ -813,7 +832,7 @@ Panel {
     open: root.opened; focusTarget: keyCatcher
     // One frame for every view: the board's width (760 at least) and a fixed
     // 640 height. Views fit or scroll inside it, so switching views never
-    // resizes the popup; only folding columns changes the width.
+    // resizes the popup; folding and board switches change the width.
     // fittedContentWidth caps at availableCardWidth (screen minus margins) and
     // fittedContentHeight at the free screen height (availableCardHeight):
     // anything bigger scrolls inside.
