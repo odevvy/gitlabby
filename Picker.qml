@@ -57,6 +57,8 @@ Item {
       width: parent.width
       foreground: view.host.foreground
       placeholderText: "Filter projects"
+      rightPadding: horizontalPadding + 1 + clear.reserve
+      FieldClear { id: clear; host: view.host }
       onAccepted: view.activate()
       // While typing: Ctrl+j / Ctrl+n down, Ctrl+k / Ctrl+p up (before the
       // field's own Ctrl+K, delete to the end of the line, here only).

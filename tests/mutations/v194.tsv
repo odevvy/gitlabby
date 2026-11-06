@@ -1,0 +1,12 @@
+# Mutation rows from 0.1.94 on. Columns: name, file, from, to, kind, test.
+# v0.1.94: quiet × inside Filter projects / Filter labels (FieldClear)
+fc-always	components/FieldClear.qml	visible: field && field.text.length > 0	visible: true	qml	harness/tests/run194.py
+fc-no-clear	components/FieldClear.qml	clear.field.clear()\n      clear.field.forceActiveFocus()	clear.field.forceActiveFocus()	qml	harness/tests/run194.py
+fc-no-focus	components/FieldClear.qml	clear.field.clear()\n      clear.field.forceActiveFocus()	clear.field.clear()	qml	harness/tests/run194.py
+fc-wrong-glyph	components/FieldClear.qml	text: "\uf00d"	text: "\uf00c"	qml	harness/tests/run194.py
+fc-accent-idle	components/FieldClear.qml	color: mouse.containsMouse ? clear.host.foreground : clear.host.dim	color: clear.host.accent	qml	harness/tests/run194.py
+fc-no-reserve	components/FieldClear.qml	readonly property real reserve: visible ? width + Style.space(6) : 0	readonly property real reserve: 0	qml	harness/tests/run194.py
+pk-no-clear-pad	Picker.qml	rightPadding: horizontalPadding + 1 + clear.reserve	rightPadding: horizontalPadding + 1	qml	harness/tests/run194.py
+lp-no-clear-pad	components/LabelPicker.qml	rightPadding: horizontalPadding + 1 + clear.reserve	rightPadding: horizontalPadding + 1	qml	harness/tests/run194.py
+pk-no-clear	Picker.qml	FieldClear { id: clear; host: view.host }	Item { id: clear; property real reserve: 0 }	qml	harness/tests/run194.py
+lp-no-clear	components/LabelPicker.qml	FieldClear { id: clear; host: picker.host }	Item { id: clear; property real reserve: 0 }	qml	harness/tests/run194.py

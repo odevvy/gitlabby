@@ -45,6 +45,8 @@ Column {
       font.pixelSize: Style.font.bodySmall
       foreground: picker.host.foreground
       placeholderText: "Filter labels"
+      rightPadding: horizontalPadding + 1 + clear.reserve
+      FieldClear { id: clear; host: picker.host }
       onAccepted: if (picker.options.length > 0) picker.picked(picker.options[0].name)
       Keys.onEscapePressed: picker.escaped()
     }
