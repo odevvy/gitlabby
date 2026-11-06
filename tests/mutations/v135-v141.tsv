@@ -35,7 +35,7 @@ logic-no-batch	logic/alerts.js	} else if (came.length > 1) {	} else if (false) {
 logic-batch-each	logic/alerts.js	if (came.length === 1) {	if (came.length >= 1) {	qml	harness/tests/run136.py
 logic-no-escape	logic/alerts.js	"-g", "\uf296", oneLine(ev.headline, 120), escaped(oneLine(ev.body, 300))]	"-g", "\uf296", oneLine(ev.headline, 120), oneLine(ev.body, 300)]	qml	harness/tests/run136.py
 logic-urgency-normal	logic/alerts.js	"-u", "low"	"-u", "normal"	qml	harness/tests/run136.py
-logic-app-default	logic/alerts.js	"--app-name", "GitLab board", 	"--app-name", "omarchy-action", 	qml	harness/tests/run136.py
+logic-app-default	logic/alerts.js	"--app-name", "GitLabby", 	"--app-name", "omarchy-action", 	qml	harness/tests/run136.py
 logic-exec-http	logic/core.js	function httpsUrl(url) { return /^https:	function httpsUrl(url) { return /^https?:	node	logic.test.js
 logic-idle-any	logic/alerts.js	was[i] && was[i].state === "working" && b.state !== "working"	b.state !== "working"	qml	harness/tests/run136.py
 logic-idle-off	logic/alerts.js	  if (opts.idle) {	  if (false) {	qml	harness/tests/run136.py

@@ -132,7 +132,7 @@ function pipelineEvents(prev, next, opts) {
 // "app" an app window (omarchy-launch-webapp), anything else a browser tab
 // (omarchy-launch-browser). https only.
 function notifyArgv(ev, links) {
-  var argv = ["omarchy-notification-send", "--app-name", "GitLab board", "-u", "low", "-g", "\uf296", oneLine(ev.headline, 120), escaped(oneLine(ev.body, 300))]
+  var argv = ["omarchy-notification-send", "--app-name", "GitLabby", "-u", "low", "-g", "\uf296", oneLine(ev.headline, 120), escaped(oneLine(ev.body, 300))]
   if (httpsUrl(ev.url)) argv = argv.concat(["--exec", links === "app" ? "omarchy-launch-webapp" : "omarchy-launch-browser", ev.url])
   return argv
 }

@@ -712,7 +712,7 @@ test("alerts: settings per project, events between two good answers, the notify 
   // The command (Omarchy bin/omarchy-notification-send): our app name, low urgency, the
   // body escaped for StyledText, --exec last with separate words, https only.
   assert.deepEqual(L.notifyArgv({ headline: "#2 is in review", body: "#2 Fix <b> & co · g/p", url: "https://gitlab.com/g/p/-/issues/2" }),
-    ["omarchy-notification-send", "--app-name", "GitLab board", "-u", "low", "-g", "\uf296", "#2 is in review", "#2 Fix &lt;b&gt; &amp; co · g/p", "--exec", "omarchy-launch-browser", "https://gitlab.com/g/p/-/issues/2"])
+    ["omarchy-notification-send", "--app-name", "GitLabby", "-u", "low", "-g", "\uf296", "#2 is in review", "#2 Fix &lt;b&gt; &amp; co · g/p", "--exec", "omarchy-launch-browser", "https://gitlab.com/g/p/-/issues/2"])
   assert.equal(L.notifyArgv({ headline: "h", body: "b", url: "javascript:x" }).indexOf("--exec"), -1)
   // v0.1.74: a click opens the link as Settings > Open links in says.
   const link = (links) => L.notifyArgv({ headline: "h", body: "b", url: "https://gitlab.com/g/p/-/issues/2" }, links).slice(-3)
