@@ -8,7 +8,7 @@ from lib import *
 from fixtures import BOARD
 P = "group/app"
 BOTS = {P: {"busyLists": ["in progress", "review"], "bots": [{"name": "App UI", "label": "app-ui"}, {"name": "Spec QA", "list": "review"}]}}
-h = Harness(sys.argv[1], {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": [], "boardStates": {}, "refreshIntervalSec": 60, "bots": BOTS})
+h = Harness(sys.argv[1], {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": [], "boardStates": {}, "refreshIntervalSec": 60, "bots": BOTS})
 h.ev("panel.availableCardHeight = 620; panel.availableCardWidth = 1020")
 h.ev("root.opened = true"); h.spin(60); h.answer("board", BOARD); h.spin(400)
 S = lambda n: h.ev("Style.space(%d)" % n)
