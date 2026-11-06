@@ -15,7 +15,7 @@ first = next(i for c in B["columns"] for i in c["issues"])
 first["assignees"] = [{"username": "alice", "name": "Alice Smith", "avatar": PIC}]
 second = [i for c in B["columns"] for i in c["issues"]][1]
 second["assignees"] = [{"username": "alice", "name": "Alice Smith", "avatar": ""}, {"username": "bob", "name": "Bob", "avatar": ""}]
-h = Harness(sys.argv[1], {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": [], "boardStates": {}, "refreshIntervalSec": 60})
+h = Harness(sys.argv[1], {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": [], "boardStates": {}, "refreshIntervalSec": 60})
 h.ev("panel.availableCardHeight = 620; panel.availableCardWidth = 1020")
 h.ev("root.opened = true"); h.spin(60); h.answer("board", B); h.spin(500)
 ok = h.ok
