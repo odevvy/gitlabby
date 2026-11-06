@@ -81,6 +81,14 @@ Panel {
   readonly property string defaultProject: String(hostDefault.project || "").trim()
   readonly property string defaultBoardId: String(hostDefault.id || "")
   readonly property string defaultBoardName: String(hostDefault.name || "")
+  // Favorited boards for this host (header jump list). gitlab.com: settings.favorites;
+  // another server: settings.serverFavorites[host]. The default is merged into the
+  // list even when it is not stored here (Logic.jumpBoards).
+  readonly property var hostFavorites: Logic.hostFavorites(saved("favorites", []), saved("serverFavorites", ({})), gitlabHost, onGitlabCom)
+  readonly property var jumpBoards: Logic.jumpBoards(hostFavorites, defaultProject, defaultBoardId, defaultBoardName)
+  // Header menus: "" | "default" | "jump". Esc and choosing a row clear it.
+  property string headerMenu: ""
+  onViewChanged: headerMenu = ""
   // Board on screen: starts as the default on every shell start; browsing
   // assigns these (breaking the binding) and is never saved.
   property string project: defaultProject
@@ -501,6 +509,7 @@ Panel {
   }
 
   function openPicker() {
+    headerMenu = ""
     pickProjectStep()
     if (projects.length === 0) runAux("projects", [])
   }
@@ -513,7 +522,6 @@ Panel {
     runAux("boards", ["--project", path])
   }
   function pickBoard(b) { switchTo(pickerProject, String(b.id || ""), b.id ? String(b.name) : "") }
-  function openDefault() { switchTo(defaultProject, defaultBoardId, defaultBoardName) }
   function switchTo(path, id, name) {
     project = path
     boardId = id
@@ -531,15 +539,53 @@ Panel {
     back()
     refresh()
   }
-  // Star in the picker: exactly one default, saved; the board on screen stays.
+  // Star in the picker: favorite toggle (jump list). The default is set from
+  // the header Default menu (setDefaultCurrent), not from this star.
   function isDefaultBoard(b) {
     var first = pickerBoards.length > 0 ? String(pickerBoards[0].id || "") : ""
     return pickerProject === defaultProject && String(b.id || "") === (defaultBoardId || first)
   }
-  function setDefault(b) {
-    project = project; boardId = boardId; boardName = boardName  // freeze before the defaults change
-    persist({ board: { project: pickerProject, id: String(b.id || ""), name: b.id ? String(b.name) : "" } })
+  function isFavoriteBoard(b) {
+    return Logic.isFavorite(hostFavorites, pickerProject, String(b.id || ""))
   }
+  function favoriteEntry(projectPath, b) {
+    var id = String(b.id || "")
+    return { project: projectPath, id: id, name: id !== "" ? String(b.name || "") : Logic.boardLabel(b.name, "") }
+  }
+  function persistFavorites(list) {
+    if (onGitlabCom) persist({ favorites: list })
+    else {
+      var next = {}, old = Object(saved("serverFavorites", ({})))
+      for (var hostKey in old) next[hostKey] = old[hostKey]
+      next[gitlabHost] = list
+      persist({ serverFavorites: next })
+    }
+  }
+  function toggleFavorite(b) {
+    persistFavorites(Logic.toggledFavorite(hostFavorites, favoriteEntry(pickerProject, b)))
+  }
+  // Make the board on screen the default (header menu). Freezes browsing
+  // bindings the same way the old picker setDefault did.
+  function setDefaultCurrent() {
+    project = project; boardId = boardId; boardName = boardName
+    persist({ board: { project: project, id: boardId || resolvedBoardId, name: boardName } })
+    headerMenu = ""
+  }
+  function openDefault() { headerMenu = ""; switchTo(defaultProject, defaultBoardId, defaultBoardName) }
+  // Title click: jump list when there is a default or a favorite; else the picker.
+  function openJumpMenu() {
+    if (jumpBoards.length === 0) openPicker()
+    else headerMenu = headerMenu === "jump" ? "" : "jump"
+  }
+  function openDefaultMenu() {
+    if (onDefault || project === "") return
+    headerMenu = headerMenu === "default" ? "" : "default"
+  }
+  function jumpTo(entry) {
+    headerMenu = ""
+    switchTo(entry.project, String(entry.id || ""), String(entry.name || ""))
+  }
+  function openBrowse() { headerMenu = ""; openPicker() }
 
   // https only (Logic.httpsUrl), so no file:, javascript: or --flag value reaches the browser.
   // A browser tab or an app window, as Settings says (linkMode).
