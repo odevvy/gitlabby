@@ -15,7 +15,7 @@ def board(extra=()):
     names = [("research", 1), ("todo", 7), ("approved", 2), ("review", 1)] + list(extra)
     return {"state": "ready", "project": P, "updatedAt": "2026-10-31T13:20:00Z", "message": "", "labelColors": {}, "boards": [{"id": 1, "name": "Development"}], "board": {"id": 1, "name": "Development"}, "fallback": False,
             "columns": [{"name": "Open", "kind": "open", "issues": []}] + [col_(n, i + 1, k) for i, (n, k) in enumerate(names)] + [{"name": "Closed", "kind": "closed", "issues": []}]}
-h = Harness(src, {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": ["open", "closed"]})
+h = Harness(src, {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": ["open", "closed"]})
 h.ev("panel.availableCardHeight = 1200; panel.availableCardWidth = 2400")
 h.ev("root.opened = true"); h.spin(60); h.answer("board", board()); h.spin(300)
 card = h.cls("KeyboardPanel")

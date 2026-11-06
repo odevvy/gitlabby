@@ -13,7 +13,7 @@ def who(n): return {"username": n, "name": n.title(), "avatar": "file://" + png}
 def iss(iid, labels, people): return {"iid": iid, "title": "Issue %d" % iid, "labels": labels, "url": "https://gitlab.com/%s/-/issues/%d" % (P, iid), "createdAt": "2026-10-31T09:00:00Z", "notes": 0, "assignees": [who("u%d" % k) for k in range(people)]}
 BOARD = {"state": "ready", "project": P, "updatedAt": "2026-10-31T13:20:00Z", "message": "", "labelColors": {}, "boards": [{"id": 1, "name": "Development"}], "board": {"id": 1, "name": "Development"}, "fallback": False,
          "columns": [{"name": "Open", "kind": "open", "issues": []}, {"name": "todo", "kind": "label", "listId": 1, "color": "#5b9bd5", "issues": [iss(10 + i, ["todo"], 1 + i % 3) for i in range(6)]}, {"name": "Closed", "kind": "closed", "issues": []}]}
-h = Harness(src, {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": ["open", "closed"]})
+h = Harness(src, {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": ["open", "closed"]})
 h.ev("panel.availableCardHeight = 1200; panel.availableCardWidth = 2400")
 h.ev("root.opened = true"); h.spin(60); h.answer("board", BOARD); h.spin(600)
 ok = h.ok
