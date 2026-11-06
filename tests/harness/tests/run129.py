@@ -34,7 +34,7 @@ same = lambda a, b: QColor(a).name() == QColor(b).name()
 ALL = []
 def start(bots, width=790):
     global h, sec, sev
-    s = {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": ["open", "research"]}
+    s = {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": ["open", "research"]}
     if bots is not None: s["bots"] = bots
     h = Harness(src, s)
     h.ev("panel.availableCardHeight = 1000")

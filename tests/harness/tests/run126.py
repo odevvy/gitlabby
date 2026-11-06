@@ -8,7 +8,7 @@ from lib import *
 from fixtures import BOARD
 pngs = sys.argv[2:4]
 shot = lambda i: len(pngs) > i and h.grab_card(pngs[i])
-h = Harness(sys.argv[1], {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": "group/app", "defaultCollapsed": [], "boardStates": {}, "refreshIntervalSec": 60})
+h = Harness(sys.argv[1], {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": "group/app", "defaultCollapsed": [], "boardStates": {}, "refreshIntervalSec": 60})
 h.ev("panel.availableCardHeight = 1000"); h.ev("panel.contentWidth = 790")  # his popup: ~820 wide
 cls_is = lambda it, n: it.metaObject().className().startswith(n)
 spinners = lambda: h.visible(lambda it: cls_is(it, "Spinner"))
