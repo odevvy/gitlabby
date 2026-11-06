@@ -4,7 +4,7 @@ import sys, os; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspa
 from lib import *
 from fixtures import BOARD
 pngs = sys.argv[2:4]
-h = Harness(sys.argv[1], {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": "group/app", "defaultCollapsed": ["closed", "research", "open"], "boardStates": {}, "refreshIntervalSec": 60})
+h = Harness(sys.argv[1], {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": "group/app", "defaultCollapsed": ["closed", "research", "open"], "boardStates": {}, "refreshIntervalSec": 60})
 pills = lambda label: h.visible(lambda it: it.metaObject().className().startswith(("Pill", "ActionButton")) and it.property("label") == label)
 texts = lambda: [it.property("text") for it in h.visible(lambda it: it.metaObject().className().startswith("BoardText")) if it.property("text")]
 has = lambda frag: any(frag in t for t in texts())

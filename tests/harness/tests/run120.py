@@ -7,7 +7,7 @@ import sys, os; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspa
 from lib import *
 from fixtures import BOARD
 pngs = sys.argv[2:5]
-h = Harness(sys.argv[1], {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": "group/app"})
+h = Harness(sys.argv[1], {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": "group/app"})
 def chips(label=None):
     found = sorted(h.visible(lambda it: True and it.metaObject().className().startswith(("Pill", "LabelChip")) and it.property("label") is not None),
                    key=lambda it: (round(it.mapToScene(QPointF(0, 0)).y()), it.mapToScene(QPointF(0, 0)).x()))
