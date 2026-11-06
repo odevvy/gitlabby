@@ -11,7 +11,7 @@ from fixtures import BOARD
 src = sys.argv[1]; out = sys.argv[2] if len(sys.argv) > 2 else None
 ALL = []
 def ok(n, c, e=""): ALL.append(bool(c)); h.ok(n, c, e)
-h = Harness(src, {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": "group/app", "defaultCollapsed": [], "boardStates": {}, "refreshIntervalSec": 60})
+h = Harness(src, {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": "group/app", "defaultCollapsed": [], "boardStates": {}, "refreshIntervalSec": 60})
 h.ev("panel.availableCardHeight = 900; panel.availableCardWidth = 1460")
 nobar = lambda: not any(it.objectName() == "refreshBar" for it in h.walk())
 dot = lambda: next(it for it in h.walk() if it.objectName() == "refreshDot")

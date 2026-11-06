@@ -9,7 +9,7 @@ from lib import *
 from fixtures import BOARD
 ALL = []
 def ok(n, c, e=""): ALL.append(bool(c)); h.ok(n, c, e)
-h = Harness(sys.argv[1], {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": "group/app", "defaultCollapsed": [], "boardStates": {}, "refreshIntervalSec": 60})
+h = Harness(sys.argv[1], {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": "group/app", "defaultCollapsed": [], "boardStates": {}, "refreshIntervalSec": 60})
 h.ev("panel.availableCardHeight = 1000"); h.ev("panel.contentWidth = 790")
 h.ev("root.opened = true"); h.spin(60); h.answer("board", BOARD); h.spin(60)
 iw = h.cls("IssueView"); ic = h.ctx_of(iw); iev = lambda code: h.ev(code, ic, iw)

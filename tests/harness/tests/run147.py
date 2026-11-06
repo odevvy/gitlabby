@@ -7,7 +7,7 @@ from lib import *
 src = sys.argv[1]
 ALL = []
 def ok(n, c, e=""): ALL.append(bool(c)); h.ok(n, c, e)
-h = Harness(src, {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": "a/b"})
+h = Harness(src, {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": "a/b"})
 ok("K1 keyCatcher is a BoardKeys with root as its host",
    h.ev("keyCatcher.toString().indexOf('BoardKeys') === 0 && keyCatcher.host === root"), h.ev("keyCatcher.toString()"))
 for name in ["issueView", "picker", "settingsView", "bulkBar", "mrsView", "setupView"]:

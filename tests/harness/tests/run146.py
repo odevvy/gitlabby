@@ -7,7 +7,7 @@ from lib import *
 src = sys.argv[1]
 ALL = []
 def ok(n, c, e=""): ALL.append(bool(c)); h.ok(n, c, e)
-h = Harness(src, {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": "a/b"})
+h = Harness(src, {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": "a/b"})
 names = json.loads(subprocess.run(["node", "-e", "console.log(JSON.stringify(Object.keys(require(process.argv[1]))))", os.path.join(src, "logic", "index.js")], capture_output=True, text=True).stdout)
 missing = h.ev("(function(){ return %s.filter(function(n){ return typeof Logic[n] === 'undefined' }) })()" % json.dumps(names))
 ok("Q1 QML's Logic has every name node has (%d)" % len(names), len(names) > 90 and missing == [], missing)
