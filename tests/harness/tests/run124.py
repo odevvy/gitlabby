@@ -11,7 +11,7 @@ from lib import *
 from fixtures import BOARD
 pngs = sys.argv[2:9]
 shot = lambda i: len(pngs) > i and h.grab_card(pngs[i])
-h = Harness(sys.argv[1], {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": "group/app", "defaultCollapsed": ["closed", "research", "open"], "boardStates": {}, "refreshIntervalSec": 60})
+h = Harness(sys.argv[1], {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": "group/app", "defaultCollapsed": ["closed", "research", "open"], "boardStates": {}, "refreshIntervalSec": 60})
 h.ev("panel.contentHeight = Qt.binding(function() { return keyCatcher.implicitHeight + panel.padding * 2 + 4 })")
 cls_is = lambda it, n: it.metaObject().className().startswith(n)
 texts = lambda: [it.property("text") for it in h.visible(lambda it: cls_is(it, "BoardText")) if it.property("text")]

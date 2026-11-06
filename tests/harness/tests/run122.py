@@ -4,7 +4,7 @@ import sys, os; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspa
 from lib import *
 from PySide6.QtGui import QColor
 pngs = sys.argv[2:5]
-h = Harness(sys.argv[1], {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": "firelink21/phrase41"})
+h = Harness(sys.argv[1], {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": "firelink21/phrase41"})
 def iss(iid, title, labels, notes=0): return {"iid": iid, "title": title, "labels": labels, "url": "https://gitlab.com/firelink21/phrase41/-/issues/%d" % iid, "createdAt": "2026-10-29T09:00:00Z", "notes": notes, "assignees": []}
 C = {"todo": "#64748b", "approved": "#0ea5e9", "in progress": "#f59e0b", "review": "#a855f7"}
 def board(moved=False):

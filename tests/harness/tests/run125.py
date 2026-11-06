@@ -26,7 +26,7 @@ env = dict(os.environ, PATH=work + "/bin:" + os.environ["PATH"], FAKE_LOG=work +
 r = subprocess.run([src + "/board-fetch", "--project", "firelink21/phrase41"], capture_output=True, text=True, env=env)
 B = json.loads(r.stdout); shutil.rmtree(work)
 closed = next(c for c in B["columns"] if c["kind"] == "closed")
-h = Harness(src, {"id": "odevvy.gitlab-board", "settingsRevision": 2, "defaultProject": "firelink21/phrase41", "defaultCollapsed": ["open", "research"]})
+h = Harness(src, {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": "firelink21/phrase41", "defaultCollapsed": ["open", "research"]})
 h.ok("W1 board-fetch, work-item URLs, more than 20 closed: Closed links to all closed issues", len(closed["issues"]) == 20 and closed.get("seeAll") == "https://gitlab.com/firelink21/phrase41/-/issues?state=closed", closed.get("seeAll"))
 # --- the board at his size ---------------------------------------------------
 h.ev("panel.availableCardHeight = 520")  # the real cap (fittedContentHeight) stays bound
