@@ -257,7 +257,7 @@ Item {
           }
         }
       }
-      Help { objectName: "linkNote"; text: "App window: its own window, no tabs. Needs a Chromium-based browser." }
+      Help { objectName: "linkNote"; text: "Board issues still open inside GitLabby. Merge requests, to-dos, and Open in browser leave the plugin. They open in a browser tab, or in an app window with no tabs (needs a Chromium-based browser)." }
       Item { width: 1; height: Style.space(2) }
       // The bar icon's dot after an alert (Board.iconLit), unless kept unlit.
       Item {
