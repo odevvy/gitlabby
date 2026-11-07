@@ -9,7 +9,7 @@ logout-after-auth-check	board-fetch	if [[ $cmd == logout ]]; then	if [[ $cmd == 
 logout-says-ready	board-fetch	emit logged-out "Signed out of $hostname."	emit ready "Signed out of $hostname."	sh	run.sh
 whoami-saved	board-fetch	    get user >"$tmp/u"	    mkdir -p "$cache_dir"; get user >"$tmp/u"	sh	run.sh
 no-account-check	Board.qml	if (name === "settings" && view !== "settings") checkAccount()		qml	harness/tests/run118.py
-no-confirm	SettingsView.qml	onClicked: view.confirming = true	onClicked: view.host.signOut()	qml	harness/tests/run118.py
+no-confirm	SettingsView.qml	function kbActivate() { view.confirming = true }	function kbActivate() { view.host.signOut() }	qml	harness/tests/run118.py
 board-kept-in-memory	Board.qml	columns = []; projects = []; pickerBoards = []; cached = false; account = ""	cached = false	qml	harness/tests/run118.py
 refresh-while-signing-out	Board.qml	    if (signingOut) return\n		qml	harness/tests/run118.py
 logout-error-ignored	Board.qml	if (data.state !== "logged-out") { accountError = String(data.message || "Could not sign out."); return }	if (data.state !== "logged-out") return	qml	harness/tests/run118.py
@@ -98,9 +98,9 @@ skeleton-no-last	components/Skeleton.qml	host.boardWidths[host.stateKey] || host
 # --- from v124.tsv
 # dropped in 0.1.89: link-no-confirm (the same mutation as no-confirm)
 link-not-accent	SettingsView.qml	text: "Sign out"\n          color: view.host.accent	text: "Sign out"\n          color: view.host.foreground	qml	harness/tests/run124.py
-link-big	SettingsView.qml	color: view.host.accent\n          font.pixelSize: Style.font.bodySmall\n          MouseArea	color: view.host.accent\n          font.pixelSize: Style.font.body\n          MouseArea	qml	harness/tests/run124.py
-row-grows	SettingsView.qml	implicitHeight: Math.max(accountText.implicitHeight, Style.space(28))	implicitHeight: accountText.implicitHeight + (view.confirming ? Style.space(28) : 0)	qml	harness/tests/run124.py
-text-under-link	SettingsView.qml	 - (signOutLink.visible ? signOutLink.implicitWidth : confirmRow.visible ? confirmRow.implicitWidth : 0)	 - 0	qml	harness/tests/run124.py
+link-big	SettingsView.qml	font.pixelSize: Style.font.bodySmall\n          height: Style.space(32)	font.pixelSize: Style.font.body\n          height: Style.space(32)	qml	harness/tests/run124.py
+row-grows	SettingsView.qml	Math.max(accountText.implicitHeight, Style.space(32))	accountText.implicitHeight	qml	harness/tests/run124.py
+text-under-link	SettingsView.qml	signOutLink.implicitWidth + Style.space(12) : 0)	signOutLink.implicitWidth : 0)	qml	harness/tests/run124.py
 heading-old	SettingsView.qml	Heading { text: "Account" }	Heading { text: "GitLab account" }	qml	harness/tests/run124.py
 yes-quiet	SettingsView.qml	small: true; danger: true; label: "Yes, sign out"	small: true; label: "Yes, sign out"	qml	harness/tests/run124.py
 no-tip	SettingsView.qml	visible: yesButton.hovered	visible: false	qml	harness/tests/run124.py

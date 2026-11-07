@@ -796,7 +796,10 @@ logout), removed when it ends or is stopped.
 
 **Sign out** (in the settings, beside your username) asks `Sign out of glab
 on gitlab.com? This also signs glab out in your terminal and scripts on this
-computer.` (the server's name in place of gitlab.com on another one), then runs
+computer.` and, on the next line, `This also deletes this server's saved board
+cache on this computer.` (the server's name in place of gitlab.com on another
+one), with Yes, sign out and Cancel under it. Sign out itself is a 32 point
+target that Tab reaches (Enter or Space asks). Yes runs
 `glab auth logout --hostname gitlab.com` (that server's). That is glab's own sign-out, so glab
 in your terminal is signed out too (a `GITLAB_TOKEN` in your environment still
 works; glab doesn't touch it). The token stays valid on GitLab; revoke it in
