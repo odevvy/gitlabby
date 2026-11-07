@@ -1,0 +1,8 @@
+# v0.1.109: destination-aware open action
+open-label-fixed	logic/board.js	return mode === "app" ? "Open in app window" : "Open in browser"	return "Open in browser"	node	logic.test.js
+open-label-inverted	logic/board.js	return mode === "app" ? "Open in app window"	return mode !== "app" ? "Open in app window"	node	logic.test.js
+pill-fixed	IssueView.qml	label: Logic.openLabel(view.host.linkMode) + " ↗"; clickable: true	label: "Open in browser ↗"; clickable: true	qml	harness/tests/run209.py
+tip-fixed	IssueView.qml	text: Logic.openLabel(view.host.linkMode) + " (o)"	text: "Open in browser (o)"	qml	harness/tests/run209.py
+truncated-fixed	IssueView.qml	label: "Truncated · " + Logic.openLabel(view.host.linkMode) + " for the rest ↗"	label: "Truncated · Open in browser for the rest ↗"	qml	harness/tests/run209.py
+keys-fixed	KeysView.qml	.replace("Open in browser", Logic.openLabel(view.host.linkMode))		qml	harness/tests/run209.py
+note-names-browser	SettingsView.qml	and an issue's Open action leave the plugin.	and Open in browser leave the plugin.	qml	harness/tests/run173.py

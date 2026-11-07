@@ -305,10 +305,10 @@ Item {
     Pill {
       anchors.verticalCenter: parent.verticalCenter
       visible: !!view.issue.url
-      label: "Open in browser ↗"; clickable: true
+      label: Logic.openLabel(view.host.linkMode) + " ↗"; clickable: true
       onClicked: view.host.openUrl(view.issue.url)
       HoverHandler { id: openHover }
-      IconTip { host: view.host; shown: openHover.hovered; text: "Open in browser (o)" }
+      IconTip { host: view.host; shown: openHover.hovered; text: Logic.openLabel(view.host.linkMode) + " (o)" }
     }
     GlyphButton { host: view.host; glyph: "\uf00d"; tip: "Back to the board (Esc)"; onClicked: view.host.back() }
   }
@@ -484,7 +484,7 @@ Item {
       }
       Pill {
         visible: description.visible && String(view.issue.description).length > Logic.descriptionLimit
-        label: "Truncated · Open in browser for the rest ↗"; clickable: true
+        label: "Truncated · " + Logic.openLabel(view.host.linkMode) + " for the rest ↗"; clickable: true
         textColor: view.host.accent; border.color: view.host.accent
         onClicked: view.host.openUrl(view.issue.url)
       }
