@@ -91,7 +91,8 @@ star adds or removes a board from that list (it no longer sets the default).
   is gone.
 - Every icon button says what it does when you point at it, with its key in
   brackets when it has one: `Refresh (r)`, `Settings (s)`,
-  `Keyboard shortcuts (?)`, `Switch project or board (p)`,
+  `Keyboard shortcuts (?)`, `Hide bots (b)` / `Show bots (b)` (only when
+  the project has bots: it hides the bots row and the board moves up), `Switch project or board (p)`,
   `Back to the board (Esc)`; in an issue `Open in browser (o)`,
   `Edit labels (e)` and `Close issue (x)`.
 - The issue view, the picker and the settings have a ✕ at the top right that
@@ -581,6 +582,7 @@ each shortcut on one line, with a quiet note after some (`asks first`).
 | `y` | Copy the link · or right-click |
 | `Shift+H` / `L` | Move left / right · asks first |
 | `v` | Pick for bulk · or Ctrl+click |
+| `b` | Show or hide the bots |
 | `r` | Refresh |
 
 **Picked cards**
@@ -681,6 +683,7 @@ Settings live on the widget's entry in `~/.config/omarchy/shell.json`:
 | `favorites` | Starred boards on gitlab.com: `[{ "project", "id", "name" }, …]` (jump list). Default `[]` |
 | `serverFavorites` | Starred boards on each other server: `{ "host": [{ "project", "id", "name" }, …] }`. Default `{}` |
 | `refreshIntervalSec` | Refresh interval in seconds |
+| `botsHidden` | `true`: the bots row under the header is hidden (header bots button or `b`). Default `false` |
 | `iconUnlit` | `true`: no dot on the bar icon after an alert (Settings > Keep the bar icon unlit). Default `false` |
 | `openLinks` | Where links open: `browser` (the default; a tab, `omarchy-launch-browser`) or `app` (its own window, `omarchy-launch-webapp`; needs a Chromium-based browser). Anything else is `browser` |
 | `defaultCollapsed` | Columns that start collapsed on a board you have not changed yet. Default `["closed","research","open"]`; matched case-insensitively |

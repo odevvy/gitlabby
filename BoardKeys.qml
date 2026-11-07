@@ -76,6 +76,7 @@ PanelKeyCatcher {
     else if (key === "y") host.copyLink(host.view === "issue" ? issueView.issue : host.view === "board" ? host.cursorIssue() : null, "#")
     else if (key === "c" && host.view === "issue") issueView.focusBox()
     else if (key === "e" && host.view === "issue") issueView.editLabels()
+    else if (key === "b" && host.view === "board") host.toggleBots()
     else if (key === "p") host.openPicker()
     else if (key === "s") host.toggleView("settings")
     else if (key === "?") host.toggleView("keys")
