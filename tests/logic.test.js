@@ -511,7 +511,7 @@ test("icon buttons: every GlyphButton, header button and tab has a tip, and ever
   assert.ok(tips.length >= 17, "found " + tips.length)  // 6 GlyphButtons, 11 IconTips (v0.1.30)
   const bracketed = tips.flatMap(t => [...t.matchAll(/\(([^()"]+)\)"/g)].map(m => m[1]))
   for (const k of bracketed) assert.ok(keys.has(k), "'" + k + "' in a tip is not a shortcut")
-  assert.deepEqual([...new Set(bracketed)].sort(), ["?", "Esc", "e", "m", "o", "r", "s", "t", "x"])  // p opens the picker from keys; title tip is starred boards
+  assert.deepEqual([...new Set(bracketed)].sort(), ["?", "Esc", "b", "e", "m", "o", "r", "s", "t", "x"])  // p opens the picker from keys; title tip is starred boards
 })
 
 // v0.1.30 regression: his saved setting, exactly as in shell.json. Omarchy
