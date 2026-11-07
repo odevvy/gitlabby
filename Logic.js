@@ -100,6 +100,8 @@ var pipesArgs = Alerts.pipesArgs
 var pipesAnswer = Alerts.pipesAnswer
 var mrListUrl = Alerts.mrListUrl
 var pipelineEvents = Alerts.pipelineEvents
+var lastAlertText = Alerts.lastAlertText
+var alertStatusText = Alerts.alertStatusText
 // mrs.js
 var mrsAnswer = Mrs.mrsAnswer
 var reviewerStates = Mrs.reviewerStates
