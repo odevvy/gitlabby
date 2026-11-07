@@ -33,6 +33,7 @@ PanelKeyCatcher {
   }
   onTabRequested: function(direction) { host.switchPanel(direction) }
   onMoveRequested: function(dx, dy) {
+    if (host.headerMenu !== "") { if (dy !== 0) host.moveMenu(dy); return }
     if (host.view === "board") host.moveCursor(dx, dy)
     else if (host.view === "picker" && dy !== 0) picker.moveCursor(dy)
     else if (host.view === "mrs" && dy !== 0) mrsView.moveCursor(dy)
@@ -40,6 +41,7 @@ PanelKeyCatcher {
     else if (dy !== 0) host.scrollView(dy)  // j/k, ↓/↑: Settings, the shortcuts, an issue
   }
   onActivateRequested: {
+    if (host.headerMenu !== "") { host.activateMenu(); return }
     if (host.pendingMove) host.confirmMove()
     else if (host.view === "board" && bulkBar.armed) bulkBar.confirm()
     else if (host.view === "board" && bulkBar.mode === "results") bulkBar.done()
@@ -51,6 +53,7 @@ PanelKeyCatcher {
     else if (host.view === "board" && (host.setup !== "" || host.failed)) setupView.primary()
   }
   onTextKey: function(text) {
+    if (host.headerMenu !== "") return  // an open header menu keeps letters from the board
     if (host.pendingMove) return  // Enter or Escape first
     if (host.view === "issue" && issueView.editing) return  // typed for the filter while labels load
     if (host.view === "board" && bulkBar.visible && bulkBar.mode !== "") {

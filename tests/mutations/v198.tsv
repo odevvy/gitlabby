@@ -3,5 +3,5 @@
 jump-gap-old	BoardHeader.qml	anchors { top: title.bottom; topMargin: Style.space(10); left: title.left }	anchors { top: title.bottom; topMargin: Style.space(4); left: title.left }	qml	harness/tests/run198.py
 def-gap-old	BoardHeader.qml	anchors { top: defaultMark.bottom; topMargin: Style.space(10); left: defaultMark.left }	anchors { top: defaultMark.bottom; topMargin: Style.space(4); left: defaultMark.left }	qml	harness/tests/run198.py
 jump-hover-edge	BoardHeader.qml	objectName: "jumpHover"\n            anchors { fill: parent; leftMargin: Style.space(4); rightMargin: Style.space(4); topMargin: Style.space(2); bottomMargin: Style.space(2) }	objectName: "jumpHover"\n            anchors.fill: parent	qml	harness/tests/run198.py
-jump-hover-no-x	BoardHeader.qml	readonly property bool rowHovered: jumpMouse.containsMouse || xMouse.containsMouse	readonly property bool rowHovered: jumpMouse.containsMouse	qml	harness/tests/run198.py
+jump-hover-no-x	BoardHeader.qml	(jumpMouse.containsMouse || xMouse.containsMouse)	jumpMouse.containsMouse	qml	harness/tests/run198.py
 dismiss-missing	Board.qml	onClicked: root.headerMenu = ""	onClicked: {}	qml	harness/tests/run198.py

@@ -58,7 +58,7 @@ kp-chord-loose	logic/board.js	{ cap: p.replace(/_/g, " "), joined: true }	{ cap:
 kp-underscore-kept	logic/board.js	: { cap: p.replace(/_/g, " ") })	: { cap: p })	node	logic.test.js
 kp-slash-as-cap	logic/board.js	if (word === "/") { out.push({ text: "/" }); return }	if (false) return	node	logic.test.js
 kg-row-dropped	logic/board.js	["s", "Settings"],\n    ["m",	["m",	node	logic.test.js
-kg-board-right	logic/board.js	  { title: "Setup panel", keys: [\n    ["Enter / Space", "Its main button"],\n    ["r", "Try again"]] },\n  { title: "Anywhere"	  { title: "Anywhere"	node	logic.test.js
+kg-board-right	logic/board.js	  { title: "Setup panel", keys: [\n    ["Enter / Space", "Its main button"],\n    ["r", "Try again"]] },\n  { title: "Header menus"	  { title: "Header menus"	node	logic.test.js
 kv-board-three-left	KeysView.qml	Logic.keyGroups.slice(0, 4), Logic.keyGroups.slice(4)	Logic.keyGroups.slice(0, 3), Logic.keyGroups.slice(3)	qml	harness/tests/run162.py
 kv-no-card-fill	KeysView.qml	color: "transparent"	color: view.pane	qml	harness/tests/run162.py
 kv-chord-loose	KeysView.qml	x: part.modelData.joined ? -Style.space(3) : 0	x: 0	qml	harness/tests/run162.py

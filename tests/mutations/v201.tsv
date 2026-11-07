@@ -1,0 +1,16 @@
+# Mutation rows from 0.1.101 on. Columns: name, file, from, to, kind, test.
+# v0.1.101: header menus own the keys (arrows, Enter, Space, Escape)
+menu-move-leaks	BoardKeys.qml	if (host.headerMenu !== "") { if (dy !== 0) host.moveMenu(dy); return }	if (false) {}	qml	harness/tests/run201.py
+menu-activate-leaks	BoardKeys.qml	if (host.headerMenu !== "") { host.activateMenu(); return }	if (false) {}	qml	harness/tests/run201.py
+menu-text-leaks	BoardKeys.qml	if (host.headerMenu !== "") return  // an open	if (false) return  // an open	qml	harness/tests/run201.py
+menu-no-clamp	Board.qml	Math.max(0, Math.min(menuCount - 1, menuIndex + dy))	menuIndex + dy	qml	harness/tests/run201.py
+menu-no-reset	Board.qml	onHeaderMenuChanged: { menuIndex = 0; menuKeys = false }	onHeaderMenuChanged: {}	qml	harness/tests/run201.py
+menu-keys-not-lit	Board.qml	    menuKeys = true\n		qml	harness/tests/run201.py
+menu-default-second	Board.qml	if (menuIndex === 0) openDefault(); else setDefaultCurrent()	setDefaultCurrent()	qml	harness/tests/run201.py
+menu-browse-dead	Board.qml	else openBrowse() }	}	qml	harness/tests/run201.py
+menu-no-browse-row	Board.qml	jumpBoards.length + 1	jumpBoards.length	qml	harness/tests/run201.py
+menu-hover-keeps-keys	Board.qml	function hoverMenu(i) { menuKeys = false; menuIndex = i }	function hoverMenu(i) { menuIndex = i }	qml	harness/tests/run201.py
+jump-lit-hover-only	BoardHeader.qml	rowHovered: host.menuKeys ? host.menuIndex === index : (jumpMouse.containsMouse || xMouse.containsMouse)	rowHovered: jumpMouse.containsMouse || xMouse.containsMouse	qml	harness/tests/run201.py
+def-lit-hover-only	BoardHeader.qml	rowHovered: host.menuKeys ? host.menuIndex === index : defMouse.containsMouse	rowHovered: defMouse.containsMouse	qml	harness/tests/run201.py
+browse-lit-hover-only	BoardHeader.qml	rowHovered: host.menuKeys ? host.menuIndex === host.jumpBoards.length : browseMouse.containsMouse	rowHovered: browseMouse.containsMouse	qml	harness/tests/run201.py
+jump-hover-no-select	BoardHeader.qml	onContainsMouseChanged: if (containsMouse) host.hoverMenu(jumpRow.index)		qml	harness/tests/run201.py

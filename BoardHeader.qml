@@ -325,8 +325,10 @@ Item {
         delegate: Item {
           id: defRow
           required property var modelData
+          required property int index
           width: defaultMenuCol.width; height: Style.space(28)
-          readonly property bool rowHovered: defMouse.containsMouse
+          // Lit: the key-selected row after a key, else the hovered one.
+          readonly property bool rowHovered: host.menuKeys ? host.menuIndex === index : defMouse.containsMouse
           Rectangle {
             objectName: "defHover"
             anchors { fill: parent; leftMargin: Style.space(4); rightMargin: Style.space(4); topMargin: Style.space(2); bottomMargin: Style.space(2) }
@@ -343,6 +345,7 @@ Item {
           }
           MouseArea {
             id: defMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+            onContainsMouseChanged: if (containsMouse) host.hoverMenu(defRow.index)
             onClicked: {
               if (defRow.modelData.id === "go") host.openDefault()
               else host.setDefaultCurrent()
@@ -377,7 +380,7 @@ Item {
           required property int index
           readonly property bool isDefaultRow: jumpRow.modelData.isDefault === true
           // × MouseArea sits above jumpMouse; count it as hovered too.
-          readonly property bool rowHovered: jumpMouse.containsMouse || xMouse.containsMouse
+          readonly property bool rowHovered: host.menuKeys ? host.menuIndex === index : (jumpMouse.containsMouse || xMouse.containsMouse)
           width: jumpMenuCol.width; height: Style.space(56)
           Rectangle {
             id: jumpHover
@@ -434,6 +437,7 @@ Item {
           }
           MouseArea {
             id: jumpMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+            onContainsMouseChanged: if (containsMouse) host.hoverMenu(jumpRow.index)
             onClicked: host.jumpTo(jumpRow.modelData)
           }
           MouseArea {
@@ -457,7 +461,7 @@ Item {
       Item {
         id: browseRow
         width: jumpMenuCol.width; height: Style.space(28)
-        readonly property bool rowHovered: browseMouse.containsMouse
+        readonly property bool rowHovered: host.menuKeys ? host.menuIndex === host.jumpBoards.length : browseMouse.containsMouse
         Rectangle {
           objectName: "browseHover"
           anchors { fill: parent; leftMargin: Style.space(4); rightMargin: Style.space(4); topMargin: Style.space(2); bottomMargin: Style.space(2) }
@@ -473,6 +477,7 @@ Item {
         }
         MouseArea {
           id: browseMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+          onContainsMouseChanged: if (containsMouse) host.hoverMenu(host.jumpBoards.length)
           onClicked: host.openBrowse()
         }
       }
