@@ -1,0 +1,10 @@
+# v0.1.105: scope tabs (32 point targets, focus) and picker stars (focus)
+scope-short	components/ScopedList.qml	implicitHeight: Style.space(32)	implicitHeight: tabText.implicitHeight + Style.space(6)	qml	harness/tests/run205.py
+scope-no-pad	components/ScopedList.qml	implicitWidth: tabText.implicitWidth + Style.space(20)	implicitWidth: tabText.implicitWidth	qml	harness/tests/run205.py
+scope-overlap	components/ScopedList.qml	      spacing: Style.space(4)\n      Repeater {\n        model: [{ mode: "all"	      spacing: -Style.space(24)\n      Repeater {\n        model: [{ mode: "all"	qml	harness/tests/run205.py
+scope-fill-always	components/ScopedList.qml	color: tabMouse.containsMouse && !tab.on ? Qt.rgba	color: true ? Qt.rgba	qml	harness/tests/run205.py
+scope-fill-dead	components/ScopedList.qml	view.host.foreground.b, 0.06) : "transparent"\n          }\n          BoardText {\n            id: tabText	view.host.foreground.b, 0) : "transparent"\n          }\n          BoardText {\n            id: tabText	qml	harness/tests/run205.py
+scope-no-ring	components/ScopedList.qml	          FocusRing { host: view.host }\n          Accessible.role: Accessible.PageTab	          Accessible.role: Accessible.PageTab	qml	harness/tests/run205.py
+scope-key-dead	components/ScopedList.qml	function kbActivate() { view.setMode(tab.modelData.mode) }	function kbActivate() {}	qml	harness/tests/run205.py
+star-no-ring	Picker.qml	FocusRing { host: view.host; inset: 0 }		qml	harness/tests/run205.py
+star-key-dead	Picker.qml	function kbActivate() { view.host.toggleFavorite(item.modelData) }	function kbActivate() {}	qml	harness/tests/run205.py

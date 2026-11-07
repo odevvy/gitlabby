@@ -126,6 +126,11 @@ Item {
           id: starMouse; anchors.fill: parent; anchors.margins: -Style.space(6)
           hoverEnabled: true; cursorShape: Qt.PointingHandCursor
           onClicked: view.host.toggleFavorite(item.modelData)
+          function kbActivate() { view.host.toggleFavorite(item.modelData) }
+          FocusRing { host: view.host; inset: 0 }
+          Accessible.role: Accessible.Button
+          Accessible.name: (star.on ? "Remove " : "Add ") + item.name + (star.on ? " from starred boards" : " to starred boards")
+          Accessible.onPressAction: kbActivate()
         }
         IconTip { host: view.host; shown: starMouse.containsMouse; text: star.on ? "Remove from starred boards" : "Add to starred boards" }
       }

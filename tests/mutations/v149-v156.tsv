@@ -88,7 +88,7 @@ m-underline-all	components/ScopedList.qml	            visible: tab.on\n	        
 m-underline-dim	components/ScopedList.qml	            height: 2; radius: 1\n            color: view.host.accent	            height: 2; radius: 1\n            color: view.host.dim	qml	harness/tests/run154.py
 m-tab-off-dim	components/ScopedList.qml	tabMouse.containsMouse ? view.host.dim : view.host.quiet	tabMouse.containsMouse ? view.host.dim : view.host.dim	qml	harness/tests/run154.py
 m-tab-on-accent	components/ScopedList.qml	color: tab.on ? view.host.foreground :	color: tab.on ? view.host.accent :	qml	harness/tests/run154.py
-m-tabs-left	components/ScopedList.qml	      anchors { right: parent.right; verticalCenter: parent.verticalCenter }\n      spacing: Style.space(14)	      anchors { left: parent.left; leftMargin: Style.space(140); verticalCenter: parent.verticalCenter }\n      spacing: Style.space(14)	qml	harness/tests/run154.py
+m-tabs-left	components/ScopedList.qml	      anchors { right: parent.right; verticalCenter: parent.verticalCenter }\n      spacing: Style.space(4)	      anchors { left: parent.left; leftMargin: Style.space(140); verticalCenter: parent.verticalCenter }\n      spacing: Style.space(4)	qml	harness/tests/run154.py
 m-count-dim	components/ScopedList.qml	objectName: view.names.count; text: String(item.modelData.count || 0); color: view.host.quiet	objectName: view.names.count; text: String(item.modelData.count || 0); color: view.host.dim	qml	harness/tests/run154.py
 m-empty-dim	components/ScopedList.qml	text: item.modelData.text || ""\n            color: view.host.quiet	text: item.modelData.text || ""\n            color: view.host.dim	qml	harness/tests/run154.py
 m-empty-indent	components/ScopedList.qml	            anchors.verticalCenter: parent.verticalCenter\n            text: item.modelData.text	            leftPadding: Style.space(8)\n            anchors.verticalCenter: parent.verticalCenter\n            text: item.modelData.text	qml	harness/tests/run154.py
@@ -102,7 +102,7 @@ m-bar-inset	components/ScopedList.qml	anchors { left: parent.left; verticalCente
 m-status-dim	MrsView.qml	color: mr.status.color !== "" ? mr.status.color : view.host.dim\n	color: view.host.dim\n	qml	harness/tests/run154.py
 m-meta-dim	MrsView.qml	        elide: Text.ElideRight\n        color: view.host.quiet	        elide: Text.ElideRight\n        color: view.host.dim	qml	harness/tests/run154.py
 m-age-dim	MrsView.qml	text: Logic.age(mr.row.updatedAt); color: view.host.quiet	text: Logic.age(mr.row.updatedAt); color: view.host.dim	qml	harness/tests/run154.py
-m-tab-no-click	components/ScopedList.qml	onClicked: view.setMode(tab.modelData.mode)	onClicked: {}	qml	harness/tests/run154.py
+m-tab-no-click	components/ScopedList.qml	cursorShape: Qt.PointingHandCursor; onClicked: tab.kbActivate() }	cursorShape: Qt.PointingHandCursor; onClicked: {} }	qml	harness/tests/run154.py
 m-heading-back	components/ScopedList.qml	    implicitHeight: tabs.implicitHeight\n	    implicitHeight: tabs.implicitHeight\n    BoardText { x: 300; text: "Merge requests" }\n	qml	harness/tests/run154.py
 m-close-back	components/ScopedList.qml	    implicitHeight: tabs.implicitHeight\n	    implicitHeight: tabs.implicitHeight\n    GlyphButton { x: 300; host: view.host; glyph: "\uf00d"; onClicked: view.host.back() }\n	qml	harness/tests/run154.py
 # --- from v155.tsv
