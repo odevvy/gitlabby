@@ -75,6 +75,23 @@ function mrBadge(answer) {
   var n = answer && answer.state === "ready" ? answer.review.length : 0
   return n <= 0 ? "" : n > 9 ? "9+" : String(n)
 }
+// What board-fetch keeps of each section: the latest N. A section that comes
+// back full reads "Latest N" (no total implied) with View all on GitLab.
+var listCaps = { review: 10, mine: 10, todos: 30, assigned: 20 }
+// View all on GitLab for a section, with the view's scope: the project's own
+// list for a project path, else the dashboard. user: the signed-in username
+// (empty: GitLab's own default filter for the dashboard).
+function viewAllUrl(host, section, scope, user) {
+  var base = "https://" + String(host || "gitlab.com")
+  var proj = /^[A-Za-z0-9_.-]+(\/[A-Za-z0-9_.-]+)+$/.test(String(scope)) && String(scope).indexOf("..") === -1 ? String(scope) : ""
+  var u = user ? encodeURIComponent(String(user)) : ""
+  if (section === "todos") return base + "/dashboard/todos"
+  var at = proj ? base + "/" + proj + "/-/" : base + "/dashboard/"
+  if (section === "review") return at + "merge_requests?state=opened" + (u ? "&reviewer_username=" + u : "")
+  if (section === "mine") return at + "merge_requests?state=opened" + (u ? "&author_username=" + u : "")
+  if (section === "assigned") return at + "issues?state=opened" + (u ? "&assignee_username=" + u : "")
+  return ""
+}
 // board-fetch arguments for a scope: "all", or one project path.
 function mrsArgs(scope) {
   return /^[A-Za-z0-9_.-]+(\/[A-Za-z0-9_.-]+)+$/.test(String(scope)) && String(scope).indexOf("..") === -1 ? ["mrs", "--project", String(scope)] : ["mrs"]
@@ -143,4 +160,4 @@ function todosArgs(scope) {
   return /^[A-Za-z0-9_.-]+(\/[A-Za-z0-9_.-]+)+$/.test(String(scope)) && String(scope).indexOf("..") === -1 ? ["todos", "--project", String(scope)] : ["todos"]
 }
 
-if (typeof module !== "undefined") module.exports = { mrsAnswer: mrsAnswer, reviewerStates: reviewerStates, mrPerson: mrPerson, mrRows: mrRows, mrStatuses: mrStatuses, toneColors: toneColors, mrStatus: mrStatus, reviewerMarks: reviewerMarks, reviewerMark: reviewerMark, mrSubline: mrSubline, mrBadge: mrBadge, mrsArgs: mrsArgs, todosAnswer: todosAnswer, todoActions: todoActions, todoAction: todoAction, todoRef: todoRef, todoSubline: todoSubline, issueColumn: issueColumn, issueSubline: issueSubline, todoBadge: todoBadge, todosArgs: todosArgs }
+if (typeof module !== "undefined") module.exports = { mrsAnswer: mrsAnswer, reviewerStates: reviewerStates, mrPerson: mrPerson, mrRows: mrRows, mrStatuses: mrStatuses, toneColors: toneColors, mrStatus: mrStatus, reviewerMarks: reviewerMarks, reviewerMark: reviewerMark, mrSubline: mrSubline, mrBadge: mrBadge, listCaps: listCaps, viewAllUrl: viewAllUrl, mrsArgs: mrsArgs, todosAnswer: todosAnswer, todoActions: todoActions, todoAction: todoAction, todoRef: todoRef, todoSubline: todoSubline, issueColumn: issueColumn, issueSubline: issueSubline, todoBadge: todoBadge, todosArgs: todosArgs }
