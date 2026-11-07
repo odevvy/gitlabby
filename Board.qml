@@ -102,6 +102,15 @@ Panel {
   readonly property bool iconUnlit: saved("iconUnlit", false) === true
   readonly property bool iconLit: !iconUnlit && !!feed && feed.unseenAlerts > 0
   function setIconUnlit(on) { persist({ iconUnlit: on === true }) }
+  // The bots row under the header: the header's bots button (or b) hides it
+  // everywhere (global setting botsHidden); the button shows only with bots.
+  readonly property bool botsHidden: saved("botsHidden", false) === true
+  readonly property bool hasBots: view === "board" && setup === "" && boardState === "ready" && botStates.length > 0
+  function toggleBots() {
+    headerMenu = ""
+    if (!hasBots) return
+    persist({ botsHidden: !botsHidden })
+  }
   // Avatar pictures come from outside sites (Gravatar and the like), which see
   // the shell's IP; off, every avatar is its initials circle (Avatar.qml).
   readonly property bool showAvatars: saved("showAvatars", true) !== false
@@ -897,7 +906,7 @@ Panel {
         id: botsRow
         host: root
         states: root.botStates
-        visible: root.view === "board" && root.setup === "" && root.boardState === "ready" && root.botStates.length > 0
+        visible: root.hasBots && !root.botsHidden
         anchors { top: header.bottom; topMargin: visible ? root.gap : 0; left: parent.left; right: parent.right }
         height: visible ? implicitHeight : 0
       }
