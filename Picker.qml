@@ -79,6 +79,39 @@ Item {
       spinning: view.host.auxLoading
       text: view.host.auxLoading ? "Loading…" : view.host.auxError
     }
+
+    // Nothing to list once projects have loaded: say why, and offer to clear
+    // a filter that hides them all (v0.1.108).
+    Column {
+      id: empty
+      objectName: "pickerEmpty"
+      readonly property bool filtered: filter.text.trim() !== ""
+      width: parent.width
+      spacing: Style.space(4)
+      visible: view.onProjects && !view.host.auxLoading && view.host.auxError === "" && view.rows.length === 0
+      BoardText {
+        objectName: "pickerEmptyText"
+        width: parent.width
+        wrapMode: Text.Wrap
+        color: view.host.dim
+        font.pixelSize: Style.font.bodySmall
+        text: empty.filtered ? "No projects match this filter." : "No projects found for this account."
+      }
+      BoardText {
+        id: clearFilter
+        objectName: "pickerClearFilter"
+        visible: empty.filtered
+        text: "Clear filter"
+        color: view.host.accent
+        font.pixelSize: Style.font.bodySmall
+        function kbActivate() { filter.text = ""; filter.forceActiveFocus() }
+        MouseArea { anchors.fill: parent; anchors.margins: -Style.space(4); cursorShape: Qt.PointingHandCursor; onClicked: clearFilter.kbActivate() }
+        FocusRing { host: view.host }
+        Accessible.role: Accessible.Button
+        Accessible.name: "Clear filter"
+        Accessible.onPressAction: kbActivate()
+      }
+    }
   }
 
   ListView {

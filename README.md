@@ -51,6 +51,9 @@ the bottom; the arrow keys keep the selected board in view.
 - The title, `group/project / Board ▾`, opens starred boards (or the picker when
   none are set). **Browse all projects…** still opens the picker: pick a project
   (type to filter, up to 500, most recently active first), then one of its boards.
+  A filter that hides every project says `No projects match this filter.` with
+  a **Clear filter** action; an account with no projects says `No projects
+  found for this account.`
 - After the title, the **Board**, **Merge requests** and **To-do** tabs switch
   between the three views (the current one is underlined; the Merge requests tab
   shows how many wait on your review, the To-do tab how many to-dos are pending). On the right: `Updated`, then the refresh, columns
