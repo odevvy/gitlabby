@@ -18,13 +18,14 @@ def rings(): return [it for it in h.walk() if it.objectName() == "focusRing" and
 def tab(n=1, back=False):
     for _ in range(n): QTest.keyClick(h.win, Qt.Key_Backtab if back else Qt.Key_Tab, Qt.ShiftModifier if back else Qt.NoModifier)
     h.spin(40)
-def fx(): return ev("root.kbFocus ? root.kbFocus.mapToItem(null, 0, 0).x : -1")
+# The centre: a rotation (the refresh icon finishing its turn) keeps it in place.
+def fx(): return ev("root.kbFocus ? root.kbFocus.mapToItem(null, root.kbFocus.width / 2, root.kbFocus.height / 2).x : -1")
 def ftip(): return ev("root.kbFocus ? String(root.kbFocus.tip || root.kbFocus.label || '') : ''")
 
 h.ok("T0 no outline before Tab", rings() == [] and ev("root.kbFocus") is None)
 ev("root.moveCursor(0, 1)"); h.spin(40)
 tab()
-h.ok("T1 Tab outlines the first control (the title), only one", len(rings()) == 1 and ev("root.kbFocus.objectName") == "" and fx() < 40, (len(rings()), fx()))
+h.ok("T1 Tab outlines the first control (the title), only one", len(rings()) == 1 and ev("root.kbFocus.objectName") == "" and fx() < 200, (len(rings()), fx()))
 h.ok("T2 the board cursor gives way", ev("root.cursor") is None)
 xs = [fx()]
 for _ in range(7): tab(); xs.append(fx())

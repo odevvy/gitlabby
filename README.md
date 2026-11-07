@@ -56,14 +56,19 @@ the bottom; the arrow keys keep the selected board in view.
   found for this account.`
 - After the title, the **Board**, **Merge requests** and **To-do** tabs switch
   between the three views (the current one is underlined; the Merge requests tab
-  shows how many wait on your review, the To-do tab how many to-dos are pending). On the right: `Updated`, then the refresh, columns
-  (board only), keyboard and settings buttons. Buttons and tabs are 28-point targets
-  with a faint fill on hover, and every tip names its key. Tips come after
+  shows how many wait on your review, the To-do tab how many to-dos are pending). On the board, the columns and bots buttons come right after the
+  tabs; on Merge requests and To-do the `read-only` chip sits there instead.
+  On the right: `Updated`, then the refresh, keyboard and settings buttons,
+  in the same place on every view. Buttons and tabs are 28-point targets, and
+  every tip names its key. The icon buttons have no fill: a dim icon is off,
+  an orange one is on (a shown row, Settings open), and hovering brightens it
+  (an off icon to white, an on one to a lighter orange). Tabs get a faint fill
+  on hover. Tips come after
   half a second of hovering, and never while a column folds, so a strip or
   header that slides under the cursor doesn't flash one. When the screen is
   too narrow for that, `Updated` shrinks first, then the tab reads `MRs`.
 - Click a column header to collapse it to a narrow strip (count, colour dot,
-  name). The columns button in the header (the columns icon right of refresh, with
+  name). The columns button in the header (the columns icon right after the tabs, with
   a number when columns are hidden) opens a row of chips under the bots: click one to hide or show
   that column. The row stays closed until you open it.
 - `y` copies the link of the focused card, the open issue or the focused

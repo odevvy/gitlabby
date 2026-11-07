@@ -15,8 +15,8 @@ def row(names):
     b = xs(names); return [round(c[0] - a[1]) for a, c in zip(b, b[1:])], b
 def status_left_of_refresh():
     return h.ev("header.status.x + header.status.width") <= h.ev("header.refreshButton.x") - S(8) + 0.5
-gaps, b = row(["refreshButton", "columnsButton", "keysButton", "gear"])
-h.ok("H1 board: refresh, columns, keyboard, settings, 4 apart", h.ev("header.columnsButton.visible") and gaps == [S(4)] * 3, b)
+gaps, b = row(["refreshButton", "keysButton", "gear"])
+h.ok("H1 board: refresh, keyboard, settings 4 apart; columns after the tabs (v0.1.112)", h.ev("header.columnsButton.visible") and gaps == [S(4)] * 2 and h.ev("header.columnsButton.x") < h.ev("header.status.x"), b)
 h.ok("H2 Updated sits just left of refresh", status_left_of_refresh() and h.ev("header.status.text") != "", (h.ev("header.status.x + header.status.width"), h.ev("header.refreshButton.x")))
 h.ok("H3 each keeps its tip", [h.ev("header.%s.tip" % n) for n in ("refreshButton", "columnsButton")] == ["Refresh (r)", "Show or hide columns"])
 h.click(h.ev("header.columnsButton")); h.spin(100)
@@ -32,6 +32,6 @@ for v in ("mrs", "settings"):
     gaps, b = row(["refreshButton", "keysButton", "gear"])
     h.ok("H6 %s: no columns button, refresh right before the keyboard" % v, not h.ev("header.columnsButton.visible") and gaps == [S(4)] * 2 and status_left_of_refresh(), b)
 h.ev("root.showView('board')"); h.spin(150)
-gaps, b = row(["refreshButton", "columnsButton", "keysButton"])
-h.ok("H7 back on the board, columns returns between them", gaps == [S(4)] * 2, b)
+gaps, b = row(["refreshButton", "keysButton", "gear"])
+h.ok("H7 back on the board, columns returns after the tabs; the right three stay", h.ev("header.columnsButton.visible") and gaps == [S(4)] * 2, b)
 sys.exit(h.finish())

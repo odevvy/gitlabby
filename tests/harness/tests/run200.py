@@ -20,8 +20,8 @@ h.ok("B1 glyph is md-robot-outline U+F167A", g.property("text") == chr(0xF167A),
 fm = QFontMetricsF(g.property("font"))
 h.ok("B2 the glyph renders (in font, has width)", fm.inFontUcs4(0xF167A) and g.property("implicitWidth") > 4, (fm.inFontUcs4(0xF167A), g.property("implicitWidth")))
 x = lambda it: it.mapToScene(QPointF(0, 0)).x()
-h.ok("B3 order: refresh, columns, bots, keyboard, settings",
-     x(ev("header.refreshButton")) < x(ev("header.columnsButton")) < x(bb) < x(ev("header.keysButton")) < x(ev("header.gear")))
+h.ok("B3 order (v0.1.112): tabs, columns, bots ... refresh, keyboard, settings",
+     x(ev("header.tabs")) < x(ev("header.columnsButton")) < x(bb) < x(ev("header.status")) < x(ev("header.refreshButton")) < x(ev("header.keysButton")) < x(ev("header.gear")))
 h.ok("B4 lit (accent) while shown", g.property("color") == ev("root.accent") and bb.property("active") is True)
 h.ok("B5 tip while shown", bb.property("tip") == "Hide bots (b)")
 fw_with = ev("header.fixedWidth")
