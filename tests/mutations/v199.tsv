@@ -1,0 +1,7 @@
+# Mutation rows from 0.1.99 on. Columns: name, file, from, to, kind, test.
+# v0.1.99: open hint on MR / to-do rows, Open links in copy
+hint-hidden	components/ScopedList.qml	visible: item.modelData.kind === "row" && !!rowBox.row.url	visible: false	qml	harness/tests/run199.py
+hint-always-accent	components/ScopedList.qml	color: rowMouse.containsMouse ? view.host.accent : view.host.dim	color: view.host.accent	qml	harness/tests/run199.py
+hint-no-hover	components/ScopedList.qml	color: rowMouse.containsMouse ? view.host.accent : view.host.dim	color: view.host.dim	qml	harness/tests/run199.py
+hint-tip-fixed	components/ScopedList.qml	text: view.host.linkMode === "app" ? "Opens in an app window" : "Opens in a browser tab"	text: "Opens in a browser tab"	qml	harness/tests/run199.py
+hint-tip-off	components/ScopedList.qml	shown: rowMouse.containsMouse	shown: false	qml	harness/tests/run199.py
