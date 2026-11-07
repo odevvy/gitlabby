@@ -437,17 +437,20 @@ Item {
       Rule {}
       Item { width: 1; height: Style.space(2) }
       Heading { text: "Account" }
-      // One row, no frame: who is signed in on the left, Sign out as a text
-      // action on the right (like Edit labels). Sign out asks first in the same
-      // row: the question on the left, Yes / Cancel on the right.
+      // One row, no frame: who is signed in on the left, Sign out as a quiet
+      // text action on the right (32 high, padded, a faint fill on hover).
+      // Sign out asks first: the question and what it deletes on the left,
+      // Yes / Cancel under them on the right.
       Item {
         id: accountRow
         width: parent.width
-        implicitHeight: Math.max(accountText.implicitHeight, Style.space(28))
+        implicitHeight: view.confirming && !view.host.signingOut
+          ? accountText.implicitHeight + cacheNote.implicitHeight + Style.space(8) + confirmRow.implicitHeight
+          : Math.max(accountText.implicitHeight, Style.space(32))
         BoardText {
           id: accountText
-          anchors.verticalCenter: parent.verticalCenter
-          width: parent.width - Style.space(12) - (signOutLink.visible ? signOutLink.implicitWidth : confirmRow.visible ? confirmRow.implicitWidth : 0)
+          y: view.confirming && !view.host.signingOut ? 0 : (parent.height - implicitHeight) / 2
+          width: parent.width - (signOutLink.visible ? signOutLink.implicitWidth + Style.space(12) : 0)
           wrapMode: Text.Wrap
           color: view.host.accountError !== "" && !view.confirming ? view.host.urgent : view.confirming ? view.host.foreground : view.host.dim
           text: view.host.signingOut ? "Signing out…"
@@ -456,17 +459,40 @@ Item {
             : view.host.account !== "" ? "Signed in as " + view.host.account + " on " + view.host.gitlabHost : "Checking your GitLab account…"
         }
         BoardText {
+          id: cacheNote
+          objectName: "signOutCache"
+          anchors { top: accountText.bottom; left: parent.left; right: parent.right }
+          visible: view.confirming  // Yes drops the question before signing out
+          wrapMode: Text.Wrap
+          color: view.host.foreground
+          text: "This also deletes this server's saved board cache on this computer."
+        }
+        BoardText {
           id: signOutLink
           anchors { right: parent.right; verticalCenter: parent.verticalCenter }
           visible: !view.host.signingOut && !view.confirming && (view.host.account !== "" || view.host.accountError !== "")
           text: "Sign out"
           color: view.host.accent
           font.pixelSize: Style.font.bodySmall
-          MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: view.confirming = true }
+          height: Style.space(32)
+          leftPadding: Style.space(12); rightPadding: Style.space(12)
+          verticalAlignment: Text.AlignVCenter
+          function kbActivate() { view.confirming = true }
+          Rectangle {
+            objectName: "signOutHover"
+            z: -1
+            anchors.fill: parent
+            radius: Style.space(6)
+            color: signOutMouse.containsMouse ? Qt.rgba(view.host.foreground.r, view.host.foreground.g, view.host.foreground.b, 0.06) : "transparent"
+          }
+          MouseArea { id: signOutMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: signOutLink.kbActivate() }
+          FocusRing { host: view.host }
+          Accessible.role: Accessible.Button
+          Accessible.name: "Sign out"
         }
         Row {
           id: confirmRow
-          anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+          anchors { right: parent.right; bottom: parent.bottom }
           spacing: Style.space(8)
           visible: view.confirming && !view.host.signingOut
           ActionButton {

@@ -38,17 +38,19 @@ h.ok("L3 Sign out is a text action in the accent, small, no border", len(lk) == 
      and abs(lk[0].property("font").pixelSize() - sev("Style.font.bodySmall")) < 0.5 and not button("Sign out"))
 h.ok("L4 one row: who on the left, Sign out flush right, same line", abs(mid(lk[0]) - mid(acc)) < 1 and abs(box(lk[0])[2] - box(row)[2]) < 1 and abs(box(acc)[0] - box(row)[0]) < 1
      and "Signed in as o_devvy on gitlab.com" == acc.property("text"))
-h.ok("L5 the row is one line tall", row.height() <= sev("Style.space(28)") + 0.5 and acc.property("lineCount") == 1, row.height())
+h.ok("L5 the row is one line tall: the 32 high Sign out target", abs(row.height() - sev("Style.space(32)")) < 0.5 and acc.property("lineCount") == 1, row.height())
 h0 = row.height()
 QTest.mouseMove(h.win, QPoint(1, 1)); h.spin(60)
 shot(0)
 
 h.click(lk[0])
 yes, cancel = button("Yes, sign out"), button("Cancel")
-h.ok("C1 the same row asks: question left, Yes / Cancel right", acc.property("text") == "Sign out of glab on gitlab.com? This also signs glab out in your terminal and scripts on this computer." and not link() and len(yes) == 1 and len(cancel) == 1
-     and abs(mid(yes[0]) - mid(acc)) < 1 and box(acc)[2] <= box(yes[0])[0] and abs(box(cancel[0])[2] - box(row)[2]) < 1)
-h.ok("C2 compact: small buttons, Yes urgent, the row just fits the question", yes[0].property("small") and cancel[0].property("small") and yes[0].property("danger") and not cancel[0].property("danger")
-     and acc.property("lineCount") <= 3 and row.height() <= acc.property("height") + 0.5, (row.height(), acc.property("lineCount")))  # v0.1.41: the longer question wraps; the row fits it
+note = sev("cacheNote")
+h.ok("C1 asks first: the question, then what it deletes, Yes / Cancel under them on the right (v0.1.107)", acc.property("text") == "Sign out of glab on gitlab.com? This also signs glab out in your terminal and scripts on this computer." and not link() and len(yes) == 1 and len(cancel) == 1
+     and note.property("visible") and note.property("text") == "This also deletes this server's saved board cache on this computer."
+     and box(note)[1] >= box(acc)[3] - 0.5 and box(yes[0])[1] >= box(note)[3] and abs(box(cancel[0])[2] - box(row)[2]) < 1 and box(yes[0])[2] <= box(cancel[0])[0])
+h.ok("C2 compact: small buttons, Yes urgent, the row just fits question, note and buttons", yes[0].property("small") and cancel[0].property("small") and yes[0].property("danger") and not cancel[0].property("danger")
+     and acc.property("lineCount") <= 3 and abs(row.height() - (acc.property("height") + note.property("height") + sev("Style.space(8)") + yes[0].property("height"))) < 0.5, (row.height(), acc.property("lineCount")))
 h.ok("C3 nothing run yet", not h.running("logout"))
 QTest.mouseMove(h.win, h.scene(yes[0])); h.spin(700)
 shown = [tp for tp in tips() if tp.property("visible")]
