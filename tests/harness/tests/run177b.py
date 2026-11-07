@@ -83,7 +83,9 @@ for view in ("board", "todos"):
     title_r = h.ev("title.x + Math.min(title.width, title.paintedWidth)", hc, hd); rule_l = h.ev("tabRule.x", hc, hd)
     stat_l = h.ev("status.x + status.width - Math.min(status.width, status.paintedWidth)", hc, hd); tabs_r = h.ev("tabs.x + tabs.width", hc, hd)
     ref_l = h.ev("refreshButton.x", hc, hd); chip_r = h.ev("readOnlyChip.visible ? readOnlyChip.x + readOnlyChip.width : 0", hc, hd)
-    if title_r > rule_l - 20 + 1 or stat_l < tabs_r or max(tabs_r, chip_r) > ref_l - 8: bad.append((w, title_r, rule_l, stat_l, tabs_r, ref_l))
+    # v0.1.112: the board-only buttons sit after the tabs; they count as the tabs' end.
+    btn_r = h.ev("botsButton.visible ? botsButton.x + botsButton.width : columnsButton.visible ? columnsButton.x + columnsButton.width : 0", hc, hd)
+    if title_r > rule_l - 20 + 1 or stat_l < max(tabs_r, btn_r) or max(tabs_r, chip_r, btn_r) > ref_l - 8: bad.append((w, title_r, rule_l, stat_l, tabs_r, btn_r, ref_l))
 ok("H7 at every width: the title, the tabs and the status never overlap", bad == [], bad)
 h.ev("panel.availableCardWidth = 1020"); h.spin(300)
 # --- Keys: t toggles; j/k, Enter/o, y and r on the lists -------------------------------------------
