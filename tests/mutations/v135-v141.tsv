@@ -70,7 +70,7 @@ v-move-ignored	BoardKeys.qml	else if (host.view === "mrs" && dy !== 0) mrsView.m
 v-scope-no-fetch	components/ScopedList.qml	onScopeChanged: if (visible) fetch.request(scope, false)	/* m */	qml	harness/tests/run137.py
 v-cursor-unclamped	components/ScopedList.qml	cursor = Math.max(0, Math.min(rows.length - 1, cursor + dy))	cursor = cursor + dy	qml	harness/tests/run137.py
 v-reviewers-hidden	MrsView.qml	model: (mr.row.reviewers || []).slice(0, 4)	model: []	qml	harness/tests/run137.py
-v-section-order	MrsView.qml	return [["review", "Waiting on your review", a.review, "Nothing waiting on your review."],\n            ["mine", "Yours", a.mine, "No open merge requests of yours."]]	return [["mine", "Yours", a.mine, "No open merge requests of yours."],\n            ["review", "Waiting on your review", a.review, "Nothing waiting on your review."]]	qml	harness/tests/run137.py
+v-section-order	MrsView.qml	return [["review", "Waiting on your review", a.review, "Nothing waiting on your review.", Logic.listCaps.review],\n            ["mine", "Yours", a.mine, "No open merge requests of yours.", Logic.listCaps.mine]]	return [["mine", "Yours", a.mine, "No open merge requests of yours.", Logic.listCaps.mine],\n            ["review", "Waiting on your review", a.review, "Nothing waiting on your review.", Logic.listCaps.review]]	qml	harness/tests/run137.py
 v-retry-hint	MrsView.qml	(view.loading ? "" : "  Press r to try again.")	""	qml	harness/tests/run137.py
 v-this-project-wrong	components/ScopedList.qml	mode === "project" && host.project !== "" ? host.project : "all"	"all"	qml	harness/tests/run137.py
 # --- from v138.tsv
