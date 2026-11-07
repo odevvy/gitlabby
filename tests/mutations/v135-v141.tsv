@@ -23,7 +23,7 @@ svc-error-keeps-baseline	BoardService.qml	if (!data || data.state !== "ready") {
 svc-no-baseline-update	BoardService.qml	    b[key] = data\n    baselines = b	    baselines = b	qml	harness/tests/run136.py
 svc-own-moves-ignored	BoardService.qml	ignore: moved.map(function(m) { return m.iid })	ignore: []	qml	harness/tests/run136.py
 svc-own-moves-forever	BoardService.qml	m[key] = moved.filter(function(x) { return ticket < x.after })	m[key] = moved	qml	harness/tests/run136.py
-svc-bg-always	BoardService.qml	request(cfg.project, cfg.boardId, true, cad.sec * 1000 - 2000, 0)	request(cfg.project, cfg.boardId, false, 0, 0)	qml	harness/tests/run136.py
+svc-bg-always	BoardService.qml	request(cfg.project, cfg.boardId, true, maxAge, 0)	request(cfg.project, cfg.boardId, false, 0, 0)	qml	harness/tests/run136.py
 svc-bg-off	BoardService.qml	running: service.watchedKeys.length > 0	running: false	qml	harness/tests/run136.py
 svc-bg-never-stops	BoardService.qml	running: service.watchedKeys.length > 0	running: true	qml	harness/tests/run136.py
 svc-unwatch-keeps	BoardService.qml	if (o !== owner) { owners[o] = watchers[key][o]; any = true }	{ owners[o] = watchers[key][o]; any = true }	qml	harness/tests/run136.py

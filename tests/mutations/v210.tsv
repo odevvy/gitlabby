@@ -10,7 +10,7 @@ upto-sticks	Board.qml	onTriggered: root.upToDate = false }	onTriggered: {} }	qml
 upto-long	Board.qml	Timer { id: upToDateTimer; interval: 2000;	Timer { id: upToDateTimer; interval: 5000;	qml	harness/tests/run210.py
 upto-survives-refresh	Board.qml	  function refresh(ifDue) {\n    upToDate = false\n	  function refresh(ifDue) {\n	qml	harness/tests/run210.py
 upto-survives-view	Board.qml	    if (view !== name) upToDate = false\n		qml	harness/tests/run210.py
-upto-survives-close	Board.qml	else { upToDate = false; boardView.endDrag();	else { boardView.endDrag();	qml	harness/tests/run210.py
+upto-survives-close	Board.qml	else { openFetching = false; upToDate = false; boardView.endDrag();	else { openFetching = false; boardView.endDrag();	qml	harness/tests/run210.py
 upto-wording	Board.qml	(upToDate ? "Up to date · " : "Updated ")	"Updated "	qml	harness/tests/run210.py
 list-old-rule	components/ScopedList.qml	fetch.request(scope, false, Logic.openMaxAgeMs(host.refreshIntervalSec))	fetch.request(scope, false)	qml	harness/tests/run210.py
 list-skip-silent	components/ScopedList.qml	)) host.showUpToDate() }	)) {} }	qml	harness/tests/run210.py

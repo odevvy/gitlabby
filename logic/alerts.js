@@ -102,6 +102,17 @@ function mrListUrl(project, host) {
 // head pipeline ended (passed or failed) if it was running or pending at the
 // last look, or if it is another pipeline (its id) than the last look's; an MR
 // that wasn't there last time, or canceled, says nothing. opts: { host }.
+// The last alert, for the bar icon's tip and Settings > Alerts (v0.1.111):
+// "Last alert: #42 in review · 14:26" from the notification's headline and
+// the time it was sent (hhmm, already formatted); "" before the first one.
+function lastAlertText(last, hhmm) {
+  if (!last || !last.text) return ""
+  return "Last alert: " + String(last.text).replace(/ is in review$/, " in review") + " · " + hhmm
+}
+// Settings > Alerts, under the boxes: the background pace, then the last alert.
+function alertStatusText(paceText, last, hhmm) {
+  return "Checking every " + paceText + ". " + (lastAlertText(last, hhmm) || "No alerts since the shell started.")
+}
 function pipelineEvents(prev, next, opts) {
   var out = []
   if (!prev || !next || prev.state !== "ready" || next.state !== "ready" || prev.project !== next.project) return out
@@ -137,4 +148,4 @@ function notifyArgv(ev, links) {
   return argv
 }
 
-if (typeof module !== "undefined") module.exports = { alertsFor: alertsFor, withAlert: withAlert, reviewRows: reviewRows, boardUrl: boardUrl, alertEvents: alertEvents, notifyArgv: notifyArgv, pipesArgs: pipesArgs, pipesAnswer: pipesAnswer, mrListUrl: mrListUrl, pipelineEvents: pipelineEvents }
+if (typeof module !== "undefined") module.exports = { alertsFor: alertsFor, withAlert: withAlert, reviewRows: reviewRows, boardUrl: boardUrl, alertEvents: alertEvents, notifyArgv: notifyArgv, pipesArgs: pipesArgs, pipesAnswer: pipesAnswer, mrListUrl: mrListUrl, pipelineEvents: pipelineEvents, lastAlertText: lastAlertText, alertStatusText: alertStatusText }

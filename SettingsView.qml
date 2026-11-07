@@ -432,6 +432,12 @@ Item {
         visible: view.host.project !== ""
         text: "Your open MRs in this project: one small read per refresh, only while this is on."
       }
+      // While an alert is on (v0.1.111): how often it looks, and the last alert.
+      Help {
+        objectName: "alertStatus"
+        visible: view.host.project !== "" && (view.host.alerts.review === true || view.host.alerts.idle === true || view.host.alerts.pipeline === true)
+        text: Logic.alertStatusText(Logic.durationText(view.host.refreshIntervalSec), view.host.lastAlert, view.host.lastAlertTime)
+      }
 
       Item { width: 1; height: Style.space(6) }
       Rule {}

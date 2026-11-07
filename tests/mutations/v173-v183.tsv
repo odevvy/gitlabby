@@ -28,7 +28,7 @@ count-none	BoardService.qml	unseenAlerts += events.length	var none = events.leng
 count-once-per-answer	BoardService.qml	unseenAlerts += events.length	unseenAlerts = 1	qml	harness/tests/run175.py
 seen-noop	BoardService.qml	function seenAlerts() { unseenAlerts = 0 }	function seenAlerts() {}	qml	harness/tests/run175.py
 open-keeps-dot	Board.qml	if (opened) { feed.seenAlerts(); view	if (opened) { view	qml	harness/tests/run175.py
-open-popup-lights	Board.qml	function onUnseenAlertsChanged() { if (root.opened && root.feed.unseenAlerts > 0) root.feed.seenAlerts() }	function onUnseenAlertsChanged() {}	qml	harness/tests/run175.py
+open-popup-lights	Board.qml	function onUnseenAlertsChanged() { if (root.opened && root.view === "board"	function onUnseenAlertsChanged() { if (false && root.view === "board"	qml	harness/tests/run175.py
 dot-always	Board.qml	visible: root.iconLit	visible: true	qml	harness/tests/run175.py
 dot-big	Board.qml	width: Style.space(5); height: width; radius: width / 2	width: Style.space(9); height: width; radius: width / 2	qml	harness/tests/run175.py
 dot-square	Board.qml	width: Style.space(5); height: width; radius: width / 2	width: Style.space(5); height: width; radius: 0	qml	harness/tests/run175.py

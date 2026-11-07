@@ -1339,3 +1339,15 @@ test("v0.1.110 opening the popup is due against the setting, never the slowed pa
   assert.equal(L.openMaxAgeMs(10), 28000)  // the 30 s floor
   assert.equal(L.openMaxAgeMs(undefined), 58000)
 })
+
+test("v0.1.111 the last alert in words, and Settings > Alerts' status line", () => {
+  assert.equal(L.lastAlertText(null, "14:26"), "")
+  assert.equal(L.lastAlertText({ text: "" }, "14:26"), "")
+  assert.equal(L.lastAlertText({ text: "#42 is in review" }, "14:26"), "Last alert: #42 in review · 14:26")
+  assert.equal(L.lastAlertText({ text: "3 cards entered review" }, "09:05"), "Last alert: 3 cards entered review · 09:05")
+  assert.equal(L.lastAlertText({ text: "Pipeline passed on !42" }, "14:26"), "Last alert: Pipeline passed on !42 · 14:26")
+  assert.equal(L.lastAlertText({ text: "Stopped working: App UI" }, "14:26"), "Last alert: Stopped working: App UI · 14:26")
+  assert.equal(L.lastAlertText({ text: "#7 is in review, is in review" }, "14:26"), "Last alert: #7 is in review, in review · 14:26")
+  assert.equal(L.alertStatusText("1 min", null, ""), "Checking every 1 min. No alerts since the shell started.")
+  assert.equal(L.alertStatusText("2 min", { text: "#42 is in review" }, "14:26"), "Checking every 2 min. Last alert: #42 in review · 14:26")
+})

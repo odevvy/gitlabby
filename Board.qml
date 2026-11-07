@@ -156,6 +156,10 @@ Panel {
   // The bar icon's dot after an alert (alertDot), unless Settings keeps it unlit.
   readonly property bool iconUnlit: saved("iconUnlit", false) === true
   readonly property bool iconLit: !iconUnlit && !!feed && feed.unseenAlerts > 0
+  // "Last alert: #42 in review · 14:26", or "" before the first (v0.1.111).
+  readonly property var lastAlert: feed ? feed.lastAlert : null
+  readonly property string lastAlertTime: lastAlert ? new Date(lastAlert.at).toLocaleTimeString(Qt.locale(), "HH:mm") : ""
+  readonly property string lastAlertText: Logic.lastAlertText(lastAlert, lastAlertTime)
   function setIconUnlit(on) { persist({ iconUnlit: on === true }) }
   // The bots row under the header: the header's bots button (or b) hides it
   // everywhere (global setting botsHidden); the button shows only with bots.
@@ -407,6 +411,9 @@ Panel {
     if (last) apply(last.raw, false, last.ticket)
     if (last && open) showUpToDate()
   }
+  // The open refresh is on its way (v0.1.111): an alert its answer brings keeps
+  // the bar icon's dot, as the board had not been seen with it yet.
+  property bool openFetching: false
   // A skipped refresh on open (or a list that was fresh enough) says so for
   // 2 s; a refresh, another view or closing the popup ends it.
   property bool upToDate: false
@@ -430,6 +437,7 @@ Panel {
   }
 
   function apply(raw, fromCache, ticket) {
+    if (!fromCache) openFetching = false  // its alerts were counted first (BoardService.done)
     var data = parse(raw)
     if (data.project && data.project !== project) return  // answer for a project we already left
     if (held || (!fromCache && ticket < moveFloor)) { refreshQueued = true; return }  // mid-drag or mid-move, or older than the latest move
@@ -828,7 +836,7 @@ Panel {
       else readCache()
     })
   }
-  onOpenedChanged: if (opened) { feed.seenAlerts(); view = "board"; cursor = null; refresh("open") } else { upToDate = false; boardView.endDrag(); pendingMove = null; if (!bulkBar.busy && bulkBar.mode !== "results") dropPicks(); saveFolds() }
+  onOpenedChanged: if (opened) { feed.seenAlerts(); view = "board"; cursor = null; openFetching = true; refresh("open") } else { openFetching = false; upToDate = false; boardView.endDrag(); pendingMove = null; if (!bulkBar.busy && bulkBar.mode !== "results") dropPicks(); saveFolds() }
 
   // Only while the popup is open; opening it refreshes if due (onOpenedChanged).
   // A copy on another screen that fetched meanwhile makes the tick a no-op.
@@ -892,6 +900,7 @@ Panel {
     anchors.fill: parent; bar: root.bar
     text: root.icon
     tooltipText: "GitLabby" + (root.project !== "" ? " · " + root.project : "") + (root.iconLit ? " · an alert came" : "")
+      + (root.lastAlertText !== "" ? "\n" + root.lastAlertText : "")
     onPressed: function(buttonCode) {
       if (buttonCode === Qt.RightButton || buttonCode === Qt.MiddleButton) root.refresh()
       else root.toggle()
@@ -910,7 +919,9 @@ Panel {
   }
   Connections {
     target: root.feed
-    function onUnseenAlertsChanged() { if (root.opened && root.feed.unseenAlerts > 0) root.feed.seenAlerts() }
+    // Seen at once only while the board is on screen and not from the open
+    // refresh; otherwise the dot stays until the next time a popup opens.
+    function onUnseenAlertsChanged() { if (root.opened && root.view === "board" && !root.openFetching && root.feed.unseenAlerts > 0) root.feed.seenAlerts() }
   }
 
   KeyboardPanel {

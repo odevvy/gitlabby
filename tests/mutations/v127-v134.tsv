@@ -104,7 +104,7 @@ board-own-feed	Board.qml	readonly property var feed: sharedFeed || localFeed	rea
 board-loading-running-only	Board.qml	(feed.runningKey === fetchKey || feed.queuedKeys.indexOf(fetchKey) !== -1)	(feed.runningKey === fetchKey)	qml	harness/tests/run133.py
 board-any-key	Board.qml	function onAnswered(key, raw, ticket) { if (key === root.fetchKey)	function onAnswered(key, raw, ticket) { if (true)	qml	harness/tests/run133.py
 board-timer-forces	Board.qml	onTriggered: root.refresh(true)	onTriggered: root.refresh()	qml	harness/tests/run133.py
-board-open-forces	Board.qml	cursor = null; refresh("open") }	cursor = null; refresh() }	qml	harness/tests/run133.py
+board-open-forces	Board.qml	cursor = null; openFetching = true; refresh("open") }	cursor = null; openFetching = true; refresh() }	qml	harness/tests/run133.py
 board-queued-forces	Board.qml	refreshQueued = false; refresh(true) }	refreshQueued = false; refresh() }	qml	harness/tests/run133.py
 board-no-floor-after-move	Board.qml	data.state === "stale") { refreshQueued = true; moveFloor = feed.tickets + 1 }	data.state === "stale") { refreshQueued = true }	qml	harness/tests/run133.py
 board-no-floor-watchdog	Board.qml	root.refreshQueued = true; root.moveFloor = root.feed.tickets + 1;	root.refreshQueued = true;	qml	harness/tests/run133.py

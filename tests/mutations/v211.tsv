@@ -1,0 +1,14 @@
+# v0.1.111: the dot for alerts not seen; no slowdown in the background; the last alert
+seen-any-view	Board.qml	root.opened && root.view === "board" && !root.openFetching	root.opened && !root.openFetching	qml	harness/tests/run211.py
+seen-open-refresh	Board.qml	root.view === "board" && !root.openFetching &&	root.view === "board" &&	qml	harness/tests/run211.py
+openfetch-never-set	Board.qml	cursor = null; openFetching = true;	cursor = null; openFetching = false;	qml	harness/tests/run211.py
+openfetch-never-clears	Board.qml	if (!fromCache) openFetching = false	if (false) openFetching = false	qml	harness/tests/run211.py
+bg-slowed	BoardService.qml	var maxAge = Logic.openMaxAgeMs(cfg.base)	var maxAge = Logic.adaptiveInterval(cfg.base, paces[key]).sec * 1000 - 2000	qml	harness/tests/run211.py
+last-never-set	BoardService.qml	if (events.length > 0) lastAlert =	if (false) lastAlert =	qml	harness/tests/run211.py
+last-not-forgot	BoardService.qml	lastAlert = null	lastAlert = lastAlert	qml	harness/tests/run211.py
+tip-no-last	Board.qml	(root.lastAlertText !== "" ?	(false ?	qml	harness/tests/run211.py
+tip-always-line	Board.qml	(root.lastAlertText !== "" ?	(true ?	qml	harness/tests/run211.py
+status-always	SettingsView.qml	visible: view.host.project !== "" && (view.host.alerts.review === true	visible: view.host.project !== "" && (true	qml	harness/tests/run211.py
+status-no-last	SettingsView.qml	view.host.lastAlert, view.host.lastAlertTime)	null, view.host.lastAlertTime)	qml	harness/tests/run211.py
+text-keeps-is	logic/alerts.js	.replace(/ is in review$/, " in review")		node	logic.test.js
+text-empty-state	logic/alerts.js	"No alerts since the shell started."	""	node	logic.test.js
