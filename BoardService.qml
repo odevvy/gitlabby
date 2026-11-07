@@ -33,6 +33,9 @@ Item {
   // dot (Board.iconLit). seenAlerts() when a popup opens, or is open.
   property int unseenAlerts: 0
   function seenAlerts() { unseenAlerts = 0 }
+  // The last alert sent, on any screen: { text: its headline, at: ms }, or
+  // null before the first (the tip and Settings > Alerts show it).
+  property var lastAlert: null
   property var baselines: ({})
   property var ownMoves: ({})
   // The pipeline alert (v0.1.76), per project: pipeBaselines { project: the
@@ -217,6 +220,7 @@ Item {
   function notify(events, cfg) {
     events.forEach(function(ev) { Quickshell.execDetached(Logic.notifyArgv(ev, cfg.links)) })
     unseenAlerts += events.length
+    if (events.length > 0) lastAlert = { text: String(events[events.length - 1].headline), at: Date.now() }
   }
 
   // The pipeline alert: board-fetch pipes for project, unless asked under
@@ -255,15 +259,17 @@ Item {
   }
 
   // With the popup closed nothing else refreshes: a watched board is fetched
-  // here when due at its pace (Logic.adaptiveInterval), as the timer would.
+  // here once its last fetch is older than the Refresh every setting.
   // Not while signed out or without glab: the popup's setup panel handles that.
   function background() {
     watchedKeys.forEach(function(key) {
       var cfg = cfgOf(key), last = answers[key]
       if (!cfg || (last && (last.state === "logged-out" || last.state === "no-glab"))) return
-      var cad = Logic.adaptiveInterval(cfg.base, paces[key])
-      if (cfg.review || cfg.idle) request(cfg.project, cfg.boardId, true, cad.sec * 1000 - 2000, 0)
-      if (cfg.pipeline) requestPipes(cfg.project, cad.sec * 1000 - 2000)
+      // At the setting itself, never the slowed pace (v0.1.111): a short stay
+      // in review between two slow looks would be missed.
+      var maxAge = Logic.openMaxAgeMs(cfg.base)
+      if (cfg.review || cfg.idle) request(cfg.project, cfg.boardId, true, maxAge, 0)
+      if (cfg.pipeline) requestPipes(cfg.project, maxAge)
     })
   }
   Timer {
@@ -280,6 +286,7 @@ Item {
     paces = ({})
     baselines = ({})
     ownMoves = ({})
+    lastAlert = null
     pipeBaselines = ({})
     pipeAt = ({})
     pipeWaiting = []
