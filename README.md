@@ -689,6 +689,17 @@ the menu and do not reach the board. Hovering a row selects it too.
 | `Enter` | Pick the row or first match |
 | `Esc` | Close the picker or form |
 
+**Outlined control**
+
+| Key | Action |
+| --- | --- |
+| `Enter` / `Space` | Press it, or tick the box |
+| `h l` / `← →` | Pick a segment in Settings |
+| `Esc` | Drop the outline |
+
+In Settings, `Tab` stops on Refresh every, Open links in and each check box,
+and scrolls the page to the one it outlines.
+
 ## Saved state
 
 Settings live on the widget's entry in `~/.config/omarchy/shell.json`:

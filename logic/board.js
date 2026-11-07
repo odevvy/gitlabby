@@ -128,7 +128,11 @@ var keyGroups = [
     ["j_k / ↓_↑", "Move up / down"],
     ["Ctrl+j / k", "The same while typing a filter · or Ctrl+n / p"],
     ["Enter", "Pick the row or first match"],
-    ["Esc", "Close the picker or form"]] }
+    ["Esc", "Close the picker or form"]] },
+  { title: "Outlined control", keys: [
+    ["Enter / Space", "Press it, or tick the box"],
+    ["h_l / ←_→", "Pick a segment in Settings"],
+    ["Esc", "Drop the outline"]] }
 ]
 // A key as caps and the quiet "/" between choices: "Shift+H / L" ->
 // [{cap:"Shift"},{cap:"H",joined:true},{text:"/"},{cap:"L"}] (joined: drawn
