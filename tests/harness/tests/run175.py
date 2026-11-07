@@ -10,7 +10,8 @@ import two; P = two.P; two.start({"alerts": {P: {"review": True, "idle": False}}
 D = board([row(1, ["todo"])], [], [row(4, ["review"]), row(2, ["review", "app-ui"], "Fix <b> & co"), row(3, ["review", "api"]), row(5, ["review"], "Five")])
 E = board([], [], [row(4, ["review"]), row(2, ["review", "app-ui"], "Fix <b> & co"), row(3, ["review", "api"]), row(5, ["review"], "Five"), row(1, ["review"])])
 dots = lambda: [bool(ev(k, "alertDot.visible")) for k in ("a", "b")]
-tips = lambda: [ev(k, "button.tooltipText") for k in ("a", "b")]
+# The first line of the tip (v0.1.111 adds "Last alert: ..." below it; run211).
+tips = lambda: [ev(k, "button.tooltipText").split("\n")[0] for k in ("a", "b")]
 def settle():
     for _ in range(4):
         if not running(): break
