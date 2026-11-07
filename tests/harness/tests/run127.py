@@ -7,6 +7,21 @@
 # Usage: run127.py <src> [empty.png list.png adding.png invalid.png]
 import sys, os, json, shutil; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from lib import *
+
+# v0.1.99: the longer Open links in note pushes Settings > Bots below the fold,
+# so scroll the settings Flickable to an item before pointing at it.
+_scene0 = Harness.scene
+def _into_view(self, it, *a, **k):
+    f = it.parentItem() if it is not None else None
+    while f is not None and not f.metaObject().className().startswith("QQuickFlickable"): f = f.parentItem()
+    if f is not None:
+        y = it.mapToItem(f.property("contentItem"), QPointF(0, 0)).y()
+        top, h_ = f.property("contentY"), f.height()
+        if y < top or y + it.height() > top + h_:
+            f.setProperty("contentY", max(0.0, min(y - 20, f.property("contentHeight") - h_)))
+            QGuiApplication.processEvents()
+    return _scene0(self, it, *a, **k)
+Harness.scene = _into_view
 pngs = sys.argv[2:6]
 P = "firelink21/phrase41"
 COLS = [("Open", "open", None), ("research", "label", "#e5e7eb"), ("todo", "label", "#3b82f6"), ("approved", "label", "#dc2626"), ("in progress", "label", "#eab308"), ("review", "label", "#86efac"), ("Closed", "closed", None)]

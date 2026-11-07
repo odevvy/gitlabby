@@ -8,6 +8,21 @@
 import sys, os, json, shutil; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from lib import *
 from fixtures import BOARD
+
+# v0.1.99: the longer Open links in note pushes Settings > Bots below the fold,
+# so scroll the settings Flickable to an item before pointing at it.
+_scene0 = Harness.scene
+def _into_view(self, it, *a, **k):
+    f = it.parentItem() if it is not None else None
+    while f is not None and not f.metaObject().className().startswith("QQuickFlickable"): f = f.parentItem()
+    if f is not None:
+        y = it.mapToItem(f.property("contentItem"), QPointF(0, 0)).y()
+        top, h_ = f.property("contentY"), f.height()
+        if y < top or y + it.height() > top + h_:
+            f.setProperty("contentY", max(0.0, min(y - 20, f.property("contentHeight") - h_)))
+            QGuiApplication.processEvents()
+    return _scene0(self, it, *a, **k)
+Harness.scene = _into_view
 out = sys.argv[2] if len(sys.argv) > 2 else None
 cls_is = lambda it, n: it.metaObject().className().startswith(n)
 ALL = []
