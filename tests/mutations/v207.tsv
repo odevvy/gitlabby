@@ -1,0 +1,13 @@
+# v0.1.107: sign-out cache warning, 32 point Sign out target
+note-gone	SettingsView.qml	visible: view.confirming  // Yes drops the question before signing out\n          wrapMode: Text.Wrap\n          color: view.host.foreground	visible: false\n          wrapMode: Text.Wrap\n          color: view.host.foreground	qml	harness/tests/run207.py
+note-always	SettingsView.qml	visible: view.confirming  // Yes drops the question before signing out\n          wrapMode: Text.Wrap\n          color: view.host.foreground	visible: true\n          wrapMode: Text.Wrap\n          color: view.host.foreground	qml	harness/tests/run207.py
+note-claims-settings	SettingsView.qml	saved board cache on this computer.	saved board cache and settings on this computer.	qml	harness/tests/run207.py
+signout-short	SettingsView.qml	height: Style.space(32)\n          leftPadding	height: Style.space(20)\n          leftPadding	qml	harness/tests/run207.py
+signout-no-pad	SettingsView.qml	leftPadding: Style.space(12); rightPadding: Style.space(12)	leftPadding: 0; rightPadding: 0	qml	harness/tests/run207.py
+signout-no-hover	SettingsView.qml	color: signOutMouse.containsMouse ?	color: false ?	qml	harness/tests/run207.py
+signout-loud-hover	SettingsView.qml	view.host.foreground.b, 0.06) : "transparent"\n          }\n          MouseArea { id: signOutMouse	view.host.foreground.b, 0.4) : "transparent"\n          }\n          MouseArea { id: signOutMouse	qml	harness/tests/run207.py
+signout-no-ring	SettingsView.qml	onClicked: signOutLink.kbActivate() }\n          FocusRing { host: view.host }	onClicked: signOutLink.kbActivate() }	qml	harness/tests/run207.py
+signout-kb-dead	SettingsView.qml	function kbActivate() { view.confirming = true }	function kbActivate() {}	qml	harness/tests/run207.py
+signout-overlaps	SettingsView.qml	width: parent.width - (signOutLink.visible ? signOutLink.implicitWidth + Style.space(12) : 0)	width: parent.width	qml	harness/tests/run207.py
+confirm-row-tight	SettingsView.qml	cacheNote.implicitHeight + Style.space(8) + confirmRow.implicitHeight	cacheNote.implicitHeight + confirmRow.implicitHeight	qml	harness/tests/run124.py
+confirm-beside	SettingsView.qml	anchors { right: parent.right; bottom: parent.bottom }\n          spacing: Style.space(8)	anchors { right: parent.right; top: parent.top }\n          spacing: Style.space(8)	qml	harness/tests/run124.py
