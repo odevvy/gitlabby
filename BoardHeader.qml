@@ -32,6 +32,8 @@ Item {
   // points into the gap above and below it, so nothing under the header moves.
   implicitHeight: Math.max(title.implicitHeight, status.implicitHeight)
   // A faint fill: a hovered button or tab; the accent tint: an open view's button.
+  // Starred-board list cap: the card below the header, less Browse and margins.
+  readonly property real jumpListMax: Math.max(Style.space(56) * 3, (parent ? parent.height : 0) - height - Style.space(10) - Style.space(29) - Style.space(24))
   readonly property color hoverFill: Qt.rgba(host.foreground.r, host.foreground.g, host.foreground.b, 0.08)
   readonly property color activeFill: Qt.rgba(host.accent.r, host.accent.g, host.accent.b, 0.18)
   // Board · Merge requests · To-do show on those three views; the others have
@@ -372,6 +374,33 @@ Item {
     Column {
       id: jumpMenuCol
       y: Style.space(4); width: parent.width
+      // Starred boards scroll inside a bounded list; Browse stays pinned below.
+      Item {
+        id: jumpListBox
+        width: jumpMenuCol.width
+        height: Math.min(jumpRows.implicitHeight, header.jumpListMax)
+      Flickable {
+        id: jumpList
+        objectName: "jumpList"
+        anchors.fill: parent
+        clip: true
+        contentWidth: width; contentHeight: jumpRows.implicitHeight
+        boundsBehavior: Flickable.StopAtBounds
+        interactive: contentHeight > height
+        // Keys move the selection: keep the selected row in view.
+        Connections {
+          target: header.host
+          function onMenuIndexChanged() {
+            var h = header.host, rowH = Style.space(56)
+            if (h.headerMenu !== "jump" || !h.menuKeys || h.menuIndex >= h.jumpBoards.length) return
+            var top = h.menuIndex * rowH
+            if (top < jumpList.contentY) jumpList.contentY = top
+            else if (top + rowH > jumpList.contentY + jumpList.height) jumpList.contentY = top + rowH - jumpList.height
+          }
+        }
+      Column {
+        id: jumpRows
+        width: jumpMenuCol.width
       Repeater {
         model: host.jumpBoards
         delegate: Item {
@@ -451,6 +480,18 @@ Item {
             z: 2
             onClicked: host.unfavoriteJump(jumpRow.modelData)
           }
+        }
+      }
+      }
+      }
+        Rectangle {
+          objectName: "jumpScrollBar"
+          visible: jumpList.contentHeight > jumpList.height
+          anchors.right: parent.right; anchors.rightMargin: Style.space(2)
+          width: Style.space(3); radius: width / 2
+          height: Math.max(Style.space(24), jumpList.height * jumpList.height / Math.max(1, jumpList.contentHeight))
+          y: (jumpList.height - height) * (jumpList.contentY / Math.max(1, jumpList.contentHeight - jumpList.height))
+          color: Qt.rgba(host.foreground.r, host.foreground.g, host.foreground.b, 0.25)
         }
       }
       Rectangle {
