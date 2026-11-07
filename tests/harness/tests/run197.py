@@ -43,7 +43,8 @@ h.ok("J2 project paths on second line",
 h.ok("J3 no single-line project / board label in jump board names",
      all(" / " not in n for n in names) and all(" / " not in n for n in ui_names), names)
 # Row height roomier
-row_h = hev("(function(){ var m=null; function w(o){ if(!o)return; if(o.objectName==='jumpMenu') m=o; var ch=o.children||[]; for(var i=0;i<ch.length;i++) w(ch[i]) } w(header); if(!m) return 0; var col=m.children[0]; return col && col.children[0] ? col.children[0].height : 0 })()")
+# (a row is the parent of its jumpHover fill; the list scrolls since v0.1.102)
+row_h = hev("(function(){ var m=null; function w(o){ if(!o||m)return; if(o.objectName==='jumpHover') m=o; var ch=o.children||[]; for(var i=0;i<ch.length;i++) w(ch[i]) } w(header); return m ? m.parent.height : 0 })()")
 h.ok("J4 jump rows taller than old 28px", row_h >= 48, row_h)
 
 # Default: badge, no ×

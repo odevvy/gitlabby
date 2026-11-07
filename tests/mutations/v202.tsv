@@ -1,0 +1,8 @@
+# v0.1.102: bounded, scrolling starred-board menu; Browse pinned
+jump-unbounded	BoardHeader.qml	height: Math.min(jumpRows.implicitHeight, header.jumpListMax)	height: jumpRows.implicitHeight	qml	harness/tests/run202.py
+jump-max-ignores-card	BoardHeader.qml	(parent ? parent.height : 0) - height - Style.space(10) - Style.space(29) - Style.space(24)	(parent ? parent.height : 0)	qml	harness/tests/run202.py
+jump-not-interactive	BoardHeader.qml	interactive: contentHeight > height	interactive: false	qml	harness/tests/run202.py
+jump-no-follow-down	BoardHeader.qml	else if (top + rowH > jumpList.contentY + jumpList.height) jumpList.contentY = top + rowH - jumpList.height		qml	harness/tests/run202.py
+jump-no-follow-up	BoardHeader.qml	if (top < jumpList.contentY) jumpList.contentY = top	if (false) {}	qml	harness/tests/run202.py
+jump-bar-always	BoardHeader.qml	visible: jumpList.contentHeight > jumpList.height	visible: true	qml	harness/tests/run202.py
+jump-bar-static	BoardHeader.qml	y: (jumpList.height - height) * (jumpList.contentY / Math.max(1, jumpList.contentHeight - jumpList.height))	y: 0	qml	harness/tests/run202.py
