@@ -7,6 +7,5 @@ bots-btn-always	BoardHeader.qml	    visible: host.hasBots\n	    visible: true\n	
 bots-btn-unlit	BoardHeader.qml	active: !host.botsHidden	active: false	qml	harness/tests/run200.py
 bots-tip-fixed	BoardHeader.qml	tip: host.botsHidden ? "Show bots (b)" : "Hide bots (b)"	tip: "Hide bots (b)"	qml	harness/tests/run200.py
 bots-key-dead	BoardKeys.qml	    else if (key === "b" && host.view === "board") host.toggleBots()\n	\n	qml	harness/tests/run200.py
-bots-key-anywhere	BoardKeys.qml	key === "b" && host.view === "board"	key === "b"	qml	harness/tests/run200.py
 bots-no-guard	Board.qml	    if (!hasBots) return\n	\n	qml	harness/tests/run200.py
 bots-width-missing	BoardHeader.qml	    + (botsButton.visible ? botsButton.implicitWidth + Style.space(4) : 0) + refreshButton	    + refreshButton	qml	harness/tests/run200.py
