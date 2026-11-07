@@ -49,7 +49,9 @@ Item {
     return out
   }
 
-  function open() { cursor = 0; fetch.request(scope, false) }
+  // Landing here: refetched when older than the refresh setting (as opening
+  // the popup does); a fresh enough answer says "Up to date" for 2 s.
+  function open() { cursor = 0; if (fetch.request(scope, false, Logic.openMaxAgeMs(host.refreshIntervalSec))) host.showUpToDate() }
   function refresh() { fetch.request(scope, true) }
   function setMode(next) { if (next !== mode) { mode = next; cursor = 0 } }
   onScopeChanged: if (visible) fetch.request(scope, false)

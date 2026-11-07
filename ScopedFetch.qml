@@ -24,16 +24,19 @@ Process {
   property int generation: 0
   property real startedAt: 0
 
-  function request(next, force) {
-    if (loading === next) return
+  // maxAgeMs: how old an answer may be and still do (60 s when not given).
+  // Returns true when that answer does and nothing is fetched.
+  function request(next, force, maxAgeMs) {
+    if (loading === next) return false
     var last = answers[next]
-    if (!force && last && Date.now() - last.startedAt < 60000) return
-    if (running) { pending = { scope: next, force: force === true }; return }
+    if (!force && last && Date.now() - last.startedAt < (maxAgeMs || 60000)) return true
+    if (running) { pending = { scope: next, force: force === true }; return false }
     scope = next
     generation = service.generation
     startedAt = Date.now()
     command = service.helperCommand(args(next))
     running = true
+    return false
   }
   function clear() { answers = ({}); pending = null }
   function done(raw) {
