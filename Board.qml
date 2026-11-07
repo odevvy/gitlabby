@@ -88,7 +88,35 @@ Panel {
   readonly property var jumpBoards: Logic.jumpBoards(hostFavorites, defaultProject, defaultBoardId, defaultBoardName)
   // Header menus: "" | "default" | "jump". Esc and choosing a row clear it.
   property string headerMenu: ""
-  onViewChanged: headerMenu = ""
+  onViewChanged: { headerMenu = ""; kbFocus = null }
+  // Keyboard focus (Tab / Shift+Tab): one control at a time, outlined by its
+  // FocusRing (components/FocusRing.qml). Order: top to bottom, left to right.
+  property var focusables: []
+  property Item kbFocus: null
+  function addFocusable(it) { focusables = focusables.concat([it]) }
+  function removeFocusable(it) {
+    if (kbFocus === it) kbFocus = null
+    focusables = focusables.filter(function(x) { return x !== it })
+  }
+  function focusOrder() {
+    // By each control's center: a spinning refresh keeps its place.
+    return focusables.filter(function(it) { return it.visible && it.enabled && it.width > 0 })
+      .map(function(it) { var p = it.mapToItem(null, it.width / 2, it.height / 2); return { it: it, row: Math.round(p.y / 12), x: p.x } })
+      .sort(function(a, b) { return a.row - b.row || a.x - b.x })
+      .map(function(e) { return e.it })
+  }
+  function focusNext(dir) {
+    var list = focusOrder()
+    if (list.length === 0) return
+    var i = list.indexOf(kbFocus)
+    cursor = null  // one focus at a time: the board cursor or a control
+    kbFocus = list[i < 0 ? (dir > 0 ? 0 : list.length - 1) : (i + dir + list.length) % list.length]
+  }
+  function activateFocus() {
+    var it = kbFocus
+    if (typeof it.kbActivate === "function") it.kbActivate()
+    else it.clicked()
+  }
   // Keyboard selection inside the open header menu. menuKeys: the last move
   // came from a key, so the selected row is lit instead of the hovered one.
   property int menuIndex: 0
