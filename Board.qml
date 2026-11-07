@@ -383,11 +383,14 @@ Panel {
   // board (this server's: on another one, settings.serverDefaults[host];
   // gitlab.com's stays).
 
-  // ifDue (the timer, opening the popup): skipped when this board was fetched
-  // less than an interval ago, on any screen; that answer is shown instead.
-  // Otherwise (Refresh, r, a click on the icon) it is fetched, unless a fetch
-  // is already on its way, which every screen then shows.
+  // ifDue true (the timer): skipped when this board was fetched less than an
+  // interval ago, on any screen; that answer is shown instead. ifDue "open"
+  // (opening the popup): the same against the setting itself, not the slowed
+  // pace; a fetch then is loud like Refresh, and a skip says "Up to date" for
+  // 2 s. Otherwise (Refresh, r, a right click on the icon) it is fetched,
+  // unless a fetch is already on its way, which every screen then shows.
   function refresh(ifDue) {
+    upToDate = false
     if (signingOut) return
     // No project yet: the project list doubles as the sign-in check, and
     // landing in the picker is the next step.
@@ -396,11 +399,19 @@ Panel {
     if (held) { refreshQueued = true; return }
     // A refresh you asked for stays loud until its answer, even if the
     // popup opening (or the timer) joins it meanwhile.
+    var open = ifDue === "open"
+    // Set before asking: the fetch starts at once, and a stale value would spin the icon.
     manualRefresh = ifDue !== true || (manualRefresh && loading)
-    if (ifDue !== true && boardState === "ready" && opened) { refreshHeld = true; refreshHold.restart() }  // "Updating…" at least 500 ms
-    var last = feed.request(project, boardId, ifDue === true, cadence.sec * 1000 - 2000, moveFloor)
+    var last = feed.request(project, boardId, ifDue === true || open, open ? Logic.openMaxAgeMs(refreshIntervalSec) : cadence.sec * 1000 - 2000, moveFloor)
+    if (!last && ifDue !== true && boardState === "ready" && opened) { refreshHeld = true; refreshHold.restart() }  // "Updating…" at least 500 ms
     if (last) apply(last.raw, false, last.ticket)
+    if (last && open) showUpToDate()
   }
+  // A skipped refresh on open (or a list that was fresh enough) says so for
+  // 2 s; a refresh, another view or closing the popup ends it.
+  property bool upToDate: false
+  function showUpToDate() { upToDate = true; upToDateTimer.restart() }
+  Timer { id: upToDateTimer; interval: 2000; onTriggered: root.upToDate = false }
 
   function parse(raw) {
     try { return JSON.parse(String(raw || "")) } catch (error) { return { state: "error", message: "board-fetch returned no readable output." } }
@@ -568,6 +579,7 @@ Panel {
 
   function showView(name) {
     if (name === "settings" && view !== "settings") checkAccount()
+    if (view !== name) upToDate = false
     if (lists[name] && view !== name) lists[name].open()
     view = name
     Qt.callLater(function() {
@@ -774,7 +786,8 @@ Panel {
       // On Merge requests or To-do, when the lists were read (their entry), not the board.
       var listed = shownList ? shownList.entry : null
       var at = !shownList ? updatedAt : listed && listed.startedAt > 0 ? new Date(listed.startedAt).toISOString() : ""
-      var time = copiedNote !== "" ? copiedNote : updating ? "Updating…" : at !== "" ? "Updated " + new Date(at).toLocaleTimeString(Qt.locale(), "HH:mm") : ""
+      var hhmm = at !== "" ? new Date(at).toLocaleTimeString(Qt.locale(), "HH:mm") : ""
+      var time = copiedNote !== "" ? copiedNote : updating ? "Updating…" : hhmm === "" ? "" : (upToDate ? "Up to date · " : "Updated ") + hhmm
       if (!writable) time = "View-only  " + time
       return message !== "" ? message + "  " + time : time
     }
@@ -815,7 +828,7 @@ Panel {
       else readCache()
     })
   }
-  onOpenedChanged: if (opened) { feed.seenAlerts(); view = "board"; cursor = null; refresh(true) } else { boardView.endDrag(); pendingMove = null; if (!bulkBar.busy && bulkBar.mode !== "results") dropPicks(); saveFolds() }
+  onOpenedChanged: if (opened) { feed.seenAlerts(); view = "board"; cursor = null; refresh("open") } else { upToDate = false; boardView.endDrag(); pendingMove = null; if (!bulkBar.busy && bulkBar.mode !== "results") dropPicks(); saveFolds() }
 
   // Only while the popup is open; opening it refreshes if due (onOpenedChanged).
   // A copy on another screen that fetched meanwhile makes the tick a no-op.

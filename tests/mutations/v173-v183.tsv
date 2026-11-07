@@ -114,17 +114,17 @@ n-one-comment	logic/mrs.js	n === 1 ? "1 comment" : n > 1	n > 0	node	logic.test.j
 n-badge-cap	logic/mrs.js	n > 9 ? "9+" : String(n)\n}\n// board-fetch arguments for a scope: "all", or one project path.\nfunction todosArgs	String(n)\n}\n// board-fetch arguments for a scope: "all", or one project path.\nfunction todosArgs	node	logic.test.js
 n-args-loose	logic/mrs.js	? ["todos", "--project", String(scope)] : ["todos"]	? ["todos", "--project", String(scope)] : ["todos", "--project", String(scope)]	node	logic.test.js
 n-subline-who	logic/mrs.js	t.author && t.author.name ? "by " + t.author.name : ""	""	node	logic.test.js
-q-td-no-reuse	ScopedFetch.qml	if (!force && last && Date.now() - last.startedAt < 60000) return	if (false) return	qml	harness/tests/run177.py
+q-td-no-reuse	ScopedFetch.qml	if (!force && last && Date.now() - last.startedAt < (maxAgeMs || 60000)) return true	if (false) return true	qml	harness/tests/run177.py
 # dropped in 0.1.89: q-td-force-ignored (the same mutation as svc-force-ignored)
 q-td-no-dedupe	ScopedFetch.qml	if (loading === next) return	if (false) return	qml	harness/tests/run177.py
-q-td-no-queue	ScopedFetch.qml	if (running) { pending = { scope: next, force: force === true }; return }	if (running) return	qml	harness/tests/run177.py
+q-td-no-queue	ScopedFetch.qml	if (running) { pending = { scope: next, force: force === true }; return false }	if (running) return false	qml	harness/tests/run177.py
 q-td-gen	ScopedFetch.qml	    if (generation !== service.generation) return\n	\n	qml	harness/tests/run177.py
 q-td-forget	BoardService.qml	    todoFetch.clear()\n	\n	qml	harness/tests/run177.py
 q-td-unchecked	BoardService.qml	parse: Logic.todosAnswer	parse: JSON.parse	qml	harness/tests/run177.py
 # --- from v177b.tsv
 # v0.1.77 the To-do view (run177b.py): name, file, from, to, kind
 v-no-open	Board.qml	if (lists[name] && view !== name) lists[name].open()	if (lists[name] && view !== name && name === "mrs") lists[name].open()	qml	harness/tests/run177b.py
-v-reopen-forces	components/ScopedList.qml	function open() { cursor = 0; fetch.request(scope, false) }	function open() { cursor = 0; fetch.request(scope, true) }	qml	harness/tests/run177b.py
+v-reopen-forces	components/ScopedList.qml	fetch.request(scope, false, Logic.openMaxAgeMs(host.refreshIntervalSec))	fetch.request(scope, true, Logic.openMaxAgeMs(host.refreshIntervalSec))	qml	harness/tests/run177b.py
 v-scope-ignored	components/ScopedList.qml	readonly property string scope: mode === "project" && host.project !== "" ? host.project : "all"	readonly property string scope: "all"	qml	harness/tests/run177b.py
 v-r-soft	components/ScopedList.qml	function refresh() { fetch.request(scope, true) }	function refresh() { fetch.request(scope, false) }	qml	harness/tests/run177b.py
 v-loading-loud	TodoView.qml	busy: loading && answer !== null	busy: loading	qml	harness/tests/run177b.py

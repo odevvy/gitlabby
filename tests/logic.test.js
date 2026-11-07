@@ -660,7 +660,7 @@ test("adaptive refresh: pace from answers, interval from pace", () => {
   const fs = require("node:fs"), path = require("node:path"), dir = path.join(__dirname, "..")
   const board = fs.readFileSync(path.join(dir, "Board.qml"), "utf8")
   assert.match(board, /interval: root\.cadence\.sec \* 1000/)
-  assert.match(board, /feed\.request\(project, boardId, ifDue === true, cadence\.sec \* 1000 - 2000, moveFloor\)/)
+  assert.match(board, /feed\.request\(project, boardId, ifDue === true \|\| open, open \? Logic\.openMaxAgeMs\(refreshIntervalSec\) : cadence\.sec \* 1000 - 2000, moveFloor\)/)
   assert.match(board, /Logic\.adaptiveInterval\(refreshIntervalSec, feed\.paces\[fetchKey\]\)/)
 })
 
@@ -924,7 +924,7 @@ test("merge requests view wiring: m and the header button open it; it loads on o
   assert.deepEqual([...board.matchAll(/mrs\.request\(|requestMrs\(/g)].length, 0)
   // (MrsView itself, or the ScopedList it is drawn with.)
   const asks = src => [...src.matchAll(/(?:host\.feed\.mrs|fetch)\.request\(([^)]*)\)/g)].map(m => m[1])
-  assert.deepEqual(new Set(asks(view).concat(asks(list))), new Set(["scope, false", "scope, true"]))
+  assert.deepEqual(new Set(asks(view).concat(asks(list))), new Set(["scope, false", "scope, true", "scope, false, Logic.openMaxAgeMs(host.refreshIntervalSec"]))  // v0.1.110: landing uses the setting
   // Read-only: a row opens its link and nothing else runs.
   assert.doesNotMatch(view + list, /execDetached|Process \{|helperPath/)
   assert.match(view + list, /host\.openUrl\(rows\[cursor\]\.url\)/)
@@ -1331,4 +1331,11 @@ test("v0.1.109 the open action names where Settings sends it", () => {
   const opens = L.keyGroups.flatMap(g => g.keys).filter(([, a]) => /^Open in/.test(a)).map(([, a]) => a)
   assert.deepEqual([...new Set(opens)], ["Open in browser"])
   assert.equal(opens.length, 4)
+})
+
+test("v0.1.110 opening the popup is due against the setting, never the slowed pace", () => {
+  assert.equal(L.openMaxAgeMs(60), 58000)
+  assert.equal(L.openMaxAgeMs(300), 298000)
+  assert.equal(L.openMaxAgeMs(10), 28000)  // the 30 s floor
+  assert.equal(L.openMaxAgeMs(undefined), 58000)
 })

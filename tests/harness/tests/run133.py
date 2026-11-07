@@ -91,7 +91,7 @@ ok("D4 screen 2's widget (popup closed) knows its board is loading", ev("b", "ro
 answer(B1)
 ok("D5 the one answer reaches both screens", iids("a") == iids("b") and ev("a", "root.updatedAt") == ev("b", "root.updatedAt") == "2026-10-30T15:00:00Z", (iids("a"), iids("b")))
 ev("b", "root.opened = true"); spin(80)
-ok("D6 opening screen 2 within the interval: no second fetch; same board, same 'Updated'", tickets() == 1 and not running() and status("a") == status("b") and status("b").startswith("Updated "), (tickets(), status("a"), status("b")))
+ok("D6 opening screen 2 within the interval: no second fetch; same board, same time, Up to date there (v0.1.110)", tickets() == 1 and not running() and status("a")[-5:] == status("b")[-5:] and status("a").startswith("Updated ") and status("b").startswith("Up to date · "), (tickets(), status("a"), status("b")))
 # --- the interval: ticks on both screens, one fetch -------------------------------
 ev("b", "refreshTimer.triggered()"); ev("a", "refreshTimer.triggered()"); spin(60)
 ok("I1 both timers tick within the interval: no fetch", tickets() == 1 and not running())

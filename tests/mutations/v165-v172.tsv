@@ -122,7 +122,7 @@ state-hidden-while-loading	IssueView.qml	objectName: "stateAction"\n          vi
 edit-shown-while-loading	IssueView.qml	opacity: view.issueReady ? 1 : 0	opacity: 1	qml	harness/tests/run167.py
 state-shown-while-loading	IssueView.qml	opacity: view.issueReady ? 1 : 0\n          Behavior on opacity { NumberAnimation { duration: 150 } }\n          enabled:	opacity: 1\n          Behavior on opacity { NumberAnimation { duration: 150 } }\n          enabled:	qml	harness/tests/run167.py
 updating-on-timer	Board.qml	readonly property bool updatingNow: loudNow && boardState === "ready"	readonly property bool updatingNow: loading && boardState === "ready"	qml	harness/tests/run167.py
-updating-first-load	Board.qml	if (ifDue !== true && boardState === "ready" && opened)	if (ifDue !== true && opened)	qml	harness/tests/run167.py
+updating-first-load	Board.qml	if (!last && ifDue !== true && boardState === "ready" && opened)	if (!last && ifDue !== true && opened)	qml	harness/tests/run167.py
 no-hold	Board.qml	{ refreshHeld = true;	{ refreshHeld = false;	qml	harness/tests/run167.py
 hold-forever	Board.qml	onTriggered: root.refreshHeld = false	onTriggered: root.refreshHeld = true	qml	harness/tests/run167.py
 hold-short	Board.qml	id: refreshHold; interval: 500	id: refreshHold; interval: 50	qml	harness/tests/run167.py

@@ -129,16 +129,23 @@ usable, in every view. For the timer's refresh in the background the dot is
 grey and the status keeps `Updated 14:05`. For one you asked for (Refresh,
 `r`, a right-click, or the merge-request list loading in its view) the dot is
 orange, the refresh icon spins and the status says `Updating…`, for at least
-half a second, then `Updated` with the new time. The first load shows the skeleton
+half a second, then `Updated` with the new time. Opening the popup fetches the
+board when its last fetch is older than your **Refresh every** setting (the
+slowdown doesn't delay it) and looks the same: `Updating…` and the spinning
+icon. When the board is newer than that, nothing is fetched and the status says
+`Up to date · 14:05` for 2 seconds, then `Updated 14:05` (a refresh, another
+view or closing the popup ends it sooner). Merge requests and To-do use the same
+rule when you open them. The first load shows the skeleton
 board and the spinning icon. A refresh
 that comes due while you hold a card waits until you let go.
 
 With several monitors, every bar has its own copy of the widget, but they
 share one refresh (the plugin's service, `BoardService.qml`, which the shell
 loads once). A board is fetched at most once at a time for the whole shell:
-every screen showing it shows the dot and gets the same answer. Opening
-the popup or the timer reuses the last answer when that board was fetched
-less than an interval ago on any screen; Refresh, `r` and a right-click
+every screen showing it shows the dot and gets the same answer. The timer
+reuses the last answer when that board was fetched less than an interval ago
+on any screen, and opening the popup when it was fetched less than your
+setting ago; Refresh, `r` and a right-click
 always fetch, unless a fetch of that board is already running, which they
 join. Under a replacement bar (no plugin services), each copy fetches on its
 own as before. After a shell

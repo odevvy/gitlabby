@@ -1,0 +1,20 @@
+# v0.1.110: refresh on open against the setting; Updating on open; Up to date on skip
+open-uses-pace	Board.qml	open ? Logic.openMaxAgeMs(refreshIntervalSec) : cadence	open ? cadence.sec * 1000 - 2000 : cadence	qml	harness/tests/run210.py
+open-never-due	Board.qml	ifDue === true || open, open	ifDue === true || open, false	qml	harness/tests/run210.py
+open-always-fetches	Board.qml	ifDue === true || open, open	ifDue === true, open	qml	harness/tests/run210.py
+open-quiet	Board.qml	manualRefresh = ifDue !== true || (manualRefresh && loading)	manualRefresh = (ifDue !== true && !open) || (manualRefresh && loading)	qml	harness/tests/run210.py
+open-no-hold	Board.qml	if (!last && ifDue !== true && boardState	if (!last && ifDue !== true && !open && boardState	qml	harness/tests/run210.py
+skip-silent	Board.qml	    if (last && open) showUpToDate()\n		qml	harness/tests/run210.py
+skip-on-timer	Board.qml	    if (last && open) showUpToDate()	    if (last) showUpToDate()	qml	harness/tests/run210.py
+upto-sticks	Board.qml	onTriggered: root.upToDate = false }	onTriggered: {} }	qml	harness/tests/run210.py
+upto-long	Board.qml	Timer { id: upToDateTimer; interval: 2000;	Timer { id: upToDateTimer; interval: 5000;	qml	harness/tests/run210.py
+upto-survives-refresh	Board.qml	  function refresh(ifDue) {\n    upToDate = false\n	  function refresh(ifDue) {\n	qml	harness/tests/run210.py
+upto-survives-view	Board.qml	    if (view !== name) upToDate = false\n		qml	harness/tests/run210.py
+upto-survives-close	Board.qml	else { upToDate = false; boardView.endDrag();	else { boardView.endDrag();	qml	harness/tests/run210.py
+upto-wording	Board.qml	(upToDate ? "Up to date · " : "Updated ")	"Updated "	qml	harness/tests/run210.py
+list-old-rule	components/ScopedList.qml	fetch.request(scope, false, Logic.openMaxAgeMs(host.refreshIntervalSec))	fetch.request(scope, false)	qml	harness/tests/run210.py
+list-skip-silent	components/ScopedList.qml	)) host.showUpToDate() }	)) {} }	qml	harness/tests/run210.py
+list-skip-flag	ScopedFetch.qml	< (maxAgeMs || 60000)) return true	< (maxAgeMs || 60000)) return false	qml	harness/tests/run210.py
+list-fetch-flag	ScopedFetch.qml	    running = true\n    return false	    running = true\n    return true	qml	harness/tests/run210.py
+open-age-floor	logic/board.js	return Math.max(paceFloorSec, Number(baseSec) || 60) * 1000 - 2000	return (Number(baseSec) || 60) * 1000 - 2000	node	logic.test.js
+open-age-margin	logic/board.js	* 1000 - 2000 }	* 1000 }	node	logic.test.js

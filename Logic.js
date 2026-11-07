@@ -84,6 +84,7 @@ var boardSig = BoardLogic.boardSig
 var boardActive = BoardLogic.boardActive
 var nextPace = BoardLogic.nextPace
 var paceFloorSec = BoardLogic.paceFloorSec
+var openMaxAgeMs = BoardLogic.openMaxAgeMs
 var adaptiveInterval = BoardLogic.adaptiveInterval
 var durationText = BoardLogic.durationText
 var cadenceText = BoardLogic.cadenceText
