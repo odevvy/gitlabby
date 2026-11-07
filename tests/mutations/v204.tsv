@@ -1,0 +1,14 @@
+# v0.1.104: Settings segments and check boxes by keyboard
+seg-arrows-ignored	BoardKeys.qml	if (host.kbFocus && dx !== 0 && typeof host.kbFocus.kbMove === "function") { host.kbFocus.kbMove(dx); return }	if (false) {}	qml	harness/tests/run204.py
+reveal-off	Board.qml	    revealFocus(kbFocus)\n		qml	harness/tests/run204.py
+reveal-down-dead	Board.qml	else if (y + it.height > p.contentY + p.height) p.contentY	else if (false) p.contentY	qml	harness/tests/run204.py
+refresh-no-clamp	SettingsView.qml	choices[Math.max(0, Math.min(choices.length - 1, i + dx))]	choices[i + dx] || 60	qml	harness/tests/run204.py
+refresh-enter-dead	SettingsView.qml	function kbActivate() { kbMove(1) }	function kbActivate() {}	qml	harness/tests/run204.py
+refresh-no-ring	SettingsView.qml	FocusRing { host: view.host; radius: Style.space(9) }\n          Accessible.role: Accessible.PageTabList\n          Accessible.name: "Refresh every"	Accessible.name: "Refresh every"	qml	harness/tests/run204.py
+link-left-dead	SettingsView.qml	function kbMove(dx) { view.host.setLinkMode(dx < 0 ? "browser" : "app") }	function kbMove(dx) { view.host.setLinkMode("app") }	qml	harness/tests/run204.py
+link-space-dead	SettingsView.qml	function kbActivate() { view.host.setLinkMode(view.host.linkMode === "app" ? "browser" : "app") }	function kbActivate() {}	qml	harness/tests/run204.py
+unlit-key-dead	SettingsView.qml	function kbActivate() { view.host.setIconUnlit(!view.host.iconUnlit) }	function kbActivate() {}	qml	harness/tests/run204.py
+avatars-key-dead	SettingsView.qml	function kbActivate() { view.host.setShowAvatars(!view.host.showAvatars) }	function kbActivate() {}	qml	harness/tests/run204.py
+collapsed-key-dead	SettingsView.qml	function kbActivate() { view.host.toggleDefaultCollapsed(chk.modelData.name) }	function kbActivate() {}	qml	harness/tests/run204.py
+alert-key-dead	SettingsView.qml	function kbActivate() { view.host.setAlert(alertCheck.modelData.kind, !alertCheck.on) }	function kbActivate() {}	qml	harness/tests/run204.py
+alert-no-ring	SettingsView.qml	              FocusRing { host: view.host; radius: Style.space(4) }\n              Accessible.role: Accessible.CheckBox\n              Accessible.name: alertCheck.modelData.label	              Accessible.name: alertCheck.modelData.label	qml	harness/tests/run204.py
