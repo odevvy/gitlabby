@@ -1,0 +1,15 @@
+# v0.1.106: capped list sections (Latest N, View all on GitLab)
+cap-ignored	components/ScopedList.qml	var capped = s[4] > 0 && s[2].length >= s[4]	var capped = false	qml	harness/tests/run206.py
+cap-always	components/ScopedList.qml	var capped = s[4] > 0 && s[2].length >= s[4]	var capped = s[2].length > 0	qml	harness/tests/run206.py
+cap-count-total	components/ScopedList.qml	text: item.modelData.capped ? "Latest " + item.modelData.cap : String(item.modelData.count || 0)	text: String(item.modelData.count || 0)	qml	harness/tests/run206.py
+viewall-dead	components/ScopedList.qml	function kbActivate() { view.host.openViewAll(item.modelData.section, view.scope) }	function kbActivate() {}	qml	harness/tests/run206.py
+viewall-no-ring	components/ScopedList.qml	FocusRing { host: view.host; inset: -Style.space(4) }		qml	harness/tests/run206.py
+viewall-no-whoami	Board.qml	pendingViewAll = { section: section, scope: scope }; checkAccount(); return		qml	harness/tests/run206.py
+viewall-pending-dropped	Board.qml	if (pendingViewAll) { var v = pendingViewAll; pendingViewAll = null; openViewAll(v.section, v.scope) }		qml	harness/tests/run206.py
+mrs-cap-off	MrsView.qml	Nothing waiting on your review.", Logic.listCaps.review]	Nothing waiting on your review."]	qml	harness/tests/run206.py
+todos-cap-off	TodoView.qml	"No pending to-dos.", Logic.listCaps.todos]	"No pending to-dos."]	qml	harness/tests/run206.py
+url-project-dropped	logic/mrs.js	var at = proj ? base + "/" + proj + "/-/" : base + "/dashboard/"	var at = base + "/dashboard/"	node	logic.test.js
+url-user-dropped	logic/mrs.js	(u ? "&reviewer_username=" + u : "")	""	node	logic.test.js
+url-author-swapped	logic/mrs.js	"&author_username="	"&reviewer_username="	node	logic.test.js
+url-unencoded	logic/mrs.js	encodeURIComponent(String(user))	String(user)	node	logic.test.js
+caps-wrong	logic/mrs.js	todos: 30, assigned: 20	todos: 50, assigned: 20	node	logic.test.js
