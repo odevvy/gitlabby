@@ -445,16 +445,25 @@ several cards or a bot (the project's merge requests for several pipelines), as 
 (`omarchy-launch-browser`) or an app window (`omarchy-launch-webapp`); https
 links only. After one, the bar icon gets a small accent dot at its top right
 (the tip adds `an alert came`), on every screen, until you open the popup on
-any of them; an alert while a popup is open doesn't light it. Settings >
+any of them. An alert that comes while a popup shows the board doesn't light
+it; one the popup's own opening refresh brings, or one that comes while it
+shows another view, does. Settings >
 General > **Keep the bar icon unlit** turns the dot off (the alerts still
 come). Your own moves aren't announced back to you. Nothing is
 announced on the first load after a shell start, after switching boards, or
 for the first good refresh after a failed one (changes in between are only
 compared from then on).
 
+The icon's tip adds a second line with the last alert sent this shell
+session, on any screen, such as `Last alert: #42 in review · 14:26`
+(none before the first). Settings > Alerts says the same under the check boxes
+while one is on: `Checking every 1 min. Last alert: …`, or `Checking every
+1 min. No alerts since the shell started.` Signing out forgets it.
+
 While a card or bot alert is on, the board also refreshes with the popup
-closed, at its adaptive pace (see [Popup](#popup)): up to 4x your interval when
-nothing changes. The pipeline alert's query runs at the same pace, popup open
+closed, once its last fetch is older than your interval: never at the slowed
+adaptive pace (see [Popup](#popup)), as a short stay in review between two slow
+looks would be missed. The pipeline alert's query runs at the same interval, popup open
 or not. With all three off there is no background refresh. However many monitors,
 there is one refresh and one notification per event (the plugin's service).
 
