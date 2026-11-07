@@ -11,7 +11,7 @@ save-raw	Board.qml	{ openLinks: mode === "app" ? "app" : "browser" }	{ openLinks
 seg-current-wrong	SettingsView.qml	readonly property bool current: view.host.linkMode === modelData.mode	readonly property bool current: modelData.mode === "browser"	qml	harness/tests/run173.py
 seg-order	SettingsView.qml	model: [{ mode: "browser", label: "Browser tab" }, { mode: "app", label: "App window" }]	model: [{ mode: "app", label: "App window" }, { mode: "browser", label: "Browser tab" }]	qml	harness/tests/run173.py
 row-left	SettingsView.qml	x: linkRow.oneLine ? linkRow.width - width : 0	x: 0	qml	harness/tests/run173.py
-note-gone	SettingsView.qml	Help { objectName: "linkNote"; text: "Board issues still open inside GitLabby. Merge requests, to-dos, and Open in browser leave the plugin. They open in a browser tab, or in an app window with no tabs (needs a Chromium-based browser)." }	Item { objectName: "linkNote" }	qml	harness/tests/run173.py
+note-gone	SettingsView.qml	Help { objectName: "linkNote"; text: "Board issues still open inside GitLabby. Merge requests, to-dos, and an issue's Open action leave the plugin. They open in a browser tab, or in an app window with no tabs (needs a Chromium-based browser)." }	Item { objectName: "linkNote" }	qml	harness/tests/run173.py
 note-loud	SettingsView.qml	Help { objectName: "linkNote"	Label { objectName: "linkNote"	qml	harness/tests/run173.py
 row-no-gap	SettingsView.qml	      Item { width: 1; height: Style.space(2) }\n      // Open links in	      // Open links in	qml	harness/tests/run173.py
 # --- from v174.tsv
