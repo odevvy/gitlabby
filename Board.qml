@@ -279,7 +279,7 @@ Panel {
   function saveFolds() { if (foldsUnsaved) persist() }
   // folding: true for a moment after a fold or hide. Columns and the popup
   // width animate, and answers wait (held). Board switches use widthAnim
-  // instead — same 150ms motion, without holding refresh.
+  // instead: same 150ms motion, without holding refresh.
   property bool folding: false
   function startFold() { folding = true; foldClock.restart() }
   function toggleCollapsed(name) { startFold(); storeBoard(Logic.toggled(collapsedList(), name), hiddenList()) }

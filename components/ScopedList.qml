@@ -166,6 +166,7 @@ Item {
               color: view.host.accent
             }
             MouseArea {
+              id: rowMouse
               anchors.fill: parent
               hoverEnabled: true
               cursorShape: rowBox.row.url ? Qt.PointingHandCursor : Qt.ArrowCursor
@@ -182,6 +183,22 @@ Item {
               readonly property string section: item.modelData.section || ""
               readonly property bool current: rowBox.current
               sourceComponent: view.rowContent
+            }
+            // Leaves the plugin: a quiet arrow at the right, accent on hover,
+            // and a tip that says where the link opens (Settings > Open links in).
+            BoardText {
+              objectName: "openHint"
+              visible: item.modelData.kind === "row" && !!rowBox.row.url
+              anchors { right: parent.right; rightMargin: Style.space(8); bottom: parent.bottom; bottomMargin: Style.space(5) }
+              text: "\u2197"
+              color: rowMouse.containsMouse ? view.host.accent : view.host.dim
+              font.pixelSize: Style.font.bodySmall
+              IconTip {
+                objectName: "openHintTip"
+                host: view.host
+                shown: rowMouse.containsMouse
+                text: view.host.linkMode === "app" ? "Opens in an app window" : "Opens in a browser tab"
+              }
             }
           }
         }

@@ -69,8 +69,10 @@ star adds or removes a board from that list (it no longer sets the default).
 - Click an issue for its details: state, labels, author, ages, assignees,
   milestone, the description, the comments and a box to add one, and an
   "Open in browser" link. A thin bar slides under the title while it loads.
-- Links open in a browser tab, or in an app window of their own (no tabs or
-  address bar): Settings > **Open links in**. Browser tab runs
+- Board issues still open inside GitLabby. Merge requests, to-dos, and Open
+  in browser leave the plugin; their rows show a quiet ↗ and a tip saying
+  where they open. They open in a browser tab, or in an app window of their
+  own (no tabs or address bar): Settings > **Open links in**. Browser tab runs
   `omarchy-launch-browser`, App window `omarchy-launch-webapp`, which needs a
   Chromium-based browser (Chrome, Brave, Edge, Opera, Vivaldi, Helium; with
   another default it uses Chromium). Either way only `https://` links open,

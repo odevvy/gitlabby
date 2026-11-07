@@ -48,7 +48,7 @@ h.ev("root.settings = Object.assign({}, root.settings, { openLinks: 'app' })"); 
 h.ok("A7 anything but 'app' saved is a browser tab; 'app' an app window", odd == [] and h.ev("root.linkMode") == "app", odd)
 h.ev("root.settings = Object.assign({}, root.settings, { openLinks: 'browser' })"); h.spin(40)
 # --- the row in Settings -----------------------------------------------------------------------------
-NOTE = "App window: its own window, no tabs. Needs a Chromium-based browser."
+NOTE = "Board issues still open inside GitLabby. Merge requests, to-dos, and Open in browser leave the plugin. They open in a browser tab, or in an app window with no tabs (needs a Chromium-based browser)."
 sv = settings()
 def texts(t): return [it for it in h.walk(sv) if it.property("text") == t and it.isVisible()]
 y = lambda it: it.mapToItem(sv, QPointF(0, 0)).y()
@@ -64,11 +64,11 @@ below = after(note[0]) if note else None
 gap_a = y(row) - (y(pace[0]) + pace[0].height()) if pace else -1; gap_b = y(below) - (y(note[0]) + note[0].height()) if below is not None else -1
 h.ok("B2 the same space above it as below its note", pace and abs(gap_a - gap_b) < 1, (gap_a, gap_b))
 help_ = texts("New boards fold these. Your per-board choice wins.")
-h.ok("B3 the note is quiet, caption size, one line", note and help_ and note[0].property("color") == help_[0].property("color") and note[0].property("font").pixelSize() == help_[0].property("font").pixelSize() and note[0].property("lineCount") == 1)
+h.ok("B3 the note is quiet, caption size, wraps inside the width", note and help_ and note[0].property("color") == help_[0].property("color") and note[0].property("font").pixelSize() == help_[0].property("font").pixelSize() and note[0].property("lineCount") >= 2 and note[0].property("paintedWidth") <= note[0].width() + 1)
 pane = h.ev("linkPane", ctx, sv); seg = h.ev("segPane", ctx, sv)
 h.ok("B4 the segments line up with Refresh every's on the right, same height", abs(x2(pane) - x2(seg)) < 1 and abs(pane.height() - seg.height()) < 1 and h.ev("linkRow.oneLine", ctx, sv), (x2(pane), x2(seg), pane.height(), seg.height()))
 h.ev("panel.availableCardWidth = 760"); h.spin(300); note = texts(NOTE)
-h.ok("B5 the narrowest popup (760): one line still, the note too", h.ev("linkRow.oneLine", ctx, sv) and note and note[0].property("lineCount") == 1)
+h.ok("B5 the narrowest popup (760): the row stays one line, the note wraps inside", h.ev("linkRow.oneLine", ctx, sv) and note and note[0].property("paintedWidth") <= note[0].width() + 1)
 h.ev("panel.availableCardWidth = 1020"); h.spin(200)
 h.ev("root.showView('board')"); h.spin(100)
 sys.exit(h.finish())
