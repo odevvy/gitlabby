@@ -1,0 +1,13 @@
+# v0.1.108: picker empty states and Clear filter
+empty-gone	Picker.qml	visible: view.onProjects && !view.host.auxLoading && view.host.auxError === "" && view.rows.length === 0	visible: false	qml	harness/tests/run208.py
+empty-on-boards	Picker.qml	visible: view.onProjects && !view.host.auxLoading	visible: !view.host.auxLoading	qml	harness/tests/run208.py
+empty-while-loading	Picker.qml	&& !view.host.auxLoading && view.host.auxError === "" && view.rows.length === 0	&& view.host.auxError === "" && view.rows.length === 0	qml	harness/tests/run208.py
+empty-over-error	Picker.qml	&& view.host.auxError === "" && view.rows.length === 0	&& view.rows.length === 0	qml	harness/tests/run208.py
+empty-with-rows	Picker.qml	&& view.rows.length === 0	&& view.rows.length <= 1	qml	harness/tests/run208.py
+empty-filter-untrimmed	Picker.qml	readonly property bool filtered: filter.text.trim() !== ""	readonly property bool filtered: filter.text !== ""	qml	harness/tests/run208.py
+empty-one-message	Picker.qml	text: empty.filtered ? "No projects match this filter." : "No projects found for this account."	text: "No projects match this filter."	qml	harness/tests/run208.py
+clear-always	Picker.qml	visible: empty.filtered\n        text: "Clear filter"	visible: true\n        text: "Clear filter"	qml	harness/tests/run208.py
+clear-keeps-text	Picker.qml	function kbActivate() { filter.text = ""; filter.forceActiveFocus() }	function kbActivate() { filter.forceActiveFocus() }	qml	harness/tests/run208.py
+clear-no-focus	Picker.qml	function kbActivate() { filter.text = ""; filter.forceActiveFocus() }	function kbActivate() { filter.text = "" }	qml	harness/tests/run208.py
+clear-no-ring	Picker.qml	onClicked: clearFilter.kbActivate() }\n        FocusRing { host: view.host }	onClicked: clearFilter.kbActivate() }	qml	harness/tests/run208.py
+clear-quiet	Picker.qml	text: "Clear filter"\n        color: view.host.accent	text: "Clear filter"\n        color: view.host.dim	qml	harness/tests/run208.py
