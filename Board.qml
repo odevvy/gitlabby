@@ -89,6 +89,22 @@ Panel {
   // Header menus: "" | "default" | "jump". Esc and choosing a row clear it.
   property string headerMenu: ""
   onViewChanged: headerMenu = ""
+  // Keyboard selection inside the open header menu. menuKeys: the last move
+  // came from a key, so the selected row is lit instead of the hovered one.
+  property int menuIndex: 0
+  property bool menuKeys: false
+  onHeaderMenuChanged: { menuIndex = 0; menuKeys = false }
+  readonly property int menuCount: headerMenu === "default" ? 2 : headerMenu === "jump" ? jumpBoards.length + 1 : 0
+  function moveMenu(dy) {
+    if (menuCount === 0) return
+    menuKeys = true
+    menuIndex = Math.max(0, Math.min(menuCount - 1, menuIndex + dy))
+  }
+  function hoverMenu(i) { menuKeys = false; menuIndex = i }
+  function activateMenu() {
+    if (headerMenu === "default") { if (menuIndex === 0) openDefault(); else setDefaultCurrent() }
+    else if (headerMenu === "jump") { if (menuIndex < jumpBoards.length) jumpTo(jumpBoards[menuIndex]); else openBrowse() }
+  }
   // Board on screen: starts as the default on every shell start; browsing
   // assigns these (breaking the binding) and is never saved.
   property string project: defaultProject
