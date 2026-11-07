@@ -219,7 +219,7 @@ test("the README's Keyboard section lists exactly the keys the popup shows, grou
 test("the key groups: every view's keys, the setup panel's, no key twice in a group, Board's four on the left", () => {
   const group = title => (L.keyGroups.find(g => g.title === title) || { keys: [] }).keys
   const action = (title, key) => (group(title).find(([k]) => k === key) || [])[1] || ""
-  assert.deepEqual(L.keyGroups.map(g => g.title), ["Board", "Picked cards", "Confirm a move or a close", "Setup panel", "Header menus", "Anywhere", "Issue", "Comment box", "Merge requests", "To-do", "Scrolling", "Pickers and filters"])
+  assert.deepEqual(L.keyGroups.map(g => g.title), ["Board", "Picked cards", "Confirm a move or a close", "Setup panel", "Header menus", "Anywhere", "Issue", "Comment box", "Merge requests", "To-do", "Scrolling", "Pickers and filters", "Outlined control"])
   assert.match(action("Setup panel", "Enter / Space"), /main button/)
   // v0.1.103: Tab walks the popup's controls; Ctrl+Tab switches bar panels.
   assert.match(action("Anywhere", "Tab / Shift+Tab"), /control/)
@@ -240,7 +240,7 @@ test("the key groups: every view's keys, the setup panel's, no key twice in a gr
   for (const k of ["Shift+H / L", "x", "e", "Enter / Space", "Esc"]) assert.ok(action("Picked cards", k), k)
   for (const g of L.keyGroups) assert.equal(new Set(g.keys.map(([k]) => k)).size, g.keys.length, g.title)
   // Every shortcut the popup had before 0.1.62's shorter rows is still listed.
-  assert.equal(L.keyGroups.reduce((n, g) => n + g.keys.length, 0), 38 + 1 + 4 + 1 + 3 + 2)
+  assert.equal(L.keyGroups.reduce((n, g) => n + g.keys.length, 0), 38 + 1 + 4 + 1 + 3 + 2 + 3)
   // v0.1.72: y copies the link on the board, in an issue and on Merge requests.
   assert.match(action("Board", "y"), /^Copy the link · or right-click$/)
   assert.match(action("Issue", "y"), /^Copy the link$/)
@@ -804,7 +804,7 @@ test("alerts wiring: Settings saves settings.alerts per project; each copy hands
   assert.match(persist, /for \(var k in p\) if \(k !== "board"\) entry\[k\] = p\[k\]/)
   // No notifier in the widget: one per event comes from the service only.
   assert.doesNotMatch(board, /omarchy-notification-send|notifyArgv/)
-  assert.match(settings, /onClicked: view\.host\.setAlert\(alertCheck\.modelData\.kind, !alertCheck\.on\)/)
+  assert.match(settings, /function kbActivate\(\) \{ view\.host\.setAlert\(alertCheck\.modelData\.kind, !alertCheck\.on\) \}/)
 })
 
 test("merge requests: the answer checked, status pills, reviewer marks, sublines, the badge, the scope", () => {

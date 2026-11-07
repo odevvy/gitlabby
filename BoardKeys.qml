@@ -40,6 +40,8 @@ PanelKeyCatcher {
   onTabRequested: function(direction) { host.focusNext(direction) }  // the popup's controls
   onMoveRequested: function(dx, dy) {
     if (host.headerMenu !== "") { if (dy !== 0) host.moveMenu(dy); return }
+    // A focused segmented control takes Left / Right (Settings, v0.1.104).
+    if (host.kbFocus && dx !== 0 && typeof host.kbFocus.kbMove === "function") { host.kbFocus.kbMove(dx); return }
     host.kbFocus = null  // one focus at a time: the board cursor or a control
     if (host.view === "board") host.moveCursor(dx, dy)
     else if (host.view === "picker" && dy !== 0) picker.moveCursor(dy)

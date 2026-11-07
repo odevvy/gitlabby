@@ -117,7 +117,7 @@ refresh-two-lines	SettingsView.qml	readonly property bool oneLine: refreshHeadin
 refresh-always-one	SettingsView.qml	readonly property bool oneLine: refreshHeading.implicitWidth + Style.space(12) + segPane.implicitWidth <= width	readonly property bool oneLine: true	qml	harness/tests/run134.py
 refresh-stack-overlaps	SettingsView.qml	y: refreshRow.oneLine ? 0 : refreshHeading.implicitHeight + Style.space(6)	y: 0	qml	harness/tests/run134.py
 collapsed-wide-gap	SettingsView.qml	      Flow {\n        width: parent.width\n        spacing: Style.space(6)	      Flow {\n        width: parent.width\n        spacing: Style.space(16)	qml	harness/tests/run134.py
-collapsed-no-toggle	SettingsView.qml	onClicked: view.host.toggleDefaultCollapsed(chk.modelData.name)	onClicked: {}	qml	harness/tests/run134.py
+collapsed-no-toggle	SettingsView.qml	onClicked: kbActivate()\n              function kbActivate() { view.host.toggleDefaultCollapsed	onClicked: {}\n              function kbActivate() { view.host.toggleDefaultCollapsed	qml	harness/tests/run134.py
 collapsed-wrong-on	SettingsView.qml	readonly property bool on: view.host.isDefaultCollapsed(modelData.name)	readonly property bool on: false	qml	harness/tests/run134.py
 collapsed-full-rows	SettingsView.qml	implicitWidth: chkRow.implicitWidth + Style.space(10); implicitHeight: Style.space(22)	width: parent.width; implicitHeight: Style.space(22)	qml	harness/tests/run134.py
 busy-wide-gap	BotsSection.qml	      width: parent.width\n      spacing: Style.space(6)\n      topPadding: Style.space(2)	      width: parent.width\n      spacing: Style.space(16)\n      topPadding: Style.space(2)	qml	harness/tests/run134.py
