@@ -804,7 +804,7 @@ test("alerts wiring: Settings saves settings.alerts per project; each copy hands
   assert.match(persist, /for \(var k in p\) if \(k !== "board"\) entry\[k\] = p\[k\]/)
   // No notifier in the widget: one per event comes from the service only.
   assert.doesNotMatch(board, /omarchy-notification-send|notifyArgv/)
-  assert.match(settings, /onClicked: view\.host\.setAlert\(alertCheck\.modelData\.kind, !alertCheck\.on\)/)
+  assert.match(settings, /function kbActivate\(\) \{ view\.host\.setAlert\(alertCheck\.modelData\.kind, !alertCheck\.on\) \}/)
 })
 
 test("merge requests: the answer checked, status pills, reviewer marks, sublines, the badge, the scope", () => {

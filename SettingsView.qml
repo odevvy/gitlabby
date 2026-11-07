@@ -163,6 +163,7 @@ Item {
         // in the accent, its number in the accent.
         Rectangle {
           id: segPane
+          objectName: "refreshPane"
           x: refreshRow.oneLine ? refreshRow.width - width : 0
           y: refreshRow.oneLine ? 0 : refreshHeading.implicitHeight + Style.space(6)
           implicitWidth: segments.implicitWidth + Style.space(4)
@@ -170,13 +171,23 @@ Item {
           radius: Style.space(8)
           color: view.pane
           border.width: 0
+          // One Tab stop: Left / Right pick the interval, as a click does.
+          readonly property var choices: [30, 60, 120, 300, 900]
+          function kbMove(dx) {
+            var i = Math.max(0, choices.indexOf(view.host.refreshIntervalSec))
+            view.host.setRefreshInterval(choices[Math.max(0, Math.min(choices.length - 1, i + dx))])
+          }
+          function kbActivate() { kbMove(1) }
+          FocusRing { host: view.host; radius: Style.space(9) }
+          Accessible.role: Accessible.PageTabList
+          Accessible.name: "Refresh every"
 
           Row {
             id: segments
             anchors.centerIn: parent
             spacing: Style.space(2)
             Repeater {
-              model: [30, 60, 120, 300, 900]
+              model: segPane.choices
               delegate: Rectangle {
                 id: segment
                 required property int modelData
@@ -218,6 +229,7 @@ Item {
         Label { id: linkHeading; y: linkRow.oneLine ? (linkPane.implicitHeight - implicitHeight) / 2 : 0; text: "Open links in" }
         Rectangle {
           id: linkPane
+          objectName: "linkPane"
           x: linkRow.oneLine ? linkRow.width - width : 0
           y: linkRow.oneLine ? 0 : linkHeading.implicitHeight + Style.space(6)
           implicitWidth: linkSegs.implicitWidth + Style.space(4)
@@ -225,6 +237,12 @@ Item {
           radius: Style.space(8)
           color: view.pane
           border.width: 0
+          // One Tab stop: Left / Right (or Enter) switch browser tab and app window.
+          function kbMove(dx) { view.host.setLinkMode(dx < 0 ? "browser" : "app") }
+          function kbActivate() { view.host.setLinkMode(view.host.linkMode === "app" ? "browser" : "app") }
+          FocusRing { host: view.host; radius: Style.space(9) }
+          Accessible.role: Accessible.PageTabList
+          Accessible.name: "Open links in"
           Row {
             id: linkSegs
             anchors.centerIn: parent
@@ -276,6 +294,12 @@ Item {
           width: unlitLine.width + Style.space(8); height: parent.height
           hoverEnabled: true; cursorShape: Qt.PointingHandCursor
           onClicked: view.host.setIconUnlit(!view.host.iconUnlit)
+          function kbActivate() { view.host.setIconUnlit(!view.host.iconUnlit) }
+          FocusRing { host: view.host; radius: Style.space(4) }
+          Accessible.role: Accessible.CheckBox
+          Accessible.name: "Keep the bar icon unlit"
+          Accessible.checked: view.host.iconUnlit
+          Accessible.onToggleAction: kbActivate()
         }
       }
       Help { objectName: "unlitNote"; text: "Otherwise a small dot on it after an alert, until you open the board." }
@@ -296,6 +320,12 @@ Item {
           width: avatarsLine.width + Style.space(8); height: parent.height
           hoverEnabled: true; cursorShape: Qt.PointingHandCursor
           onClicked: view.host.setShowAvatars(!view.host.showAvatars)
+          function kbActivate() { view.host.setShowAvatars(!view.host.showAvatars) }
+          FocusRing { host: view.host; radius: Style.space(4) }
+          Accessible.role: Accessible.CheckBox
+          Accessible.name: "Show avatars"
+          Accessible.checked: view.host.showAvatars
+          Accessible.onToggleAction: kbActivate()
         }
       }
       Help { objectName: "avatarsNote"; text: "Pictures come from sites like Gravatar, which can see your IP. Off: initials instead." }
@@ -328,7 +358,15 @@ Item {
               }
               BoardText { anchors.verticalCenter: parent.verticalCenter; text: chk.modelData.name; color: chk.on ? view.host.foreground : view.host.dim; font.pixelSize: Style.font.bodySmall }
             }
-            MouseArea { id: chkMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: view.host.toggleDefaultCollapsed(chk.modelData.name) }
+            MouseArea {
+              id: chkMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: kbActivate()
+              function kbActivate() { view.host.toggleDefaultCollapsed(chk.modelData.name) }
+              FocusRing { host: view.host; radius: Style.space(4) }
+              Accessible.role: Accessible.CheckBox
+              Accessible.name: "Start collapsed: " + chk.modelData.name
+              Accessible.checked: chk.on
+              Accessible.onToggleAction: kbActivate()
+            }
           }
         }
       }
@@ -375,7 +413,15 @@ Item {
               CheckBox { anchors.verticalCenter: parent.verticalCenter; on: alertCheck.on; hot: alertMouse.containsMouse }
               BoardText { anchors.verticalCenter: parent.verticalCenter; text: alertCheck.modelData.label; color: alertCheck.on ? view.host.foreground : view.host.dim; font.pixelSize: Style.font.bodySmall }
             }
-            MouseArea { id: alertMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: view.host.setAlert(alertCheck.modelData.kind, !alertCheck.on) }
+            MouseArea {
+              id: alertMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: kbActivate()
+              function kbActivate() { view.host.setAlert(alertCheck.modelData.kind, !alertCheck.on) }
+              FocusRing { host: view.host; radius: Style.space(4) }
+              Accessible.role: Accessible.CheckBox
+              Accessible.name: alertCheck.modelData.label
+              Accessible.checked: alertCheck.on
+              Accessible.onToggleAction: kbActivate()
+            }
           }
         }
       }
