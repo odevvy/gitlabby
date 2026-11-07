@@ -175,6 +175,9 @@ function nextPace(prev, data) {
 // answers it doubles, up to 4x the setting, but not past the setting while
 // cards are in progress. Never under 30 s.
 var paceFloorSec = 30
+// Opening the popup: due once the last fetch is older than the setting itself
+// (never the slowed pace), less 2 s so a tick on the boundary counts.
+function openMaxAgeMs(baseSec) { return Math.max(paceFloorSec, Number(baseSec) || 60) * 1000 - 2000 }
 function adaptiveInterval(baseSec, pace) {
   var base = Math.max(paceFloorSec, Number(baseSec) || 60)
   if (!pace) return { sec: base, why: "your setting" }
@@ -218,4 +221,4 @@ function keyOps(have, want) {
   return ops
 }
 
-if (typeof module !== "undefined") module.exports = { pipelineMarks: pipelineMarks, pipelineMark: pipelineMark, columnKey: columnKey, listSpec: listSpec, movedColumns: movedColumns, cursorMove: cursorMove, cursorFix: cursorFix, cursorAt: cursorAt, keyGroups: keyGroups, openLabel: openLabel, keyParts: keyParts, boardSig: boardSig, boardActive: boardActive, nextPace: nextPace, paceFloorSec: paceFloorSec, adaptiveInterval: adaptiveInterval, durationText: durationText, cadenceText: cadenceText, keyOps: keyOps }
+if (typeof module !== "undefined") module.exports = { pipelineMarks: pipelineMarks, pipelineMark: pipelineMark, columnKey: columnKey, listSpec: listSpec, movedColumns: movedColumns, cursorMove: cursorMove, cursorFix: cursorFix, cursorAt: cursorAt, keyGroups: keyGroups, openLabel: openLabel, keyParts: keyParts, boardSig: boardSig, boardActive: boardActive, nextPace: nextPace, paceFloorSec: paceFloorSec, openMaxAgeMs: openMaxAgeMs, adaptiveInterval: adaptiveInterval, durationText: durationText, cadenceText: cadenceText, keyOps: keyOps }
