@@ -609,6 +609,17 @@ each shortcut on one line, with a quiet note after some (`asks first`).
 | `Enter` / `Space` | Its main button |
 | `r` | Try again |
 
+**Header menus**
+
+| Key | Action |
+| --- | --- |
+| `j k` / `↓ ↑` | Move the selection |
+| `Enter` / `Space` | Choose it |
+| `Esc` | Close the menu |
+
+While a header menu is open (starred boards, Default), other keys stay with
+the menu and do not reach the board. Hovering a row selects it too.
+
 **Anywhere**
 
 | Key | Action |

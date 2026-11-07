@@ -89,6 +89,10 @@ var keyGroups = [
   { title: "Setup panel", keys: [
     ["Enter / Space", "Its main button"],
     ["r", "Try again"]] },
+  { title: "Header menus", keys: [
+    ["j_k / ↓_↑", "Move the selection"],
+    ["Enter / Space", "Choose it"],
+    ["Esc", "Close the menu"]] },
   { title: "Anywhere", keys: [
     ["p", "Project and board"],
     ["s", "Settings"],
