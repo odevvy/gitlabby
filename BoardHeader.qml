@@ -35,7 +35,6 @@ Item {
   // Starred-board list cap: the card below the header, less Browse and margins.
   readonly property real jumpListMax: Math.max(Style.space(56) * 3, (parent ? parent.height : 0) - height - Style.space(10) - Style.space(29) - Style.space(24))
   readonly property color hoverFill: Qt.rgba(host.foreground.r, host.foreground.g, host.foreground.b, 0.08)
-  readonly property color activeFill: Qt.rgba(host.accent.r, host.accent.g, host.accent.b, 0.18)
   // Board · Merge requests · To-do show on those three views; the others have
   // their own heading and ✕. Short of room, the Merge requests tab reads "MRs".
   readonly property bool tabsShown: host.view === "board" || host.view === "mrs" || host.view === "todos"
@@ -72,13 +71,9 @@ Item {
     signal clicked()
     implicitWidth: Math.max(Style.space(28), glyph.implicitWidth + Style.space(14)); implicitHeight: Style.space(28)
     width: implicitWidth; height: implicitHeight
-    Rectangle {
-      objectName: "headFill"
-      anchors.fill: parent; rotation: -hb.rotation
-      radius: Style.space(6)
-      color: hb.active ? header.activeFill : hb.hovered ? header.hoverFill : "transparent"
-    }
-    BoardText { id: glyph; objectName: "headGlyph"; anchors.centerIn: parent; color: hb.active ? header.host.accent : hb.hovered ? header.host.foreground : header.host.dim; font.pixelSize: Style.font.title }
+    // No fill for on or hover (v0.1.112): on is an accent icon, a hovered
+    // off icon brightens to the foreground, a hovered on icon to a lighter accent.
+    BoardText { id: glyph; objectName: "headGlyph"; anchors.centerIn: parent; color: hb.active ? (hb.hovered ? Qt.lighter(header.host.accent, 1.2) : header.host.accent) : hb.hovered ? header.host.foreground : header.host.dim; font.pixelSize: Style.font.title }
     MouseArea { id: hbMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: hb.clicked() }
     IconTip { host: header.host; shown: hb.hovered; text: hb.tip }
     FocusRing { host: header.host }
@@ -235,7 +230,7 @@ Item {
   }
   BoardText {
     id: status
-    anchors { left: readOnlyChip.visible ? readOnlyChip.right : header.tabsShown ? tabs.right : defaultMark.right; leftMargin: Style.space(12); right: refreshButton.left; rightMargin: Style.space(8); verticalCenter: parent.verticalCenter }
+    anchors { left: botsButton.visible ? botsButton.right : columnsButton.visible ? columnsButton.right : readOnlyChip.visible ? readOnlyChip.right : header.tabsShown ? tabs.right : defaultMark.right; leftMargin: Style.space(12); right: refreshButton.left; rightMargin: Style.space(8); verticalCenter: parent.verticalCenter }
     horizontalAlignment: Text.AlignRight
     elide: Text.ElideLeft
     text: host.statusText()
@@ -266,25 +261,15 @@ Item {
       NumberAnimation { from: 1; to: 0.25; duration: 700; easing.type: Easing.InOutSine }
     }
   }
-  HeadButton {
-    id: refreshButton
-    anchors { right: columnsButton.visible ? columnsButton.left : botsButton.visible ? botsButton.left : keysButton.left; rightMargin: Style.space(4); verticalCenter: parent.verticalCenter }
-    text: "\uf021"
-    tip: "Refresh (r)"
-    // Spins while a refresh you asked for runs with the popup open
-    // (host.loudRefresh: Refresh, r, the first load, or the MR list on
-    // screen), as Omarchy's Ui/Button.qml spins its icon, and finishes the
-    // turn it is on, so it always stops upright. The timer's doesn't spin it.
-    RotationAnimation on rotation { running: host.loudRefresh; alwaysRunToEnd: true; loops: Animation.Infinite; from: 0; to: 360; duration: 900 }
-    onClicked: { host.headerMenu = ""; host.refresh() }
-  }
   // Show or hide columns: opens the column row under the bots (board only).
+  // Board-only buttons sit right after the tabs (v0.1.112), so the right
+  // cluster and the status never move between views.
   // Shows how many are hidden, so a hidden column is never forgotten.
   HeadButton {
     id: columnsButton
     readonly property int hiddenCount: host.availableColumns.length - host.shownColumns.length
     visible: host.view === "board" && host.boardState === "ready" && host.setup === ""
-    anchors { right: botsButton.visible ? botsButton.left : keysButton.left; rightMargin: Style.space(4); verticalCenter: parent.verticalCenter }
+    anchors { left: readOnlyChip.visible ? readOnlyChip.right : header.tabsShown ? tabs.right : defaultMark.right; leftMargin: Style.space(10); verticalCenter: parent.verticalCenter }
     text: "\uf0db" + (hiddenCount > 0 ? " " + hiddenCount : "")
     active: host.columnChips
     tip: hiddenCount > 0 ? "Show or hide columns (" + hiddenCount + " hidden)" : "Show or hide columns"
@@ -296,11 +281,23 @@ Item {
     id: botsButton
     objectName: "botsButton"
     visible: host.hasBots
-    anchors { right: keysButton.left; rightMargin: Style.space(4); verticalCenter: parent.verticalCenter }
+    anchors { left: columnsButton.visible ? columnsButton.right : readOnlyChip.visible ? readOnlyChip.right : header.tabsShown ? tabs.right : defaultMark.right; leftMargin: Style.space(4); verticalCenter: parent.verticalCenter }
     text: String.fromCodePoint(0xF167A)
     active: !host.botsHidden
     tip: host.botsHidden ? "Show bots (b)" : "Hide bots (b)"
     onClicked: host.toggleBots()
+  }
+  HeadButton {
+    id: refreshButton
+    anchors { right: keysButton.left; rightMargin: Style.space(4); verticalCenter: parent.verticalCenter }
+    text: "\uf021"
+    tip: "Refresh (r)"
+    // Spins while a refresh you asked for runs with the popup open
+    // (host.loudRefresh: Refresh, r, the first load, or the MR list on
+    // screen), as Omarchy's Ui/Button.qml spins its icon, and finishes the
+    // turn it is on, so it always stops upright. The timer's doesn't spin it.
+    RotationAnimation on rotation { running: host.loudRefresh; alwaysRunToEnd: true; loops: Animation.Infinite; from: 0; to: 360; duration: 900 }
+    onClicked: { host.headerMenu = ""; host.refresh() }
   }
   // The keyboard shortcuts (KeysView), like ? does.
   HeadButton {
