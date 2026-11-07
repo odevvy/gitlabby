@@ -36,7 +36,7 @@ ok("H3 the star is not orange at rest", not same(h.ev("header.defaultMark.color"
 cb = h.ev("header.columnsButton.text")
 ok("H4 a columns button sits in the header on the board, nothing hidden: just the glyph", cb == "\uf0db" and h.ev("header.columnsButton.visible") is True, cb)
 ok("H5 its colour: dim while the row is closed", same(h.ev("header.columnsButton.color"), col("dim")) and h.ev("root.columnChips") is False)
-h.click(h.ev("header.columnsButton"))
+h.click(h.ev("header.columnsButton")); QTest.mouseMove(h.win, QPoint(1, 1)); h.spin(120)
 ok("H6 a click opens the column row; the button turns accent", h.ev("root.columnChips") is True and same(h.ev("header.columnsButton.color"), col("accent")))
 h.click(h.ev("header.columnsButton"))
 ok("H7 a second click closes it", h.ev("root.columnChips") is False)

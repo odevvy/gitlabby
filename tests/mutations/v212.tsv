@@ -1,0 +1,8 @@
+# v0.1.112: a steady header (board-only buttons after the tabs) and icon buttons with no fill
+hover-on-plain	BoardHeader.qml	(hb.hovered ? Qt.lighter(header.host.accent, 1.2) : header.host.accent)	header.host.accent	qml	harness/tests/run212.py
+hover-on-white	BoardHeader.qml	(hb.hovered ? Qt.lighter(header.host.accent, 1.2) : header.host.accent)	(hb.hovered ? header.host.foreground : header.host.accent)	qml	harness/tests/run212.py
+cols-not-chip-spot	BoardHeader.qml	defaultMark.right; leftMargin: Style.space(10); verticalCenter: parent.verticalCenter }\n    text: "\uf0db"	defaultMark.right; leftMargin: Style.space(12); verticalCenter: parent.verticalCenter }\n    text: "\uf0db"	qml	harness/tests/run212.py
+bots-far	BoardHeader.qml	defaultMark.right; leftMargin: Style.space(4); verticalCenter: parent.verticalCenter }\n    text: String.fromCodePoint	defaultMark.right; leftMargin: Style.space(12); verticalCenter: parent.verticalCenter }\n    text: String.fromCodePoint	qml	harness/tests/run212.py
+status-over-buttons	BoardHeader.qml	left: botsButton.visible ? botsButton.right : columnsButton.visible ? columnsButton.right : readOnlyChip	left: readOnlyChip	qml	harness/tests/run212.py
+status-over-bots	BoardHeader.qml	left: botsButton.visible ? botsButton.right : columnsButton	left: columnsButton	qml	harness/tests/run212.py
+cols-on-right	BoardHeader.qml	anchors { left: readOnlyChip.visible ? readOnlyChip.right : header.tabsShown ? tabs.right : defaultMark.right; leftMargin: Style.space(10); verticalCenter: parent.verticalCenter }\n    text: "\uf0db"	anchors { right: refreshButton.left; rightMargin: Style.space(4); verticalCenter: parent.verticalCenter }\n    text: "\uf0db"	qml	harness/tests/run212.py
