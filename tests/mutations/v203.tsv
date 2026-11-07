@@ -1,0 +1,21 @@
+# v0.1.103: Tab / Shift+Tab focus outline on header and shared buttons; Ctrl+Tab bar panels
+tab-switches-panel	BoardKeys.qml	host.focusNext(direction) }	host.switchPanel(direction) }	qml	harness/tests/run203.py
+ctrl-tab-dead	BoardKeys.qml	Shortcut { sequences: ["Ctrl+Tab"]; onActivated: host.switchPanel(1) }		qml	harness/tests/run203.py
+ctrl-shift-tab-dead	BoardKeys.qml	onActivated: host.switchPanel(-1) }	onActivated: {} }	qml	harness/tests/run203.py
+esc-keeps-focus	BoardKeys.qml	    else if (host.kbFocus) host.kbFocus = null\n		qml	harness/tests/run203.py
+arrow-keeps-focus	BoardKeys.qml	    host.kbFocus = null  // one focus at a time	    // one focus at a time	qml	harness/tests/run203.py
+enter-ignores-focus	BoardKeys.qml	    if (host.kbFocus) { host.activateFocus(); return }\n		qml	harness/tests/run203.py
+focus-keeps-cursor	Board.qml	    cursor = null  // one focus at a time		qml	harness/tests/run203.py
+focus-no-wrap	Board.qml	(i + dir + list.length) % list.length	Math.min(list.length - 1, Math.max(0, i + dir))	qml	harness/tests/run203.py
+focus-back-from-start	Board.qml	i < 0 ? (dir > 0 ? 0 : list.length - 1)	i < 0 ? 0	qml	harness/tests/run203.py
+focus-order-unsorted	Board.qml	.sort(function(a, b) { return a.row - b.row || a.x - b.x })		qml	harness/tests/run203.py
+focus-includes-hidden	Board.qml	return it.visible && it.enabled && it.width > 0	return true	qml	harness/tests/run203.py
+focus-survives-view	Board.qml	onViewChanged: { headerMenu = ""; kbFocus = null }	onViewChanged: { headerMenu = "" }	qml	harness/tests/run203.py
+ring-always	components/FocusRing.qml	visible: on	visible: true	qml	harness/tests/run203.py
+ring-unregistered	components/FocusRing.qml	Component.onCompleted: if (host && target) host.addFocusable(target)		qml	harness/tests/run203.py
+glyph-no-ring	components/GlyphButton.qml	  FocusRing { host: button.host }\n		qml	harness/tests/run203.py
+action-no-ring	components/ActionButton.qml	  FocusRing { host: button.host }\n		qml	harness/tests/run203.py
+head-no-ring	BoardHeader.qml	    IconTip { host: header.host; shown: hb.hovered; text: hb.tip }\n    FocusRing { host: header.host }	    IconTip { host: header.host; shown: hb.hovered; text: hb.tip }	qml	harness/tests/run203.py
+tab-no-ring	BoardHeader.qml	    IconTip { host: header.host; shown: ht.hovered; text: ht.tip }\n    FocusRing { host: header.host }	    IconTip { host: header.host; shown: ht.hovered; text: ht.tip }	qml	harness/tests/run203.py
+title-no-ring	BoardHeader.qml	text: "Starred boards" }\n    FocusRing { host: header.host }	text: "Starred boards" }	qml	harness/tests/run203.py
+focus-order-corner	Board.qml	it.mapToItem(null, it.width / 2, it.height / 2)	it.mapToItem(null, 0, 0)	qml	harness/tests/run203.py

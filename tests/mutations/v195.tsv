@@ -9,4 +9,4 @@ hdr-no-make-default	Board.qml	function setDefaultCurrent() {\n    project = proj
 pk-star-sets-default	Picker.qml	onClicked: view.host.toggleFavorite(item.modelData)	onClicked: view.host.setDefaultCurrent()	qml	harness/tests/run195.py
 pk-star-tip-default	Picker.qml	text: star.on ? "Remove from starred boards" : "Add to starred boards"	text: star.on ? "Your default board" : "Make this your default board"	qml	harness/tests/run130b.py
 jump-empty-stays	Board.qml	if (jumpBoards.length === 0) openPicker()\n    else headerMenu = headerMenu === "jump" ? "" : "jump"	headerMenu = headerMenu === "jump" ? "" : "jump"	qml	harness/tests/run195.py
-esc-ignores-menu	BoardKeys.qml	if (host.headerMenu !== "") host.headerMenu = ""\n    else if (host.pendingMove) host.cancelMove()	if (host.pendingMove) host.cancelMove()	qml	harness/tests/run195.py
+esc-ignores-menu	BoardKeys.qml	if (host.headerMenu !== "") host.headerMenu = ""\n    else if (host.kbFocus)	if (host.kbFocus)	qml	harness/tests/run195.py
