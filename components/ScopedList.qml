@@ -71,10 +71,11 @@ Item {
     width: parent.width
     implicitHeight: tabs.implicitHeight
     // The scope: two text tabs, the current one underlined in the accent.
+    // Each is a 32 point target with side padding and a quiet hover fill (v0.1.105).
     Row {
       id: tabs
       anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-      spacing: Style.space(14)
+      spacing: Style.space(4)
       Repeater {
         model: [{ mode: "all", label: "All projects" }, { mode: "project", label: "This project" }]
         delegate: Item {
@@ -84,11 +85,18 @@ Item {
           readonly property string label: modelData.label
           readonly property bool on: view.mode === modelData.mode
           visible: modelData.mode === "all" || view.host.project !== ""
-          implicitWidth: tabText.implicitWidth
-          implicitHeight: tabText.implicitHeight + Style.space(6)
+          implicitWidth: tabText.implicitWidth + Style.space(20)
+          implicitHeight: Style.space(32)
+          function kbActivate() { view.setMode(tab.modelData.mode) }
+          Rectangle {
+            objectName: "scopeHover"
+            anchors.fill: parent
+            radius: Style.space(6)
+            color: tabMouse.containsMouse && !tab.on ? Qt.rgba(view.host.foreground.r, view.host.foreground.g, view.host.foreground.b, 0.06) : "transparent"
+          }
           BoardText {
             id: tabText
-            anchors.top: parent.top
+            anchors.centerIn: parent
             text: tab.label
             color: tab.on ? view.host.foreground : tabMouse.containsMouse ? view.host.dim : view.host.quiet
             font.pixelSize: Style.font.bodySmall
@@ -96,11 +104,16 @@ Item {
           Rectangle {
             objectName: view.names.underline
             visible: tab.on
-            anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+            anchors { left: tabText.left; right: tabText.right; top: tabText.bottom; topMargin: Style.space(3) }
             height: 2; radius: 1
             color: view.host.accent
           }
-          MouseArea { id: tabMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: view.setMode(tab.modelData.mode) }
+          MouseArea { id: tabMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: tab.kbActivate() }
+          FocusRing { host: view.host }
+          Accessible.role: Accessible.PageTab
+          Accessible.name: tab.label
+          Accessible.selected: tab.on
+          Accessible.onPressAction: tab.kbActivate()
         }
       }
     }
