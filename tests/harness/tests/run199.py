@@ -42,7 +42,7 @@ h.ok("H7 app mode tip", h.ev("root.linkMode") == "app" and _t and all(x == "Open
 h.ev("root.persist({ openLinks: 'browser' })"); h.spin(40)
 h.ok("H8 to-do rows share the same delegate (ScopedList)", h.ev("todoView.names.row") == "todoRow")
 # Settings copy
-NOTE = "Board issues still open inside GitLabby. Merge requests, to-dos, and Open in browser leave the plugin. They open in a browser tab, or in an app window with no tabs (needs a Chromium-based browser)."
+NOTE = "Board issues still open inside GitLabby. Merge requests, to-dos, and an issue's Open action leave the plugin. They open in a browser tab, or in an app window with no tabs (needs a Chromium-based browser)."
 h.ev("root.showView('settings')"); h.spin(150); h.answer("whoami", {"state": "ready", "message": "", "user": "o_devvy"}); h.spin(80)
 n = named("linkNote")
 h.ok("S1 settings link note copy", len(n) == 1 and n[0].property("text") == NOTE, [x.property("text") for x in n])

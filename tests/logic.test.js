@@ -1323,3 +1323,12 @@ test("v0.1.106 capped lists: board-fetch's caps, View all on GitLab for each sec
   assert.equal(L.viewAllUrl("", "mine", "all", "me"), "https://gitlab.com/dashboard/merge_requests?state=opened&author_username=me")
   assert.equal(u("nope", "all", "me"), "")
 })
+
+test("v0.1.109 the open action names where Settings sends it", () => {
+  assert.equal(L.openLabel("app"), "Open in app window")
+  assert.equal(L.openLabel("browser"), "Open in browser")
+  assert.equal(L.openLabel(undefined), "Open in browser")
+  const opens = L.keyGroups.flatMap(g => g.keys).filter(([, a]) => /^Open in/.test(a)).map(([, a]) => a)
+  assert.deepEqual([...new Set(opens)], ["Open in browser"])
+  assert.equal(opens.length, 4)
+})

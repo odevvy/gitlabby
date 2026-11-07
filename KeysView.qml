@@ -112,7 +112,7 @@ Item {
                     id: keyRow
                     objectName: "keyRow"
                     required property var modelData
-                    readonly property string what: String(modelData[1]).split(" · ")[0]
+                    readonly property string what: String(modelData[1]).split(" · ")[0].replace("Open in browser", Logic.openLabel(view.host.linkMode))
                     readonly property string note: String(modelData[1]).split(" · ")[1] || ""
                     // Fits one line: the caps in their column, the words in the rest.
                     readonly property bool fits: caps.implicitWidth <= view.capsWidth && words.implicitWidth <= width - words.x

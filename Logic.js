@@ -78,6 +78,7 @@ var cursorMove = BoardLogic.cursorMove
 var cursorFix = BoardLogic.cursorFix
 var cursorAt = BoardLogic.cursorAt
 var keyGroups = BoardLogic.keyGroups
+var openLabel = BoardLogic.openLabel
 var keyParts = BoardLogic.keyParts
 var boardSig = BoardLogic.boardSig
 var boardActive = BoardLogic.boardActive

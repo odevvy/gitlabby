@@ -73,9 +73,10 @@ the bottom; the arrow keys keep the selected board in view.
   request) for a moment. Only the left button drags, opens or picks a card.
 - Click an issue for its details: state, labels, author, ages, assignees,
   milestone, the description, the comments and a box to add one, and an
-  "Open in browser" link. A thin bar slides under the title while it loads.
-- Board issues still open inside GitLabby. Merge requests, to-dos, and Open
-  in browser leave the plugin; their rows show a quiet ↗ and a tip saying
+  "Open in browser" link ("Open in app window" when Settings opens links in an
+  app window; the "Truncated" link follows it too). A thin bar slides under the title while it loads.
+- Board issues still open inside GitLabby. Merge requests, to-dos, and the
+  issue's Open action leave the plugin; their rows show a quiet ↗ and a tip saying
   where they open. They open in a browser tab, or in an app window of their
   own (no tabs or address bar): Settings > **Open links in**. Browser tab runs
   `omarchy-launch-browser`, App window `omarchy-launch-webapp`, which needs a
@@ -98,7 +99,7 @@ the bottom; the arrow keys keep the selected board in view.
   brackets when it has one: `Refresh (r)`, `Settings (s)`,
   `Keyboard shortcuts (?)`, `Hide bots (b)` / `Show bots (b)` (only when
   the project has bots: it hides the bots row and the board moves up), `Switch project or board (p)`,
-  `Back to the board (Esc)`; in an issue `Open in browser (o)`,
+  `Back to the board (Esc)`; in an issue `Open in browser (o)` (or `Open in app window (o)`),
   `Edit labels (e)` and `Close issue (x)`.
 - The issue view, the picker and the settings have a ✕ at the top right that
   goes back to the board, like `Escape`; it stays put while the view scrolls.
@@ -586,13 +587,16 @@ The keyboard button in the header (between refresh and the gear), or `?`,
 shows these in the popup, laid out like Settings: each group in a soft card,
 each shortcut on one line, with a quiet note after some (`asks first`).
 
+`Open in browser` below reads `Open in app window` in the popup's own key list
+when Settings opens links in an app window.
+
 **Board**
 
 | Key | Action |
 | --- | --- |
 | `h j k l` / `← ↓ ↑ →` | Move between cards |
 | `Enter` / `Space` | Open the issue |
-| `o` | Open in the browser |
+| `o` | Open in browser |
 | `y` | Copy the link · or right-click |
 | `Shift+H` / `L` | Move left / right · asks first |
 | `v` | Pick for bulk · or Ctrl+click |
@@ -652,7 +656,7 @@ the menu and do not reach the board. Hovering a row selects it too.
 
 | Key | Action |
 | --- | --- |
-| `o` | Open in the browser |
+| `o` | Open in browser |
 | `y` | Copy the link |
 | `c` | Write a comment |
 | `e` | Edit labels |
@@ -670,7 +674,7 @@ the menu and do not reach the board. Hovering a row selects it too.
 | Key | Action |
 | --- | --- |
 | `j k` / `↓ ↑` | Move between them |
-| `Enter` / `o` | Open in the browser |
+| `Enter` / `o` | Open in browser |
 | `y` | Copy the link · or right-click |
 | `r` | Refresh the lists |
 
@@ -679,7 +683,7 @@ the menu and do not reach the board. Hovering a row selects it too.
 | Key | Action |
 | --- | --- |
 | `j k` / `↓ ↑` | Move between them |
-| `Enter` / `o` | Open in the browser |
+| `Enter` / `o` | Open in browser |
 | `y` | Copy the link · or right-click |
 | `r` | Refresh the lists |
 

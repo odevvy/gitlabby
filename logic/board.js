@@ -67,11 +67,13 @@ function cursorAt(lanes, col, row) {
 // tests/logic.test.js holds to this list. A key: " / " separates choices, +
 // joins a chord, _ is a space inside one cap ("h_j_k_l" is one cap). An
 // action: what it does, then after " · " a quiet note. Each fits one line.
+// The words for the action that leaves the plugin: where Settings sends links.
+function openLabel(mode) { return mode === "app" ? "Open in app window" : "Open in browser" }
 var keyGroups = [
   { title: "Board", keys: [
     ["h_j_k_l / ←_↓_↑_→", "Move between cards"],
     ["Enter / Space", "Open the issue"],
-    ["o", "Open in the browser"],
+    ["o", "Open in browser"],
     ["y", "Copy the link · or right-click"],
     ["Shift+H / L", "Move left / right · asks first"],
     ["v", "Pick for bulk · or Ctrl+click"],
@@ -104,7 +106,7 @@ var keyGroups = [
     ["Ctrl+Shift+Tab", "Previous bar panel"],
     ["Esc", "Back to the board, then close"]] },
   { title: "Issue", keys: [
-    ["o", "Open in the browser"],
+    ["o", "Open in browser"],
     ["y", "Copy the link"],
     ["c", "Write a comment"],
     ["e", "Edit labels"],
@@ -114,12 +116,12 @@ var keyGroups = [
     ["Esc", "Leave the box"]] },
   { title: "Merge requests", keys: [
     ["j_k / ↓_↑", "Move between them"],
-    ["Enter / o", "Open in the browser"],
+    ["Enter / o", "Open in browser"],
     ["y", "Copy the link · or right-click"],
     ["r", "Refresh the lists"]] },
   { title: "To-do", keys: [
     ["j_k / ↓_↑", "Move between them"],
-    ["Enter / o", "Open in the browser"],
+    ["Enter / o", "Open in browser"],
     ["y", "Copy the link · or right-click"],
     ["r", "Refresh the lists"]] },
   { title: "Scrolling", keys: [
@@ -216,4 +218,4 @@ function keyOps(have, want) {
   return ops
 }
 
-if (typeof module !== "undefined") module.exports = { pipelineMarks: pipelineMarks, pipelineMark: pipelineMark, columnKey: columnKey, listSpec: listSpec, movedColumns: movedColumns, cursorMove: cursorMove, cursorFix: cursorFix, cursorAt: cursorAt, keyGroups: keyGroups, keyParts: keyParts, boardSig: boardSig, boardActive: boardActive, nextPace: nextPace, paceFloorSec: paceFloorSec, adaptiveInterval: adaptiveInterval, durationText: durationText, cadenceText: cadenceText, keyOps: keyOps }
+if (typeof module !== "undefined") module.exports = { pipelineMarks: pipelineMarks, pipelineMark: pipelineMark, columnKey: columnKey, listSpec: listSpec, movedColumns: movedColumns, cursorMove: cursorMove, cursorFix: cursorFix, cursorAt: cursorAt, keyGroups: keyGroups, openLabel: openLabel, keyParts: keyParts, boardSig: boardSig, boardActive: boardActive, nextPace: nextPace, paceFloorSec: paceFloorSec, adaptiveInterval: adaptiveInterval, durationText: durationText, cadenceText: cadenceText, keyOps: keyOps }

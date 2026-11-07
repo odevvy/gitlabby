@@ -48,7 +48,7 @@ h.ev("root.settings = Object.assign({}, root.settings, { openLinks: 'app' })"); 
 h.ok("A7 anything but 'app' saved is a browser tab; 'app' an app window", odd == [] and h.ev("root.linkMode") == "app", odd)
 h.ev("root.settings = Object.assign({}, root.settings, { openLinks: 'browser' })"); h.spin(40)
 # --- the row in Settings -----------------------------------------------------------------------------
-NOTE = "Board issues still open inside GitLabby. Merge requests, to-dos, and Open in browser leave the plugin. They open in a browser tab, or in an app window with no tabs (needs a Chromium-based browser)."
+NOTE = "Board issues still open inside GitLabby. Merge requests, to-dos, and an issue's Open action leave the plugin. They open in a browser tab, or in an app window with no tabs (needs a Chromium-based browser)."
 sv = settings()
 def texts(t): return [it for it in h.walk(sv) if it.property("text") == t and it.isVisible()]
 y = lambda it: it.mapToItem(sv, QPointF(0, 0)).y()
