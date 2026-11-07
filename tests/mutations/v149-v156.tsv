@@ -107,13 +107,12 @@ m-heading-back	components/ScopedList.qml	    implicitHeight: tabs.implicitHeight
 m-close-back	components/ScopedList.qml	    implicitHeight: tabs.implicitHeight\n	    implicitHeight: tabs.implicitHeight\n    GlyphButton { x: 300; host: view.host; glyph: "\uf00d"; onClicked: view.host.back() }\n	qml	harness/tests/run154.py
 # --- from v155.tsv
 # v0.1.55: header buttons and view tabs. qml rows: tests/harness/tests/run155.py
-h-no-hover-fill	BoardHeader.qml	color: hb.active ? header.activeFill : hb.hovered ? header.hoverFill : "transparent"	color: hb.active ? header.activeFill : "transparent"	qml	harness/tests/run155.py
-h-no-active-fill	BoardHeader.qml	color: hb.active ? header.activeFill : hb.hovered ? header.hoverFill : "transparent"	color: hb.hovered ? header.hoverFill : "transparent"	qml	harness/tests/run155.py
+h-no-hover-fill	BoardHeader.qml	: hb.hovered ? header.host.foreground : header.host.dim;	: header.host.dim;	qml	harness/tests/run155.py
+h-no-active-fill	BoardHeader.qml	color: hb.active ? (hb.hovered	color: false ? (hb.hovered	qml	harness/tests/run155.py
 h-small-buttons	BoardHeader.qml	implicitWidth: Math.max(Style.space(28), glyph.implicitWidth + Style.space(14)); implicitHeight: Style.space(28)	implicitWidth: Math.max(Style.space(20), glyph.implicitWidth + Style.space(8)); implicitHeight: Style.space(20)	qml	harness/tests/run155.py
-h-small-glyph	BoardHeader.qml	color: hb.active ? header.host.accent : hb.hovered ? header.host.foreground : header.host.dim; font.pixelSize: Style.font.title	color: hb.active ? header.host.accent : hb.hovered ? header.host.foreground : header.host.dim; font.pixelSize: Style.font.body	qml	harness/tests/run155.py
-h-hover-accent	BoardHeader.qml	color: hb.active ? header.host.accent : hb.hovered ? header.host.foreground :	color: hb.active ? header.host.accent : hb.hovered ? header.host.accent :	qml	harness/tests/run155.py
-h-wide-gaps	BoardHeader.qml	    anchors { right: botsButton.visible ? botsButton.left : keysButton.left; rightMargin: Style.space(4);	    anchors { right: botsButton.visible ? botsButton.left : keysButton.left; rightMargin: Style.space(10);	qml	harness/tests/run155.py
-h-fill-spins	BoardHeader.qml	anchors.fill: parent; rotation: -hb.rotation\n	anchors.fill: parent\n	qml	harness/tests/run155.py
+h-small-glyph	BoardHeader.qml	header.host.dim; font.pixelSize: Style.font.title }	header.host.dim; font.pixelSize: Style.font.body }	qml	harness/tests/run155.py
+h-hover-accent	BoardHeader.qml	hb.hovered ? header.host.foreground : header.host.dim	hb.hovered ? header.host.accent : header.host.dim	qml	harness/tests/run155.py
+h-wide-gaps	BoardHeader.qml	anchors { right: gear.left; rightMargin: Style.space(4)	anchors { right: gear.left; rightMargin: Style.space(10)	qml	harness/tests/run155.py
 h-tall-header	BoardHeader.qml	implicitHeight: Math.max(title.implicitHeight, status.implicitHeight)\n	implicitHeight: Math.max(title.implicitHeight, status.implicitHeight, Style.space(28))\n	qml	harness/tests/run155.py
 h-tabs-everywhere	BoardHeader.qml	readonly property bool tabsShown: host.view === "board" || host.view === "mrs"	readonly property bool tabsShown: true	qml	harness/tests/run155.py
 h-no-tabs	BoardHeader.qml	readonly property bool tabsShown: host.view === "board" || host.view === "mrs"	readonly property bool tabsShown: host.view === "mrs"	qml	harness/tests/run155.py

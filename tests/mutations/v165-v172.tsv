@@ -156,11 +156,9 @@ keys-no-ctrl-row	logic/board.js	    ["Ctrl+j / k", "The same while typing a filt
 keys-arrows-alone	logic/board.js	    ["j_k / ↓_↑", "Move up / down"],	    ["↑_↓", "Move up / down"],	node	logic.test.js
 # --- from v169.tsv
 # v0.1.69: refresh next to the status, then columns (qml: tests/harness/tests/run169.py)
-refresh-ignores-columns	BoardHeader.qml	right: columnsButton.visible ? columnsButton.left : botsButton.visible ? botsButton.left : keysButton.left; rightMargin	right: botsButton.visible ? botsButton.left : keysButton.left; rightMargin	qml	harness/tests/run169.py
-refresh-to-hidden-columns	BoardHeader.qml	right: columnsButton.visible ? columnsButton.left : botsButton.visible ? botsButton.left : keysButton.left; rightMargin	right: columnsButton.left; rightMargin	qml	harness/tests/run169.py
-columns-before-refresh	BoardHeader.qml	anchors { right: botsButton.visible ? botsButton.left : keysButton.left; rightMargin: Style.space(4); verticalCenter: parent.verticalCenter }\n    text: "\uf0db"	anchors { right: refreshButton.left; rightMargin: Style.space(4); verticalCenter: parent.verticalCenter }\n    text: "\uf0db"	qml	harness/tests/run169.py
+refresh-to-hidden-columns	BoardHeader.qml	right: keysButton.left; rightMargin: Style.space(4); verticalCenter: parent.verticalCenter }\n    text: "\uf021"	right: columnsButton.visible ? columnsButton.left : keysButton.left; rightMargin: Style.space(4); verticalCenter: parent.verticalCenter }\n    text: "\uf021"	qml	harness/tests/run212.py
 status-under-buttons	BoardHeader.qml	right: refreshButton.left; rightMargin: Style.space(8)	right: keysButton.left; rightMargin: Style.space(8)	qml	harness/tests/run169.py
-refresh-no-gap	BoardHeader.qml	botsButton.left : keysButton.left; rightMargin: Style.space(4); verticalCenter: parent.verticalCenter }\n    text: "\uf021"	botsButton.left : keysButton.left; rightMargin: 0; verticalCenter: parent.verticalCenter }\n    text: "\uf021"	qml	harness/tests/run169.py
+refresh-no-gap	BoardHeader.qml	right: keysButton.left; rightMargin: Style.space(4); verticalCenter: parent.verticalCenter }\n    text: "\uf021"	right: keysButton.left; rightMargin: 0; verticalCenter: parent.verticalCenter }\n    text: "\uf021"	qml	harness/tests/run169.py
 # --- from v170.tsv
 # v0.1.70: the refresh pace in plain words (node rows: tests/logic.test.js; qml: tests/harness/tests/run170.py)
 pace-words-slowed	logic/board.js	t += " · slowed to "	t += " · now "	node	logic.test.js
