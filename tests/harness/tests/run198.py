@@ -78,13 +78,13 @@ h.ev("root.persist({ favorites: [{ project: 'group/wf', id: '', name: 'Workflow 
 h.ev("root.headerMenu = ''"); h.spin(20)
 h.ev("root.openJumpMenu()"); h.spin(40)
 dismiss = menu("headerMenuDismiss")
-# MouseArea may not report isVisible the same way — also accept via QML
+# MouseArea may not report isVisible the same way, so also accept via QML
 vis = hev("headerMenuDismiss.visible")
 h.ok("D0 dismiss layer visible while menu open", (dismiss is not None or vis is True) and hev("header.z") == 40 and vis is True, (dismiss is not None, vis, hev("header.z")))
 if dismiss is None:
     # resolve for click via walk without visibility filter
     dismiss = next((it for it in h.walk() if it.objectName() == "headerMenuDismiss"), None)
-# Click dismiss (outside menu) — should clear menu, not jump
+# Click dismiss (outside menu): should clear menu, not jump
 proj = hev("root.project")
 h.click(dismiss); h.spin(40)
 h.ok("D1 outside click clears headerMenu", hev("root.headerMenu") == "" and menu("jumpMenu") is None)
@@ -94,7 +94,7 @@ h.ok("D3 dismiss layer hidden when closed", hev("headerMenuDismiss.visible") is 
 # Menu / title / Default not eaten: reopen via title, click stays meaningful
 h.click(h.ev("header.chevron")); h.spin(60)
 h.ok("D4 title still opens jump (not eaten)", hev("root.headerMenu") == "jump")
-# Click inside jump menu on Browse — should open picker (not only dismiss)
+# Click inside jump menu on Browse: should open picker (not only dismiss)
 # Find browse text and click
 browse = next((it for it in h.walk() if it.property("text") == "Browse all projects…" and it.isVisible()), None)
 h.ok("D5 browse row present", browse is not None)

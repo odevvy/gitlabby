@@ -30,7 +30,7 @@ def named(name, visible_only=True):
 # --- two-line jump rows --------------------------------------------------------
 h.ev("root.openJumpMenu()"); h.spin(60)
 h.ok("J0 jump menu open (opaque + raised header still)", hev("root.headerMenu") == "jump" and hev("header.z") == 40 and menu("jumpMenu") is not None)
-# Walk order is not model order — read labels via QML in jumpBoards order.
+# Walk order is not model order. Read labels via QML in jumpBoards order.
 names = hev("(function(){ var j=root.jumpBoards, o=[]; for (var i=0;i<j.length;i++) o.push(Logic.boardLabel(j[i].name, j[i].id)); return o })()")
 projects = hev("(function(){ var j=root.jumpBoards, o=[]; for (var i=0;i<j.length;i++) o.push(String(j[i].project || '')); return o })()")
 # Also confirm the visible two-line texts exist and match the set
@@ -71,7 +71,7 @@ h.spin(100)
 h.ok("J12 jumpTo switches board and closes menu", hev("root.headerMenu") == "" and hev("root.project") != "group/app")
 
 # --- widthAnim -----------------------------------------------------------------
-# Reset onto a known board, then switch — widthAnim should pulse true then clear.
+# Reset onto a known board, then switch. widthAnim should pulse true then clear.
 h.ev("root.headerMenu = ''")
 h.ev("root.switchTo('group/app', '7', 'Development')"); h.spin(30)
 # Immediately after switchTo from a non-empty project, widthAnim is true

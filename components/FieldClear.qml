@@ -3,7 +3,7 @@ import qs.Commons
 
 // Quiet × inside a filter TextField. Same mark as the picker's close GlyphButton
 // (\uf00d). Only while the field has text; click clears and keeps focus so the
-// next keystrokes go into the field. Parent must be that TextField — set the
+// next keystrokes go into the field. Parent must be that TextField. Set the
 // field's rightPadding to horizontalPadding + 1 + clear.reserve so typed text
 // stops short of the mark.
 Item {
