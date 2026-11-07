@@ -487,6 +487,12 @@ rows are the same.
 
 ## To-do
 
+Lists are capped (Waiting on your review and Yours at 10, To-dos at 30,
+Assigned to you at 20). When a section is full, its header reads `Latest N`
+instead of a count and shows **View all on GitLab** at the right, which opens
+the matching GitLab list (filtered to the current project scope; to-dos always
+open your dashboard to-do list). Tab reaches it; Enter or Space opens it.
+
 The **To-do** tab in the header (after Merge requests), or `t`, shows two
 lists:
 
