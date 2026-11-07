@@ -75,6 +75,7 @@ var keyGroups = [
     ["y", "Copy the link · or right-click"],
     ["Shift+H / L", "Move left / right · asks first"],
     ["v", "Pick for bulk · or Ctrl+click"],
+    ["b", "Show or hide the bots"],
     ["r", "Refresh"]] },
   { title: "Picked cards", keys: [
     ["Shift+H / L", "Move them left / right"],

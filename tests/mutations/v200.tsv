@@ -1,0 +1,12 @@
+# Mutation rows from 0.1.100 on. Columns: name, file, from, to, kind, test.
+# v0.1.100: header bots toggle (botsHidden, key b)
+bots-row-ignores	Board.qml	visible: root.hasBots && !root.botsHidden	visible: root.hasBots	qml	harness/tests/run200.py
+bots-no-persist	Board.qml	persist({ botsHidden: !botsHidden })	botsHidden	qml	harness/tests/run200.py
+bots-menu-kept	Board.qml	    headerMenu = ""\n    if (!hasBots) return	    if (!hasBots) return	qml	harness/tests/run200.py
+bots-btn-always	BoardHeader.qml	    visible: host.hasBots\n	    visible: true\n	qml	harness/tests/run200.py
+bots-btn-unlit	BoardHeader.qml	active: !host.botsHidden	active: false	qml	harness/tests/run200.py
+bots-tip-fixed	BoardHeader.qml	tip: host.botsHidden ? "Show bots (b)" : "Hide bots (b)"	tip: "Hide bots (b)"	qml	harness/tests/run200.py
+bots-key-dead	BoardKeys.qml	    else if (key === "b" && host.view === "board") host.toggleBots()\n	\n	qml	harness/tests/run200.py
+bots-key-anywhere	BoardKeys.qml	key === "b" && host.view === "board"	key === "b"	qml	harness/tests/run200.py
+bots-no-guard	Board.qml	    if (!hasBots) return\n	\n	qml	harness/tests/run200.py
+bots-width-missing	BoardHeader.qml	    + (botsButton.visible ? botsButton.implicitWidth + Style.space(4) : 0) + refreshButton	    + refreshButton	qml	harness/tests/run200.py

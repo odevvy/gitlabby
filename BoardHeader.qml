@@ -24,6 +24,7 @@ Item {
   readonly property alias chevron: chevron
   readonly property alias defaultMark: defaultMark
   readonly property alias columnsButton: columnsButton
+  readonly property alias botsButton: botsButton
   readonly property alias boardTab: boardTab
   readonly property alias tabs: tabs
   readonly property alias readOnlyChip: readOnlyChip
@@ -47,7 +48,8 @@ Item {
   readonly property real fixedWidth: chipRoom + chevron.implicitWidth + defaultMark.implicitWidth + Style.space(8 + 12 + 8)
     + (tabsShown ? 1 + Style.space(12 + 6) + boardTab.implicitWidth + mrsLong.advanceWidth + Style.space(20) + mrsButton.badgeRoom
       + todoLong.advanceWidth + Style.space(20) + todoTab.badgeRoom : 0)
-    + (columnsButton.visible ? columnsButton.implicitWidth + Style.space(4) : 0) + refreshButton.implicitWidth + keysButton.implicitWidth + gear.implicitWidth + Style.space(4 + 4)
+    + (columnsButton.visible ? columnsButton.implicitWidth + Style.space(4) : 0)
+    + (botsButton.visible ? botsButton.implicitWidth + Style.space(4) : 0) + refreshButton.implicitWidth + keysButton.implicitWidth + gear.implicitWidth + Style.space(4 + 4)
   readonly property bool compactTabs: tabsShown && width - fixedWidth - title.implicitWidth - Style.space(48) < 0
   // The status gets what the full title leaves (at least 48 points, so a
   // message still shows its end; at most 40%), and elides from the left; the
@@ -246,7 +248,7 @@ Item {
   }
   HeadButton {
     id: refreshButton
-    anchors { right: columnsButton.visible ? columnsButton.left : keysButton.left; rightMargin: Style.space(4); verticalCenter: parent.verticalCenter }
+    anchors { right: columnsButton.visible ? columnsButton.left : botsButton.visible ? botsButton.left : keysButton.left; rightMargin: Style.space(4); verticalCenter: parent.verticalCenter }
     text: "\uf021"
     tip: "Refresh (r)"
     // Spins while a refresh you asked for runs with the popup open
@@ -262,11 +264,23 @@ Item {
     id: columnsButton
     readonly property int hiddenCount: host.availableColumns.length - host.shownColumns.length
     visible: host.view === "board" && host.boardState === "ready" && host.setup === ""
-    anchors { right: keysButton.left; rightMargin: Style.space(4); verticalCenter: parent.verticalCenter }
+    anchors { right: botsButton.visible ? botsButton.left : keysButton.left; rightMargin: Style.space(4); verticalCenter: parent.verticalCenter }
     text: "\uf0db" + (hiddenCount > 0 ? " " + hiddenCount : "")
     active: host.columnChips
     tip: hiddenCount > 0 ? "Show or hide columns (" + hiddenCount + " hidden)" : "Show or hide columns"
     onClicked: { host.headerMenu = ""; host.columnChips = !host.columnChips }
+  }
+  // Show or hide the bots row (board only, and only when the project has bots).
+  // md-robot-outline (U+F167A) is above the BMP: built from its code point.
+  HeadButton {
+    id: botsButton
+    objectName: "botsButton"
+    visible: host.hasBots
+    anchors { right: keysButton.left; rightMargin: Style.space(4); verticalCenter: parent.verticalCenter }
+    text: String.fromCodePoint(0xF167A)
+    active: !host.botsHidden
+    tip: host.botsHidden ? "Show bots (b)" : "Hide bots (b)"
+    onClicked: host.toggleBots()
   }
   // The keyboard shortcuts (KeysView), like ? does.
   HeadButton {

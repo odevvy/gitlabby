@@ -48,8 +48,8 @@ all-working	logic/bots.js	var working = bot.list !== undefined || config.working
 no-dedupe	logic/bots.js	if (!found[row.iid]) {	if (true) {	node	logic.test.js
 empty-shows	logic/bots.js	if (bots.length === 0) return null	if (c.bots.length === 0) return null	node	logic.test.js
 any-project	logic/bots.js	  var e = raw[project]\n	  var e = raw[project] || raw[Object.keys(raw)[0]]\n	node	logic.test.js
-row-always	Board.qml	root.boardState === "ready" && root.botStates.length > 0	root.boardState === "ready"	qml	harness/tests/run122.py
-row-every-view	Board.qml	visible: root.view === "board" && root.setup === ""	visible: root.setup === ""	qml	harness/tests/run122.py
+row-always	Board.qml	boardState === "ready" && botStates.length > 0	boardState === "ready"	qml	harness/tests/run122.py
+row-every-view	Board.qml	hasBots: view === "board" && setup === ""	hasBots: setup === ""	qml	harness/tests/run122.py
 stale-height	Board.qml	+ (botsRow.visible ? botsRow.height + root.gap : 0) +	+	qml	harness/tests/run122.py
 row-overlaps	Board.qml	anchors { top: botsRow.bottom; topMargin: visible ? root.gap : 0;	anchors { top: header.bottom; topMargin: visible ? root.gap : 0;	qml	harness/tests/run122.py
 hidden-keeps-space	Board.qml	height: visible ? implicitHeight : 0	height: implicitHeight	qml	harness/tests/run122.py

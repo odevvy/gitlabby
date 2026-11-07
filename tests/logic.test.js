@@ -234,7 +234,7 @@ test("the key groups: every view's keys, the setup panel's, no key twice in a gr
   for (const k of ["Shift+H / L", "x", "e", "Enter / Space", "Esc"]) assert.ok(action("Picked cards", k), k)
   for (const g of L.keyGroups) assert.equal(new Set(g.keys.map(([k]) => k)).size, g.keys.length, g.title)
   // Every shortcut the popup had before 0.1.62's shorter rows is still listed.
-  assert.equal(L.keyGroups.reduce((n, g) => n + g.keys.length, 0), 38 + 1 + 4)
+  assert.equal(L.keyGroups.reduce((n, g) => n + g.keys.length, 0), 38 + 1 + 4 + 1)
   // v0.1.72: y copies the link on the board, in an issue and on Merge requests.
   assert.match(action("Board", "y"), /^Copy the link · or right-click$/)
   assert.match(action("Issue", "y"), /^Copy the link$/)
@@ -511,7 +511,7 @@ test("icon buttons: every GlyphButton, header button and tab has a tip, and ever
   assert.ok(tips.length >= 17, "found " + tips.length)  // 6 GlyphButtons, 11 IconTips (v0.1.30)
   const bracketed = tips.flatMap(t => [...t.matchAll(/\(([^()"]+)\)"/g)].map(m => m[1]))
   for (const k of bracketed) assert.ok(keys.has(k), "'" + k + "' in a tip is not a shortcut")
-  assert.deepEqual([...new Set(bracketed)].sort(), ["?", "Esc", "e", "m", "o", "r", "s", "t", "x"])  // p opens the picker from keys; title tip is starred boards
+  assert.deepEqual([...new Set(bracketed)].sort(), ["?", "Esc", "b", "e", "m", "o", "r", "s", "t", "x"])  // p opens the picker from keys; title tip is starred boards
 })
 
 // v0.1.30 regression: his saved setting, exactly as in shell.json. Omarchy
