@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import qs.Commons
+import "../Logic.js" as Logic
 
 // The read-only lists of Merge requests and To-do: the scope tabs (All projects,
 // This project), then each section's heading and count, its rows or a quiet
@@ -15,7 +16,9 @@ Item {
   id: view
   required property var host
   required property var fetch          // a ScopedFetch: answers, loading, request()
-  // answer -> [[section, title, rows, empty text], ...], in order.
+  // answer -> [[section, title, rows, empty text, cap], ...], in order. cap: what
+  // board-fetch keeps (Logic.listCaps); a full section reads "Latest N" and
+  // offers View all on GitLab (Logic.viewAllUrl, this view's scope).
   required property var sections
   property Component rowContent
   property Component message
@@ -38,7 +41,8 @@ Item {
   readonly property var items: {
     var out = [], n = 0
     parts.forEach(function(s, i) {
-      out.push({ kind: "head", title: s[1], count: s[2].length, later: i > 0 })
+      var capped = s[4] > 0 && s[2].length >= s[4]
+      out.push({ kind: "head", section: s[0], title: s[1], count: s[2].length, later: i > 0, capped: capped, cap: s[4] || 0 })
       if (s[2].length === 0) out.push({ kind: "empty", text: s[3] })
       s[2].forEach(function(r) { out.push({ kind: "row", section: s[0], row: r, index: n++ }) })
     })
@@ -149,7 +153,23 @@ Item {
             anchors.bottom: parent.bottom
             spacing: Style.space(6)
             BoardText { text: item.modelData.title || ""; color: view.host.dim; font { pixelSize: Style.font.caption; bold: true; capitalization: Font.AllUppercase; letterSpacing: 1 } }
-            BoardText { objectName: view.names.count; text: String(item.modelData.count || 0); color: view.host.quiet; font.pixelSize: Style.font.caption }
+            BoardText { objectName: view.names.count; text: item.modelData.capped ? "Latest " + item.modelData.cap : String(item.modelData.count || 0); color: view.host.quiet; font.pixelSize: Style.font.caption }
+          }
+          // A full section: the rest is on GitLab, through Open links in.
+          BoardText {
+            id: viewAll
+            objectName: "viewAll"
+            visible: item.modelData.kind === "head" && item.modelData.capped === true
+            anchors { right: parent.right; rightMargin: Style.space(8); verticalCenter: headRow.verticalCenter }
+            text: "View all on GitLab"
+            color: view.host.accent
+            font { pixelSize: Style.font.caption; underline: viewAllMouse.containsMouse }
+            function kbActivate() { view.host.openViewAll(item.modelData.section, view.scope) }
+            MouseArea { id: viewAllMouse; anchors.fill: parent; anchors.margins: -Style.space(4); hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: viewAll.kbActivate() }
+            FocusRing { host: view.host; inset: -Style.space(4) }
+            Accessible.role: Accessible.Link
+            Accessible.name: "View all " + (item.modelData.title || "") + " on GitLab"
+            Accessible.onPressAction: viewAll.kbActivate()
           }
           BoardText {
             id: emptyText

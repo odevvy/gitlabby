@@ -18,8 +18,8 @@ ScopedList {
   fetch: host.feed.mrs
   names: ({ tab: "scopeTab", underline: "scopeUnderline", count: "mrsCount", row: "mrRow", bar: "mrFocusBar" })
   sections: function(a) {
-    return [["review", "Waiting on your review", a.review, "Nothing waiting on your review."],
-            ["mine", "Yours", a.mine, "No open merge requests of yours."]]
+    return [["review", "Waiting on your review", a.review, "Nothing waiting on your review.", Logic.listCaps.review],
+            ["mine", "Yours", a.mine, "No open merge requests of yours.", Logic.listCaps.mine]]
   }
   copySign: function(row) { return "!" }
 

@@ -1302,3 +1302,24 @@ test("favorites: jump list merges default, toggles, workflow label name", () => 
   assert.deepEqual(L.hostFavorites([], { "gitlab.example.com": [{ project: "a/b", id: "1", name: "X" }] }, "gitlab.example.com", false), [{ project: "a/b", id: "1", name: "X" }])
 })
 
+
+test("v0.1.106 capped lists: board-fetch's caps, View all on GitLab for each section and scope", () => {
+  assert.deepEqual(L.listCaps, { review: 10, mine: 10, todos: 30, assigned: 20 })
+  const fetch = require("node:fs").readFileSync(require("node:path").join(__dirname, "..", "board-fetch"), "utf8")
+  assert.match(fetch, /\.\[:30\]\), assigned: \.assigned\[:20\]/)
+  assert.match(fetch, /review: \[\$r\[0\] \| map\(select\(\.draft != true\)\)\[:10\]\[\] \| row\], mine: \[\$m\[0\]\[:10\]\[\] \| row\]/)
+  const u = (s, scope, user) => L.viewAllUrl("gitlab.example.com", s, scope, user)
+  assert.equal(u("review", "all", "me"), "https://gitlab.example.com/dashboard/merge_requests?state=opened&reviewer_username=me")
+  assert.equal(u("mine", "all", "me"), "https://gitlab.example.com/dashboard/merge_requests?state=opened&author_username=me")
+  assert.equal(u("assigned", "all", "me"), "https://gitlab.example.com/dashboard/issues?state=opened&assignee_username=me")
+  assert.equal(u("review", "g/app", "me"), "https://gitlab.example.com/g/app/-/merge_requests?state=opened&reviewer_username=me")
+  assert.equal(u("mine", "g/sub/app", "me"), "https://gitlab.example.com/g/sub/app/-/merge_requests?state=opened&author_username=me")
+  assert.equal(u("assigned", "g/app", "me"), "https://gitlab.example.com/g/app/-/issues?state=opened&assignee_username=me")
+  assert.equal(u("todos", "g/app", "me"), "https://gitlab.example.com/dashboard/todos")
+  // No username yet: GitLab's own default filter; odd scopes fall back to the dashboard.
+  assert.equal(u("review", "all", ""), "https://gitlab.example.com/dashboard/merge_requests?state=opened")
+  assert.equal(u("assigned", "../x", "me"), "https://gitlab.example.com/dashboard/issues?state=opened&assignee_username=me")
+  assert.equal(u("review", "all", "a b&c"), "https://gitlab.example.com/dashboard/merge_requests?state=opened&reviewer_username=a%20b%26c")
+  assert.equal(L.viewAllUrl("", "mine", "all", "me"), "https://gitlab.com/dashboard/merge_requests?state=opened&author_username=me")
+  assert.equal(u("nope", "all", "me"), "")
+})

@@ -548,7 +548,10 @@ Panel {
     var kind = data.projects ? "projects" : data.boards ? "boards" : auxKind
     auxLoading = false
     auxError = error
-    if (kind === "whoami") { account = error ? "" : String(data.user || ""); accountError = data.state === "logged-out" ? "" : error }
+    if (kind === "whoami") {
+      account = error ? "" : String(data.user || ""); accountError = data.state === "logged-out" ? "" : error
+      if (pendingViewAll) { var v = pendingViewAll; pendingViewAll = null; openViewAll(v.section, v.scope) }
+    }
     // Not set up: the first-run panel replaces the picker.
     if (data.state === "no-glab" || data.state === "logged-out") { boardState = data.state; message = String(data.message || ""); showView("board"); return }
     if (kind === "projects" && project === "") {
@@ -682,6 +685,13 @@ Panel {
   // Account (settings only). The username stays in memory, never on disk.
   property string account: ""
   property string accountError: ""
+  // View all on GitLab (a full list section): the list filtered to him, so the
+  // username first; unknown yet, one whoami and then the link.
+  property var pendingViewAll: null
+  function openViewAll(section, scope) {
+    if (account === "" && pendingViewAll === null && accountError === "") { pendingViewAll = { section: section, scope: scope }; checkAccount(); return }
+    openUrl(Logic.viewAllUrl(gitlabHost, section, scope, account))
+  }
   function checkAccount() { account = ""; accountError = ""; runAux("whoami", []) }
   // Sign out: board-fetch runs glab auth logout (no prompt; glab forgets the
   // token for every glab user on this machine) and deletes the saved boards.

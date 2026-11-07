@@ -139,7 +139,7 @@ v-right-opens	components/ScopedList.qml	if (mouse.button === Qt.RightButton) vie
 v-sign	TodoView.qml	function refSign(r) { return r.kind === "mr" ? "!" : "#" }	function refSign(r) { return "!" }	qml	harness/tests/run177b.py
 v-click-raw	components/ScopedList.qml	else view.host.openUrl(rowBox.row.url) }	else Qt.openUrlExternally(rowBox.row.url) }	qml	harness/tests/run177b.py
 v-status-board	Board.qml	var at = !shownList ? updatedAt	var at = view !== "mrs" ? updatedAt	qml	harness/tests/run177b.py
-v-counts	components/ScopedList.qml	out.push({ kind: "head", title: s[1], count: s[2].length, later: i > 0 })	out.push({ kind: "head", title: s[1], count: 0, later: i > 0 })	qml	harness/tests/run177b.py
+v-counts	components/ScopedList.qml	title: s[1], count: s[2].length,	title: s[1], count: 0,	qml	harness/tests/run177b.py
 h-tabs-hidden	BoardHeader.qml	|| host.view === "todos"\n  TextMetrics	\n  TextMetrics	qml	harness/tests/run177b.py
 h-no-chip	BoardHeader.qml	readonly property bool readOnlyView: host.view === "mrs" || host.view === "todos"	readonly property bool readOnlyView: host.view === "mrs"	qml	harness/tests/run177b.py
 h-badge-off	BoardHeader.qml	badge: Logic.todoBadge((host.feed.todos.answers[todoScope] || {}).data)	badge: ""	qml	harness/tests/run177b.py
@@ -152,7 +152,7 @@ k-enter-off	BoardKeys.qml	    else if (host.view === "todos") todoView.activate(
 k-r-off	BoardKeys.qml	    else if (key === "r" && host.view === "todos") todoView.refresh()\n	\n	qml	harness/tests/run177b.py
 k-o-off	BoardKeys.qml	    else if (key === "o" && host.view === "todos") todoView.activate()\n	\n	qml	harness/tests/run177b.py
 k-y-off	BoardKeys.qml	    else if (key === "y" && host.view === "todos") todoView.copyCurrent()\n	\n	qml	harness/tests/run177b.py
-v-order	TodoView.qml	return [["todos", "To-dos", a.todos, "No pending to-dos."],\n            ["assigned", "Assigned to you", a.assigned, "No open issues assigned to you."]]	return [["assigned", "Assigned to you", a.assigned, "No open issues assigned to you."],\n            ["todos", "To-dos", a.todos, "No pending to-dos."]]	qml	harness/tests/run177b.py
+v-order	TodoView.qml	return [["todos", "To-dos", a.todos, "No pending to-dos.", Logic.listCaps.todos],\n            ["assigned", "Assigned to you", a.assigned, "No open issues assigned to you.", Logic.listCaps.assigned]]	return [["assigned", "Assigned to you", a.assigned, "No open issues assigned to you.", Logic.listCaps.assigned],\n            ["todos", "To-dos", a.todos, "No pending to-dos.", Logic.listCaps.todos]]	qml	harness/tests/run177b.py
 # --- from v178.tsv
 m-check-blind	tests/mutate.sh	"* ]] || { echo "stale	"* ]] || true || { echo "stale	sh	run.sh
 # --- from v183.tsv
