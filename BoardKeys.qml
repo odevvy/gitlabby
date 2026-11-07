@@ -16,8 +16,14 @@ PanelKeyCatcher {
   readonly property Item todoView: views.todos || null
   readonly property Item setupView: views.setup || null
 
+  // Ctrl+Tab / Ctrl+Shift+Tab: next or previous bar panel. A shortcut runs
+  // before the key reaches the catcher, which would read it as plain Tab.
+  Shortcut { sequences: ["Ctrl+Tab"]; onActivated: host.switchPanel(1) }
+  Shortcut { sequences: ["Ctrl+Shift+Tab", "Ctrl+Backtab", "Ctrl+Shift+Backtab"]; onActivated: host.switchPanel(-1) }
+
   onCloseRequested: {
     if (host.headerMenu !== "") host.headerMenu = ""
+    else if (host.kbFocus) host.kbFocus = null
     else if (host.pendingMove) host.cancelMove()
     else if (host.view === "board" && bulkBar.stepBack()) {}
     else if (host.view === "issue" && issueView.confirming) issueView.confirming = false
@@ -31,9 +37,10 @@ PanelKeyCatcher {
     else if (host.view === "board" && !host.pendingMove && bulkBar.armed && bulkBar.armKey === "x") bulkBar.confirm()
     else if (host.view === "board" && !host.pendingMove && bulkBar.mode === "" && host.picked.length > 0) bulkBar.armClose("x")
   }
-  onTabRequested: function(direction) { host.switchPanel(direction) }
+  onTabRequested: function(direction) { host.focusNext(direction) }  // the popup's controls
   onMoveRequested: function(dx, dy) {
     if (host.headerMenu !== "") { if (dy !== 0) host.moveMenu(dy); return }
+    host.kbFocus = null  // one focus at a time: the board cursor or a control
     if (host.view === "board") host.moveCursor(dx, dy)
     else if (host.view === "picker" && dy !== 0) picker.moveCursor(dy)
     else if (host.view === "mrs" && dy !== 0) mrsView.moveCursor(dy)
@@ -42,6 +49,7 @@ PanelKeyCatcher {
   }
   onActivateRequested: {
     if (host.headerMenu !== "") { host.activateMenu(); return }
+    if (host.kbFocus) { host.activateFocus(); return }
     if (host.pendingMove) host.confirmMove()
     else if (host.view === "board" && bulkBar.armed) bulkBar.confirm()
     else if (host.view === "board" && bulkBar.mode === "results") bulkBar.done()

@@ -30,4 +30,8 @@ Rectangle {
     font { pixelSize: button.small ? Style.font.bodySmall : Style.font.body; bold: button.main }
   }
   MouseArea { id: mouse; anchors.fill: parent; enabled: button.enabled; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: button.clicked() }
+  FocusRing { host: button.host }
+  Accessible.role: Accessible.Button
+  Accessible.name: button.label
+  Accessible.onPressAction: if (button.enabled) button.clicked()
 }

@@ -81,6 +81,10 @@ Item {
     BoardText { id: glyph; objectName: "headGlyph"; anchors.centerIn: parent; color: hb.active ? header.host.accent : hb.hovered ? header.host.foreground : header.host.dim; font.pixelSize: Style.font.title }
     MouseArea { id: hbMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: hb.clicked() }
     IconTip { host: header.host; shown: hb.hovered; text: hb.tip }
+    FocusRing { host: header.host }
+    Accessible.role: Accessible.Button
+    Accessible.name: hb.tip
+    Accessible.onPressAction: hb.clicked()
   }
   // A view tab: its name, the accent underline while it is on screen.
   component HeadTab: Item {
@@ -127,6 +131,10 @@ Item {
     }
     MouseArea { id: htMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: ht.clicked() }
     IconTip { host: header.host; shown: ht.hovered; text: ht.tip }
+    FocusRing { host: header.host }
+    Accessible.role: Accessible.PageTab
+    Accessible.name: ht.label
+    Accessible.onPressAction: ht.clicked()
   }
 
   // Elides at the end, so the board name goes before the project.
@@ -150,7 +158,12 @@ Item {
     id: titleMouse
     x: title.x; width: chevron.x + chevron.width - title.x; height: parent.height
     hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: host.openJumpMenu()
+    function kbActivate() { host.openJumpMenu() }
     IconTip { host: header.host; shown: titleMouse.containsMouse && host.headerMenu === ""; text: "Starred boards" }
+    FocusRing { host: header.host }
+    Accessible.role: Accessible.Button
+    Accessible.name: "Starred boards"
+    Accessible.onPressAction: kbActivate()
   }
   BoardText {
     id: defaultMark
@@ -162,6 +175,11 @@ Item {
       id: defaultMouse; anchors.fill: parent; anchors.margins: -Style.space(4)
       enabled: host.project !== ""; hoverEnabled: true; cursorShape: host.onDefault ? Qt.ArrowCursor : Qt.PointingHandCursor
       onClicked: if (!host.onDefault) host.openDefaultMenu()
+      function kbActivate() { if (!host.onDefault) host.openDefaultMenu() }
+      FocusRing { host: header.host }
+      Accessible.role: Accessible.Button
+      Accessible.name: host.onDefault ? "Your default board" : "Default board"
+      Accessible.onPressAction: kbActivate()
     }
     IconTip { host: header.host; shown: defaultMouse.containsMouse && host.headerMenu === ""; text: host.onDefault ? "Your default board" : "Default board" }
   }

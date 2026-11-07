@@ -99,7 +99,9 @@ var keyGroups = [
     ["m", "Merge requests"],
     ["t", "To-do"],
     ["?", "These shortcuts"],
-    ["Tab / Shift+Tab", "Next / previous bar panel"],
+    ["Tab / Shift+Tab", "Next / previous control"],
+    ["Ctrl+Tab", "Next bar panel"],
+    ["Ctrl+Shift+Tab", "Previous bar panel"],
     ["Esc", "Back to the board, then close"]] },
   { title: "Issue", keys: [
     ["o", "Open in the browser"],

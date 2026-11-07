@@ -221,6 +221,10 @@ test("the key groups: every view's keys, the setup panel's, no key twice in a gr
   const action = (title, key) => (group(title).find(([k]) => k === key) || [])[1] || ""
   assert.deepEqual(L.keyGroups.map(g => g.title), ["Board", "Picked cards", "Confirm a move or a close", "Setup panel", "Header menus", "Anywhere", "Issue", "Comment box", "Merge requests", "To-do", "Scrolling", "Pickers and filters"])
   assert.match(action("Setup panel", "Enter / Space"), /main button/)
+  // v0.1.103: Tab walks the popup's controls; Ctrl+Tab switches bar panels.
+  assert.match(action("Anywhere", "Tab / Shift+Tab"), /control/)
+  assert.match(action("Anywhere", "Ctrl+Tab"), /^Next bar panel$/)
+  assert.match(action("Anywhere", "Ctrl+Shift+Tab"), /^Previous bar panel$/)
   // v0.1.101: an open header menu owns the arrows, Enter, Space and Esc.
   assert.deepEqual(group("Header menus").map(([k]) => k), ["j_k / ↓_↑", "Enter / Space", "Esc"])
   assert.match(action("Setup panel", "r"), /Try again/)
@@ -236,7 +240,7 @@ test("the key groups: every view's keys, the setup panel's, no key twice in a gr
   for (const k of ["Shift+H / L", "x", "e", "Enter / Space", "Esc"]) assert.ok(action("Picked cards", k), k)
   for (const g of L.keyGroups) assert.equal(new Set(g.keys.map(([k]) => k)).size, g.keys.length, g.title)
   // Every shortcut the popup had before 0.1.62's shorter rows is still listed.
-  assert.equal(L.keyGroups.reduce((n, g) => n + g.keys.length, 0), 38 + 1 + 4 + 1 + 3)
+  assert.equal(L.keyGroups.reduce((n, g) => n + g.keys.length, 0), 38 + 1 + 4 + 1 + 3 + 2)
   // v0.1.72: y copies the link on the board, in an issue and on Merge requests.
   assert.match(action("Board", "y"), /^Copy the link · or right-click$/)
   assert.match(action("Issue", "y"), /^Copy the link$/)

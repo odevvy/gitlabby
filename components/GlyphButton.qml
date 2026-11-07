@@ -20,4 +20,8 @@ Rectangle {
   BoardText { id: glyphText; anchors.centerIn: parent; color: button.hovered ? button.host.foreground : button.host.dim; font.pixelSize: Style.font.icon }
   MouseArea { id: mouse; anchors.fill: parent; anchors.margins: -Style.space(4); hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: button.clicked() }
   IconTip { host: button.host; shown: button.hovered; text: button.tip }
+  FocusRing { host: button.host }
+  Accessible.role: Accessible.Button
+  Accessible.name: button.tip
+  Accessible.onPressAction: button.clicked()
 }

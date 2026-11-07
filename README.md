@@ -569,6 +569,9 @@ o.bind("SUPER + CTRL + G", "GitLabby", "omarchy-shell shell toggle odevvy.gitlab
 
 Omarchy's own `SUPER + CTRL + 1`…`9` also open the right section's bar panels by
 position. In the popup the keyboard cursor shows after the first move.
+`Tab` and `Shift+Tab` move an outline across the popup's buttons, tabs and
+the title; `Enter` or `Space` presses the outlined one and `Esc` drops the
+outline. `Ctrl+Tab` and `Ctrl+Shift+Tab` go to the next or previous bar panel.
 
 The keyboard button in the header (between refresh and the gear), or `?`,
 shows these in the popup, laid out like Settings: each group in a soft card,
@@ -631,7 +634,9 @@ the menu and do not reach the board. Hovering a row selects it too.
 | `m` | Merge requests |
 | `t` | To-do |
 | `?` | These shortcuts |
-| `Tab` / `Shift+Tab` | Next / previous bar panel |
+| `Tab` / `Shift+Tab` | Next / previous control |
+| `Ctrl+Tab` | Next bar panel |
+| `Ctrl+Shift+Tab` | Previous bar panel |
 | `Esc` | Back to the board, then close |
 
 **Issue**
