@@ -111,6 +111,17 @@ Panel {
     var i = list.indexOf(kbFocus)
     cursor = null  // one focus at a time: the board cursor or a control
     kbFocus = list[i < 0 ? (dir > 0 ? 0 : list.length - 1) : (i + dir + list.length) % list.length]
+    revealFocus(kbFocus)
+  }
+  // Scroll the nearest Flickable (Settings, a list) so the focused control shows.
+  function revealFocus(it) {
+    for (var p = it.parent; p; p = p.parent) {
+      if (p.contentY === undefined || p.flicking === undefined) continue
+      var y = it.mapToItem(p.contentItem, 0, 0).y
+      if (y < p.contentY) p.contentY = Math.max(0, y - gap)
+      else if (y + it.height > p.contentY + p.height) p.contentY = Math.max(0, Math.min(p.contentHeight - p.height, y + it.height - p.height + gap))
+      return
+    }
   }
   function activateFocus() {
     var it = kbFocus
