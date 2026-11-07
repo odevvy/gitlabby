@@ -43,6 +43,8 @@ The title (`group/project / Board ▾`) opens your **starred boards** jump list
 (the default is always listed, marked Default). Pick a row to switch, or
 **Browse all projects…** for the full picker. In the picker's board step, the
 star adds or removes a board from that list (it no longer sets the default).
+A long list scrolls inside the menu, with **Browse all projects…** pinned at
+the bottom; the arrow keys keep the selected board in view.
 
 ## Popup
 
