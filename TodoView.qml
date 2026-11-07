@@ -16,8 +16,8 @@ ScopedList {
   fetch: host.feed.todos
   names: ({ tab: "todoScopeTab", underline: "", count: "todoCount", row: "todoRow", bar: "todoFocusBar" })
   sections: function(a) {
-    return [["todos", "To-dos", a.todos, "No pending to-dos."],
-            ["assigned", "Assigned to you", a.assigned, "No open issues assigned to you."]]
+    return [["todos", "To-dos", a.todos, "No pending to-dos.", Logic.listCaps.todos],
+            ["assigned", "Assigned to you", a.assigned, "No open issues assigned to you.", Logic.listCaps.assigned]]
   }
   function refSign(r) { return r.kind === "mr" ? "!" : "#" }
   copySign: refSign
