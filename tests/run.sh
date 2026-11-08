@@ -772,7 +772,7 @@ check "X logged out: no PUT" '.' "$(grep -q NON-GET "$FAKE_LOG" && echo false ||
 close_out=$(fx put <<<'{"iid":3,"state":"closed"}'; cl close --project a/b --iid 3; FAKE_PUT=fail cl reopen --project a/b --iid 3)
 
 # --- CL: Closed shows the latest 20; with more, it is capped (20+) and links to the rest
-# It asks for 21 to know. Open and label columns read every open issue (--paginate): no cap, no link.
+# It asks for 21 to know. Open and label columns read open issues by page (OC: at most 500).
 closed_n() { # n web-url-prefix
   jq -cn --argjson n "$1" --arg u "$2" '[range($n) | {iid: (100 + .), title: "c", state: "closed", labels: [], web_url: "\($u)\(100 + .)"}]'; }
 reset
@@ -785,7 +785,7 @@ fx open <<<'[]'
 closed_n 21 https://gitlab.com/group/app/-/issues/ | fx closed
 out=$("$fetch" --project group/app)
 check "CL closed asks for the latest 20 and one more" '.' "$(grep -q 'state=closed&scope=all&order_by=updated_at&sort=desc&per_page=21&' "$FAKE_LOG" && echo true || echo false)"
-check "CL open issues are read in full (--paginate)" '.' "$(grep -q -- '--paginate projects/group%2Fapp/issues?state=opened' "$FAKE_LOG" && echo true || echo false)"
+check "CL open issues are read by page, never --paginate" '.' "$(grep -q -- '--paginate projects/group%2Fapp/issues?state=opened' "$FAKE_LOG" && echo false || grep -q -- 'projects/group%2Fapp/issues?state=opened&scope=all&order_by=relative_position&sort=asc&per_page=100&page=1&' "$FAKE_LOG" && echo true || echo false)"
 check "CL more than 20 closed: the latest 20, capped, a link to all closed issues" '(.columns[] | select(.kind == "closed") | (.issues | length) == 20 and .issues[0].iid == 100 and .issues[-1].iid == 119 and .capped == true
     and .seeAll == "https://gitlab.com/group/app/-/issues?state=closed")
   and ([.columns[] | select(.kind != "closed") | has("seeAll") or has("capped")] | any | not)' "$out"
@@ -811,6 +811,40 @@ fx boards <<<'[]'
 closed_n 21 https://gitlab.example.org/sub/group/app/-/issues/ | fx closed
 out=$("$fetch" --project sub/group/app)
 check "CL no board (workflow columns): the link too, unscoped" '(.columns[] | select(.kind == "closed") | .seeAll) == "https://gitlab.example.org/sub/group/app/-/issues?state=closed"' "$out"
+
+# --- OC: open issues stop at 500 (5 pages of 100); with more, the board says so and links to itself
+open_n() { # n web-url-prefix [label]
+  jq -cn --argjson n "$1" --arg u "$2" --arg l "${3:-}" '[range($n) | {iid: (1 + .), title: "o", state: "opened", labels: (if $l == "" then [] else [$l] end), web_url: "\($u)\(1 + .)"}]'; }
+open_calls() { grep -c -- 'issues?state=opened' "$FAKE_LOG"; }
+reset
+fx boards <<<'[{"id":7,"name":"Dev","hide_backlog_list":false,"hide_closed_list":false,"labels":[],"milestone":null,"assignee":null,"lists":[{"id":1,"position":0,"label":{"name":"Doing"}}]}]'
+fx closed <<<'[]'
+open_n 1200 https://gitlab.com/group/app/-/work_items/ | fx open
+out=$("$fetch" --project group/app)
+check "OC 1,200 open: the first 500 in board order, capped, a link to the board on GitLab" '.state == "ready" and ([.columns[].issues[]] | length) == 500
+  and ((.columns[] | select(.kind == "open") | .issues) | .[0].iid == 1 and .[-1].iid == 500)
+  and .openCapped == true and .openSeeAll == "https://gitlab.com/group/app/-/boards/7"' "$out"
+check "OC 1,200 open: 5 pages of 100, one 1-issue look past 500, nothing more" '.' "$([[ $(open_calls) == 6 && $(grep -c 'state=opened.*&per_page=100&page=[1-5]&' "$FAKE_LOG") == 5 && $(grep -c 'state=opened.*&per_page=1&page=501&' "$FAKE_LOG") == 1 ]] && ! grep -q 'page=6&' "$FAKE_LOG" && echo true || echo false)"
+check "OC the capped flag is board-wide, never a column's" '[.columns[] | has("openCapped") or has("openSeeAll")] | any | not' "$out"
+: >"$FAKE_LOG"; open_n 1200 https://gitlab.com/group/app/-/issues/ Doing | fx open
+out=$("$fetch" --project group/app)
+check "OC label lists share the 500" '([.columns[] | select(.name == "Doing") | .issues[]] | length) == 500 and ([.columns[] | select(.kind == "open") | .issues[]] | length) == 0 and .openCapped == true' "$out"
+: >"$FAKE_LOG"; open_n 500 https://gitlab.com/group/app/-/issues/ | fx open
+out=$("$fetch" --project group/app)
+check "OC exactly 500 open: all of them, no cap, no link" '([.columns[].issues[]] | length) == 500 and (has("openCapped") or has("openSeeAll") | not)' "$out"
+check "OC exactly 500 open: the look past 500 finds nothing" '.' "$([[ $(open_calls) == 6 ]] && echo true || echo false)"
+: >"$FAKE_LOG"; open_n 250 https://gitlab.com/group/app/-/issues/ | fx open
+out=$("$fetch" --project group/app)
+check "OC 250 open: unchanged, 3 pages and no look past them" '([.columns[].issues[]] | length) == 250 and (has("openCapped") | not)' "$out"
+check "OC 250 open: stops at the short page" '.' "$([[ $(open_calls) == 3 ]] && echo true || echo false)"
+fx boards <<<'[]'; open_n 501 https://gitlab.com/group/app/-/issues/ | fx open
+out=$("$fetch" --project group/app)
+check "OC no board: 501 open is capped and links to the open issues" '.fallback == true and ([.columns[].issues[]] | length) == 500 and .openCapped == true and .openSeeAll == "https://gitlab.com/group/app/-/issues"' "$out"
+open_n 501 http://gitlab.com/group/app/-/issues/ | fx open
+out=$("$fetch" --project group/app)
+check "OC a non-https issue URL gives no link, but still the cap" '.openCapped == true and (has("openSeeAll") | not)' "$out"
+open_n 1200 https://gitlab.com/group/app/-/issues/ | fx open
+check "OC a later page that never answers fails the board, never a partial one" '.state == "error"' "$(FAKE_HANG='&page=3&' "$fetch" --project group/app)"
 
 # --- PL: pipeline status of Review cards (reads only) -----------------------------
 reset

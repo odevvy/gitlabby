@@ -15,7 +15,7 @@ q-move-backwards	BoardView.qml	else if (o.op === "move") model.move(o.from, o.to
 q-insert-first	BoardView.qml	else model.insert(o.at, { k: o.k })	else model.insert(0, { k: o.k })	qml	harness/tests/run157.py
 # --- from v158.tsv
 # v0.1.58: open and closed issues in parallel, Review pipelines eight at a time. sh rows: tests/run.sh
-p-open-sequential	board-fetch	  echo $? >"$tmp/open.rc" ) &	  echo $? >"$tmp/open.rc" )	sh	run.sh
+p-open-sequential	board-fetch	  echo $rc >"$tmp/open.rc" ) &	  echo $rc >"$tmp/open.rc" )	sh	run.sh
 p-closed-unchecked	board-fetch	for part in open closed; do	for part in open; do	sh	run.sh
 p-closed-first	board-fetch	for part in open closed; do	for part in closed open; do	sh	run.sh
 p-no-timeout-message	board-fetch	  ((rc != 124)) || emit error "$slow"\n  if ((rc != 0)); then\n    if	  if ((rc != 0)); then\n    if	sh	run.sh
