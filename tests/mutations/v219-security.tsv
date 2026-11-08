@@ -1,0 +1,17 @@
+oc-no-cap	board-fetch	$fetchedOpen[:$ocap] as $rawOpen	$fetchedOpen as $rawOpen	sh	run.sh
+oc-never-capped	board-fetch	($fetchedOpen | length > $ocap) as $openCapped	false as $openCapped	sh	run.sh
+oc-capped-at-500	board-fetch	($fetchedOpen | length > $ocap) as $openCapped	($fetchedOpen | length >= $ocap) as $openCapped	sh	run.sh
+oc-reads-all-pages	board-fetch	while ((page * 100 < open_cap)); do	while ((page < 20)); do	sh	run.sh
+oc-no-short-stop	board-fetch	[[ $(jq 'length' "$tmp/open.page" 2>/dev/null) == 100 ]] || break	true	sh	run.sh
+oc-no-look-past	board-fetch	>>"$tmp/open" || rc=$?	>/dev/null || rc=$?	sh	run.sh
+oc-page-error-ignored	board-fetch	|| { rc=$?; break; }	|| break	sh	run.sh
+oc-link-not-board	board-fetch	"/-/boards/	"/-/issues/	sh	run.sh
+oc-flag-dropped	board-fetch	+ $openCap\nJQ	\nJQ	sh	run.sh
+oc-apply-ignored	Board.qml	openCapped = data.openCapped === true	openCapped = false	qml	harness/tests/run219.py
+oc-note-hidden	CapNote.qml	host.boardState === "ready" && host.openCapped	host.boardState === "ready" && false	qml	harness/tests/run219.py
+oc-note-board-only	CapNote.qml	visible: host.setup === ""	visible: host.view === "board" && host.setup === ""	qml	harness/tests/run219.py
+oc-note-wording	CapNote.qml	"First 500 open issues shown"	"First 500 issues shown"	qml	harness/tests/run219.py
+oc-link-hidden	CapNote.qml	visible: note.linked	visible: false	qml	harness/tests/run219.py
+oc-link-always	CapNote.qml	readonly property bool linked: host.openSeeAll !== ""	readonly property bool linked: true	qml	harness/tests/run219.py
+oc-header-overlaps	Board.qml	anchors { top: capNote.bottom; topMargin: capNote.visible ? root.gap : 0 }	anchors { topMargin: 0 }	qml	harness/tests/run219.py
+oc-hidden-keeps-space	Board.qml	height: capNote.visible ? capNote.implicitHeight : 0	height: capNote.implicitHeight	qml	harness/tests/run219.py
