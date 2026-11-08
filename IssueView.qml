@@ -473,7 +473,7 @@ Item {
         color: view.host.foreground
         linkColor: view.host.accent
         font { family: Style.font.family; pixelSize: Style.font.bodySmall }
-        onLinkActivated: function(link) { var url = Logic.linkUrl(link, view.issue.url); if (url) view.host.openUrl(url) }
+        onLinkActivated: function(link) { var url = Logic.linkUrl(link, view.issue.url); if (url) view.host.openUrl(url, true) }
         HoverHandler { id: linkHover; cursorShape: parent.hoveredLink !== "" ? Qt.PointingHandCursor : Qt.ArrowCursor }
         // Where a link really goes, at the pointer: its text can say otherwise.
         PanelToolTip {

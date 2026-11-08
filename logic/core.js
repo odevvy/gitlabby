@@ -43,7 +43,17 @@ function savedNote(iso, now) {
 }
 // The one check before a link opens or rides in a notification: https, one
 // word, no quote or angle bracket that could end an attribute.
-function httpsUrl(url) { return /^https:\/\/[^\s"<>]+$/.test(String(url || "")) ? String(url) : "" }
+function httpsUrl(url) { return /^https:\/\/[^\s"<>\\]+$/.test(String(url || "")) && urlHost(url) !== "" ? String(url) : "" }
+// Extract a DNS hostname with an optional valid port (self-hosted GitLab).
+// Reject userinfo, encoded hostnames, backslashes and ambiguous authorities.
+function urlHost(url) {
+  var m = /^https?:\/\/([^/?#:]+)(?::([0-9]{1,5}))?(?:[/?#]|$)/.exec(String(url || ""))
+  return m && (!m[2] || (Number(m[2]) > 0 && Number(m[2]) <= 65535)) ? serverHost(m[1]) : ""
+}
+function gitlabUrl(url, host) {
+  var link = httpsUrl(url), allowed = serverHost(host)
+  return link !== "" && allowed !== "" && urlHost(link) === allowed ? link : ""
+}
 function oneLine(text, max) {
   var t = String(text || "").replace(/\s+/g, " ").trim()
   return t.length > max ? t.slice(0, max - 1) + "…" : t
@@ -72,4 +82,4 @@ function serverKey(host, project) {
   return !host || host === "gitlab.com" ? project : host + ":" + project
 }
 
-if (typeof module !== "undefined") module.exports = { plainJson: plainJson, lowerList: lowerList, has: has, toggled: toggled, countLabel: countLabel, escaped: escaped, plain: plain, copied: copied, age: age, savedNote: savedNote, httpsUrl: httpsUrl, oneLine: oneLine, serverHost: serverHost, serverKey: serverKey, signInCommand: signInCommand }
+if (typeof module !== "undefined") module.exports = { plainJson: plainJson, lowerList: lowerList, has: has, toggled: toggled, countLabel: countLabel, escaped: escaped, plain: plain, copied: copied, age: age, savedNote: savedNote, httpsUrl: httpsUrl, gitlabUrl: gitlabUrl, oneLine: oneLine, serverHost: serverHost, serverKey: serverKey, signInCommand: signInCommand }

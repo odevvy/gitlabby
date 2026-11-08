@@ -34,6 +34,7 @@ var copied = Core.copied
 var age = Core.age
 var savedNote = Core.savedNote
 var httpsUrl = Core.httpsUrl
+var gitlabUrl = Core.gitlabUrl
 var oneLine = Core.oneLine
 var serverHost = Core.serverHost
 var signInCommand = Core.signInCommand
