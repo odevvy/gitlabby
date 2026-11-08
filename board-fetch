@@ -46,7 +46,7 @@
 #   board-fetch relabel --project P --iid N (--add L | --remove L)   (PUT, write_labels())
 #     One label at a time, through add_labels/remove_labels, so no other label is
 #     touched. Status labels are refused: every list label of every board in the
-#     project and, best effort, of its group and parent groups' boards, plus the
+#     project and of its group and parent groups' boards (all must be readable), plus the
 #     workflow labels (research, todo, approved, in progress, review), in any case. They change only by dragging a card. --add takes only
 #     a label the project already has, so a typo never creates one.
 #   board-fetch close|reopen --project P --iid N   (PUT, write_state())
@@ -469,20 +469,24 @@ mrs_list() {
      review: [$r[0] | map(select(.draft != true))[:10][] | row], mine: [$m[0][:10][] | row]}' 2>/dev/null ||
     emit error "GitLab returned an unreadable response."
 }
-# The boards whose list labels are status labels, into $tmp/b (one JSON array
-# per page): the project's, all pages, and, best effort, its group's and every
-# parent group's (group boards show this project's issues too). A group whose
-# boards can't be read adds nothing; a user namespace has none.
+# Status-label edits require a complete inventory, including every parent group.
 in_bulk=0
 guard_boards() {
-  # A bulk run reads them once: the first card's copy serves the rest.
+  # A bulk run reads them once: the first card's verified copy serves the rest.
   if ((in_bulk)) && [[ -f $tmp/guard-b ]]; then cp "$tmp/guard-b" "$tmp/b"; return 0; fi
   get --paginate "$base/boards?per_page=100" >"$tmp/b" || emit error "Could not load boards for $project."
+  jq -se 'length > 0 and all(.[]; type == "array")' "$tmp/b" >/dev/null 2>&1 || emit error "GitLab returned an unreadable response."
   local group
-  peek "$base" >"$tmp/proj" || : >"$tmp/proj"  # unreadable: no group boards
+  get "$base" >"$tmp/proj" || emit error "Could not verify status labels. Try again."
+  jq -e '.namespace | type == "object" and (.kind == "user" or (.kind == "group" and
+    (.full_path | type == "string" and test("^[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)*$"))))' "$tmp/proj" >/dev/null 2>&1 ||
+    emit error "Could not verify status labels. Try again."
   while IFS= read -r group; do
-    peek "groups/$(jq -rn --arg g "$group" '$g | @uri')/boards?per_page=100" >"$tmp/gb" &&
-      jq -e 'type == "array"' "$tmp/gb" >/dev/null 2>&1 && cat "$tmp/gb" >>"$tmp/b"
+    get --paginate "groups/$(jq -rn --arg g "$group" '$g | @uri')/boards?per_page=100" >"$tmp/gb" ||
+      emit error "Could not verify status labels. Try again."
+    jq -se 'length > 0 and all(.[]; type == "array")' "$tmp/gb" >/dev/null 2>&1 ||
+      emit error "Could not verify status labels. Try again."
+    cat "$tmp/gb" >>"$tmp/b"
   done < <(jq -r 'select(.namespace.kind == "group") | .namespace.full_path | strings | split("/") as $p
     | range($p | length; 0; -1) as $n | $p[:$n] | join("/")' "$tmp/proj" 2>/dev/null)
   ((in_bulk)) && cp "$tmp/b" "$tmp/guard-b"
