@@ -25,7 +25,10 @@ check() { # name jq-expression json
   if jq -e "$2" >/dev/null 2>&1 <<<"$3"; then pass=$((pass + 1)); else fail=$((fail + 1)); echo "FAIL: $1"; echo "  $3" | cut -c1-400; fi
 }
 fx() { mkdir -p "$FAKE_DIR"; cat >"$FAKE_DIR/$1.json"; }
-reset() { rm -rf "$FAKE_DIR" "$FAKE_LOG"; }
+reset() { rm -rf "$FAKE_DIR" "$FAKE_LOG"; fx project <<'J'
+{"namespace":{"kind":"user","full_path":"someone"}}
+J
+}
 cols='[.columns[] | {(.name): [.issues[].iid]}] | add'
 
 # --- A: board with label lists, an assignee list, open + closed -------------
@@ -724,7 +727,7 @@ fx group-boards-top%2Fsub <<<'[{"id":20,"name":"Team","lists":[{"id":21,"label":
 fx group-boards-top <<<'[{"id":30,"name":"Org","lists":[{"id":31,"label":{"name":"Shipping"}},{"id":32,"assignee":{"username":"a"}}]}]'
 : >"$FAKE_LOG"; out=$("$fetch" labels --project top/sub/app)
 check "G status: project, group and parent group list labels" '.status == (["approved","doing","in progress","research","review","shipping","todo","triage"]) and [.labels[].name] == ["api","ux"]' "$out"
-check "G GETs: the project, then its group and each parent's boards" '.' "$([[ $(grep -c NON-GET "$FAKE_LOG") == 0 && $(grep -c -- '--method GET projects/top%2Fsub%2Fapp$' "$FAKE_LOG") == 1 ]] && grep -qF -- '--method GET groups/top%2Fsub/boards?per_page=100' "$FAKE_LOG" && grep -qF -- '--method GET groups/top/boards?per_page=100' "$FAKE_LOG" && echo true || echo false)"
+check "G GETs: the project, then its group and each parent's boards" '.' "$([[ $(grep -c NON-GET "$FAKE_LOG") == 0 && $(grep -c -- '--method GET projects/top%2Fsub%2Fapp$' "$FAKE_LOG") == 1 ]] && grep -qF -- '--method GET --paginate groups/top%2Fsub/boards?per_page=100' "$FAKE_LOG" && grep -qF -- '--method GET --paginate groups/top/boards?per_page=100' "$FAKE_LOG" && echo true || echo false)"
 for l in Triage shipping; do
   out=$(: >"$FAKE_LOG"; "$fetch" relabel --project top/sub/app --iid 3 --add "$l")
   check "G guard refuses a group board's list label '$l'" '.state == "error" and (.message | test("board list label"))' "$out"
@@ -732,11 +735,11 @@ for l in Triage shipping; do
 done
 check "G other labels still go through" '.state == "ready"' "$("$fetch" relabel --project top/sub/app --iid 3 --add ux)"
 rm "$FAKE_DIR/group-boards-top.json"; fx group-boards-top%2Fsub <<<'{"message":"404 Group Not Found"}'
-check "G unreadable group boards add nothing; the rest still guards" '.status == (["approved","doing","in progress","research","review","todo"])' "$("$fetch" labels --project top/sub/app)"
+check "G unreadable group boards: refused" '.state == "error"' "$("$fetch" labels --project top/sub/app)"
 fx project <<<'{"id":5,"namespace":{"kind":"user","full_path":"someone"}}'
 check "G a user namespace: no group calls" '.' "$(: >"$FAKE_LOG"; "$fetch" labels --project someone/app >/dev/null; grep -q 'groups/' "$FAKE_LOG" && echo false || echo true)"
 rm "$FAKE_DIR/project.json"
-check "G project unreadable: project boards only, still works" '.state == "ready"' "$("$fetch" labels --project top/sub/app)"
+check "G project unreadable: refused" '.state == "error"' "$("$fetch" labels --project top/sub/app)"
 
 # --- X: close and reopen: one state_event, labels untouched ---------------------
 reset

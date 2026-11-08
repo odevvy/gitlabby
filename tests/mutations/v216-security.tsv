@@ -1,0 +1,3 @@
+security-group-pagination	board-fetch	get --paginate "groups/	get "groups/	qml	harness/tests/run216.py
+security-group-fail-closed	board-fetch	get --paginate "groups/$(jq -rn --arg g "$group" '$g | @uri')/boards?per_page=100" >"$tmp/gb" ||\n      emit error "Could not verify status labels. Try again."	get --paginate "groups/$(jq -rn --arg g "$group" '$g | @uri')/boards?per_page=100" >"$tmp/gb" || echo '[]' >"$tmp/gb"	qml	harness/tests/run216.py
+security-group-namespace-validation	board-fetch	emit error "Could not verify status labels. Try again."\n  while	true\n  while	qml	harness/tests/run216.py
