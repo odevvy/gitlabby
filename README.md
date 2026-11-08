@@ -1,5 +1,7 @@
 # GitLabby for Omarchy
 
+> The [GitHub repository](https://github.com/odevvy/gitlabby) is a read-only mirror. Please open issues and merge requests on [GitLab](https://gitlab.com/firelink21/gitlabby). GitHub pull requests are not accepted.
+
 A bar icon (plugin id `odevvy.gitlabby`) that opens a GitLab issue board in a popup: the board's lists as
 columns in their label colors, issue details with comments and labels, and
 drag-to-move.
