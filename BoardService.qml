@@ -218,7 +218,7 @@ Item {
   // The only notifier: each event as an Omarchy notification, a click opening
   // its link as cfg.links says; each lights the bar icon's dot.
   function notify(events, cfg) {
-    events.forEach(function(ev) { Quickshell.execDetached(Logic.notifyArgv(ev, cfg.links)) })
+    events.forEach(function(ev) { Quickshell.execDetached(Logic.notifyArgv(ev, cfg.links, cfg.host)) })
     unseenAlerts += events.length
     if (events.length > 0) lastAlert = { text: String(events[events.length - 1].headline), at: Date.now() }
   }

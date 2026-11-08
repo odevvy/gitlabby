@@ -3,8 +3,8 @@
 mode-always-app	Board.qml	String(saved("openLinks", "browser")) === "app" ? "app" : "browser"	"app"	qml	harness/tests/run173.py
 mode-default-app	Board.qml	String(saved("openLinks", "browser")) === "app" ? "app" : "browser"	String(saved("openLinks", "app")) !== "browser" ? "app" : "browser"	qml	harness/tests/run173.py
 mode-loose	Board.qml	String(saved("openLinks", "browser")) === "app"	String(saved("openLinks", "browser")).toLowerCase().indexOf("app") >= 0	qml	harness/tests/run173.py
-open-ignores-mode	Board.qml	[linkMode === "app" ? "omarchy-launch-webapp" : "omarchy-launch-browser", link]	["omarchy-launch-browser", link]	qml	harness/tests/run173.py
-open-modes-swapped	Board.qml	linkMode === "app" ? "omarchy-launch-webapp" : "omarchy-launch-browser"	linkMode === "app" ? "omarchy-launch-browser" : "omarchy-launch-webapp"	qml	harness/tests/run173.py
+open-ignores-mode	Board.qml	[linkMode === "app" && Logic.gitlabUrl(link, gitlabHost) !== "" ? "omarchy-launch-webapp" : "omarchy-launch-browser", link]	["omarchy-launch-browser", link]	qml	harness/tests/run173.py
+open-modes-swapped	Board.qml	linkMode === "app" && Logic.gitlabUrl(link, gitlabHost) !== "" ? "omarchy-launch-webapp" : "omarchy-launch-browser"	linkMode === "app" && Logic.gitlabUrl(link, gitlabHost) !== "" ? "omarchy-launch-browser" : "omarchy-launch-webapp"	qml	harness/tests/run173.py
 open-stays	Board.qml	"omarchy-launch-browser", link])\n    close()	"omarchy-launch-browser", link])	qml	harness/tests/run173.py
 save-drops-others	Board.qml	persist({ openLinks	bar.shell.updateEntryInline(moduleName, { id: moduleName, openLinks	qml	harness/tests/run173.py
 save-raw	Board.qml	{ openLinks: mode === "app" ? "app" : "browser" }	{ openLinks: "app" }	qml	harness/tests/run173.py
@@ -19,10 +19,10 @@ notify-ignores-links	logic/alerts.js	links === "app" ? "omarchy-launch-webapp" :
 notify-xdg-again	logic/alerts.js	links === "app" ? "omarchy-launch-webapp" : "omarchy-launch-browser"	links === "app" ? "omarchy-launch-webapp" : "xdg-open"	node	logic.test.js
 notify-always-app	logic/alerts.js	links === "app" ? "omarchy-launch-webapp"	links !== "nope" ? "omarchy-launch-webapp"	node	logic.test.js
 notify-loose	logic/alerts.js	links === "app" ?	String(links).toLowerCase() === "app" ?	node	logic.test.js
-notify-any-url	logic/alerts.js	if (httpsUrl(ev.url)) argv	if (ev.url) argv	node	logic.test.js
+notify-any-url	logic/alerts.js	if (Core.gitlabUrl(ev.url, host === undefined ? "gitlab.com" : host)) argv	if (ev.url) argv	node	logic.test.js
 watch-no-links	Board.qml	, links: linkMode } : null	 } : null	qml	harness/tests/run174.py
 watch-links-fixed	Board.qml	links: linkMode }	links: "app" }	qml	harness/tests/run174.py
-svc-ignores-links	BoardService.qml	Logic.notifyArgv(ev, cfg.links)	Logic.notifyArgv(ev)	qml	harness/tests/run174.py
+svc-ignores-links	BoardService.qml	Logic.notifyArgv(ev, cfg.links, cfg.host)	Logic.notifyArgv(ev)	qml	harness/tests/run174.py
 # --- from v175.tsv
 count-none	BoardService.qml	unseenAlerts += events.length	var none = events.length	qml	harness/tests/run175.py
 count-once-per-answer	BoardService.qml	unseenAlerts += events.length	unseenAlerts = 1	qml	harness/tests/run175.py

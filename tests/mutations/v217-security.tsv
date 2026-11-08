@@ -1,0 +1,4 @@
+security-generated-host	logic/core.js	urlHost(link) === allowed	true	qml	harness/tests/run217.py
+security-markdown-browser	Board.qml	linkMode === "app" && Logic.gitlabUrl(link, gitlabHost) !== ""	linkMode === "app"	qml	harness/tests/run217.py
+security-markdown-click	IssueView.qml	view.host.openUrl(url, true)	view.host.openUrl(url)	qml	harness/tests/run217.py
+security-notification-host	BoardService.qml	Logic.notifyArgv(ev, cfg.links, cfg.host)	Logic.notifyArgv(ev, cfg.links)	qml	harness/tests/run217.py

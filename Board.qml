@@ -693,12 +693,12 @@ Panel {
   }
   function openBrowse() { headerMenu = ""; openPicker() }
 
-  // https only (Logic.httpsUrl), so no file:, javascript: or --flag value reaches the browser.
-  // A browser tab or an app window, as Settings says (linkMode).
-  function openUrl(url) {
-    var link = Logic.httpsUrl(url)
+  // GitLab navigation stays on the configured host. Explicit Markdown links
+  // may leave it, but only in a browser with its address bar, never an app window.
+  function openUrl(url, markdown) {
+    var link = markdown === true ? Logic.httpsUrl(url) : Logic.gitlabUrl(url, gitlabHost)
     if (link === "") return
-    Quickshell.execDetached([linkMode === "app" ? "omarchy-launch-webapp" : "omarchy-launch-browser", link])
+    Quickshell.execDetached([linkMode === "app" && Logic.gitlabUrl(link, gitlabHost) !== "" ? "omarchy-launch-webapp" : "omarchy-launch-browser", link])
     close()
   }
 

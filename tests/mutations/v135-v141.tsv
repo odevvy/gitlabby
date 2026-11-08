@@ -167,4 +167,4 @@ cache-no-account	board-fetch	printf '%s@%s.json' "$cache_base" "$cache_user"	pri
 cache-old-kept	board-fetch	rm -f "$cache_base.json" 2>/dev/null	true	sh	run.sh
 cr-guard-sh	board-fetch	test("(^|[\r	test("(^|[	sh	run.sh
 cr-guard-js	logic/markdown.js	/(^|[\r	/(^|[	node	logic.test.js
-https-loose	logic/core.js	/^https:\/\/[^\s"<>]+$/	/^https:\/\/\S+$/	node	logic.test.js
+https-loose	logic/core.js	/^https:\/\/[^\s"<>\\]+$/	/^https:\/\/\S+$/	node	logic.test.js
