@@ -1,0 +1,3 @@
+security-cache-lock	board-fetch	while ! flock -n "$mode" 9; do	while false; do	qml	harness/tests/run215.py
+security-cache-unknown	board-fetch	-n $cache_user && $cache_user == "$(account)"	-z ""	qml	harness/tests/run215.py
+security-cache-account-change	board-fetch	$cache_user == "$(account)"	-n $cache_user	qml	harness/tests/run215.py
