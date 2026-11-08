@@ -369,7 +369,7 @@ Item {
             }
 
             // A capped column (board-fetch: Closed holds the latest 20 when there are more) says so
-            // and links to the rest on GitLab. Open and label columns are never capped.
+            // and links to the rest on GitLab. Open issues past 500 get the popup-wide note (CapNote.qml).
             BoardText {
               visible: !!column.modelData.seeAll
               width: parent.width; wrapMode: Text.Wrap

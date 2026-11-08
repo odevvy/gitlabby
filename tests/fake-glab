@@ -107,4 +107,9 @@ case $endpoint in
   *) exit 1 ;;
 esac
 [[ -f $FAKE_DIR/$f.json ]] || exit 1
+# The open list is read by page: open.json (one or more arrays) is served as
+# GitLab would, the page'th slice of per_page issues; unreadable JSON as it is.
+if [[ $f == open && $endpoint =~ [?\&]per_page=([0-9]+)\&page=([0-9]+)(\&|$) ]]; then
+  jq -cs --argjson n "${BASH_REMATCH[1]}" --argjson p "${BASH_REMATCH[2]}" 'add | .[($p - 1) * $n:$p * $n]' "$FAKE_DIR/$f.json" 2>/dev/null && exit 0
+fi
 cat "$FAKE_DIR/$f.json"
