@@ -1,0 +1,1 @@
+security-avatar-host	components/Avatar.qml	Logic.gitlabUrl(avatar.person.avatar, avatar.host.gitlabHost)	avatar.person.avatar || ""	qml	harness/tests/run218.py

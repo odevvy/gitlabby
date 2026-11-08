@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Effects
 import qs.Commons
+import "../Logic.js" as Logic
 
 // Round assignee avatar: initials underneath, the image on top once it loads
 // (never loaded when Settings > Show avatars is off: then the initials stay).
@@ -38,7 +39,7 @@ Rectangle {
     objectName: "avatarImage"
     anchors.fill: parent
     visible: false
-    source: avatar.host.showAvatars ? avatar.person.avatar || "" : ""  // off: no request at all
+    source: avatar.host.showAvatars ? Logic.gitlabUrl(avatar.person.avatar, avatar.host.gitlabHost) : ""  // off: no request at all
     sourceSize { width: avatar.width * 2; height: avatar.height * 2 }
     fillMode: Image.PreserveAspectCrop
     asynchronous: true; cache: true; smooth: true

@@ -4,12 +4,12 @@
 import sys, os, copy; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from lib import *
 from fixtures import BOARD
-from PySide6.QtGui import QImage, QColor
-import tempfile, atexit, shutil
+from PySide6.QtGui import QColor
+import lib
+from network import install
+install(lib)
 P = "group/app"
-pic_dir = tempfile.mkdtemp(prefix="ogb-h183-"); atexit.register(shutil.rmtree, pic_dir, True)
-im = QImage(8, 8, QImage.Format_ARGB32); im.fill(QColor("#3b6ea8")); im.save(pic_dir + "/a.png")
-PIC = "file://" + pic_dir + "/a.png"  # a local picture: the test makes no network request
+PIC = "https://gitlab.com/uploads/avatar.png"  # in-memory response, never the network
 B = copy.deepcopy(BOARD)
 first = next(i for c in B["columns"] for i in c["issues"])
 first["assignees"] = [{"username": "alice", "name": "Alice Smith", "avatar": PIC}]
