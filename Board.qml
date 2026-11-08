@@ -243,6 +243,9 @@ Panel {
   property var labelColors: ({})
   property string resolvedBoardId: ""
   property bool fallback: false
+  // More than 500 open issues: only the first 500 are on the board (CapNote.qml).
+  property bool openCapped: false
+  property string openSeeAll: ""
   property string firstBoardId: ""
   // The board on screen is the saved copy, until the fresh answer replaces it.
   property bool cached: false
@@ -457,6 +460,8 @@ Panel {
     if (JSON.stringify(nextColors) !== JSON.stringify(labelColors)) labelColors = nextColors
     resolvedBoardId = data.board ? String(data.board.id) : ""
     fallback = !!data.fallback
+    openCapped = data.openCapped === true
+    openSeeAll = openCapped ? String(data.openSeeAll || "") : ""
     firstBoardId = data.boards && data.boards.length > 0 ? String(data.boards[0].id) : ""
     if (data.board && boardName !== data.board.name) boardName = data.board.name
     if (data.fallback) boardName = ""
@@ -944,7 +949,7 @@ Panel {
       views: ({ issue: issueView, picker: picker, settings: settingsView, bulk: bulkBar, mrs: mrsView, todos: todoView, setup: setupView })
       anchors.fill: parent
       blocked: issueView.typing || picker.typing || settingsView.typing || bulkBar.typing  // text fields get every key (Omarchy PanelKeyCatcher.qml:26-29)
-      implicitHeight: header.implicitHeight + root.gap + (botsRow.visible ? botsRow.height + root.gap : 0) + (accessHint.visible ? accessHint.height + root.gap : 0) + (moveConfirm.visible ? moveConfirm.height + root.gap : 0) + (bulkBar.visible ? bulkBar.height + root.gap : 0) + (root.view === "board" ? (root.setup !== "" || root.failed ? Math.max(setupView.implicitHeight, skeleton.implicitHeight) : root.boardState === "loading" ? skeleton.implicitHeight : boardView.implicitHeight)
+      implicitHeight: (capNote.visible ? capNote.height + root.gap : 0) + header.implicitHeight + root.gap + (botsRow.visible ? botsRow.height + root.gap : 0) + (accessHint.visible ? accessHint.height + root.gap : 0) + (moveConfirm.visible ? moveConfirm.height + root.gap : 0) + (bulkBar.visible ? bulkBar.height + root.gap : 0) + (root.view === "board" ? (root.setup !== "" || root.failed ? Math.max(setupView.implicitHeight, skeleton.implicitHeight) : root.boardState === "loading" ? skeleton.implicitHeight : boardView.implicitHeight)
         : root.view === "issue" ? issueView.implicitHeight : root.view === "picker" ? picker.implicitHeight
         : root.view === "keys" ? keysView.implicitHeight : root.shownList ? root.shownList.implicitHeight : settingsView.implicitHeight)
       // One round mask for every avatar (Avatar.qml's maskSource): one
@@ -981,11 +986,19 @@ Panel {
         onClicked: root.headerMenu = ""
       }
 
+      CapNote {
+        id: capNote
+        host: root
+        anchors { top: parent.top; left: parent.left; right: parent.right }
+        height: capNote.visible ? capNote.implicitHeight : 0
+      }
+
       BoardHeader {
         id: header
         host: root
         mrsScope: mrsView.scope
         todoScope: todoView.scope
+        anchors { top: capNote.bottom; topMargin: capNote.visible ? root.gap : 0 }
         width: parent.width
         // Overflowing jump/default menus must paint above BotsRow and the board.
         z: root.headerMenu !== "" ? 40 : 0
