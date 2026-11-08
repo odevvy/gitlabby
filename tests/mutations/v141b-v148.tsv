@@ -10,7 +10,7 @@ pick-closed-stale	Board.qml	if (bulkBar.running || bulkBar.armed || bulkBar.mode
 apply-always-columns	Board.qml	if (JSON.stringify(nextColumns) !== JSON.stringify(columns)) columns = nextColumns	columns = nextColumns	qml	harness/tests/run141.py
 apply-always-colors	Board.qml	if (JSON.stringify(nextColors) !== JSON.stringify(labelColors)) labelColors = nextColors	labelColors = nextColors	qml	harness/tests/run141.py
 rotation-closed	Board.qml	refreshActive: opened && (	refreshActive: (	qml	harness/tests/run150.py
-openurl-own-check	Board.qml	var link = Logic.httpsUrl(url)	var link = /^https:\/\//.test(String(url || "")) ? String(url) : ""	qml	harness/tests/run141.py
+openurl-own-check	Board.qml	var link = markdown === true ? Logic.httpsUrl(url) : Logic.gitlabUrl(url, gitlabHost)	var link = /^https:\/\//.test(String(url || "")) ? String(url) : ""	qml	harness/tests/run141.py
 # --- from v142.tsv
 auth-no-recheck	board-fetch	if ((rc != 0 && auth_skipped)); then auth_skipped=0; forget_auth; check_auth; fi	true	sh	run.sh
 auth-logout-keeps	board-fetch	  forget_auth\n  bounded auth logout	  bounded auth logout	sh	run.sh
