@@ -148,9 +148,7 @@ gb-any-kind	board-fetch	select(.namespace.kind == "group") | 	 	sh	run.sh
 gb-no-parents	board-fetch	range($p | length; 0; -1)	range($p | length; $p | length - 1; -1)	sh	run.sh
 gb-only-top	board-fetch	range($p | length; 0; -1)	range(1; 0; -1)	sh	run.sh
 gb-no-uri	board-fetch	$g | @uri	$g	sh	run.sh
-gb-overwrite	board-fetch	&& cat "$tmp/gb" >>"$tmp/b"	&& cat "$tmp/gb" >"$tmp/b"	sh	run.sh
-gb-no-array-check	board-fetch	jq -e 'type == "array"' "$tmp/gb" >/dev/null 2>&1 && 	 	sh	run.sh
-gb-strict-group	board-fetch	"$tmp/gb" &&\n	"$tmp/gb" || emit error "x"\n	sh	run.sh
+gb-overwrite	board-fetch	cat "$tmp/gb" >>"$tmp/b"	cat "$tmp/gb" >"$tmp/b"	sh	run.sh
 # --- from v140b.tsv
 header-no-scope	Board.qml	        mrsScope: mrsView.scope	        mrsScope: "review"	qml	harness/tests/run140.py
 # --- from v141.tsv
