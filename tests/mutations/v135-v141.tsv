@@ -165,7 +165,7 @@ room-move	board-fetch	    room\n    jq -c '.body' "$tmp/plan" | write_issue	    
 tmp-not-runtime	board-fetch	[[ $runtime == /* && -d $runtime && -w $runtime ]] || runtime=${TMPDIR:-/tmp}	runtime=${TMPDIR:-/tmp}	sh	run.sh
 tmp-runtime-unchecked	board-fetch	[[ $runtime == /* && -d $runtime && -w $runtime ]] || runtime	[[ -n $runtime ]] || runtime	sh	run.sh
 trap-no-exit	board-fetch	trap 'rm -rf "$tmp"' EXIT	true	sh	run.sh
-cache-no-account	board-fetch	printf '%s@%s.json' "$cache_base" "$account"	printf '%s.json' "$cache_base"	sh	run.sh
+cache-no-account	board-fetch	printf '%s@%s.json' "$cache_base" "$cache_user"	printf '%s.json' "$cache_base"	sh	run.sh
 cache-old-kept	board-fetch	rm -f "$cache_base.json" 2>/dev/null	true	sh	run.sh
 cr-guard-sh	board-fetch	test("(^|[\r	test("(^|[	sh	run.sh
 cr-guard-js	logic/markdown.js	/(^|[\r	/(^|[	node	logic.test.js
