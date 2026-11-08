@@ -7,13 +7,25 @@ drag-to-move.
 ## Install
 
 ```bash
-omarchy plugin add <this-repo-url> --enable
+omarchy plugin add https://gitlab.com/firelink21/gitlabby.git --enable
+# or over SSH:
+omarchy plugin add git@gitlab.com:firelink21/gitlabby.git --enable
 # or, from a local checkout:
 omarchy plugin add "$PWD" --enable
 ```
 
 Needs Omarchy 4.0.6 or later, `jq`, a Nerd Font (Omarchy ships one), and the
 GitLab CLI `glab`.
+
+The repository moved from `firelink21/omarchy-gitlab-board` to
+`firelink21/gitlabby` (v0.1.113); the plugin id stays `odevvy.gitlabby`. An
+existing install keeps working through GitLab's redirect; to point it at the
+new path:
+
+```bash
+git -C ~/.config/omarchy/plugins/odevvy.gitlabby remote set-url origin https://gitlab.com/firelink21/gitlabby.git
+omarchy plugin update odevvy.gitlabby
+```
 
 ## First run
 

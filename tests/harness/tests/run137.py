@@ -29,7 +29,7 @@ PIPE = lambda s: {"status": s, "url": "https://gitlab.com/firelink21/phrase41/-/
 ANS = {"state": "ready", "message": "", "scope": "all", "updatedAt": "2026-10-30T20:52:00Z",
   "review": [mr(88, "Book motion: one open/close curve for every view <b>", P, "app-ui/book-motion", "ci_still_running", "App UI", [who("o_devvy", "odevvy", "review_started"), who("api", "API", "approved")], PIPE("running"), ago=ago_(12)),
              mr(86, "API: paginate story notes", P, "api/notes-pages", "requested_changes", "API", [who("o_devvy", "odevvy", "requested_changes")], PIPE("passed"), ago=ago_(130))],
-  "mine": [mr(35, "feat: desktop alerts (0.1.36)", "firelink21/omarchy-gitlab-board", "feat/alerts", "mergeable", "odevvy", [], None, ago=ago_(4)),
+  "mine": [mr(35, "feat: desktop alerts (0.1.36)", "firelink21/gitlabby", "feat/alerts", "mergeable", "odevvy", [], None, ago=ago_(4)),
            mr(12, "Draft: hyprland gestures", "o_devvy/dotfiles", "gestures", "draft_status", "odevvy", [who("a", "Ann Lee", "unreviewed")], PIPE("failed"), draft=True, ago=ago_(3*1440)),
            mr(7, "Waybar module for build status", "o_devvy/tools", "waybar-ci", "conflict", "odevvy", [who("a", "Ann Lee", "reviewed"), who("b", "Bo", "approved")], PIPE("passed"), ago=ago_(5*1440))]}
 mrs_runs = lambda: [c for c in h.running("mrs")]
@@ -68,7 +68,7 @@ sub = [it.property("text") for it in h.walk(r[2]) if "·" in str(it.property("te
 import re as _re
 ages = [str(it.property("text")) for x in r for it in sorted(h.walk(x), key=lambda i: i.mapToScene(QPointF(0, 0)).x()) if it.isVisible() and _re.fullmatch(r"\d+(m|h|d|w|mo|y)", str(it.property("text") or ""))]
 ok("M8a how long ago each changed", ages == ["12m", "2h", "4m", "3d", "5d"], ages)
-ok("M8 his row's second line: project, branch, reviewers", sub == ["firelink21/omarchy-gitlab-board  ·  feat/alerts  ·  no reviewer yet"], sub)
+ok("M8 his row's second line: project, branch, reviewers", sub == ["firelink21/gitlabby  ·  feat/alerts  ·  no reviewer yet"], sub)
 shot("mrs-view")
 # --- keys: cursor, Enter, o --------------------------------------------------------
 ok("M9 cursor on the first row", h.ev("mrsView.cursor") == 0)
