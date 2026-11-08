@@ -733,7 +733,7 @@ test("alerts: settings per project, events between two good answers, the notify 
   const svc = require("node:fs").readFileSync(require("node:path").join(__dirname, "..", "BoardService.qml"), "utf8")
   // The only notifier, in the shared service.
   assert.equal((svc.match(/execDetached\(/g) || []).length, 1)
-  assert.match(svc, /Quickshell\.execDetached\(Logic\.notifyArgv\(ev(, cfg\.links)?\)\)/)
+  assert.match(svc, /Quickshell\.execDetached\(Logic\.notifyArgv\(ev, cfg\.links, cfg\.host\)\)/)
 })
 
 test("pipeline alert (v0.1.76): board-fetch pipes, its answer, what finished, the notification", () => {
@@ -1350,4 +1350,19 @@ test("v0.1.111 the last alert in words, and Settings > Alerts' status line", () 
   assert.equal(L.lastAlertText({ text: "#7 is in review, is in review" }, "14:26"), "Last alert: #7 is in review, in review · 14:26")
   assert.equal(L.alertStatusText("1 min", null, ""), "Checking every 1 min. No alerts since the shell started.")
   assert.equal(L.alertStatusText("2 min", { text: "#42 is in review" }, "14:26"), "Checking every 2 min. Last alert: #42 in review · 14:26")
+})
+
+
+test("security navigation binds generated links to the configured DNS authority", () => {
+  const good = "https://gitlab.example/group/app/-/issues/2"
+  assert.equal(L.gitlabUrl(good, "gitlab.example"), good)
+  assert.equal(L.gitlabUrl("https://gitlab.example:8443/x", "gitlab.example"), "https://gitlab.example:8443/x")
+  assert.equal(L.gitlabUrl("https://GITLAB.EXAMPLE:443/x", "gitlab.example"), "https://GITLAB.EXAMPLE:443/x")
+  for (const url of ["https://other.example/x", "https://gitlab.example.evil/x", "https://gitlab.example@other.example/x", "https://user:password@gitlab.example/x", "https://gitlab.example:65536/x", "https://gitlab.example./x", "https://%67itlab.example/x"]) {
+    assert.equal(L.gitlabUrl(url, "gitlab.example"), "", url)
+    assert.equal(L.notifyArgv({headline:"h",body:"b",url}, "app", "gitlab.example").includes("--exec"), false, url)
+  }
+  for (const url of ["https://gitlab.example\\@other.example/x", "https://gitlab.example/a\\b", "https://gitlab.example/a b", "https://gitlab.example/a\nb", "javascript:alert(1)"]) assert.equal(L.httpsUrl(url), "", url)
+  assert.equal(L.gitlabUrl(good, ""), "")
+  assert.deepEqual(L.notifyArgv({headline:"h",body:"b",url:good}, "app", "gitlab.example").slice(-3), ["--exec","omarchy-launch-webapp",good])
 })
