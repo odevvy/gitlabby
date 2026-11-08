@@ -152,18 +152,37 @@ account() {
   IFS= read -r a < <(timeout 5 glab config get user --host "$hostname" 2>/dev/null)
   [[ $a =~ ^[A-Za-z0-9_.-]{1,255}$ ]] && printf '%s' "$a"
 }
+if ! command -v glab >/dev/null 2>&1; then
+  [[ $cmd != cached ]] || { printf '%s\n' '{"state":"none"}'; exit 0; }
+  emit no-glab "The GitLab CLI (glab) is not installed."
+fi
+cache_user=""
+if [[ $cmd == board || $cmd == cached || $cmd == logout ]] && [[ -n $cache_root ]]; then
+  # The lock survives cache deletion so a waiting writer cannot use an old inode.
+  lock=$cache_root/odevvy.gitlabby.lock
+  if command -v flock >/dev/null 2>&1 && mkdir -p "$cache_root" 2>/dev/null && [[ ! -L $lock ]] &&
+    (umask 077; : >>"$lock") 2>/dev/null && { exec 9>>"$lock"; } 2>/dev/null; then
+    mode=-s; [[ $cmd != logout ]] || mode=-x
+    while ! flock -n "$mode" 9; do
+      ((SECONDS < deadline)) || emit error "Saved boards are busy. Try again."
+      sleep 0.05
+    done
+  else
+    [[ $cmd != logout ]] || emit error "Could not safely clear saved boards. Try again."
+    cache_root=""
+  fi
+fi
+[[ $cmd != board && $cmd != cached ]] || cache_user=$(account)
 cache_file() {
-  local account
-  account=$(account); [[ -n $account ]] || account=unknown
-  printf '%s@%s.json' "$cache_base" "$account"
+  printf '%s@%s.json' "$cache_base" "$cache_user"
 }
 if [[ $cmd == cached ]]; then
+  [[ -n $cache_user && -n $cache_root ]] || { printf '%s\n' '{"state":"none"}'; exit 0; }
   # Marked cached: true. A missing, unreadable or foreign file gives state "none".
   jq -cse --arg p "$project" '.[0] | select(.state == "ready" and .project == $p and (.columns | type) == "array")
     | .cached = true' "$(cache_file)" 2>/dev/null || printf '%s\n' '{"state":"none"}'
   exit 0
 fi
-command -v glab >/dev/null 2>&1 || emit no-glab "The GitLab CLI (glab) is not installed."
 # Answers wait in a private dir, in the per-user runtime dir (a tmpfs that
 # logout clears) when there is one, and go when board-fetch ends, also when it
 # is stopped (bash runs the EXIT trap on TERM, HUP and INT too).
@@ -866,7 +885,7 @@ pipeline_of() { # iid; writes $tmp/pipe-<iid> with {"<iid>": {status, url, mr}} 
   return 0
 }
 board_file="" pipes_file=""
-if [[ -n $cache_root ]]; then board_file=$(cache_file); pipes_file=${board_file%.json}.pipes.json; fi
+if [[ -n $cache_root && -n $cache_user ]]; then board_file=$(cache_file); pipes_file=${board_file%.json}.pipes.json; fi
 [[ -n $pipes_file && -f $pipes_file && ! -L $pipes_file ]] && jq -e 'type == "object"' "$pipes_file" >/dev/null 2>&1 &&
   cp "$pipes_file" "$tmp/pipes-prev" 2>/dev/null || echo '{}' >"$tmp/pipes-prev"
 reused=()
@@ -900,7 +919,7 @@ fi
 
 # Best effort: write a temp file in the cache dir, then rename it over the old
 # copy, so a reader never sees half a file. A failed write changes nothing.
-if [[ -n $cache_root ]] && mkdir -p "$cache_dir" 2>/dev/null && chmod 700 "$cache_dir" 2>/dev/null &&
+if [[ -n $cache_root && -n $cache_user && $cache_user == "$(account)" ]] && mkdir -p "$cache_dir" 2>/dev/null && chmod 700 "$cache_dir" 2>/dev/null &&
   part=$(mktemp "$cache_dir/.part.XXXXXX" 2>/dev/null); then
   { cat "$tmp/out" >"$part" && mv -f "$part" "$board_file"; } 2>/dev/null || rm -f "$part"
   # The pipelines beside it, only when there are some (or were: then emptied).

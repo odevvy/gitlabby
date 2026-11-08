@@ -4,6 +4,7 @@ set -uo pipefail
 here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 fetch="$here/../board-fetch"
 work=$(mktemp -d); trap 'rm -rf "$work"' EXIT
+export TMPDIR=$work/tmp; mkdir -p "$TMPDIR"
 mkdir -p "$work/bin"; cp "$here/fake-glab" "$work/bin/glab"
 # board-fetch runs glab as `timeout -k 5 30 glab ...`; this stand-in keeps the
 # real timeout (coreutils) but cuts the limits to 1 s so the T tests run fast.
@@ -497,7 +498,7 @@ check "V a 401 in the host name is not a sign-in prompt" '.state == "error"' "$(
 check "V offline is an error, not a sign-in prompt" '.state == "error" and (.message | test("connection"))' "$(FAKE_AUTH=offline "$fetch" projects)"
 check "V auth message never passed through" '.' "$(FAKE_AUTH=offline "$fetch" projects | grep -q 'dial tcp\|glpat' && echo false || echo true)"
 : >"$FAKE_LOG"; FAKE_AUTH=no "$fetch" --project a/b >/dev/null
-check "V signed out: the first read fails, then only the auth check ran" '.' "$([[ $(grep -c . "$FAKE_LOG") == 2 && $(sed -n 2p "$FAKE_LOG") == 'auth status --hostname gitlab.com' ]] && echo true || echo false)"
+check "V signed out: the first read fails, then only the auth check ran" '.' "$([[ $(grep -vc '^config get user ' "$FAKE_LOG") == 2 && $(grep -v '^config get user ' "$FAKE_LOG" | sed -n 2p) == 'auth status --hostname gitlab.com' ]] && echo true || echo false)"
 # glab missing: a PATH with only the tools board-fetch needs.
 mkdir -p "$work/noglab"
 for t in jq mktemp rm cat grep timeout mkdir chmod mv cp; do ln -sf "$(command -v "$t")" "$work/noglab/$t"; done
@@ -635,11 +636,11 @@ rm -rf "$XDG_CACHE_HOME"; out=$("$fetch" --project group/app --board 7)
 check "K other account: none" '. == {"state":"none"}' "$(FAKE_USER=someone "$fetch" cached --project group/app --board 7)"
 check "K same account: its copy" '.cached == true' "$("$fetch" cached --project group/app --board 7)"
 FAKE_USER=none "$fetch" --project group/app --board 7 >/dev/null
-check "K no saved account: its own 'unknown' copy" '.' "$([[ -f $kdir/group%2Fapp-7@unknown.json ]] && echo true || echo false)"
-check "K unknown account doesn't read a named one" '.cached == true and (input | . == {"state":"none"})' "$(FAKE_USER=none "$fetch" cached --project group/app --board 7; FAKE_USER=x "$fetch" cached --project group/app --board 7)"
+check "K no saved account: no copy" '.' "$([[ ! -e $kdir/group%2Fapp-7@unknown.json ]] && echo true || echo false)"
+check "K unknown account doesn't read a named one" '. == {"state":"none"} and (input | . == {"state":"none"})' "$(FAKE_USER=none "$fetch" cached --project group/app --board 7; FAKE_USER=x "$fetch" cached --project group/app --board 7)"
 for odd in '../x' 'a b' 'ü'; do
   rm -f "$kdir/group%2Fapp-7@unknown.json"
-  check "K odd account name ($odd): unknown" '.' "$(FAKE_USER=$odd "$fetch" --project group/app --board 7 >/dev/null; [[ -f $kdir/group%2Fapp-7@unknown.json && ! -e $kdir/../x.json && $(find "$kdir" -name '*x*' -o -name '* *' | wc -l) == 0 ]] && echo true || echo false)"
+  check "K odd account name ($odd): no copy" '.' "$(FAKE_USER=$odd "$fetch" --project group/app --board 7 >/dev/null; [[ ! -e $kdir/group%2Fapp-7@unknown.json && ! -e $kdir/../x.json && $(find "$kdir" -name '*x*' -o -name '* *' | wc -l) == 0 ]] && echo true || echo false)"
 done
 echo "$out" >"$kdir/group%2Fapp-7.json"
 "$fetch" --project group/app --board 7 >/dev/null
