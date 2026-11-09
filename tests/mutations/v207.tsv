@@ -1,5 +1,5 @@
 # v0.1.107: sign-out cache warning, 32 point Sign out target
-note-gone	SettingsView.qml	visible: view.confirming  // Yes drops the question before signing out\n          wrapMode: Text.Wrap\n          color: view.host.foreground	visible: false\n          wrapMode: Text.Wrap\n          color: view.host.foreground	qml	harness/tests/run207.py
+note-gone-3	SettingsView.qml	visible: view.confirming  // Yes drops the question before signing out\n          wrapMode: Text.Wrap\n          color: view.host.foreground	visible: false\n          wrapMode: Text.Wrap\n          color: view.host.foreground	qml	harness/tests/run207.py
 note-always	SettingsView.qml	visible: view.confirming  // Yes drops the question before signing out\n          wrapMode: Text.Wrap\n          color: view.host.foreground	visible: true\n          wrapMode: Text.Wrap\n          color: view.host.foreground	qml	harness/tests/run207.py
 note-claims-settings	SettingsView.qml	saved board cache on this computer.	saved board cache and settings on this computer.	qml	harness/tests/run207.py
 signout-short	SettingsView.qml	height: Style.space(32)\n          leftPadding	height: Style.space(20)\n          leftPadding	qml	harness/tests/run207.py

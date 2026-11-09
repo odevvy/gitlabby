@@ -11,8 +11,8 @@ save-raw	Board.qml	{ openLinks: mode === "app" ? "app" : "browser" }	{ openLinks
 seg-current-wrong	SettingsView.qml	readonly property bool current: view.host.linkMode === modelData.mode	readonly property bool current: modelData.mode === "browser"	qml	harness/tests/run173.py
 seg-order	SettingsView.qml	model: [{ mode: "browser", label: "Browser tab" }, { mode: "app", label: "App window" }]	model: [{ mode: "app", label: "App window" }, { mode: "browser", label: "Browser tab" }]	qml	harness/tests/run173.py
 row-left	SettingsView.qml	x: linkRow.oneLine ? linkRow.width - width : 0	x: 0	qml	harness/tests/run173.py
-note-gone	SettingsView.qml	Help { objectName: "linkNote"; text: "Board issues still open inside GitLabby. Merge requests, to-dos, and an issue's Open action leave the plugin. They open in a browser tab, or in an app window with no tabs (needs a Chromium-based browser)." }	Item { objectName: "linkNote" }	qml	harness/tests/run173.py
-note-loud	SettingsView.qml	Help { objectName: "linkNote"	Label { objectName: "linkNote"	qml	harness/tests/run173.py
+note-gone-2	SettingsView.qml	Help { objectName: "linkNote"; text: "Board issues still open inside GitLabby. Merge requests, to-dos, and an issue's Open action leave the plugin. They open in a browser tab, or in an app window with no tabs (needs a Chromium-based browser)." }	Item { objectName: "linkNote" }	qml	harness/tests/run173.py
+note-loud-3	SettingsView.qml	Help { objectName: "linkNote"	Label { objectName: "linkNote"	qml	harness/tests/run173.py
 row-no-gap	SettingsView.qml	      Item { width: 1; height: Style.space(2) }\n      // Open links in	      // Open links in	qml	harness/tests/run173.py
 # --- from v174.tsv
 notify-ignores-links	logic/alerts.js	links === "app" ? "omarchy-launch-webapp" : "omarchy-launch-browser"	"omarchy-launch-browser"	node	logic.test.js
@@ -29,7 +29,7 @@ count-once-per-answer	BoardService.qml	unseenAlerts += events.length	unseenAlert
 seen-noop	BoardService.qml	function seenAlerts() { unseenAlerts = 0 }	function seenAlerts() {}	qml	harness/tests/run175.py
 open-keeps-dot	Board.qml	if (opened) { feed.seenAlerts(); view	if (opened) { view	qml	harness/tests/run175.py
 open-popup-lights	Board.qml	function onUnseenAlertsChanged() { if (root.opened && root.view === "board"	function onUnseenAlertsChanged() { if (false && root.view === "board"	qml	harness/tests/run175.py
-dot-always	Board.qml	visible: root.iconLit	visible: true	qml	harness/tests/run175.py
+dot-always-2	Board.qml	visible: root.iconLit	visible: true	qml	harness/tests/run175.py
 dot-big	Board.qml	width: Style.space(5); height: width; radius: width / 2	width: Style.space(9); height: width; radius: width / 2	qml	harness/tests/run175.py
 dot-square	Board.qml	width: Style.space(5); height: width; radius: width / 2	width: Style.space(5); height: width; radius: 0	qml	harness/tests/run175.py
 dot-left	Board.qml	x: Math.round(button.width / 2 + Style.space(4))	x: Math.round(button.width / 2 - Style.space(9))	qml	harness/tests/run175.py
@@ -112,7 +112,7 @@ n-col-any-kind	logic/mrs.js	c && c.kind === "label" && labels	c && labels	node	l
 n-col-case	logic/mrs.js	labels.indexOf(String(c.name || "").toLowerCase())	labels.indexOf(String(c.name || ""))	node	logic.test.js
 n-one-comment	logic/mrs.js	n === 1 ? "1 comment" : n > 1	n > 0	node	logic.test.js
 n-badge-cap	logic/mrs.js	n > 9 ? "9+" : String(n)\n}\n// board-fetch arguments for a scope: "all", or one project path.\nfunction todosArgs	String(n)\n}\n// board-fetch arguments for a scope: "all", or one project path.\nfunction todosArgs	node	logic.test.js
-n-args-loose	logic/mrs.js	? ["todos", "--project", String(scope)] : ["todos"]	? ["todos", "--project", String(scope)] : ["todos", "--project", String(scope)]	node	logic.test.js
+n-args-loose-2	logic/mrs.js	? ["todos", "--project", String(scope)] : ["todos"]	? ["todos", "--project", String(scope)] : ["todos", "--project", String(scope)]	node	logic.test.js
 n-subline-who	logic/mrs.js	t.author && t.author.name ? "by " + t.author.name : ""	""	node	logic.test.js
 q-td-no-reuse	ScopedFetch.qml	if (!force && last && Date.now() - last.startedAt < (maxAgeMs || 60000)) return true	if (false) return true	qml	harness/tests/run177.py
 # dropped in 0.1.89: q-td-force-ignored (the same mutation as svc-force-ignored)

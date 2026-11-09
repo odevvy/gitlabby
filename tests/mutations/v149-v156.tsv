@@ -23,7 +23,7 @@ manual-demoted	Board.qml	ifDue !== true || (manualRefresh && loading)	ifDue !== 
 # v0.1.51 idle bots without the word; qml rows: tests/harness/tests/run151.py
 word-back	BotsRow.qml	text: bot.modelData.name\n	text: bot.modelData.name + (bot.busy ? "" : "  idle")\n	qml	harness/tests/run151.py
 tip-text-short	BotsRow.qml	" · idle, nothing in a busy column"	" · idle"	qml	harness/tests/run151.py
-tip-never	BotsRow.qml	visible: idleMouse.containsMouse && !bot.busy	visible: false	qml	harness/tests/run151.py
+tip-never-2	BotsRow.qml	visible: idleMouse.containsMouse && !bot.busy	visible: false	qml	harness/tests/run151.py
 tip-name-only	BotsRow.qml	anchors.leftMargin: -(dot.width + bot.spacing); 	 	qml	harness/tests/run151.py
 idle-name-bright	BotsRow.qml	color: bot.busy ? row.host.foreground : row.host.dim	color: row.host.foreground	qml	harness/tests/run151.py
 idle-dot-filled	BotsRow.qml	color: bot.modelData.state === "working" ? bot.tint : "transparent"	color: bot.modelData.state === "working" ? bot.tint : row.host.dim	qml	harness/tests/run151.py

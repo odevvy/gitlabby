@@ -14,7 +14,8 @@
 # those sections of run.sh (RUN_ONLY), about 3 s instead of the whole file.
 # mutate.sh --check <plugin-dir> <spec>...: only that every row's `from` is still
 # in its file and its test exists (no test runs; a second or two), so a row can't
-# go stale unnoticed. Prints "stale <spec> <name>" or "notest <spec> <name>".
+# go stale unnoticed. Prints "stale <spec> <name>", "notest <spec> <name>", or
+# "dup <spec> <name>" for a name another row already has.
 # mutate.sh --changed <base> [--list] <plugin-dir> <spec>...: the per-release run. Only
 # the rows the change since git <base> can affect (tests/mutate-pick.py: new or
 # changed rows, rows whose code or test sections changed, the canaries); --list
@@ -31,11 +32,12 @@ if [[ $1 == --changed ]]; then
   bash "$0" "$S" "$sel"; exit
 fi
 if [[ $1 == --check ]]; then
-  S=$(cd "$2" && pwd); shift 2; bad=0
+  S=$(cd "$2" && pwd); shift 2; bad=0; declare -A named  # a name picks one row: two rows can't share it
   for spec in "$@"; do
     while IFS= read -r line; do
       IFS=$'\x1f' read -r name file from _ kind test <<<"${line//$'\t'/$'\x1f'}"
       [[ -z $name || $name == \#* ]] && continue
+      [[ -n ${named[$name]:-} ]] && { echo "dup $(basename "$spec") $name"; bad=1; }; named[$name]=1
       src=$(cat "$S/$file" 2>/dev/null) || src=""
       [[ $src == *"${from//\\n/$'\n'}"* ]] || { echo "stale $(basename "$spec") $name"; bad=1; }
       case $kind:$test in
