@@ -23,6 +23,7 @@ SH
 chmod +x "$work/bin/timeout"
 export PATH="$work/bin:$PATH" FAKE_LOG="$work/log" FAKE_DIR="$work/fx" XDG_CACHE_HOME="$work/cache"  # never the real ~/.cache
 unset XDG_RUNTIME_DIR  # no sign-in mark unless a test sets one (E block)
+unset MUTATE_STOP  # mutate.sh sets it for its own loop; the mutate.sh checks below set their own
 pass=0 fail=0
 # RUN_FAILFAST=1 (mutate.sh sets it for sh rows): stop at the first FAIL; the last
 # line names it and the run.sh line of the call, so a mutant costs only the
