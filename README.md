@@ -574,9 +574,11 @@ board.
   than the titles.
 - Cards show the title first, then one quiet line: the issue number, up to
   three assignee avatars (two plus `+N`), the comment count, and the age (`45m`, `3h`, `4d`, `2w`, `6mo`, `1y`). Avatars show initials
-  until the image loads from GitLab's `https` URL, or if it doesn't.
-  The pictures often come from outside sites such as Gravatar, which see your
-  IP address. General > **Show avatars** (on by default) turns them off: every
+  until the picture is in, or if it never comes. Only pictures on your GitLab
+  server are shown (others, Gravatar's too, stay initials). board-fetch fetches
+  them with curl, never following a redirect, at most 64 KB each, and keeps
+  them in memory only; Qt never loads an avatar URL itself.
+  General > **Show avatars** (on by default) turns them off: every
   avatar is then its initials circle and no picture is requested.
   Every avatar is cut round by one shared mask, so a full board keeps a
   single mask texture instead of one per avatar.

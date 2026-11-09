@@ -93,6 +93,39 @@ Item {
     if (kind !== "" && project !== "") setAccess(project, Logic.refusedEntry(access[project], kind))
   }
 
+  // Avatar pictures by URL, in memory only: "data:image/..." once board-fetch
+  // avatars has it, "" for initials (refused, redirected, too big, not an image).
+  // Qt's Image never sees an http URL, so no redirect can take it to another host.
+  property var avatars: ({})
+  property var avatarWaiting: []
+  function avatar(url) {
+    if (url === "") return ""
+    var known = avatars[url]
+    if (known !== undefined) return known
+    if (avatarWaiting.indexOf(url) === -1 && avatarFetch.urls.indexOf(url) === -1) { avatarWaiting.push(url); Qt.callLater(avatarNext) }
+    return ""
+  }
+  function avatarNext() {
+    if (avatarFetch.running || avatarWaiting.length === 0) return
+    avatarFetch.urls = avatarWaiting.slice(0, 40)
+    avatarWaiting = avatarWaiting.slice(40)
+    avatarFetch.generation = generation
+    avatarFetch.stdinEnabled = true
+    avatarFetch.command = helperCommand(["avatars"])
+    avatarFetch.running = true
+  }
+  // The answers land before the URLs leave avatarFetch.urls, so avatar() never sees one in neither and asks again.
+  function avatarsDone(raw) {
+    if (avatarFetch.generation === generation) {
+      var got = {}
+      try { got = JSON.parse(raw).avatars || {} } catch (e) {}
+      var next = Object.assign({}, avatars)
+      avatarFetch.urls.forEach(function(u) { next[u] = typeof got[u] === "string" && got[u].indexOf("data:image/") === 0 ? got[u] : "" })
+      avatars = next
+    }
+    avatarFetch.urls = []
+  }
+
   // The GitLab server every board-fetch here runs against (--hostname), from
   // the widget's setting. Another one forgets everything from the last.
   property string host: "gitlab.com"
@@ -297,6 +330,8 @@ Item {
     todoFetch.clear()
     access = ({})
     accessWaiting = []
+    avatars = ({})
+    avatarWaiting = []
   }
 
   function helperPath() {
@@ -321,6 +356,15 @@ Item {
     stdout: StdioCollector { waitForEnd: true; onStreamFinished: service.pipesDone(text) }
   }
   ScopedFetch { id: todoFetch; service: service; args: Logic.todosArgs; parse: Logic.todosAnswer }
+  // The URLs go in on stdin, one per line, then stdin closes.
+  Process {
+    id: avatarFetch
+    property var urls: []
+    property int generation: 0
+    onStarted: { write(urls.join("\n") + "\n"); stdinEnabled = false }
+    onRunningChanged: if (!running) Qt.callLater(service.avatarNext)
+    stdout: StdioCollector { waitForEnd: true; onStreamFinished: service.avatarsDone(text) }
+  }
   Process {
     id: accessFetch
     property string project: ""

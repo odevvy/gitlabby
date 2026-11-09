@@ -39,7 +39,8 @@ Rectangle {
     objectName: "avatarImage"
     anchors.fill: parent
     visible: false
-    source: avatar.host.showAvatars ? Logic.gitlabUrl(avatar.person.avatar, avatar.host.gitlabHost) : ""  // off: no request at all
+    // Only the configured server's pictures, fetched by board-fetch (BoardService.avatar) so no redirect is followed. Off: no request at all.
+    source: avatar.host.showAvatars ? avatar.host.feed.avatar(Logic.gitlabUrl(avatar.person.avatar, avatar.host.gitlabHost)) : ""
     sourceSize { width: avatar.width * 2; height: avatar.height * 2 }
     fillMode: Image.PreserveAspectCrop
     asynchronous: true; cache: true; smooth: true

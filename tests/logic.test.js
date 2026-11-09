@@ -585,8 +585,9 @@ test("shared refresh: one BoardService for every screen; Board.qml fetches board
   const procs = [...service.matchAll(/^\s*(?:Process|ScopedFetch) \{\s*id: (\w+)/gm)].map(m => m[1])
   assert.equal((service.match(/^\s*(?:Process|ScopedFetch) \{/gm) || []).length, procs.length)
   assert.deepEqual(procs.filter(p => ["fetch", "mrFetch", "accessFetch"].includes(p)), ["fetch", "mrFetch", "accessFetch"])
-  // v0.1.76: and one pipes query (pipeFetch); v0.1.77: and the to-dos (todoFetch); nothing else.
-  assert.deepEqual(procs, ["fetch", "mrFetch", "pipeFetch", "todoFetch", "accessFetch"])
+  // v0.1.76: and one pipes query (pipeFetch); v0.1.77: and the to-dos (todoFetch);
+  // v0.1.121: and the avatar pictures (avatarFetch); nothing else.
+  assert.deepEqual(procs, ["fetch", "mrFetch", "pipeFetch", "todoFetch", "avatarFetch", "accessFetch"])
 })
 
 test("popup size: one frame for every view, the board's width (760 at least) and a fixed 640 height", () => {
