@@ -60,7 +60,7 @@ lg-state-unchecked	logic/mrs.js	o.state = reviewerStates.indexOf(p.state) !== -1
 svc-no-reuse	ScopedFetch.qml	if (!force && last && Date.now() - last.startedAt < (maxAgeMs || 60000)) return true	/* m */	qml	harness/tests/run137.py
 svc-force-ignored	ScopedFetch.qml	if (!force && last &&	if (last &&	qml	harness/tests/run137.py
 svc-no-pending	ScopedFetch.qml	if (p) request(p.scope, p.force)	/* m */	qml	harness/tests/run137.py
-svc-forget-keeps	ScopedFetch.qml	function clear() { answers = ({}); pending = null }	function clear() { pending = null }	qml	harness/tests/run137.py
+svc-forget-keeps-2	ScopedFetch.qml	function clear() { answers = ({}); pending = null }	function clear() { pending = null }	qml	harness/tests/run137.py
 svc-dup-fetch	ScopedFetch.qml	    if (loading === next) return false\n	    /* m */\n	qml	harness/tests/run137.py
 v-no-open-fetch	Board.qml	if (lists[name] && view !== name) lists[name].open()	/* m */	qml	harness/tests/run137.py
 v-r-ignored	BoardKeys.qml	else if (key === "r" && host.view === "mrs") mrsView.refresh()	/* m */	qml	harness/tests/run137.py
@@ -127,7 +127,7 @@ lg-url-api	logic/access.js	&scopes=read_api"\n}	&scopes=api"\n}	node	logic.test.
 lg-url-http	logic/access.js	return "https://" + host + "/-/user_settings	return "http://" + host + "/-/user_settings	node	logic.test.js
 svc-every-time	BoardService.qml	if (project === "" || access[project] !== undefined || accessWaiting	if (project === "" || accessWaiting	qml	harness/tests/run139.py
 svc-no-wait	BoardService.qml	if (accessFetch.running) { if (accessFetch.project !== project) accessWaiting = accessWaiting.concat([project]); return }	if (accessFetch.running) { return }	qml	harness/tests/run139.py
-svc-no-next	BoardService.qml	onRunningChanged: if (!running) Qt.callLater(service.accessNext)	onRunningChanged: {}	qml	harness/tests/run139.py
+svc-no-next-2	BoardService.qml	onRunningChanged: if (!running) Qt.callLater(service.accessNext)	onRunningChanged: {}	qml	harness/tests/run139.py
 svc-no-forget	BoardService.qml	    access = ({})\n    accessWaiting = []	    accessWaiting = []	qml	harness/tests/run139.py
 svc-refused-ignored	BoardService.qml	if (kind !== "" && project !== "") setAccess	if (false) setAccess	qml	harness/tests/run139.py
 bd-canmove-writes	Board.qml	resolvedBoardId !== "" && writable	resolvedBoardId !== ""	qml	harness/tests/run139.py

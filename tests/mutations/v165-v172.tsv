@@ -184,7 +184,7 @@ copy-closes	Board.qml	    copiedTimer.restart()\n    return true	    copiedTimer
 note-not-shown	Board.qml	copiedNote !== "" ? copiedNote : updating	updating	qml	harness/tests/run172.py
 note-stays	Board.qml	onTriggered: root.copiedNote = ""	onTriggered: {}	qml	harness/tests/run172.py
 note-no-restart	Board.qml	copiedTimer.restart()	copiedTimer.start()	qml	harness/tests/run172.py
-note-loud	BoardHeader.qml	host.boardState === "ready" && host.message === ""	host.boardState === "ready" && host.message === "" && host.copiedNote === ""	qml	harness/tests/run172.py
+note-loud-2	BoardHeader.qml	host.boardState === "ready" && host.message === ""	host.boardState === "ready" && host.message === "" && host.copiedNote === ""	qml	harness/tests/run172.py
 y-mr-hash	BoardKeys.qml	host.copyLink(mrsView.rows[mrsView.cursor], "!")	host.copyLink(mrsView.rows[mrsView.cursor], "#")	qml	harness/tests/run172.py
 y-mr-first	BoardKeys.qml	mrsView.rows[mrsView.cursor]	mrsView.rows[0]	qml	harness/tests/run172.py
 y-board-off	BoardKeys.qml	host.view === "board" ? host.cursorIssue() : null, "#")	null, "#")	qml	harness/tests/run172.py

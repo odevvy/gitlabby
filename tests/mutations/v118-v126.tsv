@@ -104,7 +104,7 @@ text-under-link	SettingsView.qml	signOutLink.implicitWidth + Style.space(12) : 0
 heading-old	SettingsView.qml	Heading { text: "Account" }	Heading { text: "GitLab account" }	qml	harness/tests/run124.py
 yes-quiet	SettingsView.qml	small: true; danger: true; label: "Yes, sign out"	small: true; label: "Yes, sign out"	qml	harness/tests/run124.py
 no-tip	SettingsView.qml	visible: yesButton.hovered	visible: false	qml	harness/tests/run124.py
-tip-offcard	SettingsView.qml	onAboutToShow: x = parent.width - implicitWidth	onAboutToShow: x = parent.width	qml	harness/tests/run124.py
+tip-offcard-2	SettingsView.qml	onAboutToShow: x = parent.width - implicitWidth	onAboutToShow: x = parent.width	qml	harness/tests/run124.py
 hovered-dead	components/ActionButton.qml	readonly property bool hovered: mouse.containsMouse	readonly property bool hovered: false	qml	harness/tests/run124.py
 link-while-signing-out	SettingsView.qml	visible: !view.host.signingOut && !view.confirming &&	visible: !view.confirming &&	qml	harness/tests/run124.py
 cancel-signs-out	SettingsView.qml	label: "Cancel"\n            onClicked: view.confirming = false	label: "Cancel"\n            onClicked: { view.confirming = false; view.host.signOut() }	qml	harness/tests/run124.py
