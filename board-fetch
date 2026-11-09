@@ -59,6 +59,11 @@
 #     answer as one line. Ends at end of input or after 60 s without a line.
 #     The sign-in check runs once, and a relabel run reads the status lists
 #     and the project's labels once, not once per card.
+#   board-fetch avatars <urls   avatar pictures, one https URL per stdin line
+#     (at most 40), each on the GitLab server itself. No glab, no token: plain curl
+#     (no ~/.curlrc) that never follows a redirect (Qt's Image would, to any host). Asks GitLab's
+#     resizer for 64 px; a picture over 64 KB, or not PNG, JPEG, GIF or WebP, is
+#     dropped. Prints {state, avatars: {url: "data:image/...;base64,..." or ""}}.
 #   board-fetch logout   glab auth logout for the host (glab's own local change: it
 #     forgets the token, GitLab is not called), then deletes the saved boards.
 #
@@ -75,7 +80,7 @@
 set -uo pipefail
 
 cmd=board project="" board_id="" iid="" from="" to="" add="" remove="" hostname="gitlab.com"
-case "${1:-}" in board|cached|projects|boards|issue|notes|move|comment|whoami|mrs|todos|pipes|logout|labels|relabel|close|reopen|access|bulk) cmd=$1; shift ;; esac
+case "${1:-}" in board|cached|projects|boards|issue|notes|move|comment|whoami|mrs|todos|pipes|logout|labels|relabel|close|reopen|access|bulk|avatars) cmd=$1; shift ;; esac
 parse_args() {
 while (($#)); do
   case "$1" in
@@ -103,7 +108,7 @@ emit() { # state message
 }
 command -v jq >/dev/null 2>&1 || { printf '%s\n' '{"state":"error","message":"jq is required."}'; exit 0; }
 
-if [[ ! $cmd =~ ^(projects|whoami|logout)$ && ($cmd != mrs && $cmd != todos || -n $project) ]]; then
+if [[ ! $cmd =~ ^(projects|whoami|logout|avatars)$ && ($cmd != mrs && $cmd != todos || -n $project) ]]; then
   [[ -n $project ]] || emit error "No project given: pass --project group/name."
   [[ $project =~ ^[0-9]+$ || ($project =~ ^[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)+$ && $project != *..*) ]] ||
     emit error "Invalid project: $project"
@@ -190,6 +195,27 @@ runtime=${XDG_RUNTIME_DIR:-}
 [[ $runtime == /* && -d $runtime && -w $runtime ]] || runtime=${TMPDIR:-/tmp}
 tmp=$(mktemp -d -p "$runtime" board-fetch.XXXXXX) || emit error "Could not create a temporary directory."
 trap 'rm -rf "$tmp"' EXIT
+if [[ $cmd == avatars ]]; then
+  command -v curl >/dev/null 2>&1 || emit error "curl is required for avatars."
+  n=0
+  while ((n < 40)) && IFS= read -r url; do
+    ((n++))
+    pic=""
+    if [[ ${#url} -le 2048 && $url == "https://$hostname/"* ]] && ((deadline - SECONDS > 10)); then
+      sep='?'; [[ $url != *\?* ]] || sep='&'
+      rm -f "$tmp/pic"
+      meta=$(curl -q -sS --max-redirs 0 --max-time 8 --max-filesize 65536 -o "$tmp/pic" \
+        -w '%{http_code} %{content_type}' -- "$url${sep}width=64" 2>/dev/null)
+      rc=$?  # 63: stopped past 64 KB, with part of it on disk
+      read -r code ctype <<<"$meta"; ctype=${ctype%%;*}
+      if ((rc == 0)) && [[ $code == 200 && $ctype =~ ^image/(png|jpeg|gif|webp)$ && -s $tmp/pic ]]; then
+        pic="data:$ctype;base64,$(base64 -w0 "$tmp/pic")"
+      fi
+    fi
+    jq -cn --arg u "$url" --arg p "$pic" '{($u): $p}'
+  done | jq -cs 'add // {} | {state: "ready", avatars: .}'
+  exit 0
+fi
 # Every glab call ends within 30 s (exit 124), so a hung one can't hold the widget.
 slow="GitLab did not answer within 30 seconds."
 # 137: glab ignored the TERM and was killed 5 s later; that is a timeout too.
