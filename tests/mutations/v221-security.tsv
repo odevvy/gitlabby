@@ -1,0 +1,21 @@
+av-follows-redirects	board-fetch	curl -q -sS --max-redirs 0	curl -q -sS -L --max-redirs 5	qml	harness/tests/run221.py
+av-reads-curlrc	board-fetch	curl -q -sS	curl -sS	qml	harness/tests/run221.py
+av-any-host	board-fetch	$url == "https://$hostname/"*	$url == https://*	qml	harness/tests/run221.py
+av-big-ok	board-fetch	--max-filesize 65536	--max-filesize 10000000	qml	harness/tests/run221.py
+av-partial-ok	board-fetch	if ((rc == 0)) && [[ $code == 200	if [[ $code == 200	qml	harness/tests/run221.py
+av-any-redirect-code	board-fetch	[[ $code == 200 &&	[[ $code =~ ^[23] &&	qml	harness/tests/run221.py
+av-any-type	board-fetch	$ctype =~ ^image/(png|jpeg|gif|webp)$	-n $ctype	qml	harness/tests/run221.py
+av-full-size	board-fetch	"$url${sep}width=64"	"$url"	qml	harness/tests/run221.py
+av-bad-sep	board-fetch	sep='?'; [[ $url != *\?* ]] || sep='&'	sep='?'	qml	harness/tests/run221.py
+av-no-cap	board-fetch	while ((n < 40)) &&	while ((n < 50)) &&	qml	harness/tests/run221.py
+av-null-empty	board-fetch	add // {} | {state	add | {state	qml	harness/tests/run221.py
+av-qt-direct	components/Avatar.qml	avatar.host.feed.avatar(Logic.gitlabUrl(avatar.person.avatar, avatar.host.gitlabHost))	Logic.gitlabUrl(avatar.person.avatar, avatar.host.gitlabHost)	qml	harness/tests/run218.py
+av-any-answer	BoardService.qml	got[u].indexOf("data:image/") === 0 ? got[u] : ""	got[u]	qml	harness/tests/run218.py
+av-reask-refused	BoardService.qml	if (known !== undefined) return known	if (known) return known	qml	harness/tests/run218.py
+av-no-dedupe	BoardService.qml	if (avatarWaiting.indexOf(url) === -1 && avatarFetch.urls.indexOf(url) === -1)	if (true)	qml	harness/tests/run218.py
+av-late-answer	BoardService.qml	if (avatarFetch.generation === generation) {	if (true) {	qml	harness/tests/run218.py
+av-forget-kept	BoardService.qml	    avatars = ({})\n    avatarWaiting = []\n		qml	harness/tests/run218.py
+av-batch-uncapped	BoardService.qml	avatarFetch.urls = avatarWaiting.slice(0, 40)\n    avatarWaiting = avatarWaiting.slice(40)	avatarFetch.urls = avatarWaiting\n    avatarWaiting = []	qml	harness/tests/run218.py
+av-stdin-open	BoardService.qml	; stdinEnabled = false }	 }	qml	harness/tests/run218.py
+av-no-next	BoardService.qml	onRunningChanged: if (!running) Qt.callLater(service.avatarNext)	onRunningChanged: {}	qml	harness/tests/run218.py
+av-urls-first	BoardService.qml	      avatars = next\n    }\n    avatarFetch.urls = []	      avatarFetch.urls = []\n      avatars = next\n    }	qml	harness/tests/run218.py

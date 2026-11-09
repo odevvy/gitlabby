@@ -1,12 +1,14 @@
 # v0.1.83: Settings > Show avatars (showAvatars, default on). Off, no avatar
 # picture is requested (every Image source is empty) and the initials circle
-# stays; on, the picture URL is asked for as before. Usage: run183.py <src>
+# stays; on, board-fetch avatars is asked for the picture (R2-04). Usage: run183.py <src>
 import sys, os, copy; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from lib import *
 from fixtures import BOARD
 from PySide6.QtGui import QColor
 import lib
-from network import install
+from network import install, PNG
+import base64
+DATA = "data:image/png;base64," + base64.b64encode(PNG).decode()
 install(lib)
 P = "group/app"
 PIC = "https://gitlab.com/uploads/avatar.png"  # in-memory response, never the network
@@ -21,7 +23,8 @@ h.ev("root.opened = true"); h.spin(60); h.answer("board", B); h.spin(500)
 ok = h.ok
 def pics(): return [it.property("source").toString() for it in h.walk() if it.objectName() == "avatarImage"]
 def initials(): return [it.property("text") for it in h.visible(lambda it: it.property("text") == "AS")]
-ok("A1 default on: the picture is asked for, its initials go once it loads (the other alice has no picture)", h.ev("root.showAvatars") is True and PIC in pics() and h.until(lambda: len(initials()) == 1), (pics(), initials()))
+asked = h.running("avatars"); h.answer("avatars", {"state": "ready", "avatars": {PIC: DATA}}); h.spin(150)
+ok("A1 default on: the picture is asked for, its initials go once it loads (the other alice has no picture)", h.ev("root.showAvatars") is True and len(asked) == 1 and DATA in pics() and h.until(lambda: len(initials()) == 1), (asked, pics(), initials()))
 w0 = len(h.ev("root.bar.shell.writes") or []); h.ev("root.setShowAvatars(false)"); h.spin(150)
 ok("A2 setShowAvatars(false) saves showAvatars: false", (h.ev("root.bar.shell.writes") or [])[w0:][-1].get("showAvatars") is False)
 ok("A3 off: no picture is requested anywhere", h.ev("root.showAvatars") is False and pics() != [] and all(p == "" for p in pics()), pics())
@@ -42,7 +45,7 @@ ok("C1 the initials circle is tinted (not the old flat faint grey)", cs and all(
 ok("C2 alice has the same colour on both cards", len(al) == 2 and al[0] == al[1], cs)
 ok("C3 another name gets its own colour", ot and ot[0] != al[0], cs)
 h.ev("root.setShowAvatars(true)"); h.spin(150)
-ok("A6 on again: the picture again", PIC in pics(), pics())
+ok("A6 on again: the picture again, from memory", DATA in pics() and not h.running("avatars"), pics())
 # Settings: the box under "Keep the bar icon unlit", its note, then Start collapsed
 h.ev("root.showView('settings')"); h.spin(300)
 by = lambda n: next((it for it in h.walk() if it.objectName() == n and it.isVisible()), None)
