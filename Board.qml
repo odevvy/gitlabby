@@ -735,11 +735,18 @@ Panel {
     var data = parse(raw)
     signingOut = false
     if (data.state !== "logged-out") { accountError = String(data.message || "Could not sign out."); return }
-    session++
     feed.forget()
+    feed.accountGone(String(data.message || ""))
+  }
+  // Every screen, the one that signed out included: no private card, issue or
+  // project stays on show, and answers still on their way are dropped (session).
+  signal accountCleared()
+  function clearAccount(note) {
+    session++
     columns = []; projects = []; pickerBoards = []; cached = false; account = ""; refreshError = ""; pendingMove = null; dropPicks()
-    message = String(data.message || ""); boardState = "logged-out"
+    message = note; boardState = "logged-out"
     showView("board")
+    accountCleared()
   }
 
   // First run. glab asks for the token in its own terminal: this plugin never
@@ -865,6 +872,7 @@ Panel {
   Connections {
     target: root.feed
     function onAnswered(key, raw, ticket) { if (key === root.fetchKey) root.apply(raw, false, ticket) }
+    function onAccountGone(message) { root.clearAccount(message) }
   }
 
   Process {
