@@ -56,6 +56,8 @@ Item {
   // Bumped by forget() (sign out): answers to older requests are dropped.
   property int generation: 0
   signal answered(string key, string raw, int ticket)
+  // A sign-out finished on one screen: every screen's copy clears (Board.clearAccount).
+  signal accountGone(string message)
 
   // The Merge requests view's lists (ScopedFetch): scope "all" or a project
   // path, data Logic.mrsAnswer. Its own Process, so it never waits behind a

@@ -70,7 +70,7 @@ Item {
   // The last 10 issues opened this session (their issue and notes answers),
   // keyed by project#iid, in memory only: reopening one shows them at once
   // while both are fetched again. Labels, state and the comment box stay
-  // locked until the fresh answers arrive. Signing out forgets them.
+  // locked until the fresh answers arrive. Signing out, on any screen, forgets them.
   property var recent: ({})
   property var recentOrder: []
   property bool fromCache: false
@@ -89,7 +89,16 @@ Item {
   }
   // Signing out, or another server: none of these issues stay.
   Connections { target: view.host; function onSigningOutChanged() { view.recent = ({}); view.recentOrder = [] }
+    function onAccountCleared() { view.forgetAccount() }
     function onGitlabHostChanged() { view.recent = ({}); view.recentOrder = [] } }
+
+  // Signed out on any screen: no issue, thread, draft or label list stays in
+  // memory, and answers still on their way find nothing to land on.
+  function forgetAccount() {
+    recent = ({}); recentOrder = []
+    issue = ({}); shownKey = ""; notes = []; more = false; box.text = ""
+    allLabels = []; labelsFor = ""; labelsState = ""
+  }
 
   // Styles for the description, which Logic.markdown turns into Text.RichText HTML.
   readonly property string css: "<style>"
