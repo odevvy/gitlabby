@@ -810,6 +810,11 @@ closed_cap=20
 # stays bounded. Past that, one more 1-issue read says whether there are more
 # (openCapped), and the board links to the rest on GitLab (openSeeAll).
 open_cap=500
+# An issue shows in every list whose label it has, so 500 issues can still be
+# thousands of cards. The board's cards (Closed aside, already 20) share one
+# budget: lists that fit stay whole, and the longest ones are cut to the same
+# length, the rest linked on GitLab (seeAll, total); cardsTrimmed says so.
+card_cap=500
 
 # Open and closed issues load at the same time (one round trip instead of two).
 # Each exit code goes to a file; after both end they are read in the old order,
@@ -848,6 +853,20 @@ done
 # Issues come with_labels_details, so .labels are objects: their colors go into
 # one labelColors map and rows keep plain label names.
 read -r -d '' MAP <<'JQ'
+# The longest length every column can keep so that all of them fit $budget.
+def level($budget): sort as $s | ($s | length) as $n
+  | reduce range(0; $n) as $i ({left: $budget, level: null};
+      if .level != null then . else ((.left / ($n - $i)) | floor) as $share
+        | if $s[$i] <= $share then .left -= $s[$i] else .level = $share end end) | .level;
+def trimmed($budget; $openUrl; listUrl):
+  ([.columns[] | select(.kind != "closed") | .issues | length] | level($budget)) as $level
+  | if $level == null then . else
+      .cardsTrimmed = true
+      | .columns |= map(if .kind == "closed" or (.issues | length) <= $level then . else
+          (.issues | length) as $total | .issues |= .[:$level] | .total = $total
+          | (if .kind == "label" then (.name | listUrl) else $openUrl end) as $u
+          | if $u then .seeAll = $u else . end end)
+    end;
 def row: {iid, title, labels: names, url: (.web_url | https), createdAt: .created_at, notes: (.user_notes_count // 0),
   assignees: [(.assignees // [])[] | {username, name: (.name // .username), avatar: (.avatar_url | https)}]};
 def has_any($names): [.labels[] | select(IN($names[]))] | length > 0;
@@ -871,10 +890,9 @@ $b[0] as $board | ($o | add // []) as $fetchedOpen | ($fetchedOpen | length > $o
    + (if $proj then {seeAll: ($proj + "/-/issues?state=closed" + $webScope)} else {} end))
   as $closedColumn
 # A capped board links to itself on GitLab (or the project's open issues without a board).
-| (if $openCapped
-   then [$rawOpen[0].web_url | https | capture("^(?<p>https://[^?#]+)/-/(?:issues|work_items)/[0-9]+$") | .p] | first else null end) as $openProj
-| (if $openCapped then {openCapped: true} + (if $openProj then {openSeeAll: ($openProj + (if $board then "/-/boards/\($board.id)" else "/-/issues" end))} else {} end) else {} end)
-  as $openCap
+| ([$rawOpen[0].web_url | https | capture("^(?<p>https://[^?#]+)/-/(?:issues|work_items)/[0-9]+$") | .p] | first) as $openProj
+| (if $openProj then $openProj + (if $board then "/-/boards/\($board.id)" else "/-/issues" end) else null end) as $boardUrl
+| (if $openCapped then {openCapped: true} else {} end) as $openCap
 | {state: "ready", updatedAt: (now | todateiso8601), project: $project, labelColors: $colors,
    boards: ($all | add // [] | map({id, name})),
    board: (if $board then {id: $board.id, name: $board.name} else null end), fallback: ($board == null)}
@@ -899,9 +917,11 @@ $b[0] as $board | ($o | add // []) as $fetchedOpen | ($fetchedOpen | length > $o
          + (if $board.hide_closed_list then [] else [$closedColumn] end))}
   end
 + $openCap
+| trimmed($ccap; $boardUrl; if $openProj then $openProj + "/-/issues?label_name%5B%5D=" + (. | @uri) + $webScope else null end)
+| if (.openCapped or .cardsTrimmed) and $boardUrl then .openSeeAll = $boardUrl else . end
 JQ
 jq -cn --slurpfile b "$tmp/board" --slurpfile all "$tmp/boards" --slurpfile o "$tmp/open" --slurpfile c "$tmp/closed" \
-  --arg want "$board_id" --arg project "$project" --argjson cap "$closed_cap" --argjson ocap "$open_cap" "$DEFS $MAP" >"$tmp/out" 2>/dev/null || emit error "GitLab returned an unreadable response."
+  --arg want "$board_id" --arg project "$project" --argjson cap "$closed_cap" --argjson ocap "$open_cap" --argjson ccap "$card_cap" "$DEFS $MAP" >"$tmp/out" 2>/dev/null || emit error "GitLab returned an unreadable response."
 # --- pipelines of Review cards -----------------------------------------------
 # Each card in a column named Review (any case; at most 15 cards) gets the head
 # pipeline of its merge request: one GET of issues/:iid/related_merge_requests,
