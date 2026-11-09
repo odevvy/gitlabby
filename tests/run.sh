@@ -321,11 +321,11 @@ check "N bad iid ran nothing" '.' "$([[ -s $FAKE_LOG ]] && echo false || echo tr
 reset
 note() { jq -cn --argjson i "$1" --arg b "$2" '{id: $i, body: $b, created_at: "2026-10-27T08:00:00Z", author: {username: "x"}}'; }
 lines=$(printf 'y%.0s' {1..149}); lines=$(for _ in {1..67}; do printf '%s\n' "$lines"; done)
-{ note 3 "$lines"; note 2 "$(printf 'z%.0s' {1..5000})"; note 1 "$(printf 'w%.0s' {1..4000})"; } | jq -cs . | fx notes
+{ note 3 "$lines"; note 2 "$(printf 'z%.0s' {1..5000})"; note 1 "$(printf 'w%.0s' {1..1999})"$'\n'"$(printf 'w%.0s' {1..2000})"; } | jq -cs . | fx notes
 out=$("$fetch" notes --project a/b --iid 45)
 check "CN cut at the last line break before 4,000" '.notes[2] | (.body | length) == 3899 and (.body | endswith("y")) and (.body | split("\n") | length) == 26 and .fullLength == 10049' "$out"
 check "CN no line break: the first 4,000" '.notes[1] | .body == ("z" * 4000) and .fullLength == 5000' "$out"
-check "CN exactly 4,000: whole, no length" '.notes[0] | .body == ("w" * 4000) and (has("fullLength") | not)' "$out"
+check "CN exactly 4,000 with a line break: whole, no length" '.notes[0] | .body == ("w" * 1999 + "\n" + "w" * 2000) and (has("fullLength") | not)' "$out"
 check "CN under budget: no more" '.more == false and [.notes[].id] == [1,2,3]' "$out"
 jq -cn '[range(25; 0; -1) | {id: ., body: ("a" * 4000), author: {username: "x"}}]' | fx notes
 check "CN exactly 100,000: every comment" '.more == false and .budgeted == false and [.notes[].id] == [range(1; 26)]' "$("$fetch" notes --project a/b --iid 45)"
@@ -588,6 +588,8 @@ check "E ... checked once, no mark written" '.' "$([[ $(auths) == 1 && ! -e $mar
 mv "$FAKE_DIR/user.off" "$FAKE_DIR/user.json"
 echo "$EPOCHSECONDS" >"$mark"; XDG_RUNTIME_DIR=$ert "$fetch" logout >/dev/null
 check "E sign out removes an old mark" '.' "$([[ ! -e $mark ]] && echo true || echo false)"
+check "E no runtime dir: sign out leaves a file of that name in the shared temp dir" '.' "$(t=$work/shared; mkdir -p "$t"; echo x >"$t/odevvy.gitlabby-auth-gitlab.com"
+  TMPDIR=$t XDG_RUNTIME_DIR='' "$fetch" logout >/dev/null; [[ -e $t/odevvy.gitlabby-auth-gitlab.com ]] && echo true || echo false)"
 : >"$FAKE_LOG"; XDG_RUNTIME_DIR=$ert "$fetch" whoami >/dev/null; XDG_RUNTIME_DIR=$ert "$fetch" close --project a/b --iid 3 >/dev/null
 check "E a write checks first, even right after a read" '.' "$([[ $(auths) == 1 && $(sed -n 2p "$FAKE_LOG") == 'auth status --hostname gitlab.com' ]] && echo true || echo false)"
 : >"$FAKE_LOG"; out=$(FAKE_AUTH=no "$fetch" close --project a/b --iid 3)
@@ -871,6 +873,7 @@ out=$("$fetch" --project group/app)
 check "OC 1,200 open: the first 500 in board order, capped, a link to the board on GitLab" '.state == "ready" and ([.columns[].issues[]] | length) == 500
   and ((.columns[] | select(.kind == "open") | .issues) | .[0].iid == 1 and .[-1].iid == 500)
   and .openCapped == true and .openSeeAll == "https://gitlab.com/group/app/-/boards/7"' "$out"
+check "OC 1,200 open: the 1-issue look past 500 is no card, so no list is trimmed" '(has("cardsTrimmed") | not) and ([.columns[] | has("total") or has("seeAll")] | any | not)' "$out"
 check "OC 1,200 open: 5 pages of 100, one 1-issue look past 500, nothing more" '.' "$([[ $(open_calls) == 6 && $(grep -c 'state=opened.*&per_page=100&page=[1-5]&' "$FAKE_LOG") == 5 && $(grep -c 'state=opened.*&per_page=1&page=501&' "$FAKE_LOG") == 1 ]] && ! grep -q 'page=6&' "$FAKE_LOG" && echo true || echo false)"
 check "OC the capped flag is board-wide, never a column's" '[.columns[] | has("openCapped") or has("openSeeAll")] | any | not' "$out"
 : >"$FAKE_LOG"; open_n 1200 https://gitlab.com/group/app/-/issues/ Doing | fx open
@@ -1038,6 +1041,7 @@ check "IP closed hangs: the timeout message" '.state == "error" and .message == 
 check "IP open hangs: the timeout message" '.state == "error" and .message == "GitLab did not answer within 30 seconds."' "$(FAKE_HANG='state=opened' "$fetch" --project group/app)"
 ipr="$work/iprt"; mkdir -p "$ipr"; chmod 700 "$ipr"; echo "$EPOCHSECONDS" >"$ipr/odevvy.gitlabby-auth-gitlab.com"
 check "IP a list fails with a fresh sign-in mark, signed out: logged-out" '.state == "logged-out"' "$(mv "$FAKE_DIR/closed.json" "$FAKE_DIR/closed.off"; FAKE_AUTH=no XDG_RUNTIME_DIR=$ipr "$fetch" --project group/app)"
+check "IP a public project, signed out, a list refused: logged-out, not the list error" '.state == "logged-out"' "$(FAKE_PUBLIC=1 FAKE_AUTH=no "$fetch" --project group/app)"
 mv "$FAKE_DIR/closed.off" "$FAKE_DIR/closed.json"
 check "IP no token in output" '.' "$(grep -qiE 'glpat|bearer' <<<"$out" && echo false || echo true)"
 
@@ -1087,6 +1091,8 @@ jq -cn '[range(21; 36) | {iid: ., project_id: 9, title: "t", draft: false, refer
 : >"$FAKE_LOG"; out=$("$fetch" mrs)
 check "MR at most 10 per list" '(.review | length) == 10 and (.mine | length) == 10' "$out"
 check "MR at most 10 rows asked about per list" '.' "$([[ $(grep -c '/reviewers$' "$FAKE_LOG") == 20 ]] && echo true || echo false)"
+check "MR the 20 rows' GETs run 4 at a time" '.' "$(rm -rf "$work/mrd"*; FAKE_MRD_PROBE=$work/mrd "$fetch" mrs >/dev/null; m=$(sort -n "$work/mrd.n" | tail -1)
+  [[ $m -ge 2 && $m -le 4 ]] && echo true || echo false)"
 check "MR links only over https" '[.mine[].url] | unique == [""]' "$out"
 check "MR no token in output" '.' "$(grep -qiE 'glpat|bearer' <<<"$mr_out$out" && echo false || echo true)"
 

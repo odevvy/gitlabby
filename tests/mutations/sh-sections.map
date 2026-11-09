@@ -13,6 +13,7 @@ a-reopen-unchecked	V AA SE
 a-writes-lazy	P
 add-creates	L
 auth-logout-keeps	V AA SE
+auth-mark-in-tmp	V AA SE
 auth-no-recheck	A G
 bf-drafts-kept	MR
 bf-error-ready	AC
@@ -60,6 +61,7 @@ cb-share-rounds-up	CL OC CB
 close-sends-labels	X
 cn-budget-strict	CN
 cn-bytes-flipped	N
+cn-clip-off-by-one	CN
 cn-fills-gaps	CN
 cn-more-fixed-page	CN
 cn-more-page-only	CN
@@ -125,6 +127,7 @@ oc-capped-at-500	OC
 oc-flag-dropped	OC
 oc-link-not-board	OC
 oc-never-capped	OC
+oc-no-cap	OC
 oc-no-look-past	OC
 oc-no-short-stop	H
 oc-page-error-ignored	A G
@@ -133,6 +136,7 @@ overwrite-labels	L
 p-closed-first	IP
 p-closed-unchecked	IP
 p-hidden-closed-fails	A B+C
+p-no-auth-recheck	IP
 p-no-timeout-message	IP
 p-no-wait	A
 p-open-sequential	IP
@@ -155,6 +159,7 @@ pl-manual-shows	PL
 pl-merged-wins	PL
 pl-no-cap	PL
 pl-one-at-a-time	PL
+pl-serial-unbounded	MR
 pp-all-projects	PP
 pp-errors-ok	PP
 pp-first-10	PP

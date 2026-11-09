@@ -55,6 +55,11 @@ if [[ -n ${FAKE_MR_PROBE:-} && $endpoint == */related_merge_requests ]]; then
   mkdir -p "$FAKE_MR_PROBE"; : >"$FAKE_MR_PROBE/$$"
   find "$FAKE_MR_PROBE" -type f | wc -l >>"$FAKE_MR_PROBE.n"; sleep 0.3; rm -f "$FAKE_MR_PROBE/$$"
 fi
+# FAKE_MRD_PROBE=<dir>: the same for one MR's GETs (merge_requests/M, .../reviewers).
+if [[ -n ${FAKE_MRD_PROBE:-} && $endpoint =~ merge_requests/[0-9]+(/reviewers)?$ ]]; then
+  mkdir -p "$FAKE_MRD_PROBE"; : >"$FAKE_MRD_PROBE/$$"
+  find "$FAKE_MRD_PROBE" -type f | wc -l >>"$FAKE_MRD_PROBE.n"; sleep 0.3; rm -f "$FAKE_MRD_PROBE/$$"
+fi
 # FAKE_ISSUE_PROBE=<dir>: the issue list calls (state=opened / state=closed) take 0.3 s,
 # and each logs how many were running at once to <dir>.n.
 if [[ -n ${FAKE_ISSUE_PROBE:-} && $endpoint == */issues\?state=* ]]; then
