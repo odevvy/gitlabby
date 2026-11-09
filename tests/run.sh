@@ -7,12 +7,15 @@ work=$(mktemp -d); trap 'rm -rf "$work"' EXIT
 export TMPDIR=$work/tmp; mkdir -p "$TMPDIR"
 mkdir -p "$work/bin"; cp "$here/fake-glab" "$work/bin/glab"
 # board-fetch runs glab as `timeout -k 5 30 glab ...`; this stand-in keeps the
-# real timeout (coreutils) but cuts the limits to 1 s so the T tests run fast.
+# real timeout (coreutils) but cuts the limits to 1 s; the call FAKE_HANG makes
+# hang gets FAKE_HANG_LIMIT (the T tests: 0.2 s, KILL as long after) instead.
 real_timeout=$(command -v timeout)
 { printf '#!/usr/bin/env bash\nreal=%q\n' "$real_timeout"; cat <<'SH'; } >"$work/bin/timeout"
 # Each glab call's limit (what is left of the deadline, at most 30) goes to $FAKE_LOG.limits.
 if [[ $1 == -k && $2 == 5 && $3 =~ ^[0-9]+$ && $3 -ge 1 && $3 -le 30 && $4 == glab ]]; then
-  printf '%s\n' "$3" >>"$FAKE_LOG.limits"; exec "$real" -k 1 1 "${@:4}"
+  printf '%s\n' "$3" >>"$FAKE_LOG.limits"
+  [[ -n ${FAKE_HANG_LIMIT:-} && " ${*:5} " == *"$FAKE_HANG"* ]] && exec "$real" -k "$FAKE_HANG_LIMIT" "$FAKE_HANG_LIMIT" "${@:4}"
+  exec "$real" -k 1 1 "${@:4}"
 fi
 [[ $1 == 5 && $2 == glab && $3 == config ]] && exec "$real" 1 "${@:2}"  # the account lookup
 exit 99
@@ -21,8 +24,12 @@ chmod +x "$work/bin/timeout"
 export PATH="$work/bin:$PATH" FAKE_LOG="$work/log" FAKE_DIR="$work/fx" XDG_CACHE_HOME="$work/cache"  # never the real ~/.cache
 unset XDG_RUNTIME_DIR  # no sign-in mark unless a test sets one (E block)
 pass=0 fail=0
+# RUN_FAILFAST=1 (mutate.sh sets it for sh rows): stop at the first FAIL; the last
+# line names it and the run.sh line of the call, so a mutant costs only the
+# checks up to the one that sees it.
 check() { # name jq-expression json
-  if jq -e "$2" >/dev/null 2>&1 <<<"$3"; then pass=$((pass + 1)); else fail=$((fail + 1)); echo "FAIL: $1"; echo "  $3" | cut -c1-400; fi
+  if jq -e "$2" >/dev/null 2>&1 <<<"$3"; then pass=$((pass + 1)); else fail=$((fail + 1)); echo "FAIL: $1"; echo "  $3" | cut -c1-400
+    [[ -n ${RUN_FAILFAST:-} ]] && { echo "passed $pass, failed $fail, first: $1 (line ${BASH_LINENO[-2]})"; exit 1; }; fi
 }
 fx() { mkdir -p "$FAKE_DIR"; cat >"$FAKE_DIR/$1.json"; }
 reset() { rm -rf "$FAKE_DIR" "$FAKE_LOG"; fx project <<'J'
@@ -420,7 +427,8 @@ check "R stdin is read only for comment" '.' "$(: >"$FAKE_LOG"; echo '{"body":"x
 
 # --- T: a glab call that never answers ends with a clear message ------------
 # FAKE_HANG: a glab call whose arguments contain it sleeps; FAKE_HANG_TERM=ignore
-# makes it ignore the TERM, so only the KILL 1 s later ends it (exit 137).
+# makes it ignore the TERM, so only the KILL 0.2 s later ends it (exit 137).
+export FAKE_HANG_LIMIT=0.2
 reset
 fx board <<<'{"id":7,"name":"Dev","lists":[{"id":11,"label":{"name":"todo"}},{"id":12,"label":{"name":"approved"}}]}'
 at opened '["todo"]'
@@ -437,6 +445,7 @@ check "T close PUT hangs" '.state == "error" and .message == "GitLab did not ans
 check "T close PUT killed" '.state == "error" and (.message | test("may have been closed"))' "$(FAKE_HANG='--method PUT' FAKE_HANG_TERM=ignore "$fetch" close --project a/b --iid 3)"
 check "T one JSON line each" '.' "$(n=$(echo hi | FAKE_HANG='--method POST' say | wc -l); m=$(FAKE_HANG='--method PUT' mv_ --from 11 --to 12 | wc -l)
   [[ $n == 1 && $m == 1 ]] && echo true || echo false)"
+unset FAKE_HANG_LIMIT
 
 # --- D: one deadline per command (BOARD_FETCH_DEADLINE, default 40 s) ----------
 # Each glab call gets at most what is left of it (the limits the timeout
