@@ -1370,13 +1370,14 @@ check "mutation rows: a row without a test shows as notest" '.' "$(printf 'z\tBo
 check "mutation rows: MUTATE_STOP=1 stops at the first broken row" '.' "$(d=$work/stop; mkdir -p "$d" && printf 'a\n' >"$d/a.txt" &&
   printf 'r1\ta.txt\ta\tq\tx\tnone\nr2\ta.txt\ta\tq\tx\tnone\n' >"$work/s.tsv" &&
   [[ $(MUTATE_STOP=1 bash "$here/mutate.sh" "$d" "$work/s.tsv" | grep -c '^??') == 1 && $(bash "$here/mutate.sh" "$d" "$work/s.tsv" | grep -c '^??') == 2 ]] && echo true || echo false)"
-# --changed (the per-release run) picks the rows whose file or test differs from
-# a git base; CI's image has no git, so there it is checked locally only.
-check "mutation rows: --changed picks only rows whose file or test changed" '.' "$(command -v git >/dev/null || { echo true; exit; }
-  d=$work/chg; mkdir -p "$d" && cd "$d" && git init -q && printf 'a\n' >a.txt && printf 'b\n' >b.txt && git add . &&
-  git -c user.name=t -c user.email=t@t commit -qm x && echo z >>a.txt &&
-  printf 'ra\ta.txt\ta\tq\tsh\trun.sh\nrb\tb.txt\tb\tq\tsh\trun.sh\n' >"$work/c.tsv" &&
-  [[ $(bash "$here/mutate.sh" --changed HEAD --list "$d" "$work/c.tsv") == ra ]] && echo true || echo false)"
+# --changed (the per-release run) picks the rows whose own line, code or test
+# changed against a git base, and the canaries; CI's image has no git, so there
+# it is checked locally only.
+check "mutation rows: --changed picks only rows the change touches, and canaries" '.' "$(command -v git >/dev/null || { echo true; exit; }
+  d=$work/chg; mkdir -p "$d" && cd "$d" && git init -q && printf 'a\nb\n' >a.txt && printf 'c\n' >b.txt && git add . &&
+  git -c user.name=t -c user.email=t@t commit -qm x && printf 'a\nbb\n' >a.txt &&
+  printf 'ra\ta.txt\ta\tq\tsh\trun.sh\nrb\ta.txt\tbb\tq\tsh\trun.sh\nrc\tb.txt\tc\tq\tsh\trun.sh\ncanary-x\tb.txt\tc\tq\tsh\trun.sh\n' >"$work/c.tsv" &&
+  [[ $(bash "$here/mutate.sh" --changed HEAD --list "$d" "$work/c.tsv" | paste -sd' ') == "rb canary-x" ]] && echo true || echo false)"
 
 echo "passed $pass, failed $fail"
 ((fail == 0))
