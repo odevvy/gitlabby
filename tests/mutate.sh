@@ -16,23 +16,18 @@
 # in its file and its test exists (no test runs; a second or two), so a row can't
 # go stale unnoticed. Prints "stale <spec> <name>" or "notest <spec> <name>".
 # mutate.sh --changed <base> [--list] <plugin-dir> <spec>...: the per-release run. Only
-# the rows whose file or test differs from git <base> (commits and the work
-# tree); --list prints their names and runs nothing. Without --changed every
-# row runs (the full sweep, now and then).
+# the rows the change since git <base> can affect (tests/mutate-pick.py: new or
+# changed rows, rows whose code or test sections changed, the canaries); --list
+# prints their names and runs nothing. Without --changed every row runs: the
+# full sweep, which catches what the picking can't see (run it weekly and before
+# a milestone; see README).
 if [[ $1 == --changed ]]; then
   base=$2; shift 2; list=0; [[ $1 == --list ]] && { list=1; shift; }
   S=$(cd "$1" && pwd); shift
-  changed=$(git -C "$S" diff --name-only "$base" -- . 2>/dev/null) || { echo "?? not a git checkout or no $base"; exit 2; }
   sel=$(mktemp); trap 'rm -f "$sel"' EXIT
-  for spec in "$@"; do
-    while IFS= read -r line; do
-      IFS=$'\x1f' read -r name file _ _ _ test <<<"${line//$'\t'/$'\x1f'}"
-      [[ -z $name || $name == \#* ]] && continue
-      [[ $name == canary-* ]] || grep -qxF -e "$file" -e "tests/$test" <<<"$changed" && echo "$line"
-    done <"$spec"
-  done >"$sel"
+  python3 "$(dirname "$0")/mutate-pick.py" "$S" "$base" "$@" >"$sel" || { echo "?? not a git checkout or no $base"; exit 2; }
   if ((list)); then cut -f1 "$sel"; exit 0; fi
-  echo "$(wc -l <"$sel") rows whose file or test changed since $base"
+  echo "$(wc -l <"$sel") rows the change since $base can affect (mutate-pick.py)"
   bash "$0" "$S" "$sel"; exit
 fi
 if [[ $1 == --check ]]; then
