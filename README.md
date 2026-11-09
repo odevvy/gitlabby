@@ -336,8 +336,12 @@ it, `Enter` or `Shift+Enter` adds a line, and `Escape` leaves the box.
   with quick-action changes, the view says so and reloads.
 - Empty comments are never sent. An unsent draft survives going back to the
   same issue; opening another issue clears it.
-- The thread shows the newest 100 notes (one GitLab page) and says when there
-  are more. Editing, deleting, replies and Markdown preview: use GitLab.
+- The thread shows the newest 100 notes (one GitLab page), at most 100,000
+  characters of them, and says when there are more ("Older ones are on GitLab
+  ↗" opens the issue). A comment longer than 4,000 characters shows its start,
+  cut at a line break, and "Trimmed: first 4,000 of 25,310 characters · Read it
+  all on GitLab ↗", which opens that comment. Editing, deleting, replies and
+  Markdown preview: use GitLab.
 
 ## Labels
 
@@ -949,7 +953,10 @@ one `PUT /projects/:id/issues/:iid` with `add_labels`, `remove_labels` and/or
 
 `notes` asks for the newest 100 notes (`sort=desc`, `per_page=100`), drops
 system notes, and returns the rest oldest first, with `more: true` when the
-page was full. `comment` refuses empty text before any glab call and sends
+page was full or the thread budget ran out. An answer over 8 MiB is not read
+but asked again with 20, 5, then 1 note per page. Each body keeps its first
+4,000 characters, cut at the last line break there, with `fullLength` when cut;
+the newest comments are kept up to 100,000 characters in all. `comment` refuses empty text before any glab call and sends
 one `POST /projects/:id/issues/:iid/notes`; the text never goes on a command
 line or into a log.
 

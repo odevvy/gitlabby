@@ -54,6 +54,8 @@ function gitlabUrl(url, host) {
   var link = httpsUrl(url), allowed = serverHost(host)
   return link !== "" && allowed !== "" && urlHost(link) === allowed ? link : ""
 }
+// 2000000 -> "2,000,000": a comment's full length on its trimmed line.
+function thousands(n) { return String(Math.floor(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ",") }
 function oneLine(text, max) {
   var t = String(text || "").replace(/\s+/g, " ").trim()
   return t.length > max ? t.slice(0, max - 1) + "…" : t
@@ -82,4 +84,4 @@ function serverKey(host, project) {
   return !host || host === "gitlab.com" ? project : host + ":" + project
 }
 
-if (typeof module !== "undefined") module.exports = { plainJson: plainJson, lowerList: lowerList, has: has, toggled: toggled, countLabel: countLabel, escaped: escaped, plain: plain, copied: copied, age: age, savedNote: savedNote, httpsUrl: httpsUrl, gitlabUrl: gitlabUrl, oneLine: oneLine, serverHost: serverHost, serverKey: serverKey, signInCommand: signInCommand }
+if (typeof module !== "undefined") module.exports = { plainJson: plainJson, lowerList: lowerList, has: has, toggled: toggled, countLabel: countLabel, escaped: escaped, plain: plain, copied: copied, age: age, savedNote: savedNote, httpsUrl: httpsUrl, gitlabUrl: gitlabUrl, oneLine: oneLine, thousands: thousands, serverHost: serverHost, serverKey: serverKey, signInCommand: signInCommand }

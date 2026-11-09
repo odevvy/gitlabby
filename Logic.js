@@ -36,6 +36,7 @@ var savedNote = Core.savedNote
 var httpsUrl = Core.httpsUrl
 var gitlabUrl = Core.gitlabUrl
 var oneLine = Core.oneLine
+var thousands = Core.thousands
 var serverHost = Core.serverHost
 var signInCommand = Core.signInCommand
 var serverKey = Core.serverKey

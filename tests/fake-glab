@@ -112,4 +112,8 @@ esac
 if [[ $f == open && $endpoint =~ [?\&]per_page=([0-9]+)\&page=([0-9]+)(\&|$) ]]; then
   jq -cs --argjson n "${BASH_REMATCH[1]}" --argjson p "${BASH_REMATCH[2]}" 'add | .[($p - 1) * $n:$p * $n]' "$FAKE_DIR/$f.json" 2>/dev/null && exit 0
 fi
+# Notes, newest first: the first per_page of them, as GitLab's first page.
+if [[ $f == notes && $endpoint =~ [?\&]per_page=([0-9]+)(\&|$) ]]; then
+  jq -c --argjson n "${BASH_REMATCH[1]}" 'if type == "array" then .[:$n] else . end' "$FAKE_DIR/$f.json" 2>/dev/null && exit 0
+fi
 cat "$FAKE_DIR/$f.json"

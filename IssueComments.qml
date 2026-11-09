@@ -23,15 +23,20 @@ Column {
       font { pixelSize: Style.font.bodySmall; bold: true }
     }
   }
+  // Older comments: past GitLab's 100-note page or the 100,000-character
+  // thread budget (board-fetch notes); the line opens the issue on GitLab.
   BoardText {
+    objectName: "notesMore"
+    readonly property bool linked: owner.notesError === "" && owner.notes.length > 0 && owner.more
     width: parent.width; wrapMode: Text.Wrap
     visible: text !== ""
     text: owner.notesError !== "" ? owner.notesError
       : owner.notesLoading && owner.notes.length === 0 ? ""
       : owner.notes.length === 0 ? "No comments yet."
-      : owner.more ? "Showing the latest 100 notes. Older ones are on GitLab." : ""
-    color: owner.notesError !== "" ? owner.host.urgent : owner.host.dim
+      : owner.more ? "Showing the latest " + owner.notes.length + " comments. Older ones are on GitLab ↗" : ""
+    color: owner.notesError !== "" ? owner.host.urgent : linked && moreMouse.containsMouse ? owner.host.accent : owner.host.dim
     font.italic: true
+    MouseArea { id: moreMouse; anchors.fill: parent; enabled: parent.linked; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: owner.host.openUrl(owner.issue.url) }
   }
   // Still waiting for the comments once the description is in: the one
   // loading row (the issue view's), here.
@@ -63,6 +68,17 @@ Column {
           width: parent.width; wrapMode: Text.WrapAtWordBoundaryOrAnywhere
           text: String(note.modelData.body || "")
           font.pixelSize: Style.font.bodySmall
+        }
+        // Trimmed by board-fetch (its first 4,000 characters): how long it
+        // is, and the comment itself on GitLab, through the host-checked openUrl.
+        BoardText {
+          objectName: "noteTrimmed"
+          visible: note.modelData.fullLength > 0
+          width: parent.width; wrapMode: Text.Wrap
+          text: "Trimmed: first 4,000 of " + Logic.thousands(note.modelData.fullLength) + " characters · Read it all on GitLab ↗"
+          color: trimMouse.containsMouse ? owner.host.accent : owner.host.dim
+          font { pixelSize: Style.font.caption; italic: true }
+          MouseArea { id: trimMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: owner.host.openUrl(String(owner.issue.url || "") + "#note_" + note.modelData.id) }
         }
       }
     }
