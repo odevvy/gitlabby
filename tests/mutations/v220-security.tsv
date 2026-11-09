@@ -8,5 +8,5 @@ r2-issues-kept	IssueView.qml	function onAccountCleared() { view.forgetAccount() 
 r2-failure-clears	Board.qml	if (data.state !== "logged-out") { accountError	if (false) { accountError	qml	harness/tests/run220.py
 r2-cards-kept	Board.qml	    session++\n    columns = []; projects = []; pickerBoards = []; cached = false; account = "";	    session++\n    projects = []; pickerBoards = []; cached = false; account = "";	qml	harness/tests/run220.py
 r2-recent-kept	IssueView.qml	    recent = ({}); recentOrder = []\n    issue = ({})	    issue = ({})	qml	harness/tests/run220.py
-r2-thread-kept	IssueView.qml	issue = ({}); shownKey = ""; notes = []; more = false; box.text = ""	shownKey = ""	qml	harness/tests/run220.py
+r2-thread-kept	IssueView.qml	issue = ({}); shownKey = ""; notes = []; more = false; budgeted = false; box.text = ""	shownKey = ""	qml	harness/tests/run220.py
 r2-labels-kept	IssueView.qml	    allLabels = []; labelsFor = ""; labelsState = ""\n		qml	harness/tests/run220.py

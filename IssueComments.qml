@@ -33,7 +33,7 @@ Column {
     text: owner.notesError !== "" ? owner.notesError
       : owner.notesLoading && owner.notes.length === 0 ? ""
       : owner.notes.length === 0 ? "No comments yet."
-      : owner.more ? "Showing the latest " + owner.notes.length + " comments. Older ones are on GitLab ↗" : ""
+      : owner.more ? "Showing the latest " + owner.notes.length + " comments" + (owner.budgeted ? ", up to 100,000 characters" : "") + ". Older ones are on GitLab ↗" : ""
     color: owner.notesError !== "" ? owner.host.urgent : linked && moreMouse.containsMouse ? owner.host.accent : owner.host.dim
     font.italic: true
     MouseArea { id: moreMouse; anchors.fill: parent; enabled: parent.linked; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: owner.host.openUrl(owner.issue.url) }

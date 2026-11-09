@@ -286,7 +286,7 @@ check "N fields" '.notes[2] == {"id":5,"body":"newest","createdAt":"2026-10-27T1
 check "N body kept as is, https avatars only" '.notes[1].body == "middle\nsecond line" and .notes[1].author == {"username":"cy","name":"cy","avatar":""} and .notes[0].author.avatar == ""' "$out"
 check "N endpoint" '.' "$(grep -qx 'api --hostname gitlab.com --method GET projects/a%2Fb/issues/45/notes?sort=desc&order_by=created_at&per_page=100' "$FAKE_LOG" && echo true || echo false)"
 jq -c '[range(100) | {id: ., body: "n", system: false, created_at: "2026-10-27T08:00:00Z", author: {username: "x"}}]' -n | fx notes
-check "N full page flags more" '.more == true and (.notes | length) == 100' "$("$fetch" notes --project a/b --iid 45)"
+check "N full page flags more" '.more == true and .budgeted == false and (.notes | length) == 100' "$("$fetch" notes --project a/b --iid 45)"
 fx notes <<<'[]'
 check "N no comments" '.state == "ready" and .notes == []' "$("$fetch" notes --project a/b --iid 45)"
 fx notes <<<'{"message":"404 Not found"}'
@@ -310,10 +310,10 @@ check "CN no line break: the first 4,000" '.notes[1] | .body == ("z" * 4000) and
 check "CN exactly 4,000: whole, no length" '.notes[0] | .body == ("w" * 4000) and (has("fullLength") | not)' "$out"
 check "CN under budget: no more" '.more == false and [.notes[].id] == [1,2,3]' "$out"
 jq -cn '[range(25; 0; -1) | {id: ., body: ("a" * 4000), author: {username: "x"}}]' | fx notes
-check "CN exactly 100,000: every comment" '.more == false and [.notes[].id] == [range(1; 26)]' "$("$fetch" notes --project a/b --iid 45)"
+check "CN exactly 100,000: every comment" '.more == false and .budgeted == false and [.notes[].id] == [range(1; 26)]' "$("$fetch" notes --project a/b --iid 45)"
 jq -cn '[range(27; 0; -1) | {id: ., body: (if . == 1 then "ok" elif . == 2 then "b" * 4000 else "a" * 3999 end), author: {username: "x"}}]' | fx notes
 out=$("$fetch" notes --project a/b --iid 45)
-check "CN the newest 100,000 characters, no gaps" '.more == true and [.notes[].id] == [range(3; 28)]' "$out"
+check "CN the newest 100,000 characters, no gaps" '.more == true and .budgeted == true and [.notes[].id] == [range(3; 28)]' "$out"
 jq -cn '[range(100; 0; -1) | {id: ., body: ("c" * 100000), author: {username: "x"}}]' | fx notes
 : >"$FAKE_LOG"; out=$("$fetch" notes --project a/b --iid 45)
 check "CN a page over 8 MiB: asked again with 20" '.more == true and [.notes[].id] == [range(81; 101)] and all(.notes[]; .fullLength == 100000)' "$out"
