@@ -202,7 +202,13 @@ The columns are the lists on the selected GitLab board, in its order:
   lists read the first 500 open issues, in board order. Below that their
   counts are exact. With more, a line at the top of the popup says "First 500
   open issues shown · View all on GitLab ↗", which opens the board on GitLab,
-  and the counts cover only the issues shown.
+  and the counts cover only the issues shown. An issue shows in every list
+  it has the label of, so the board's cards (Closed aside) also share one
+  budget of 500: lists that fit stay whole, and the longest ones are cut to
+  the same length. A cut list ends with "Showing 240 of 360 · See all on
+  GitLab ↗" (its open issues on GitLab), and the top line reads "Board
+  trimmed to 500 cards", or "First 500 open issues shown, trimmed to 500
+  cards" when both limits apply.
 - **Assignee, milestone, and iteration lists**: a "not supported yet" note.
 
 Open and Closed are left out when the board hides them, and a board's scope

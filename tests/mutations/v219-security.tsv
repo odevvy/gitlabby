@@ -6,9 +6,9 @@ oc-no-short-stop	board-fetch	[[ $(jq 'length' "$tmp/open.page" 2>/dev/null) == 1
 oc-no-look-past	board-fetch	>>"$tmp/open" || rc=$?	>/dev/null || rc=$?	sh	run.sh
 oc-page-error-ignored	board-fetch	|| { rc=$?; break; }	|| break	sh	run.sh
 oc-link-not-board	board-fetch	"/-/boards/	"/-/issues/	sh	run.sh
-oc-flag-dropped	board-fetch	+ $openCap\nJQ	\nJQ	sh	run.sh
+oc-flag-dropped	board-fetch	+ $openCap\n|	\n|	sh	run.sh
 oc-apply-ignored	Board.qml	openCapped = data.openCapped === true	openCapped = false	qml	harness/tests/run219.py
-oc-note-hidden	CapNote.qml	host.boardState === "ready" && host.openCapped	host.boardState === "ready" && false	qml	harness/tests/run219.py
+oc-note-hidden	CapNote.qml	host.boardState === "ready" && (host.openCapped ||	host.boardState === "ready" && (false ||	qml	harness/tests/run219.py
 oc-note-board-only	CapNote.qml	visible: host.setup === ""	visible: host.view === "board" && host.setup === ""	qml	harness/tests/run219.py
 oc-note-wording	CapNote.qml	"First 500 open issues shown"	"First 500 issues shown"	qml	harness/tests/run219.py
 oc-link-hidden	CapNote.qml	visible: note.linked	visible: false	qml	harness/tests/run219.py

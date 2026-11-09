@@ -846,6 +846,39 @@ check "OC a non-https issue URL gives no link, but still the cap" '.openCapped =
 open_n 1200 https://gitlab.com/group/app/-/issues/ | fx open
 check "OC a later page that never answers fails the board, never a partial one" '.state == "error"' "$(FAKE_HANG='&page=3&' "$fetch" --project group/app)"
 
+# --- CB: one 500-card budget after label lists copy issues (R2-02); Closed keeps its own 20
+cb_open() { # spec: [[from, to, [labels]], ...] issue iids from..to with those labels
+  jq -cn --argjson s "$1" '[$s[] as [$a, $b, $l] | range($a; $b + 1) | {iid: ., title: "o", state: "opened", labels: $l, web_url: "https://gitlab.com/group/app/-/issues/\(.)"}]'; }
+cb_len() { printf '[.columns[] | select(.name == "%s") | .issues | length] | first' "$1"; }
+reset
+fx boards <<<'[{"id":7,"name":"Dev","hide_backlog_list":false,"hide_closed_list":false,"labels":[],"milestone":null,"assignee":null,"lists":[{"id":1,"position":0,"label":{"name":"to do"}},{"id":2,"position":1,"label":{"name":"doing"}},{"id":3,"position":2,"label":{"name":"review"}}]}]'
+closed_n 21 https://gitlab.com/group/app/-/issues/ | fx closed
+cb_open '[[1,40,[]],[41,200,["to do","doing"]],[201,400,["to do"]],[401,460,["review"]]]' | fx open
+out=$("$fetch" --project group/app)
+check "CB 460 issues as 620 cards: 500 shown, lists that fit stay whole, the longest is cut" '([.columns[] | select(.kind != "closed") | .issues[]] | length) == 500
+  and ('"$(cb_len Open)"') == 40 and ('"$(cb_len doing)"') == 160 and ('"$(cb_len review)"') == 60 and ('"$(cb_len 'to do')"') == 240' "$out"
+check "CB the cut list keeps its first cards in board order, says its total and links to the list on GitLab" '.columns[] | select(.name == "to do")
+  | .issues[0].iid == 41 and .issues[-1].iid == 280 and .total == 360 and .seeAll == "https://gitlab.com/group/app/-/issues?label_name%5B%5D=to%20do"' "$out"
+check "CB lists that fit get no total and no link" '[.columns[] | select(.kind != "closed" and .name != "to do") | has("total") or has("seeAll")] | any | not' "$out"
+check "CB the board says it was trimmed and links to itself, without the issue cap" '.cardsTrimmed == true and .openSeeAll == "https://gitlab.com/group/app/-/boards/7" and (has("openCapped") | not)' "$out"
+check "CB Closed keeps its own 20 and link, outside the budget" '.columns[] | select(.kind == "closed") | (.issues | length) == 20 and .capped == true and (has("total") | not)
+  and .seeAll == "https://gitlab.com/group/app/-/issues?state=closed"' "$out"
+cb_open '[[1,40,[]],[41,200,["to do","doing"]],[201,280,["to do"]],[401,460,["review"]]]' | fx open
+out=$("$fetch" --project group/app)
+check "CB exactly 500 cards: all of them, no trim, no link" '([.columns[] | select(.kind != "closed") | .issues[]] | length) == 500
+  and (has("cardsTrimmed") or has("openSeeAll") | not) and ([.columns[] | select(.kind != "closed") | has("total")] | any | not)' "$out"
+cb_open '[[1,300,["to do","doing"]]]' | fx open
+out=$("$fetch" --project group/app)
+check "CB two equal long lists are cut to the same length" '('"$(cb_len 'to do')"') == 250 and ('"$(cb_len doing)"') == 250 and .cardsTrimmed == true' "$out"
+cb_open '[[1,300,[]],[301,600,["to do","doing"]]]' | fx open
+out=$("$fetch" --project group/app)
+check "CB capped issues and trimmed cards together: every list cut to 166, Open links to the board" '.openCapped == true and .cardsTrimmed == true
+  and ('"$(cb_len Open)"') == 166 and ('"$(cb_len 'to do')"') == 166 and ('"$(cb_len doing)"') == 166
+  and (.columns[] | select(.kind == "open") | .total == 300 and .seeAll == "https://gitlab.com/group/app/-/boards/7")' "$out"
+fx boards <<<'[]'; cb_open '[[1,300,["todo"]],[301,450,["in progress"]],[451,480,[]]]' | fx open
+out=$("$fetch" --project group/app)
+check "CB no board: the workflow columns share the budget too" '.fallback == true and ([.columns[] | select(.kind != "closed") | .issues[]] | length) == 480 and (has("cardsTrimmed") | not)' "$out"
+
 # --- PL: pipeline status of Review cards (reads only) -----------------------------
 reset
 fx boards <<'J'

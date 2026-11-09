@@ -1,0 +1,17 @@
+cb-no-budget	board-fetch	card_cap=500	card_cap=5000	sh	run.sh
+cb-closed-counted	board-fetch	select(.kind != "closed") | .issues | length] | level	.issues | length] | level	sh	run.sh
+cb-fit-is-cut	board-fetch	if $s[$i] <= $share then	if $s[$i] < $share then	sh	run.sh
+cb-share-rounds-up	board-fetch	| floor) as $share	| ceil) as $share	sh	run.sh
+cb-no-total	board-fetch	| .total = $total		sh	run.sh
+cb-keeps-last	board-fetch	.issues |= .[:$level]	.issues |= .[-$level:]	sh	run.sh
+cb-label-unencoded	board-fetch	"/-/issues?label_name%5B%5D=" + (. | @uri)	"/-/issues?label_name%5B%5D=" + .	sh	run.sh
+cb-open-unlinked	board-fetch	else $openUrl end) as $u	else null end) as $u	sh	run.sh
+cb-flag-dropped	board-fetch	.cardsTrimmed = true\n      | 		sh	run.sh
+cb-link-cap-only	board-fetch	if (.openCapped or .cardsTrimmed) and $boardUrl	if .openCapped and $boardUrl	sh	run.sh
+cb-link-always	board-fetch	if (.openCapped or .cardsTrimmed) and $boardUrl	if $boardUrl	sh	run.sh
+cb-qml-flag	Board.qml	cardsTrimmed = data.cardsTrimmed === true	cardsTrimmed = false	qml	harness/tests/run222.py
+cb-qml-link	Board.qml	openSeeAll = openCapped || cardsTrimmed ?	openSeeAll = openCapped ?	qml	harness/tests/run222.py
+cb-note-hidden	CapNote.qml	(host.openCapped || host.cardsTrimmed)	host.openCapped	qml	harness/tests/run222.py
+cb-note-both	CapNote.qml	"First 500 open issues shown, trimmed to 500 cards"	"Board trimmed to 500 cards"	qml	harness/tests/run222.py
+cb-note-cards	CapNote.qml	: "Board trimmed to 500 cards";	: "First 500 open issues shown";	qml	harness/tests/run222.py
+cb-footer-words	BoardView.qml	"Showing " + column.issues.length + " of " + column.modelData.total	"Showing the latest " + column.issues.length	qml	harness/tests/run222.py
