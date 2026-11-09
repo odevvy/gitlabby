@@ -20,6 +20,8 @@ check:
     - shellcheck board-fetch tests/run.sh tests/fake-glab
     - bash tests/run.sh
     - node --test tests/logic.test.js
+    # Every mutation row still matches its file and names an existing test.
+    - bash tests/mutate.sh --check . tests/mutations/*.tsv
     # Same checks as `omarchy plugin validate` (manifest JSON, schema, entry points, symlinks).
     - curl -fsSL -o /tmp/validate "https://raw.githubusercontent.com/basecamp/omarchy/$OMARCHY_COMMIT/bin/omarchy-plugin-validate"
     - echo "$VALIDATOR_SHA256  /tmp/validate" | sha256sum -c -
