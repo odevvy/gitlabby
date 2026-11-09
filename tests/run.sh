@@ -1344,6 +1344,9 @@ check "mutation rows: none stale but the known ones" '.' "$([[ $stale == "$(<"$h
 check "mutation rows: a moved pattern shows as stale" '.' "$(printf 'x\tboard-fetch\tno such text\tq\tsh\trun.sh\n' >"$work/m.tsv"; [[ $(bash "$here/mutate.sh" --check "$here/.." "$work/m.tsv") == "stale m.tsv x" ]] && echo true || echo false)"
 check "mutation rows: a row naming a missing test shows as notest" '.' "$(printf 'y\tBoard.qml\timport QtQuick\tq\tqml\tharness/tests/nope.py\n' >"$work/n.tsv"; [[ $(bash "$here/mutate.sh" --check "$here/.." "$work/n.tsv") == "notest n.tsv y" ]] && echo true || echo false)"
 check "mutation rows: a row without a test shows as notest" '.' "$(printf 'z\tBoard.qml\timport QtQuick\tq\tqml\n' >"$work/z.tsv"; [[ $(bash "$here/mutate.sh" --check "$here/.." "$work/z.tsv") == "notest z.tsv z" ]] && echo true || echo false)"
+check "mutation rows: MUTATE_STOP=1 stops at the first broken row" '.' "$(d=$work/stop; mkdir -p "$d" && printf 'a\n' >"$d/a.txt" &&
+  printf 'r1\ta.txt\ta\tq\tx\tnone\nr2\ta.txt\ta\tq\tx\tnone\n' >"$work/s.tsv" &&
+  [[ $(MUTATE_STOP=1 bash "$here/mutate.sh" "$d" "$work/s.tsv" | grep -c '^??') == 1 && $(bash "$here/mutate.sh" "$d" "$work/s.tsv" | grep -c '^??') == 2 ]] && echo true || echo false)"
 # --changed (the per-release run) picks the rows whose file or test differs from
 # a git base; CI's image has no git, so there it is checked locally only.
 check "mutation rows: --changed picks only rows whose file or test changed" '.' "$(command -v git >/dev/null || { echo true; exit; }

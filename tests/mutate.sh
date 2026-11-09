@@ -5,7 +5,8 @@
 # harness test such as harness/tests/run141.py (kind qml). A mutation must make
 # its test fail. \n in from/to is a newline. Lines starting with # are notes.
 # Usage: mutate.sh <plugin-dir> <spec>...
-# PYTHON: an interpreter with PySide6 (python3).
+# PYTHON: an interpreter with PySide6 (python3). MUTATE_STOP=1: stop at the first
+# survivor or broken row (exit 1), so a release hears of it in minutes.
 # mutate.sh --check <plugin-dir> <spec>...: only that every row's `from` is still
 # in its file and its test exists (no test runs; a second or two), so a row can't
 # go stale unnoticed. Prints "stale <spec> <name>" or "notest <spec> <name>".
@@ -47,6 +48,7 @@ if [[ $1 == --check ]]; then
   exit $bad
 fi
 S=$(cd "$1" && pwd); shift; survived=0
+bad() { survived=1; [[ -z ${MUTATE_STOP:-} ]]; }  # false: stop now
 w=$(mktemp -d); trap 'rm -rf "$w"' EXIT
 for spec in "$@"; do
 while IFS= read -r line; do
@@ -56,14 +58,14 @@ while IFS= read -r line; do
   rm -rf "$w/p"; cp -a "$S" "$w/p"; rm -rf "$w/p/.git"
   F="$from" T2="$to" python3 -c "
 import os; p='$w/p/$file'; s=open(p).read(); f=os.environ['F'].replace('\\\\n','\n'); t=os.environ['T2'].replace('\\\\n','\n')
-assert f in s; open(p,'w').write(s.replace(f,t,1))" 2>/dev/null || { echo "?? $name: pattern not found"; survived=1; continue; }
+assert f in s; open(p,'w').write(s.replace(f,t,1))" 2>/dev/null || { echo "?? $name: pattern not found"; bad || break 2; continue; }
   case $kind:$test in
     sh:run.sh) out=$(bash "$w/p/tests/run.sh" 2>&1 | tail -1) ;;
     node:logic.test.js) out=$(cd "$w/p" && node --test tests/logic.test.js 2>&1 | sed -n 's/^ℹ fail \([0-9]*\)$/failed \1/p') ;;
     qml:harness/tests/*.py) out=$("${PYTHON:-python3}" "$S/tests/$test" "$w/p" 2>&1 | grep -E '^passed|LOAD FAILED|Traceback' | head -1) ;;
-    *) echo "?? $name: no test for '$kind' '$test'"; survived=1; continue ;;
+    *) echo "?? $name: no test for '$kind' '$test'"; bad || break 2; continue ;;
   esac
-  if [[ $out == *"failed 0"* ]]; then echo "SURVIVED $name: $out"; survived=1; else echo "killed $name ($test): ${out:-crashed}"; fi
+  if [[ $out == *"failed 0"* ]]; then echo "SURVIVED $name: $out"; bad || break 2; else echo "killed $name ($test): ${out:-crashed}"; fi
 done <"$spec"
 done
 exit $survived
