@@ -1027,12 +1027,17 @@ python -m venv ~/.cache/ogb-tests && ~/.cache/ogb-tests/bin/pip install PySide6-
 export PYTHON=~/.cache/ogb-tests/bin/python
 tests/harness/all.sh                                  # every view test, 4 at a time (about 1.5 min)
 $PYTHON tests/harness/tests/run144.py .               # one of them
-tests/mutate.sh --changed origin/main . tests/mutations/*.tsv   # per release: rows whose file or test changed
+tests/mutate.sh --changed origin/main . tests/mutations/*.tsv   # per release: rows the change can affect
 tests/mutate.sh --check . tests/mutations/*.tsv       # rows whose pattern or test is gone (no tests run)
-tests/mutate.sh . tests/mutations/*.tsv               # the full sweep (about an hour), now and then
+ls tests/mutations/*.tsv | xargs -P 4 -n 1 bash tests/mutate.sh .   # the full sweep, weekly and before a milestone
 ```
 
-`HARNESS_JOBS` sets how many view tests run at once. The tests on two
+`--changed` picks a row when the row itself is new or changed, when its
+`from` text sits on a changed line of its file (or is gone), or when its test
+changed (for sh rows: the run.sh sections it is tied to), plus the canaries
+(`tests/mutate-pick.py`). A change that shifts a row's behavior from another
+file is not seen there, so run the full sweep by hand weekly and before a
+milestone; nothing schedules it. `HARNESS_JOBS` sets how many view tests run at once. The tests on two
 screens (one service, two boards) share `tests/harness/two.py`; waits on
 an animation use `Harness.until`, not a fixed sleep. A view test removes its temp copy
 even when it stops early, and `all.sh` runs them in a TMPDIR of its own that
