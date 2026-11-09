@@ -38,6 +38,16 @@ reset() { rm -rf "$FAKE_DIR" "$FAKE_LOG"; fx project <<'J'
 J
 }
 cols='[.columns[] | {(.name): [.issues[].iid]}] | add'
+# RUN_ONLY="<id>...": only the sections headed "# --- <id>:", in file order
+# (mutate.sh, for a row that tests/mutations/sh-sections.map ties to them, such
+# as "A B+C": B+C reads A's fixtures). mutate.sh runs them on clean code first,
+# and a row whose sections fail there gets the whole file.
+if [[ -n ${RUN_ONLY:-} ]]; then
+  body=$(awk -v ids="$RUN_ONLY" 'BEGIN{n=split(ids, a, " "); for (i = 1; i <= n; i++) want[a[i] ":"]}
+    /^# --- /{on = ($3 in want)} on' "${BASH_SOURCE[0]}")
+  [[ -n $body ]] || { echo "no section $RUN_ONLY"; exit 2; }
+  eval "$body"; echo "passed $pass, failed $fail"; ((fail == 0)); exit
+fi
 
 # --- A: board with label lists, an assignee list, open + closed -------------
 reset
@@ -448,7 +458,7 @@ check "T one JSON line each" '.' "$(n=$(echo hi | FAKE_HANG='--method POST' say 
   [[ $n == 1 && $m == 1 ]] && echo true || echo false)"
 unset FAKE_HANG_LIMIT
 
-# --- D: one deadline per command (BOARD_FETCH_DEADLINE, default 40 s) ----------
+# --- DL: one deadline per command (BOARD_FETCH_DEADLINE, default 40 s) ----------
 # Each glab call gets at most what is left of it (the limits the timeout
 # stand-in logs), and a write starts only with 15 s left: else nothing is sent.
 reset
@@ -483,7 +493,7 @@ fx labels <<<'[{"name":"bug"}]'; fx boards <<<'[]'
 rm -f "$FAKE_LOG"; out=$(BOARD_FETCH_DEADLINE=10 "$fetch" relabel --project a/b --iid 3 --add bug)
 check "D relabel with under 15 s left: refused" "$refused" "$out"; check "D relabel: no write" '.' "$(nowrite)"
 
-# --- R: the private temp dir --------------------------------------------------
+# --- RT: the private temp dir --------------------------------------------------
 # In XDG_RUNTIME_DIR when it is a usable absolute dir, else TMPDIR (or /tmp);
 # gone when board-fetch ends, also when it is stopped with TERM.
 reset
@@ -547,14 +557,14 @@ check "V no glab: no-glab state" '.state == "no-glab" and (.message | test("not 
 check "V no glab, board too" '.state == "no-glab"' "$(noglab --project a/b)"
 check "V no glab: cached still reads" '.state == "none"' "$(noglab cached --project x/never)"
 
-# --- A: account: who is signed in, and signing out ------------------------------
+# --- AA: account: who is signed in, and signing out ------------------------------
 reset
 fx user <<<'{"id":5,"username":"dev1","name":"Dev One","email":"dev1@example.com","private_token":"glpat-SECRET"}'
 out=$(: >"$FAKE_LOG"; "$fetch" whoami)
 check "A whoami: the username only" '. == {state: "ready", message: "", user: "dev1"}' "$out"
 check "A whoami: one GET of /user, no auth check first" '.' "$([[ $(sed -n 1p "$FAKE_LOG") == 'api --hostname gitlab.com --method GET user' && $(grep -c . "$FAKE_LOG") == 1 ]] && echo true || echo false)"
 
-# --- E: the sign-in check (glab auth status, one GET /user), lazy since v0.1.59
+# --- SE: the sign-in check (glab auth status, one GET /user), lazy since v0.1.59
 # Reads go first; only a failed read runs the check (signed out or refused
 # tells logged-out apart from a network error). Writes check first, every time.
 # No mark is written any more; one an older version left is removed.
@@ -754,7 +764,7 @@ fx boards <<<'{"not":"a list"}'
 check "L boards odd: refused, no write" '.state == "error" and (.message | test("unreadable"))' "$(rl --add api)"
 labels_out=$(rl --add api; "$fetch" labels --project a/b; FAKE_PUT=fail rl --remove api)
 
-# --- G: group boards' list labels are status labels too (the guard) ---------------
+# --- GG: group boards' list labels are status labels too (the guard) ---------------
 reset
 fx boards <<<'[{"id":7,"name":"Dev","lists":[{"id":1,"label":{"name":"Doing"}}]}]'
 fx labels <<<'[{"name":"ux"},{"name":"Triage"},{"name":"Shipping"},{"name":"api"}]'
