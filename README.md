@@ -953,7 +953,8 @@ one `PUT /projects/:id/issues/:iid` with `add_labels`, `remove_labels` and/or
 
 `notes` asks for the newest 100 notes (`sort=desc`, `per_page=100`), drops
 system notes, and returns the rest oldest first, with `more: true` when the
-page was full or the thread budget ran out. An answer over 8 MiB is not read
+page was full or the thread budget ran out (then also `budgeted: true`, and
+the view adds ", up to 100,000 characters"). An answer over 8 MiB is not read
 but asked again with 20, 5, then 1 note per page. Each body keeps its first
 4,000 characters, cut at the last line break there, with `fullLength` when cut;
 the newest comments are kept up to 100,000 characters in all. `comment` refuses empty text before any glab call and sends

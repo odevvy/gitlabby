@@ -666,7 +666,7 @@ cmd_notes() {
               else .used += ($s | length) | .notes += [{id: $n.id, body: $s, createdAt: $n.created_at,
                 author: {username: ($n.author.username // ""), name: ($n.author.name // $n.author.username // ""), avatar: ($n.author.avatar_url | https)}}
                 + (if ($b | length) > ($s | length) then {fullLength: ($b | length)} else {} end)] end end)) as $r
-      | {state: "ready", message: "", iid: $iid, more: (length >= $per or $r.full), notes: ($r.notes | reverse)}' "$tmp/n" 2>/dev/null |
+      | {state: "ready", message: "", iid: $iid, more: (length >= $per or $r.full), budgeted: $r.full, notes: ($r.notes | reverse)}' "$tmp/n" 2>/dev/null |
       grep . || emit error "GitLab returned an unreadable response."
     exit 0
 }
