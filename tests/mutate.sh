@@ -60,7 +60,7 @@ while IFS= read -r line; do
 import os; p='$w/p/$file'; s=open(p).read(); f=os.environ['F'].replace('\\\\n','\n'); t=os.environ['T2'].replace('\\\\n','\n')
 assert f in s; open(p,'w').write(s.replace(f,t,1))" 2>/dev/null || { echo "?? $name: pattern not found"; bad || break 2; continue; }
   case $kind:$test in
-    sh:run.sh) out=$(bash "$w/p/tests/run.sh" 2>&1 | tail -1) ;;
+    sh:run.sh) out=$(RUN_FAILFAST=1 bash "$w/p/tests/run.sh" 2>&1 | tail -1) ;;
     node:logic.test.js) out=$(cd "$w/p" && node --test tests/logic.test.js 2>&1 | sed -n 's/^ℹ fail \([0-9]*\)$/failed \1/p') ;;
     qml:harness/tests/*.py) out=$("${PYTHON:-python3}" "$S/tests/$test" "$w/p" 2>&1 | grep -E '^passed|LOAD FAILED|Traceback' | head -1) ;;
     *) echo "?? $name: no test for '$kind' '$test'"; bad || break 2; continue ;;

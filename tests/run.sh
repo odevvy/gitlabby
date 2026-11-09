@@ -21,8 +21,12 @@ chmod +x "$work/bin/timeout"
 export PATH="$work/bin:$PATH" FAKE_LOG="$work/log" FAKE_DIR="$work/fx" XDG_CACHE_HOME="$work/cache"  # never the real ~/.cache
 unset XDG_RUNTIME_DIR  # no sign-in mark unless a test sets one (E block)
 pass=0 fail=0
+# RUN_FAILFAST=1 (mutate.sh sets it for sh rows): stop at the first FAIL; the last
+# line names it and the run.sh line of the call, so a mutant costs only the
+# checks up to the one that sees it.
 check() { # name jq-expression json
-  if jq -e "$2" >/dev/null 2>&1 <<<"$3"; then pass=$((pass + 1)); else fail=$((fail + 1)); echo "FAIL: $1"; echo "  $3" | cut -c1-400; fi
+  if jq -e "$2" >/dev/null 2>&1 <<<"$3"; then pass=$((pass + 1)); else fail=$((fail + 1)); echo "FAIL: $1"; echo "  $3" | cut -c1-400
+    [[ -n ${RUN_FAILFAST:-} ]] && { echo "passed $pass, failed $fail, first: $1 (line ${BASH_LINENO[-2]})"; exit 1; }; fi
 }
 fx() { mkdir -p "$FAKE_DIR"; cat >"$FAKE_DIR/$1.json"; }
 reset() { rm -rf "$FAKE_DIR" "$FAKE_LOG"; fx project <<'J'
