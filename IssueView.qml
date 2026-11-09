@@ -31,6 +31,7 @@ Item {
   readonly property bool issueReady: key !== "" && issueReadyFor === key
   property var notes: []
   property bool more: false
+  property bool budgeted: false  // the thread was cut by board-fetch's 100,000-character budget
   property bool notesLoading: false
   property string notesError: ""
   property string notesFor: ""
@@ -96,7 +97,7 @@ Item {
   // memory, and answers still on their way find nothing to land on.
   function forgetAccount() {
     recent = ({}); recentOrder = []
-    issue = ({}); shownKey = ""; notes = []; more = false; box.text = ""
+    issue = ({}); shownKey = ""; notes = []; more = false; budgeted = false; box.text = ""
     allLabels = []; labelsFor = ""; labelsState = ""
   }
 
@@ -117,7 +118,7 @@ Item {
     var seen = recent[key] || null
     if (key !== shownKey) {  // another issue: drop the last one's thread and draft
       shownKey = key
-      notes = seen && seen.notes ? seen.notes : []; more = !!(seen && seen.more); notesAt = seen && seen.notesAt ? seen.notesAt : ""
+      notes = seen && seen.notes ? seen.notes : []; more = !!(seen && seen.more); budgeted = !!(seen && seen.budgeted); notesAt = seen && seen.notesAt ? seen.notesAt : ""
       notesError = ""; postError = ""; box.text = ""
     }
     // Seen before: its description at once; the card's own row (fresher) wins.
@@ -167,7 +168,7 @@ Item {
     notesReadyFor = key
     var data = host.parse(raw)
     notesError = data.state === "ready" ? "" : String(data.message || "Could not load comments.")
-    if (data.state === "ready") { notes = data.notes || []; more = !!data.more; notesAt = new Date().toISOString(); remember(key, { notes: notes, more: more, notesAt: notesAt }) }
+    if (data.state === "ready") { notes = data.notes || []; more = !!data.more; budgeted = !!data.budgeted; notesAt = new Date().toISOString(); remember(key, { notes: notes, more: more, budgeted: budgeted, notesAt: notesAt }) }
   }
 
   function editLabels() {
