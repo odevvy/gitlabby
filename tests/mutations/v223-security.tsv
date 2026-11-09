@@ -1,0 +1,23 @@
+cn-no-byte-budget	board-fetch	notes_bytes=8388608	notes_bytes=99999999	sh	run.sh
+cn-bytes-flipped	board-fetch	<= notes_bytes)) && break	> notes_bytes)) && break	sh	run.sh
+cn-no-smaller-page	board-fetch	for per in 100 20 5 1; do	for per in 100; do	sh	run.sh
+cn-parse-anyway	board-fetch	      per=0\n    done	    done	sh	run.sh
+cn-no-error	board-fetch	((per)) || emit error "These	((1)) || emit error "These	sh	run.sh
+cn-no-clip	board-fetch	if length <= $nc then . else	if true then . else	sh	run.sh
+cn-clip-off-by-one	board-fetch	if length <= $nc then	if length < $nc then	sh	run.sh
+cn-no-line-break	board-fetch	if length > 1 then .[:-1] | join	if false then .[:-1] | join	sh	run.sh
+cn-no-thread-budget	board-fetch	thread_chars=100000	thread_chars=10000000	sh	run.sh
+cn-budget-strict	board-fetch	.used + ($s | length) > $tc	.used + ($s | length) >= $tc	sh	run.sh
+cn-fills-gaps	board-fetch	if .full then . else	if false then . else	sh	run.sh
+cn-not-counted	board-fetch	else .used += ($s | length) |	else	sh	run.sh
+cn-no-length	board-fetch	then {fullLength: ($b | length)} else	then {} else	sh	run.sh
+cn-more-page-only	board-fetch	more: (length >= $per or $r.full)	more: (length >= $per)	sh	run.sh
+cn-more-fixed-page	board-fetch	more: (length >= $per	more: (length >= 100	sh	run.sh
+cn-commas	logic/core.js	.replace(/\B(?=(\d{3})+(?!\d))/g, ",")		node	logic.test.js
+cn-trim-hidden	IssueComments.qml	visible: note.modelData.fullLength > 0	visible: false	qml	harness/tests/run223.py
+cn-trim-raw-number	IssueComments.qml	Logic.thousands(note.modelData.fullLength)	note.modelData.fullLength	qml	harness/tests/run223.py
+cn-trim-unchecked	IssueComments.qml	onClicked: owner.host.openUrl(String(owner.issue.url || "") + "#note_" + note.modelData.id)	onClicked: owner.host.openUrl(String(owner.issue.url || "") + "#note_" + note.modelData.id, true)	qml	harness/tests/run223.py
+cn-trim-no-anchor	IssueComments.qml	+ "#note_" + note.modelData.id)	)	qml	harness/tests/run223.py
+cn-more-unchecked	IssueComments.qml	onClicked: owner.host.openUrl(owner.issue.url) }	onClicked: owner.host.openUrl(owner.issue.url, true) }	qml	harness/tests/run223.py
+cn-more-always-linked	IssueComments.qml	readonly property bool linked: owner.notesError === "" && owner.notes.length > 0 && owner.more	readonly property bool linked: true	qml	harness/tests/run223.py
+cn-more-old-words	IssueComments.qml	"Showing the latest " + owner.notes.length + " comments. Older ones are on GitLab ↗"	"Showing the latest 100 notes. Older ones are on GitLab."	qml	harness/tests/run223.py
