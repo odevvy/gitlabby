@@ -245,6 +245,9 @@ Panel {
   property bool fallback: false
   // More than 500 open issues: only the first 500 are on the board (CapNote.qml).
   property bool openCapped: false
+  // More than 500 cards (an issue shows in each list it has the label of): the
+  // longest lists were cut (their footers say so, BoardView.qml), CapNote too.
+  property bool cardsTrimmed: false
   property string openSeeAll: ""
   property string firstBoardId: ""
   // The board on screen is the saved copy, until the fresh answer replaces it.
@@ -461,7 +464,8 @@ Panel {
     resolvedBoardId = data.board ? String(data.board.id) : ""
     fallback = !!data.fallback
     openCapped = data.openCapped === true
-    openSeeAll = openCapped ? String(data.openSeeAll || "") : ""
+    cardsTrimmed = data.cardsTrimmed === true
+    openSeeAll = openCapped || cardsTrimmed ? String(data.openSeeAll || "") : ""
     firstBoardId = data.boards && data.boards.length > 0 ? String(data.boards[0].id) : ""
     if (data.board && boardName !== data.board.name) boardName = data.board.name
     if (data.fallback) boardName = ""

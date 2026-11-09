@@ -368,14 +368,15 @@ Item {
               }
             }
 
-            // A capped column (board-fetch: Closed holds the latest 20 when there are more) says so
-            // and links to the rest on GitLab. Open issues past 500 get the popup-wide note (CapNote.qml).
+            // A capped column (board-fetch: Closed holds the latest 20 when there are more, a list
+            // cut to the 500-card budget its first ones of total) says so and links to the rest
+            // on GitLab. Open issues past 500 get the popup-wide note (CapNote.qml).
             BoardText {
               visible: !!column.modelData.seeAll
               width: parent.width; wrapMode: Text.Wrap
               horizontalAlignment: Text.AlignHCenter
               topPadding: Style.space(2)
-              text: "Showing the latest " + column.issues.length + " · See all on GitLab ↗"
+              text: (column.modelData.total ? "Showing " + column.issues.length + " of " + column.modelData.total : "Showing the latest " + column.issues.length) + " · See all on GitLab ↗"
               color: seeAllMouse.containsMouse ? view.host.accent : view.host.dim
               font.pixelSize: Style.font.caption
               MouseArea { id: seeAllMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: view.host.openUrl(column.modelData.seeAll) }
