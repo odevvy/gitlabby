@@ -1,0 +1,6 @@
+# Canaries: harmless mutations (a comment reworded) that must SURVIVE. mutate.sh
+# runs them with every selection; one that is killed means some check fails every
+# mutant (as the old stale-row check did inside run.sh), so no kill can be trusted.
+canary-sh	board-fetch	# jq helpers shared by the programs below.	# jq helpers, shared by the programs below.	sh	run.sh
+canary-node	logic/core.js	// Small shared helpers: settings lists	// Small helpers: settings lists	node	logic.test.js
+canary-qml	Board.qml	// GitLab issue board in the Omarchy bar.	// The GitLab issue board in the Omarchy bar.	qml	harness/tests/smoke.py

@@ -1043,7 +1043,11 @@ runs only the `tests/run.sh` sections named there (`RUN_ONLY`, about 3 s
 instead of the whole file); mutate.sh first runs those sections on clean code,
 and a row whose sections fail there, or that is not listed, runs the whole
 file. A wrong section shows up as SURVIVED, so rebuild the row's entry from
-the first failing check of a full run (`RUN_FAILFAST=1` names it). In `board-fetch`, merge
+the first failing check of a full run (`RUN_FAILFAST=1` names it). The rows in
+`tests/mutations/canary.tsv` reword a comment and must survive; mutate.sh runs
+them with every selection, and an sh row counts as killed only when run.sh
+names the check that failed. A check that fails for every mutant (as the row
+check inside run.sh did until 0.1.126) then shows up at once. In `board-fetch`, merge
 requests and to-dos read the same way: `mrs_graphql || mrs_rest`,
 `todos_graphql || todos_rest`.
 

@@ -7,6 +7,9 @@
 # Usage: mutate.sh <plugin-dir> <spec>...
 # PYTHON: an interpreter with PySide6 (python3). MUTATE_STOP=1: stop at the first
 # survivor or broken row (exit 1), so a release hears of it in minutes.
+# Rows named canary-* (mutations/canary.tsv) must survive, and an sh row counts as
+# killed only when run.sh names the check that failed: so a check that fails for
+# every mutant, or a crash, can't pass as kills.
 # An sh row named in mutations/sh-sections.map (name, run.sh section ids) runs only
 # those sections of run.sh (RUN_ONLY), about 3 s instead of the whole file.
 # mutate.sh --check <plugin-dir> <spec>...: only that every row's `from` is still
@@ -25,7 +28,7 @@ if [[ $1 == --changed ]]; then
     while IFS= read -r line; do
       IFS=$'\x1f' read -r name file _ _ _ test <<<"${line//$'\t'/$'\x1f'}"
       [[ -z $name || $name == \#* ]] && continue
-      grep -qxF -e "$file" -e "tests/$test" <<<"$changed" && echo "$line"
+      [[ $name == canary-* ]] || grep -qxF -e "$file" -e "tests/$test" <<<"$changed" && echo "$line"
     done <"$spec"
   done >"$sel"
   if ((list)); then cut -f1 "$sel"; exit 0; fi
@@ -73,7 +76,11 @@ assert f in s; open(p,'w').write(s.replace(f,t,1))" 2>/dev/null || { echo "?? $n
     qml:harness/tests/*.py) out=$("${PYTHON:-python3}" "$S/tests/$test" "$w/p" 2>&1 | grep -E '^passed|LOAD FAILED|Traceback' | head -1) ;;
     *) echo "?? $name: no test for '$kind' '$test'"; bad || break 2; continue ;;
   esac
-  if [[ $out == *"failed 0"* ]]; then echo "SURVIVED $name: $out"; bad || break 2; else echo "killed $name ($test): ${out:-crashed}"; fi
+  if [[ $name == canary-* ]]; then  # must survive (mutations/canary.tsv)
+    if [[ $out == *"failed 0"* ]]; then echo "canary $name survived ($test)"; else echo "?? canary $name was killed ($test): ${out:-crashed}; a check fails every mutant"; bad || break 2; fi
+  elif [[ $out == *"failed 0"* ]]; then echo "SURVIVED $name: $out"; bad || break 2
+  elif [[ $kind == sh && $out != *"first: "* ]]; then echo "?? $name: run.sh failed without naming a check: ${out:-crashed}"; bad || break 2
+  else echo "killed $name ($test): ${out:-crashed}"; fi
 done <"$spec"
 done
 exit $survived
