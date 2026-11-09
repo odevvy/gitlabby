@@ -1,0 +1,12 @@
+r2-no-broadcast	Board.qml	    feed.accountGone(String(data.message || ""))\n		qml	harness/tests/run220.py
+r2-gone-ignored	Board.qml	function onAccountGone(message) { root.clearAccount(message) }	function onAccountGone(message) { }	qml	harness/tests/run220.py
+r2-session-kept	Board.qml	  function clearAccount(note) {\n    session++\n	  function clearAccount(note) {\n	qml	harness/tests/run220.py
+r2-note-dropped	Board.qml	message = note; boardState	message = ""; boardState	qml	harness/tests/run220.py
+r2-view-kept	Board.qml	    showView("board")\n    accountCleared()	    accountCleared()	qml	harness/tests/run220.py
+r2-cleared-unsent	Board.qml	    accountCleared()\n  }	  }	qml	harness/tests/run220.py
+r2-issues-kept	IssueView.qml	function onAccountCleared() { view.forgetAccount() }	function onAccountCleared() { }	qml	harness/tests/run220.py
+r2-failure-clears	Board.qml	if (data.state !== "logged-out") { accountError	if (false) { accountError	qml	harness/tests/run220.py
+r2-cards-kept	Board.qml	    session++\n    columns = []; projects = []; pickerBoards = []; cached = false; account = "";	    session++\n    projects = []; pickerBoards = []; cached = false; account = "";	qml	harness/tests/run220.py
+r2-recent-kept	IssueView.qml	    recent = ({}); recentOrder = []\n    issue = ({})	    issue = ({})	qml	harness/tests/run220.py
+r2-thread-kept	IssueView.qml	issue = ({}); shownKey = ""; notes = []; more = false; box.text = ""	shownKey = ""	qml	harness/tests/run220.py
+r2-labels-kept	IssueView.qml	    allLabels = []; labelsFor = ""; labelsState = ""\n		qml	harness/tests/run220.py
