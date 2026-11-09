@@ -296,6 +296,33 @@ check "N api failure" '.state == "error" and .message == "Could not load comment
 check "N bad iid, no glab" '.state == "error"' "$(: >"$FAKE_LOG"; "$fetch" notes --project a/b --iid '45/../1')"
 check "N bad iid ran nothing" '.' "$([[ -s $FAKE_LOG ]] && echo false || echo true)"
 
+# --- CN: comment budget (R2-03) -----------------------------------------------
+# A comment keeps its first 4,000 characters, cut at its last line break there,
+# and says how long it was; the thread keeps its newest comments up to 100,000
+# characters; a page over 8 MiB is asked again with fewer notes, never parsed.
+reset
+note() { jq -cn --argjson i "$1" --arg b "$2" '{id: $i, body: $b, created_at: "2026-10-27T08:00:00Z", author: {username: "x"}}'; }
+lines=$(printf 'y%.0s' {1..149}); lines=$(for _ in {1..67}; do printf '%s\n' "$lines"; done)
+{ note 3 "$lines"; note 2 "$(printf 'z%.0s' {1..5000})"; note 1 "$(printf 'w%.0s' {1..4000})"; } | jq -cs . | fx notes
+out=$("$fetch" notes --project a/b --iid 45)
+check "CN cut at the last line break before 4,000" '.notes[2] | (.body | length) == 3899 and (.body | endswith("y")) and (.body | split("\n") | length) == 26 and .fullLength == 10049' "$out"
+check "CN no line break: the first 4,000" '.notes[1] | .body == ("z" * 4000) and .fullLength == 5000' "$out"
+check "CN exactly 4,000: whole, no length" '.notes[0] | .body == ("w" * 4000) and (has("fullLength") | not)' "$out"
+check "CN under budget: no more" '.more == false and [.notes[].id] == [1,2,3]' "$out"
+jq -cn '[range(25; 0; -1) | {id: ., body: ("a" * 4000), author: {username: "x"}}]' | fx notes
+check "CN exactly 100,000: every comment" '.more == false and [.notes[].id] == [range(1; 26)]' "$("$fetch" notes --project a/b --iid 45)"
+jq -cn '[range(27; 0; -1) | {id: ., body: (if . == 1 then "ok" elif . == 2 then "b" * 4000 else "a" * 3999 end), author: {username: "x"}}]' | fx notes
+out=$("$fetch" notes --project a/b --iid 45)
+check "CN the newest 100,000 characters, no gaps" '.more == true and [.notes[].id] == [range(3; 28)]' "$out"
+jq -cn '[range(100; 0; -1) | {id: ., body: ("c" * 100000), author: {username: "x"}}]' | fx notes
+: >"$FAKE_LOG"; out=$("$fetch" notes --project a/b --iid 45)
+check "CN a page over 8 MiB: asked again with 20" '.more == true and [.notes[].id] == [range(81; 101)] and all(.notes[]; .fullLength == 100000)' "$out"
+check "CN ... and the big page never reached jq" '.' "$(grep -c 'notes?sort=desc&order_by=created_at&per_page=' "$FAKE_LOG" | grep -qx 2 && grep -q 'per_page=20$' "$FAKE_LOG" && echo true || echo false)"
+: >"$FAKE_LOG"
+jq -cn '[{id: 1, body: ("d" * 8400000), author: {username: "x"}}]' | fx notes
+check "CN one note over 8 MiB: an error after 100, 20, 5, 1" '.state == "error" and (.message | test("too large"))' "$("$fetch" notes --project a/b --iid 45)"
+check "CN ... four pages asked" '.' "$(grep -o 'per_page=[0-9]*' "$FAKE_LOG" | paste -sd' ' | grep -qx 'per_page=100 per_page=20 per_page=5 per_page=1' && echo true || echo false)"
+
 # --- P: comment (the POST) ---------------------------------------------------
 reset
 fx post <<<'{"id":901,"body":"x","system":false,"noteable_iid":45}'

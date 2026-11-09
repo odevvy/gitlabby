@@ -645,10 +645,28 @@ cmd_issue() {
 }
 cmd_notes() {
     # Newest 100 notes (GitLab's page maximum); comments only, oldest first.
-    get "$base/issues/$iid/notes?sort=desc&order_by=created_at&per_page=100" >"$tmp/n" || emit error "Could not load comments."
-    jq -c --argjson iid "$iid" "$DEFS"' select(type == "array") | {state: "ready", message: "", iid: $iid, more: (length >= 100),
-      notes: [reverse[] | select(.system != true) | {id, body: (.body // ""), createdAt: .created_at,
-        author: {username: (.author.username // ""), name: (.author.name // .author.username // ""), avatar: (.author.avatar_url | https)}}]}' "$tmp/n" 2>/dev/null |
+    # Bounded twice, so a pasted log can't fill the popup's memory (R2-03): a
+    # page over notes_bytes is never parsed but asked again with fewer notes,
+    # and each comment keeps its first note_chars characters (cut at a line
+    # break, with its full length), the thread its newest comments up to
+    # thread_chars characters in all. The rest is on GitLab.
+    local notes_bytes=8388608 note_chars=4000 thread_chars=100000 per
+    for per in 100 20 5 1; do
+      get "$base/issues/$iid/notes?sort=desc&order_by=created_at&per_page=$per" >"$tmp/n" || emit error "Could not load comments."
+      (($(wc -c <"$tmp/n") <= notes_bytes)) && break
+      per=0
+    done
+    ((per)) || emit error "These comments are too large to show here. Read them on GitLab."
+    jq -c --argjson iid "$iid" --argjson per "$per" --argjson nc "$note_chars" --argjson tc "$thread_chars" "$DEFS"'
+      def clip: if length <= $nc then . else .[:$nc] | split("\n") | if length > 1 then .[:-1] | join("\n") else .[0] end end;
+      select(type == "array")
+      | (reduce (.[] | select(.system != true)) as $n ({notes: [], used: 0, full: false};
+          if .full then . else ($n.body | if type == "string" then . else "" end) as $b | ($b | clip) as $s
+            | if .used + ($s | length) > $tc then .full = true
+              else .used += ($s | length) | .notes += [{id: $n.id, body: $s, createdAt: $n.created_at,
+                author: {username: ($n.author.username // ""), name: ($n.author.name // $n.author.username // ""), avatar: ($n.author.avatar_url | https)}}
+                + (if ($b | length) > ($s | length) then {fullLength: ($b | length)} else {} end)] end end)) as $r
+      | {state: "ready", message: "", iid: $iid, more: (length >= $per or $r.full), notes: ($r.notes | reverse)}' "$tmp/n" 2>/dev/null |
       grep . || emit error "GitLab returned an unreadable response."
     exit 0
 }
