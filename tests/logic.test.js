@@ -56,6 +56,9 @@ const board = (cols) => [open, todo, doing, closed].map((c) => Object.assign({},
 const ids = (columns) => Object.fromEntries(columns.map((c) => [c.name, c.issues.map((i) => i.iid)]))
 const row = (iid, labels) => ({ iid, title: "#" + iid, labels })
 
+test("thousands: a trimmed comment's full length", () => {
+  assert.deepEqual([0, 999, 1000, 4000, 25310, 2000000, "12345", undefined, 1234.9].map(L.thousands), ["0", "999", "1,000", "4,000", "25,310", "2,000,000", "12,345", "0", "1,234"])
+})
 test("saved board note: how old the copy is, then updating", () => {
   const now = "2026-10-28T12:00:00Z"
   assert.equal(L.savedNote("2026-10-28T09:00:00Z", now), "Saved 3h ago · updating…")
