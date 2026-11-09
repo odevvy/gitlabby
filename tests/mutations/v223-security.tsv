@@ -20,4 +20,4 @@ cn-trim-unchecked	IssueComments.qml	onClicked: owner.host.openUrl(String(owner.i
 cn-trim-no-anchor	IssueComments.qml	+ "#note_" + note.modelData.id)	)	qml	harness/tests/run223.py
 cn-more-unchecked	IssueComments.qml	onClicked: owner.host.openUrl(owner.issue.url) }	onClicked: owner.host.openUrl(owner.issue.url, true) }	qml	harness/tests/run223.py
 cn-more-always-linked	IssueComments.qml	readonly property bool linked: owner.notesError === "" && owner.notes.length > 0 && owner.more	readonly property bool linked: true	qml	harness/tests/run223.py
-cn-more-old-words	IssueComments.qml	"Showing the latest " + owner.notes.length + " comments. Older ones are on GitLab ↗"	"Showing the latest 100 notes. Older ones are on GitLab."	qml	harness/tests/run223.py
+cn-more-old-words	IssueComments.qml	"Showing the latest " + owner.notes.length + " comments"	"Showing the latest 100 notes"	qml	harness/tests/run223.py

@@ -1,0 +1,8 @@
+tn-no-flag	board-fetch	budgeted: $r.full,	budgeted: false,	sh	run.sh
+tn-flag-always	board-fetch	budgeted: $r.full,	budgeted: true,	sh	run.sh
+tn-clause-always	IssueComments.qml	(owner.budgeted ?	(true ?	qml	harness/tests/run223.py
+tn-clause-never	IssueComments.qml	(owner.budgeted ?	(false ?	qml	harness/tests/run223.py
+tn-not-read	IssueView.qml	budgeted = !!data.budgeted;		qml	harness/tests/run223.py
+tn-not-saved	IssueView.qml	more: more, budgeted: budgeted,	more: more,	qml	harness/tests/run223.py
+tn-not-restored	IssueView.qml	budgeted = !!(seen && seen.budgeted);		qml	harness/tests/run223.py
+tn-not-forgotten	IssueView.qml	notes = []; more = false; budgeted = false;	notes = []; more = false;	qml	harness/tests/run223.py

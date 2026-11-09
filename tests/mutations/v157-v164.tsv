@@ -39,7 +39,7 @@ a-old-mark-kept	board-fetch	forget_auth() { [[ -z $auth_mark ]] || rm -f "$auth_
 # v0.1.60: shared avatar mask, recent issues in memory. qml rows: tests/harness/tests/run160.py
 av-own-mask	components/Avatar.qml	maskSource: avatar.host.avatarMask	maskSource: null	qml	harness/tests/run160.py
 c-issue-not-kept	IssueView.qml	issue = data.issue; remember(key, { issue: data.issue })	issue = data.issue	qml	harness/tests/run160.py
-c-notes-not-kept	IssueView.qml	; remember(key, { notes: notes, more: more, notesAt: notesAt }) }	 }	qml	harness/tests/run160.py
+c-notes-not-kept	IssueView.qml	; remember(key, { notes: notes, more: more, budgeted: budgeted, notesAt: notesAt }) }	 }	qml	harness/tests/run160.py
 c-cap-11	IssueView.qml	while (order.length > 10)	while (order.length > 11)	qml	harness/tests/run160.py
 c-evict-newest	IssueView.qml	delete next[order.shift()]	delete next[order.pop()]	qml	harness/tests/run160.py
 c-always-described	IssueView.qml	readonly property bool described: issueReady || fromCache	readonly property bool described: true	qml	harness/tests/run160.py
