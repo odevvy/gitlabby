@@ -1038,7 +1038,16 @@ an animation use `Harness.until`, not a fixed sleep. A view test removes its tem
 even when it stops early, and `all.sh` runs them in a TMPDIR of its own that
 it deletes at the end. CI fails
 when a mutation row no longer matches its file or names no existing test
-(`tests/mutate.sh --check`). In `board-fetch`, merge
+(`tests/mutate.sh --check`). An sh row listed in `tests/mutations/sh-sections.map`
+runs only the `tests/run.sh` sections named there (`RUN_ONLY`, about 3 s
+instead of the whole file); mutate.sh first runs those sections on clean code,
+and a row whose sections fail there, or that is not listed, runs the whole
+file. A wrong section shows up as SURVIVED, so rebuild the row's entry from
+the first failing check of a full run (`RUN_FAILFAST=1` names it). The rows in
+`tests/mutations/canary.tsv` reword a comment and must survive; mutate.sh runs
+them with every selection, and an sh row counts as killed only when run.sh
+names the check that failed. A check that fails for every mutant (as the row
+check inside run.sh did until 0.1.126) then shows up at once. In `board-fetch`, merge
 requests and to-dos read the same way: `mrs_graphql || mrs_rest`,
 `todos_graphql || todos_rest`.
 

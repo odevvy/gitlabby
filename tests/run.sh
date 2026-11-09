@@ -23,6 +23,7 @@ SH
 chmod +x "$work/bin/timeout"
 export PATH="$work/bin:$PATH" FAKE_LOG="$work/log" FAKE_DIR="$work/fx" XDG_CACHE_HOME="$work/cache"  # never the real ~/.cache
 unset XDG_RUNTIME_DIR  # no sign-in mark unless a test sets one (E block)
+unset MUTATE_STOP  # mutate.sh sets it for its own loop; the mutate.sh checks below set their own
 pass=0 fail=0
 # RUN_FAILFAST=1 (mutate.sh sets it for sh rows): stop at the first FAIL; the last
 # line names it and the run.sh line of the call, so a mutant costs only the
@@ -37,6 +38,16 @@ reset() { rm -rf "$FAKE_DIR" "$FAKE_LOG"; fx project <<'J'
 J
 }
 cols='[.columns[] | {(.name): [.issues[].iid]}] | add'
+# RUN_ONLY="<id>...": only the sections headed "# --- <id>:", in file order
+# (mutate.sh, for a row that tests/mutations/sh-sections.map ties to them, such
+# as "A B+C": B+C reads A's fixtures). mutate.sh runs them on clean code first,
+# and a row whose sections fail there gets the whole file.
+if [[ -n ${RUN_ONLY:-} ]]; then
+  body=$(awk -v ids="$RUN_ONLY" 'BEGIN{n=split(ids, a, " "); for (i = 1; i <= n; i++) want[a[i] ":"]}
+    /^# --- /{on = ($3 in want)} on' "${BASH_SOURCE[0]}")
+  [[ -n $body ]] || { echo "no section $RUN_ONLY"; exit 2; }
+  eval "$body"; echo "passed $pass, failed $fail"; ((fail == 0)); exit
+fi
 
 # --- A: board with label lists, an assignee list, open + closed -------------
 reset
@@ -310,11 +321,11 @@ check "N bad iid ran nothing" '.' "$([[ -s $FAKE_LOG ]] && echo false || echo tr
 reset
 note() { jq -cn --argjson i "$1" --arg b "$2" '{id: $i, body: $b, created_at: "2026-10-27T08:00:00Z", author: {username: "x"}}'; }
 lines=$(printf 'y%.0s' {1..149}); lines=$(for _ in {1..67}; do printf '%s\n' "$lines"; done)
-{ note 3 "$lines"; note 2 "$(printf 'z%.0s' {1..5000})"; note 1 "$(printf 'w%.0s' {1..4000})"; } | jq -cs . | fx notes
+{ note 3 "$lines"; note 2 "$(printf 'z%.0s' {1..5000})"; note 1 "$(printf 'w%.0s' {1..1999})"$'\n'"$(printf 'w%.0s' {1..2000})"; } | jq -cs . | fx notes
 out=$("$fetch" notes --project a/b --iid 45)
 check "CN cut at the last line break before 4,000" '.notes[2] | (.body | length) == 3899 and (.body | endswith("y")) and (.body | split("\n") | length) == 26 and .fullLength == 10049' "$out"
 check "CN no line break: the first 4,000" '.notes[1] | .body == ("z" * 4000) and .fullLength == 5000' "$out"
-check "CN exactly 4,000: whole, no length" '.notes[0] | .body == ("w" * 4000) and (has("fullLength") | not)' "$out"
+check "CN exactly 4,000 with a line break: whole, no length" '.notes[0] | .body == ("w" * 1999 + "\n" + "w" * 2000) and (has("fullLength") | not)' "$out"
 check "CN under budget: no more" '.more == false and [.notes[].id] == [1,2,3]' "$out"
 jq -cn '[range(25; 0; -1) | {id: ., body: ("a" * 4000), author: {username: "x"}}]' | fx notes
 check "CN exactly 100,000: every comment" '.more == false and .budgeted == false and [.notes[].id] == [range(1; 26)]' "$("$fetch" notes --project a/b --iid 45)"
@@ -447,7 +458,7 @@ check "T one JSON line each" '.' "$(n=$(echo hi | FAKE_HANG='--method POST' say 
   [[ $n == 1 && $m == 1 ]] && echo true || echo false)"
 unset FAKE_HANG_LIMIT
 
-# --- D: one deadline per command (BOARD_FETCH_DEADLINE, default 40 s) ----------
+# --- DL: one deadline per command (BOARD_FETCH_DEADLINE, default 40 s) ----------
 # Each glab call gets at most what is left of it (the limits the timeout
 # stand-in logs), and a write starts only with 15 s left: else nothing is sent.
 reset
@@ -482,7 +493,7 @@ fx labels <<<'[{"name":"bug"}]'; fx boards <<<'[]'
 rm -f "$FAKE_LOG"; out=$(BOARD_FETCH_DEADLINE=10 "$fetch" relabel --project a/b --iid 3 --add bug)
 check "D relabel with under 15 s left: refused" "$refused" "$out"; check "D relabel: no write" '.' "$(nowrite)"
 
-# --- R: the private temp dir --------------------------------------------------
+# --- RT: the private temp dir --------------------------------------------------
 # In XDG_RUNTIME_DIR when it is a usable absolute dir, else TMPDIR (or /tmp);
 # gone when board-fetch ends, also when it is stopped with TERM.
 reset
@@ -546,14 +557,14 @@ check "V no glab: no-glab state" '.state == "no-glab" and (.message | test("not 
 check "V no glab, board too" '.state == "no-glab"' "$(noglab --project a/b)"
 check "V no glab: cached still reads" '.state == "none"' "$(noglab cached --project x/never)"
 
-# --- A: account: who is signed in, and signing out ------------------------------
+# --- AA: account: who is signed in, and signing out ------------------------------
 reset
 fx user <<<'{"id":5,"username":"dev1","name":"Dev One","email":"dev1@example.com","private_token":"glpat-SECRET"}'
 out=$(: >"$FAKE_LOG"; "$fetch" whoami)
 check "A whoami: the username only" '. == {state: "ready", message: "", user: "dev1"}' "$out"
 check "A whoami: one GET of /user, no auth check first" '.' "$([[ $(sed -n 1p "$FAKE_LOG") == 'api --hostname gitlab.com --method GET user' && $(grep -c . "$FAKE_LOG") == 1 ]] && echo true || echo false)"
 
-# --- E: the sign-in check (glab auth status, one GET /user), lazy since v0.1.59
+# --- SE: the sign-in check (glab auth status, one GET /user), lazy since v0.1.59
 # Reads go first; only a failed read runs the check (signed out or refused
 # tells logged-out apart from a network error). Writes check first, every time.
 # No mark is written any more; one an older version left is removed.
@@ -577,6 +588,8 @@ check "E ... checked once, no mark written" '.' "$([[ $(auths) == 1 && ! -e $mar
 mv "$FAKE_DIR/user.off" "$FAKE_DIR/user.json"
 echo "$EPOCHSECONDS" >"$mark"; XDG_RUNTIME_DIR=$ert "$fetch" logout >/dev/null
 check "E sign out removes an old mark" '.' "$([[ ! -e $mark ]] && echo true || echo false)"
+check "E no runtime dir: sign out leaves a file of that name in the shared temp dir" '.' "$(t=$work/shared; mkdir -p "$t"; echo x >"$t/odevvy.gitlabby-auth-gitlab.com"
+  TMPDIR=$t XDG_RUNTIME_DIR='' "$fetch" logout >/dev/null; [[ -e $t/odevvy.gitlabby-auth-gitlab.com ]] && echo true || echo false)"
 : >"$FAKE_LOG"; XDG_RUNTIME_DIR=$ert "$fetch" whoami >/dev/null; XDG_RUNTIME_DIR=$ert "$fetch" close --project a/b --iid 3 >/dev/null
 check "E a write checks first, even right after a read" '.' "$([[ $(auths) == 1 && $(sed -n 2p "$FAKE_LOG") == 'auth status --hostname gitlab.com' ]] && echo true || echo false)"
 : >"$FAKE_LOG"; out=$(FAKE_AUTH=no "$fetch" close --project a/b --iid 3)
@@ -753,7 +766,7 @@ fx boards <<<'{"not":"a list"}'
 check "L boards odd: refused, no write" '.state == "error" and (.message | test("unreadable"))' "$(rl --add api)"
 labels_out=$(rl --add api; "$fetch" labels --project a/b; FAKE_PUT=fail rl --remove api)
 
-# --- G: group boards' list labels are status labels too (the guard) ---------------
+# --- GG: group boards' list labels are status labels too (the guard) ---------------
 reset
 fx boards <<<'[{"id":7,"name":"Dev","lists":[{"id":1,"label":{"name":"Doing"}}]}]'
 fx labels <<<'[{"name":"ux"},{"name":"Triage"},{"name":"Shipping"},{"name":"api"}]'
@@ -860,6 +873,7 @@ out=$("$fetch" --project group/app)
 check "OC 1,200 open: the first 500 in board order, capped, a link to the board on GitLab" '.state == "ready" and ([.columns[].issues[]] | length) == 500
   and ((.columns[] | select(.kind == "open") | .issues) | .[0].iid == 1 and .[-1].iid == 500)
   and .openCapped == true and .openSeeAll == "https://gitlab.com/group/app/-/boards/7"' "$out"
+check "OC 1,200 open: the 1-issue look past 500 is no card, so no list is trimmed" '(has("cardsTrimmed") | not) and ([.columns[] | has("total") or has("seeAll")] | any | not)' "$out"
 check "OC 1,200 open: 5 pages of 100, one 1-issue look past 500, nothing more" '.' "$([[ $(open_calls) == 6 && $(grep -c 'state=opened.*&per_page=100&page=[1-5]&' "$FAKE_LOG") == 5 && $(grep -c 'state=opened.*&per_page=1&page=501&' "$FAKE_LOG") == 1 ]] && ! grep -q 'page=6&' "$FAKE_LOG" && echo true || echo false)"
 check "OC the capped flag is board-wide, never a column's" '[.columns[] | has("openCapped") or has("openSeeAll")] | any | not' "$out"
 : >"$FAKE_LOG"; open_n 1200 https://gitlab.com/group/app/-/issues/ Doing | fx open
@@ -1027,6 +1041,7 @@ check "IP closed hangs: the timeout message" '.state == "error" and .message == 
 check "IP open hangs: the timeout message" '.state == "error" and .message == "GitLab did not answer within 30 seconds."' "$(FAKE_HANG='state=opened' "$fetch" --project group/app)"
 ipr="$work/iprt"; mkdir -p "$ipr"; chmod 700 "$ipr"; echo "$EPOCHSECONDS" >"$ipr/odevvy.gitlabby-auth-gitlab.com"
 check "IP a list fails with a fresh sign-in mark, signed out: logged-out" '.state == "logged-out"' "$(mv "$FAKE_DIR/closed.json" "$FAKE_DIR/closed.off"; FAKE_AUTH=no XDG_RUNTIME_DIR=$ipr "$fetch" --project group/app)"
+check "IP a public project, signed out, a list refused: logged-out, not the list error" '.state == "logged-out"' "$(FAKE_PUBLIC=1 FAKE_AUTH=no "$fetch" --project group/app)"
 mv "$FAKE_DIR/closed.off" "$FAKE_DIR/closed.json"
 check "IP no token in output" '.' "$(grep -qiE 'glpat|bearer' <<<"$out" && echo false || echo true)"
 
@@ -1076,6 +1091,8 @@ jq -cn '[range(21; 36) | {iid: ., project_id: 9, title: "t", draft: false, refer
 : >"$FAKE_LOG"; out=$("$fetch" mrs)
 check "MR at most 10 per list" '(.review | length) == 10 and (.mine | length) == 10' "$out"
 check "MR at most 10 rows asked about per list" '.' "$([[ $(grep -c '/reviewers$' "$FAKE_LOG") == 20 ]] && echo true || echo false)"
+check "MR the 20 rows' GETs run 4 at a time" '.' "$(rm -rf "$work/mrd"*; FAKE_MRD_PROBE=$work/mrd "$fetch" mrs >/dev/null; m=$(sort -n "$work/mrd.n" | tail -1)
+  [[ $m -ge 2 && $m -le 4 ]] && echo true || echo false)"
 check "MR links only over https" '[.mine[].url] | unique == [""]' "$out"
 check "MR no token in output" '.' "$(grep -qiE 'glpat|bearer' <<<"$mr_out$out" && echo false || echo true)"
 
