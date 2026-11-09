@@ -46,6 +46,16 @@ The popup checks again only when it opens or you click **Try again** (or press `
 never polls. Offline or GitLab errors show the reason instead of a sign-in
 prompt.
 
+## Report a problem
+
+Open an issue on GitLab (not GitHub):
+
+- [Bug](https://gitlab.com/firelink21/gitlabby/-/issues/new?issuable_template=Bug)
+- [Feature](https://gitlab.com/firelink21/gitlabby/-/issues/new?issuable_template=Feature)
+- [Question](https://gitlab.com/firelink21/gitlabby/-/issues/new?issuable_template=Question)
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). **Never paste a token or password.** The project is private for now, so only members can file issues.
+
 ## Default board and starred boards
 
 Every shell start opens the default board; browsing other boards doesn't
