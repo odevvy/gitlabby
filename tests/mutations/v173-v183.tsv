@@ -159,7 +159,7 @@ m-check-blind	tests/mutate.sh	"* ]] || { echo "stale	"* ]] || true || { echo "st
 signin-raw-host	logic/core.js	return h !== "" && h !== "gitlab.com" && /^[a-z0-9.-]+$/.test(h) ? "glab auth login --hostname " + h : "glab auth login"	return host && host !== "gitlab.com" ? "glab auth login --hostname " + host : "glab auth login"	node	logic.test.js
 signin-board-fixed	Board.qml	Logic.signInCommand(gitlabHost)	"glab auth login"	qml	harness/tests/run166.py
 link-check-loose	logic/markdown.js	  return Core.httpsUrl(value)\n	  return /^https:\/\//.test(value) ? value : ""\n	node	logic.test.js
-avatars-ignored	components/Avatar.qml	source: avatar.host.showAvatars ? Logic.gitlabUrl(avatar.person.avatar, avatar.host.gitlabHost) : ""	source: Logic.gitlabUrl(avatar.person.avatar, avatar.host.gitlabHost)	qml	harness/tests/run183.py
+avatars-ignored	components/Avatar.qml	source: avatar.host.showAvatars ? avatar.host.feed.avatar(	source: true ? avatar.host.feed.avatar(	qml	harness/tests/run183.py
 avatars-default-off	Board.qml	saved("showAvatars", true) !== false	saved("showAvatars", false) === true	qml	harness/tests/run183.py
 avatars-save-raw	Board.qml	persist({ showAvatars: on === true })	persist({ showAvatars: on })	qml	harness/tests/run183.py
 circle-flat	components/Avatar.qml	color: Qt.tint(host.background, Qt.rgba(tone.r, tone.g, tone.b, 0.30))	color: host.faint	qml	harness/tests/run183.py
