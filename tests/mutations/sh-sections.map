@@ -1,0 +1,193 @@
+# name	run.sh sections (RUN_ONLY): where the first check that sees the mutant is,
+# after the sections it needs. Built from a full fail-fast sweep; see README.
+401-anywhere	V
+a-bulk-unchecked	BK
+a-close-unchecked	M P DL
+a-comment-unchecked	P
+a-move-unchecked	V AA SE
+a-no-recheck-after-failed-read	A G
+a-old-mark-kept	V AA SE
+a-reads-check-first	V
+a-relabel-unchecked	V AA SE
+a-reopen-unchecked	V AA SE
+a-writes-lazy	P
+add-creates	L
+auth-logout-keeps	V AA SE
+auth-no-recheck	A G
+bf-drafts-kept	MR
+bf-error-ready	AC
+bf-http-links	MR
+bf-list-fail-ok	MR
+bf-min	AC
+bf-no-cap	MR
+bf-no-group	AC
+bf-no-mr-get	MR
+bf-no-reviewers-get	MR
+bf-no-scope-filter	AC
+bf-no-token-get	AC
+bf-project-ignored	MR
+bf-simple	AC
+bf-state-unchecked	MR
+bf-whole-token	AC
+bf-wrong-scope	MR
+bk-any-command	BK
+bk-any-project	BK
+bk-emit-escapes	BK
+bk-guard-not-saved	BK
+bk-guard-uncached	BK
+bk-host-from-step	BK
+bk-labels-uncached	BK
+bk-one-deadline	BK
+cache-gone-even-on-failure	V AA SE
+cache-no-account	V AA SE
+cache-old-kept	K
+cap-50	CL
+cap-link-always	CL
+cap-link-never	CL
+capped-at-20	CL
+case-sensitive-status	L
+cb-closed-counted	CL OC CB
+cb-fit-is-cut	OC
+cb-flag-dropped	CL OC CB
+cb-keeps-last	CL OC CB
+cb-label-unencoded	CL OC CB
+cb-link-always	OC
+cb-link-cap-only	CL OC CB
+cb-no-budget	CL OC CB
+cb-no-total	CL OC CB
+cb-open-unlinked	CL OC CB
+cb-share-rounds-up	CL OC CB
+close-sends-labels	X
+cn-budget-strict	CN
+cn-bytes-flipped	N
+cn-fills-gaps	CN
+cn-more-fixed-page	CN
+cn-more-page-only	CN
+cn-no-byte-budget	CN
+cn-no-clip	CN
+cn-no-error	CN
+cn-no-length	CN
+cn-no-line-break	CN
+cn-no-smaller-page	CN
+cn-no-thread-budget	CN
+cn-not-counted	CN
+cn-parse-anyway	CN
+commands-silent	P
+cr-guard-sh	P
+dl-clamp-gone	M P DL
+dl-no-cap	M P DL
+dl-no-kill	A
+fetch-no-extra	CL
+gb-any-kind	M P T
+gb-no-call-labels	GG
+gb-no-call-relabel	L
+gb-no-parents	GG
+gb-no-uri	GG
+gb-only-top	GG
+gb-overwrite	GG
+gql-avatar-relative	MR MG
+gql-errors-ignored	MR MG
+gql-id-as-path	MR MG
+gql-merge-lost	MR MG
+gql-no-draft-filter	MR MG
+gql-off	MR MG
+gql-path-relative	MR MG
+gql-pipe-upper	MR MG
+gql-project-ignored	MR MG
+gql-redo-dropped	MR MG
+gql-rev-merge-lost	MR MG
+gql-state-raw	MR MG
+gql-status-raw	MR MG
+gql-unknown-ok	MR MG
+guard-off	L
+host-cache-shared	M P S
+host-cache-tag-on-gitlab	K
+host-graphql-default	R
+host-hint-always	M P S
+host-hint-missing	M P S
+host-no-length-cap	M P S
+host-path-allowed	M P S
+host-port-allowed	M P S
+host-post-default	M P S
+issues-unread	CL
+labels-not-filtered	L
+link-any-url	CL
+link-unscoped	CL
+logout-after-auth-check	V AA SE
+logout-keeps-cache	V AA SE
+logout-no-hostname	V AA SE
+logout-says-ready	V AA SE
+no-capped-flag	CL
+no-iid-check	X
+no-state-check	X
+no-workflow-labels	L
+oc-capped-at-500	OC
+oc-flag-dropped	OC
+oc-link-not-board	OC
+oc-never-capped	OC
+oc-no-look-past	OC
+oc-no-short-stop	H
+oc-page-error-ignored	A G
+oc-reads-all-pages	OC
+overwrite-labels	L
+p-closed-first	IP
+p-closed-unchecked	IP
+p-hidden-closed-fails	A B+C
+p-no-timeout-message	IP
+p-no-wait	A
+p-open-sequential	IP
+p-pipelines-four	PL
+pc-at-leaks	PL
+pc-at-renewed	PL
+pc-no-reuse	PL
+pc-reuse-running	PL
+pc-reused-dropped	PL
+pc-symlink	PL
+pc-ttl-long	PL
+pl-all-columns-get-it	PL
+pl-any-column	PL
+pl-canceling-lost	PL
+pl-case-sensitive	PL
+pl-closed-counts	PL
+pl-get-emits	PL
+pl-http-ok	PL
+pl-manual-shows	PL
+pl-merged-wins	PL
+pl-no-cap	PL
+pl-one-at-a-time	PL
+pp-all-projects	PP
+pp-errors-ok	PP
+pp-first-10	PP
+pp-https-off	PP
+pp-no-auth-check	PP
+pp-no-id	PP
+pp-no-slow	PP
+projects-dupes	F
+projects-one-page	F
+projects-unbounded	F
+room-always	M P DL
+room-close	M P DL
+room-comment	M P DL
+room-move	M P DL
+room-relabel	M P DL
+shows-21	CL
+slash-allowed	P
+slash-first-line-only	P
+td-https-off	TD
+td-kind-off	TD
+td-limit	TD
+td-no-filter	TD
+td-no-rest	TD
+td-not-pending	TD
+td-user-dropped	TD
+tmp-not-runtime	RT
+tmp-runtime-unchecked	RT
+tn-flag-always	N
+tn-no-flag	CN
+trap-no-exit	RT
+unbounded-close	R
+whoami-saved	V AA SE
+whoami-unbounded	R
+whoami-whole-user	AA
+work-items-unread-sh	CL
+workflow-drift	D
