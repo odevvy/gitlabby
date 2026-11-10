@@ -220,6 +220,8 @@ The columns are the lists on the selected GitLab board, in its order:
   GitLab ↗" (its open issues on GitLab), and the top line reads "Board
   trimmed to 500 cards", or "First 500 open issues shown, trimmed to 500
   cards" when both limits apply.
+  An open and closed issue list that together is over 64 MiB is not parsed;
+  the board says "These issues are too large to show here. Read them on GitLab."
 - **Assignee, milestone, and iteration lists**: a "not supported yet" note.
 
 Open and Closed are left out when the board hides them, and a board's scope
@@ -971,7 +973,10 @@ page was full or the thread budget ran out (then also `budgeted: true`, and
 the view adds ", up to 100,000 characters"). An answer over 8 MiB is not read
 but asked again with 20, 5, then 1 note per page. Each body keeps its first
 4,000 characters, cut at the last line break there, with `fullLength` when cut;
-the newest comments are kept up to 100,000 characters in all. `comment` refuses empty text before any glab call and sends
+the newest comments are kept up to 100,000 characters in all. `board` also
+bounds its issue lists: at most 500 open issues and 20 closed, and an open
+and closed answer that together is over 64 MiB is not parsed ("These issues
+are too large to show here. Read them on GitLab."). `comment` refuses empty text before any glab call and sends
 one `POST /projects/:id/issues/:iid/notes`; the text never goes on a command
 line or into a log.
 

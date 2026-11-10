@@ -864,6 +864,15 @@ for part in open closed; do
   fi
 done
 
+# Open and closed pages are never parsed past issues_bytes (SEC-03): 64 MiB
+# holds 500 typical issue objects, including substantial descriptions. GitLab
+# can return on the order of 1 MiB per description, so 500 of those would spike
+# jq; this budget refuses that before the slurp. The rest is on GitLab.
+issues_bytes=67108864
+if (($(wc -c <"$tmp/open") + $(wc -c <"$tmp/closed") > issues_bytes)); then
+  emit error "These issues are too large to show here. Read them on GitLab."
+fi
+
 # GitLab's rules (docs.gitlab.com/user/project/issue_board/#issue-board-terminology):
 # Open = open issues in no other list; a label list = open issues with that label
 # (an issue with two list labels shows in both); Closed = closed issues.

@@ -929,6 +929,24 @@ fx boards <<<'[]'; cb_open '[[1,300,["todo"]],[301,450,["in progress"]],[451,480
 out=$("$fetch" --project group/app)
 check "CB no board: the workflow columns share the budget too" '.fallback == true and ([.columns[] | select(.kind != "closed") | .issues[]] | length) == 480 and (has("cardsTrimmed") | not)' "$out"
 
+# --- IB: issue-list byte budget (SEC-03) ---------------------------------------
+# Open and closed pages together are not parsed past 64 MiB; the board says
+# they are too large, the same way an oversized comment page does.
+reset
+fx boards <<<'[{"id":7,"name":"Dev","hide_backlog_list":false,"hide_closed_list":false,"labels":[],"milestone":null,"assignee":null,"lists":[]}]'
+fx closed <<<'[]'
+fx open <<<'[{"iid":1,"title":"ok","state":"opened","labels":[],"web_url":"https://gitlab.com/group/app/-/issues/1"}]'
+out=$("$fetch" --project group/app)
+check "IB under 64 MiB: the board is shown" '.state == "ready" and ([.columns[].issues[]] | length) == 1' "$out"
+# Not JSON: fake-glab serves unreadable bytes as-is (it already does that when
+# paging fails), so the 1 s test timeout is not spent parsing 65 MiB.
+head -c $((65 * 1024 * 1024)) /dev/zero | tr '\0' 'x' >"$FAKE_DIR/open.json"
+: >"$FAKE_LOG"
+out=$("$fetch" --project group/app)
+check "IB a list over 64 MiB: an error, never parsed" '.state == "error" and .message == "These issues are too large to show here. Read them on GitLab."' "$out"
+check "IB ... the answer is small" '.' "$([[ $(wc -c <<<"$out") -lt 2000 ]] && echo true || echo false)"
+check "IB ... the huge body never reached the cache" '.' "$(! find "${XDG_CACHE_HOME}/odevvy.gitlabby" -type f -size +1M 2>/dev/null | grep -q . && echo true || echo false)"
+
 # --- PL: pipeline status of Review cards (reads only) -----------------------------
 reset
 fx boards <<'J'
