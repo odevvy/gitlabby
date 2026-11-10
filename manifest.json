@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "odevvy.gitlabby",
   "name": "GitLabby",
-  "version": "0.1.135",
+  "version": "0.1.136",
   "author": "o_devvy",
   "license": "MIT",
   "description": "A GitLab board, merge requests, to-dos and alerts in a bar popup: your project's real boards in their label colors, who's busy, issue details with comments, labels and close, drag-to-move and bulk actions, merge requests waiting on you, your to-dos, desktop alerts, and a hint for view-only projects.",
