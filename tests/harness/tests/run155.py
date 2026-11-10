@@ -12,7 +12,7 @@ from lib import *
 src = sys.argv[1]; out = sys.argv[2] if len(sys.argv) > 2 else None
 ALL = []
 def ok(n, c, e=""): ALL.append(bool(c)); h.ok(n, c, e)
-P = "firelink21/phrase41"
+P = "my-group/my-project"
 def col_(n, i): return {"name": n, "kind": "label", "listId": i, "color": "#5b9bd5", "issues": []}
 def board(names):
     return {"state": "ready", "project": P, "updatedAt": "2026-10-31T13:20:00Z", "message": "", "labelColors": {}, "boards": [{"id": 1, "name": "Development"}], "board": {"id": 1, "name": "Development"}, "fallback": False,
