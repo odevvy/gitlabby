@@ -239,7 +239,7 @@ test("the key groups: every view's keys, the setup panel's, no key twice in a gr
   assert.equal(action("Anywhere", "t"), "To-do")
   assert.deepEqual(group("To-do"), group("Merge requests"))
   assert.match(action("Board", "v"), /bulk/)
-  assert.match(action("Board", "Shift+H / L"), /asks first when the project is in confirmMoves/)
+  assert.match(action("Board", "Shift+H / L"), /asks first if in confirmMoves/)
   for (const k of ["Shift+H / L", "x", "e", "Enter / Space", "Esc"]) assert.ok(action("Picked cards", k), k)
   for (const g of L.keyGroups) assert.equal(new Set(g.keys.map(([k]) => k)).size, g.keys.length, g.title)
   // Every shortcut the popup had before 0.1.62's shorter rows is still listed.

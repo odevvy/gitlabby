@@ -35,7 +35,7 @@ ok("K4 every shortcut (33 or more), one row each", len(rows) == total >= 33, (le
 ok("K5 every row one line (22 px, as Settings' rows), its caps and words fit", all(r.height() == S(22) and r.property("fits") for r in rows), [h.ev("modelData[1]", QQmlEngine.contextForObject(r), r) for r in rows if not r.property("fits")])
 def row(text): return next(r for r in rows if h.ev("modelData[1]", QQmlEngine.contextForObject(r), r) == text)
 def caps(r): return sorted([c for c in h.walk(r) if c.objectName() == "keyCap" and c.isVisible()], key=lambda c: c.mapToItem(r, QPointF(0, 0)).x())
-mv = row("Move left / right · asks first"); cs = caps(mv)
+mv = row("Move left / right · asks first if in confirmMoves"); cs = caps(mv)
 gap = lambda a, b: b.mapToItem(mv, QPointF(0, 0)).x() - (a.mapToItem(mv, QPointF(0, 0)).x() + a.width())
 ok("K6 Shift H / L: Shift and H joined (2 px), then a quiet /, then L", [c.childItems()[0].property("text") for c in cs] == ["Shift", "H", "L"] and abs(gap(cs[0], cs[1]) - S(2)) < 0.5 and gap(cs[1], cs[2]) > S(8)
    and [(s.property("text"), s.property("color").name()) for s in h.walk(mv) if s.objectName() == "keySep" and s.isVisible()] == [("/", h.ev("root.quiet").name())], [gap(cs[0], cs[1]), gap(cs[1], cs[2])])
@@ -43,7 +43,7 @@ ok("K6b cap text in the foreground (accent stays for state), bold", all(c.childI
 ok("K7 h j k l is one cap", [c.childItems()[0].property("text") for c in caps(row("Move between cards"))] == ["h j k l", "← ↓ ↑ →"])
 notes = [n for n in h.walk(mv) if n.objectName() == "keyNote" and n.isVisible()]
 words = [n for n in h.walk(mv) if n.objectName() == "keyWhat" and n.isVisible()]
-ok("K8 the note after the words, quiet", words and words[0].property("text") == "Move left / right" and notes and notes[0].property("text") == "asks first" and notes[0].property("color").name() == h.ev("root.quiet").name(), notes and (notes[0].property("text"), notes[0].property("color").name(), h.ev("root.quiet").name()))
+ok("K8 the note after the words, quiet", words and words[0].property("text") == "Move left / right" and notes and notes[0].property("text") == "asks first if in confirmMoves" and notes[0].property("color").name() == h.ev("root.quiet").name(), notes and (notes[0].property("text"), notes[0].property("color").name(), h.ev("root.quiet").name()))
 fl = next(it for it in h.walk(kv) if it.metaObject().className() == "QQuickFlickable")
 fl.setProperty("contentY", max(0, fl.property("contentHeight") - fl.height())); h.spin(100)
 last = max(cards, key=lambda c: c.mapToItem(fl, QPointF(0, c.height())).y())
