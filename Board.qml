@@ -781,12 +781,13 @@ Panel {
 
   // y, or a right-click on a card or a merge request (BoardKeys, BoardView,
   // MrsView): its link to the clipboard with wl-copy, as the setup panel does.
-  // https only (Logic.httpsUrl), the same as openUrl. The status then reads
-  // "Copied #N" (an issue) or "Copied !N" (a merge request) for a moment.
+  // The same host check as a click (Logic.gitlabUrl): https on the configured
+  // server, or nothing is copied. The status then reads "Copied #N" (an issue)
+  // or "Copied !N" (a merge request) for a moment.
   property string copiedNote: ""
   Timer { id: copiedTimer; interval: 1500; onTriggered: root.copiedNote = "" }
   function copyLink(row, sign) {
-    var link = row ? Logic.httpsUrl(row.url) : ""
+    var link = row ? Logic.gitlabUrl(row.url, gitlabHost) : ""
     if (link === "") return false
     Quickshell.execDetached(["wl-copy", link])
     copiedNote = "Copied " + sign + row.iid

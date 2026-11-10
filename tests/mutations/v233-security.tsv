@@ -1,0 +1,4 @@
+copy-https-only	Board.qml	Logic.gitlabUrl(row.url, gitlabHost)	Logic.httpsUrl(row.url)	qml	harness/tests/run233.py
+copy-no-host	Board.qml	Logic.gitlabUrl(row.url, gitlabHost)	Logic.gitlabUrl(row.url)	qml	harness/tests/run233.py
+copy-fixed-host	Board.qml	Logic.gitlabUrl(row.url, gitlabHost)	Logic.gitlabUrl(row.url, "gitlab.com")	qml	harness/tests/run233.py
+copy-always-empty	Board.qml	var link = row ? Logic.gitlabUrl(row.url, gitlabHost) : ""	var link = ""	qml	harness/tests/run233.py

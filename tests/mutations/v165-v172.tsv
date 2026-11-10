@@ -178,7 +178,7 @@ chip-loud	BoardHeader.qml	textColor: host.quiet	textColor: host.foreground	qml	h
 chip-far	BoardHeader.qml	anchors { left: tabs.right; leftMargin: Style.space(10); verticalCenter: parent.verticalCenter }\n    label: "read-only"	anchors { left: tabs.right; leftMargin: Style.space(24); verticalCenter: parent.verticalCenter }\n    label: "read-only"	qml	harness/tests/run171.py
 status-over-chip	BoardHeader.qml	columnsButton.right : readOnlyChip.visible ? readOnlyChip.right : header.tabsShown ? tabs.right : defaultMark.right; leftMargin: Style.space(12)	columnsButton.right : false ? readOnlyChip.right : header.tabsShown ? tabs.right : defaultMark.right; leftMargin: Style.space(12)	qml	harness/tests/run171.py
 # --- from v172.tsv
-copy-any-url	Board.qml	var link = row ? Logic.httpsUrl(row.url) : ""	var link = row ? String(row.url || "") : ""	qml	harness/tests/run172.py
+copy-any-url	Board.qml	var link = row ? Logic.gitlabUrl(row.url, gitlabHost) : ""	var link = row ? String(row.url || "") : ""	qml	harness/tests/run172.py
 copy-opens	Board.qml	Quickshell.execDetached(["wl-copy", link])	Quickshell.execDetached(["omarchy-launch-browser", link])	qml	harness/tests/run172.py
 copy-closes	Board.qml	    copiedTimer.restart()\n    return true	    copiedTimer.restart()\n    close()\n    return true	qml	harness/tests/run172.py
 note-not-shown	Board.qml	copiedNote !== "" ? copiedNote : updating	updating	qml	harness/tests/run172.py

@@ -1362,3 +1362,17 @@ test("security navigation binds generated links to the configured DNS authority"
   assert.equal(L.gitlabUrl(good, ""), "")
   assert.deepEqual(L.notifyArgv({headline:"h",body:"b",url:good}, "app", "gitlab.example").slice(-3), ["--exec","omarchy-launch-webapp",good])
 })
+
+test("copyLink uses the same host check as a click", () => {
+  const fs = require("node:fs"), path = require("node:path")
+  const board = fs.readFileSync(path.join(__dirname, "..", "Board.qml"), "utf8")
+  assert.match(board, /function copyLink\(row, sign\) \{\n    var link = row \? Logic\.gitlabUrl\(row\.url, gitlabHost\) : ""/)
+  const on = "https://gitlab.com/g/p/-/issues/2"
+  const off = "https://evil.example/phish"
+  assert.equal(L.gitlabUrl(on, "gitlab.com"), on)
+  assert.equal(L.gitlabUrl(off, "gitlab.com"), "")
+  assert.equal(L.httpsUrl(off), off)
+  assert.equal(L.gitlabUrl(on, "gitlab.example"), "")
+  assert.equal(L.gitlabUrl("https://gitlab.example/g/p/-/issues/2", "gitlab.example"), "https://gitlab.example/g/p/-/issues/2")
+})
+
