@@ -7,7 +7,7 @@ import sys, os, tempfile; sys.path.insert(0, os.path.dirname(os.path.dirname(os.
 from lib import *
 from PySide6.QtGui import QImage, QColor
 src = sys.argv[1]
-P = "firelink21/phrase41"
+P = "my-group/my-project"
 png = tempfile.mkdtemp() + "/face.png"; im = QImage(64, 64, QImage.Format_ARGB32); im.fill(QColor("#ff0000")); im.save(png)
 def who(n): return {"username": n, "name": n.title(), "avatar": "file://" + png}
 def iss(iid, labels, people): return {"iid": iid, "title": "Issue %d" % iid, "labels": labels, "url": "https://gitlab.com/%s/-/issues/%d" % (P, iid), "createdAt": "2026-10-31T09:00:00Z", "notes": 0, "assignees": [who("u%d" % k) for k in range(people)]}

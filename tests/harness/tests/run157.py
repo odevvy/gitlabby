@@ -5,7 +5,7 @@
 import sys, os, json, copy, time; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from lib import *
 src = sys.argv[1]
-P = "firelink21/phrase41"
+P = "my-group/my-project"
 def who(n): return {"username": n, "name": n.title(), "avatar": ""}
 def iss(iid, labels, notes=0): return {"iid": iid, "title": "Issue %d" % iid, "labels": labels, "url": "https://gitlab.com/%s/-/issues/%d" % (P, iid), "createdAt": "2026-10-31T09:00:00Z", "notes": notes, "assignees": [who("ann"), who("bob")]}
 def col_(n, i, iids): return {"name": n, "kind": "label", "listId": i, "color": "#5b9bd5", "issues": [iss(x, [n]) for x in iids]}
