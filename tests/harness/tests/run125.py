@@ -9,12 +9,12 @@ import sys, os, json, subprocess, tempfile, shutil; sys.path.insert(0, os.path.d
 from lib import *
 src = sys.argv[1]; pngs = sys.argv[2:4]
 shot = lambda i: len(pngs) > i and h.grab_card(pngs[i])
-# --- the data: real board-fetch against fake glab, phrase41-shaped ----------
+# --- the data: real board-fetch against fake glab, example-shaped ----------
 work = tempfile.mkdtemp(prefix="ogb-125-"); os.makedirs(work + "/bin"); os.makedirs(work + "/fx")
 shutil.copy(src + "/tests/fake-glab", work + "/bin/glab")
 with open(work + "/bin/timeout", "w") as f: f.write('#!/usr/bin/env bash\nshift 3; exec "$@"\n')
 os.chmod(work + "/bin/timeout", 0o755)
-U = "https://gitlab.com/firelink21/phrase41/-/work_items/"
+U = "https://gitlab.com/my-group/my-project/-/work_items/"
 def iss(i, state, labels): return {"iid": i, "title": "Issue %d with a title long enough to wrap onto a second line" % i, "state": state, "labels": labels, "web_url": U + str(i), "created_at": "2026-10-28T12:00:00Z", "user_notes_count": 2, "assignees": []}
 lists = [{"id": n, "position": n, "label": {"name": l, "color": c}} for n, (l, c) in enumerate([("research", "#ffffff"), ("todo", "#3b82f6"), ("approved", "#dc2626"), ("in progress", "#eab308"), ("review", "#86efac")])]
 fx = {"boards": [{"id": 7, "name": "Development", "hide_backlog_list": False, "hide_closed_list": False, "labels": [], "milestone": None, "assignee": None, "lists": lists}],
@@ -23,11 +23,11 @@ fx = {"boards": [{"id": 7, "name": "Development", "hide_backlog_list": False, "h
 for k, v in fx.items():
     with open(work + "/fx/%s.json" % k, "w") as f: f.write("\n".join(json.dumps(x) for x in v) if k == "open" else json.dumps(v))
 env = dict(os.environ, PATH=work + "/bin:" + os.environ["PATH"], FAKE_LOG=work + "/log", FAKE_DIR=work + "/fx", XDG_CACHE_HOME=work + "/cache")
-r = subprocess.run([src + "/board-fetch", "--project", "firelink21/phrase41"], capture_output=True, text=True, env=env)
+r = subprocess.run([src + "/board-fetch", "--project", "my-group/my-project"], capture_output=True, text=True, env=env)
 B = json.loads(r.stdout); shutil.rmtree(work)
 closed = next(c for c in B["columns"] if c["kind"] == "closed")
-h = Harness(src, {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": "firelink21/phrase41", "defaultCollapsed": ["open", "research"]})
-h.ok("W1 board-fetch, work-item URLs, more than 20 closed: Closed links to all closed issues", len(closed["issues"]) == 20 and closed.get("seeAll") == "https://gitlab.com/firelink21/phrase41/-/issues?state=closed", closed.get("seeAll"))
+h = Harness(src, {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": "my-group/my-project", "defaultCollapsed": ["open", "research"]})
+h.ok("W1 board-fetch, work-item URLs, more than 20 closed: Closed links to all closed issues", len(closed["issues"]) == 20 and closed.get("seeAll") == "https://gitlab.com/my-group/my-project/-/issues?state=closed", closed.get("seeAll"))
 # --- the board at his size ---------------------------------------------------
 h.ev("panel.availableCardHeight = 520")  # the real cap (fittedContentHeight) stays bound
 h.ev("root.opened = true"); h.spin(80); h.answer("board", B); h.spin(400)

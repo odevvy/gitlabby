@@ -10,8 +10,8 @@ os.environ["OGB_SCALE"] = "1.5"
 import lib
 from lib import *
 src = sys.argv[1]; out = sys.argv[2] if len(sys.argv) > 2 else None
-P = "firelink21/phrase41"
-exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "run134.py")).read().split("ALL = []")[0].split("P = \"firelink21/phrase41\"")[1])
+P = "my-group/my-project"
+exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "run134.py")).read().split("ALL = []")[0].split("P = \"my-group/my-project\"")[1])
 ALL = []
 def ok(n, c, e=""): ALL.append(bool(c)); h.ok(n, c, e)
 def shot(name):

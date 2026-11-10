@@ -10,7 +10,7 @@ os.environ["OGB_SCALE"] = "1.5"
 import lib
 from lib import *
 src = sys.argv[1]; out = sys.argv[2] if len(sys.argv) > 2 else None
-P = "firelink21/phrase41"
+P = "my-group/my-project"
 COLS = [("Open", "open", None), ("todo", "label", "#3b82f6"), ("in progress", "label", "#eab308"), ("review", "label", "#86efac"), ("Closed", "closed", None)]
 def card(i, labels): return {"iid": i, "title": "Issue %d" % i, "labels": labels, "url": "https://gitlab.com/%s/-/work_items/%d" % (P, i), "createdAt": "2026-10-29T12:00:00Z", "notes": 0, "assignees": []}
 def board(todo=(20, 21), review=(50,), progress=(), stamp="15:26"):

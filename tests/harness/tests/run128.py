@@ -3,7 +3,7 @@
 # and in the summary pill. board-fetch asks for 21 to know (capped: true), so
 # exactly 20 still reads "20". Open and label columns read every open issue,
 # so their counts stay plain. End to end: the real board-fetch (fake glab,
-# phrase41-shaped like the report) feeds the board.
+# example-shaped like the report) feeds the board.
 # Also: the Settings new-bot form wraps (a Flow), so with a long name every
 # "is busy with" choice stays inside the section at his popup width and narrower.
 # Usage: run128.py <src> [collapsed.png expanded.png exact20.png add-form.png add-form-narrow.png]
@@ -11,7 +11,7 @@ import sys, os, json, subprocess, tempfile, shutil; sys.path.insert(0, os.path.d
 from lib import *
 src = sys.argv[1]; pngs = sys.argv[2:7]
 shot = lambda i: len(pngs) > i and h.grab_card(pngs[i])
-U = "https://gitlab.com/firelink21/phrase41/-/work_items/"
+U = "https://gitlab.com/my-group/my-project/-/work_items/"
 def iss(i, state, labels): return {"iid": i, "title": "Issue %d" % i, "state": state, "labels": labels, "web_url": U + str(i), "created_at": "2026-10-28T12:00:00Z", "user_notes_count": 0, "assignees": []}
 lists = [{"id": n, "position": n, "label": {"name": l, "color": c}} for n, (l, c) in enumerate([("research", "#ffffff"), ("todo", "#3b82f6"), ("approved", "#dc2626"), ("in progress", "#eab308"), ("review", "#86efac")])]
 def fetch(nclosed):
@@ -25,11 +25,11 @@ def fetch(nclosed):
     for k, v in fx.items():
         with open(work + "/fx/%s.json" % k, "w") as f: f.write("\n".join(json.dumps(x) for x in v) if k == "open" else json.dumps(v))
     env = dict(os.environ, PATH=work + "/bin:" + os.environ["PATH"], FAKE_LOG=work + "/log", FAKE_DIR=work + "/fx", XDG_CACHE_HOME=work + "/cache")
-    r = subprocess.run([src + "/board-fetch", "--project", "firelink21/phrase41"], capture_output=True, text=True, env=env)
+    r = subprocess.run([src + "/board-fetch", "--project", "my-group/my-project"], capture_output=True, text=True, env=env)
     shutil.rmtree(work); return json.loads(r.stdout)
 MORE, EXACT = fetch(35), fetch(20)
 cm = next(c for c in MORE["columns"] if c["kind"] == "closed"); ce = next(c for c in EXACT["columns"] if c["kind"] == "closed")
-h = Harness(src, {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": "firelink21/phrase41", "defaultCollapsed": ["open", "research", "closed"]})
+h = Harness(src, {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": "my-group/my-project", "defaultCollapsed": ["open", "research", "closed"]})
 h.ok("C0 board-fetch: 35 closed on GitLab -> the latest 20, capped; exactly 20 -> not capped",
      len(cm["issues"]) == 20 and cm.get("capped") is True and len(ce["issues"]) == 20 and "capped" not in ce, [len(cm["issues"]), cm.get("capped"), ce.get("capped")])
 h.ev("root.opened = true"); h.spin(80); h.answer("board", MORE); h.spin(400)

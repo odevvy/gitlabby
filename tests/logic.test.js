@@ -430,39 +430,39 @@ test("move confirm: says what the move does on GitLab", () => {
 })
 
 // --- Settings > Bots: edits keep the saved JSON as it was apart from the edit ---
-const P41RAW = { "firelink21/phrase41": { busyLists: ["approved", "in progress", "review"], bots: [
+const EXRAW = { "my-group/my-project": { busyLists: ["approved", "in progress", "review"], bots: [
   { name: "App UI", label: "app-ui" }, { name: "API Engineer", label: "api" }, { name: "Auth & Mail", label: "auth-mail" },
   { name: "Product Lead", label: "" }, { name: "Spec QA", list: "review" }] }, "other/proj": { bots: [{ name: "X", label: "x" }], workingLists: ["Doing"], note: 1 } }
-const P = "firelink21/phrase41"
+const P = "my-group/my-project"
 
 test("bots editor: reads the saved entry, or says what is wrong with it", () => {
   assert.deepEqual(L.botsEntry(undefined, P), { problem: "", entry: null })
   assert.deepEqual(L.botsEntry({}, P), { problem: "", entry: null })
-  assert.equal(L.botsEntry(P41RAW, P).entry, P41RAW[P])
-  assert.equal(L.botsEntry(JSON.stringify(P41RAW), P).problem, "setting")  // bar set without --json
-  assert.equal(L.botsEntry([P41RAW], P).problem, "setting")
+  assert.equal(L.botsEntry(EXRAW, P).entry, EXRAW[P])
+  assert.equal(L.botsEntry(JSON.stringify(EXRAW), P).problem, "setting")  // bar set without --json
+  assert.equal(L.botsEntry([EXRAW], P).problem, "setting")
   assert.equal(L.botsEntry(3, P).problem, "setting")
   assert.equal(L.botsEntry({ [P]: "x" }, P).problem, "entry")
   assert.equal(L.botsEntry({ [P]: { bots: "x" } }, P).problem, "entry")
   assert.ok(L.botUsable({ name: "Product Lead", label: "" }) && L.botUsable({ name: "Q", list: "review" }))
   assert.ok(!L.botUsable({ name: " ", label: "x" }) && !L.botUsable({ name: "N" }) && !L.botUsable({ name: "Q", list: " " }) && !L.botUsable(null))
-  assert.ok(L.botNameTaken(P41RAW[P], " auth & mail ") && !L.botNameTaken(P41RAW[P], "Auth") && !L.botNameTaken(null, "x"))
+  assert.ok(L.botNameTaken(EXRAW[P], " auth & mail ") && !L.botNameTaken(EXRAW[P], "Auth") && !L.botNameTaken(null, "x"))
 })
 
 test("bots editor: add, remove and busy toggles change only their part", () => {
-  const before = JSON.stringify(P41RAW)
-  const added = L.withBot(P41RAW, P, { name: "Decider", label: "needs-decision" }, ["todo"])
+  const before = JSON.stringify(EXRAW)
+  const added = L.withBot(EXRAW, P, { name: "Decider", label: "needs-decision" }, ["todo"])
   assert.equal(JSON.stringify(added), before.replace('{"name":"Spec QA","list":"review"}]', '{"name":"Spec QA","list":"review"},{"name":"Decider","label":"needs-decision"}]'))
-  assert.equal(JSON.stringify(P41RAW), before)  // never in place
+  assert.equal(JSON.stringify(EXRAW), before)  // never in place
   assert.equal(JSON.stringify(L.withoutBot(added, P, 5)), before)
-  assert.equal(JSON.stringify(L.withoutBot(P41RAW, P, 2)), before.replace('{"name":"Auth & Mail","label":"auth-mail"},', ""))
-  assert.equal(JSON.stringify(L.withBusy(L.withBusy(P41RAW, P, "todo", true), P, "Todo", false)), before)
-  assert.deepEqual(L.withBusy(P41RAW, P, "Review", false)[P].busyLists, ["approved", "in progress"])
+  assert.equal(JSON.stringify(L.withoutBot(EXRAW, P, 2)), before.replace('{"name":"Auth & Mail","label":"auth-mail"},', ""))
+  assert.equal(JSON.stringify(L.withBusy(L.withBusy(EXRAW, P, "todo", true), P, "Todo", false)), before)
+  assert.deepEqual(L.withBusy(EXRAW, P, "Review", false)[P].busyLists, ["approved", "in progress"])
   assert.deepEqual(L.withBusy({ [P]: { bots: [] } }, P, "review", true)[P].busyLists, ["review"])
   // The first bot: a new entry with every label column busy; the last one out takes the entry.
-  const first = L.withBot({ "other/proj": P41RAW["other/proj"] }, P, { name: "Spec QA", list: "review" }, ["research", "todo", "review"])
+  const first = L.withBot({ "other/proj": EXRAW["other/proj"] }, P, { name: "Spec QA", list: "review" }, ["research", "todo", "review"])
   assert.deepEqual(first[P], { busyLists: ["research", "todo", "review"], bots: [{ name: "Spec QA", list: "review" }] })
-  assert.deepEqual(L.withoutBot(first, P, 0), { "other/proj": P41RAW["other/proj"] })
+  assert.deepEqual(L.withoutBot(first, P, 0), { "other/proj": EXRAW["other/proj"] })
   assert.deepEqual(L.withBot(undefined, P, { name: "A", label: "a" }, []), { [P]: { busyLists: [], bots: [{ name: "A", label: "a" }] } })
   // A malformed setting or entry is replaced only by an add; remove and toggles leave it.
   assert.deepEqual(L.withBot("{oops", P, { name: "A", label: "" }, ["review"]), { [P]: { busyLists: ["review"], bots: [{ name: "A", label: "" }] } })
@@ -523,14 +523,14 @@ test("icon buttons: every GlyphButton, header button and tab has a tip, and ever
   assert.deepEqual([...new Set(bracketed)].sort(), ["?", "Esc", "b", "e", "m", "o", "r", "s", "t", "x"])  // p opens the picker from keys; title tip is starred boards
 })
 
-// v0.1.30 regression: his saved setting, exactly as in shell.json. Omarchy
+// v0.1.30 regression: a saved setting in the same shape as shell.json. Omarchy
 // hands settings over through Qt, so its lists arrive as sequences:
 // Array.isArray false, though JSON.stringify gives the array. Stand-in: an
 // object whose toJSON is the array.
-const PHRASE41 = '{"firelink21/phrase41":{"bots":[{"label":"app-ui","name":"App UI"},{"label":"api","name":"API Engineer"},{"label":"auth-mail","name":"Auth & Mail"},{"name":"Product Lead","label":""}],"busyLists":["approved","in progress","review"]}}'
+const SAMPLE = '{"my-group/my-project":{"bots":[{"label":"app-ui","name":"App UI"},{"label":"api","name":"API Engineer"},{"label":"auth-mail","name":"Auth & Mail"},{"name":"Product Lead","label":""}],"busyLists":["approved","in progress","review"]}}'
 const sequence = list => Object.assign(Object.create(null), { length: list.length, toJSON: () => list.slice() })
 test("his saved bots setting: Settings and the board read the same four bots", () => {
-  const raw = JSON.parse(PHRASE41), P = "firelink21/phrase41"
+  const raw = JSON.parse(SAMPLE), P = "my-group/my-project"
   assert.deepEqual(L.botsEntry(raw, P), { problem: "", entry: raw[P] })
   const c = L.botsConfig(raw, P)
   assert.deepEqual(c.bots, [{ name: "App UI", label: "app-ui" }, { name: "API Engineer", label: "api" }, { name: "Auth & Mail", label: "auth-mail" }, { name: "Product Lead", label: "" }])
@@ -538,12 +538,12 @@ test("his saved bots setting: Settings and the board read the same four bots", (
   assert.ok(raw[P].bots.every(L.botUsable))
 })
 test("settings from Qt: lists as sequences are read once they pass plainJson", () => {
-  const P = "firelink21/phrase41", fromQt = JSON.parse(PHRASE41)
+  const P = "my-group/my-project", fromQt = JSON.parse(SAMPLE)
   fromQt[P].bots = sequence(fromQt[P].bots); fromQt[P].busyLists = sequence(fromQt[P].busyLists)
   assert.equal(L.botsEntry(fromQt, P).problem, "entry")  // the 0.1.29 bug, when read as is
   assert.equal(L.botsConfig(fromQt, P), null)
   const settings = L.plainJson({ bots: fromQt, defaultCollapsed: sequence(["closed", "research", "open"]), refreshIntervalSec: 120 })
-  assert.deepEqual(L.botsEntry(settings.bots, P), { problem: "", entry: JSON.parse(PHRASE41)[P] })
+  assert.deepEqual(L.botsEntry(settings.bots, P), { problem: "", entry: JSON.parse(SAMPLE)[P] })
   assert.equal(L.botsConfig(settings.bots, P).bots.length, 4)
   assert.deepEqual(L.lowerList(settings.defaultCollapsed), ["closed", "research", "open"])
   assert.deepEqual(L.withBusy(settings.bots, P, "todo", true)[P].busyLists, ["approved", "in progress", "review", "todo"])

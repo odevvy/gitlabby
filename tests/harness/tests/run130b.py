@@ -52,11 +52,11 @@ def ancestors(it):
     while it is not None: yield it; it = it.parentItem()
 
 # --- the 0.1.29 bug: his exact settings, handed over through Qt ------------------------
-HIS = json.loads('''{"id":"odevvy.gitlabby","boardStates":{"firelink21/phrase41#11714661":{"collapsed":["open","research","closed"],"hidden":[]}},"bots":{"firelink21/phrase41":{"bots":[{"label":"app-ui","name":"App UI"},{"label":"api","name":"API Engineer"},{"label":"auth-mail","name":"Auth & Mail"},{"name":"Product Lead","label":""}],"busyLists":["approved","in progress","review"]}},"defaultBoardId":"","defaultBoardName":"","defaultCollapsed":["closed","research","open"],"defaultProject":"firelink21/phrase41","refreshIntervalSec":120,"settingsRevision":2}''')
-Q = "firelink21/phrase41"
+HIS = json.loads('''{"id":"odevvy.gitlabby","boardStates":{"my-group/my-project#11714661":{"collapsed":["open","research","closed"],"hidden":[]}},"bots":{"my-group/my-project":{"bots":[{"label":"app-ui","name":"App UI"},{"label":"api","name":"API Engineer"},{"label":"auth-mail","name":"Auth & Mail"},{"name":"Product Lead","label":""}],"busyLists":["approved","in progress","review"]}},"defaultBoardId":"","defaultBoardName":"","defaultCollapsed":["closed","research","open"],"defaultProject":"my-group/my-project","refreshIntervalSec":120,"settingsRevision":2}''')
+Q = "my-group/my-project"
 h = Harness(sys.argv[1], None)
 h.ev("root").setProperty("settings", HIS)  # as Omarchy does: QVariantMap, lists as Qt sequences
-ok("Q0 the lists really arrive as Qt sequences (Array.isArray false)", not h.ev("Array.isArray(root.settings.bots['firelink21/phrase41'].bots)"))
+ok("Q0 the lists really arrive as Qt sequences (Array.isArray false)", not h.ev("Array.isArray(root.settings.bots['my-group/my-project'].bots)"))
 PB = json.loads(json.dumps(BOARD).replace('"group/app', '"' + Q))
 for c in PB["columns"]:
     for i in c.get("issues", []): i["labels"] = list(i.get("labels", [])) + ["app-ui"]

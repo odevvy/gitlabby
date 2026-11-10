@@ -23,7 +23,7 @@ def _into_view(self, it, *a, **k):
     return _scene0(self, it, *a, **k)
 Harness.scene = _into_view
 pngs = sys.argv[2:6]
-P = "firelink21/phrase41"
+P = "my-group/my-project"
 COLS = [("Open", "open", None), ("research", "label", "#e5e7eb"), ("todo", "label", "#3b82f6"), ("approved", "label", "#dc2626"), ("in progress", "label", "#eab308"), ("review", "label", "#86efac"), ("Closed", "closed", None)]
 LC = {"app-ui": "#9ca3af", "api": "#6366f1", "auth-mail": "#14b8a6", "needs-decision": "#f97316", "research": "#e5e7eb", "todo": "#3b82f6", "approved": "#dc2626", "in progress": "#eab308", "review": "#86efac"}
 def card(i, labels): return {"iid": i, "title": "Issue %d" % i, "labels": labels, "url": "https://gitlab.com/%s/-/work_items/%d" % (P, i), "createdAt": "2026-10-29T12:00:00Z", "notes": 0, "assignees": []}
@@ -32,7 +32,7 @@ B = {"state": "ready", "project": P, "updatedAt": "2026-10-29T20:10:00Z", "label
      "boards": [{"id": 7, "name": "Development"}], "board": {"id": 7, "name": "Development"}, "fallback": False, "message": "",
      "columns": [dict({"name": n, "kind": k, "issues": ISSUES.get(n, [])}, **({"listId": i, "color": c} if c else {})) for i, (n, k, c) in enumerate(COLS)]}
 LABELS = {"state": "ready", "message": "", "status": ["approved", "in progress", "research", "review", "todo"], "labels": [{"name": k, "color": v, "textColor": None} for k, v in LC.items()]}
-P41 = '{"' + P + '":{"busyLists":["approved","in progress","review"],"bots":[{"name":"App UI","label":"app-ui"},{"name":"API Engineer","label":"api"},{"name":"Auth & Mail","label":"auth-mail"},{"name":"Product Lead","label":""},{"name":"Spec QA","list":"review"}]},"other/proj":{"bots":[{"name":"X","label":"x"}],"workingLists":["Doing"],"note":1}}'
+EX = '{"' + P + '":{"busyLists":["approved","in progress","review"],"bots":[{"name":"App UI","label":"app-ui"},{"name":"API Engineer","label":"api"},{"name":"Auth & Mail","label":"auth-mail"},{"name":"Product Lead","label":""},{"name":"Spec QA","list":"review"}]},"other/proj":{"bots":[{"name":"X","label":"x"}],"workingLists":["Doing"],"note":1}}'
 cls_is = lambda it, n: it.metaObject().className().startswith(n)
 ALL = []  # several harnesses (one per starting setting); one total at the end
 def start(bots, shot=None):
@@ -107,23 +107,23 @@ ok("R1 x removes at once, saving each time", len(writes()) == n0 + 3)
 ok("R2 the last bot out: the project's entry goes, the invite is back, no busy row", saved() == "{}" and sev("invite.visible") and not sev("pane.visible") and botsRow() == [], saved())
 finish()
 
-# --- phrase41's JSON round-trips -------------------------------------------------
-start(json.loads(P41))
+# --- the example project's JSON round-trips -------------------------------------------------
+start(json.loads(EX))
 h.answer("labels", LABELS); h.spin(60)
-ok("J1 phrase41's 5 bots listed in order; nothing written by opening", [sev("bots[%d].name" % i) for i in range(5)] == ["App UI", "API Engineer", "Auth & Mail", "Product Lead", "Spec QA"] and writes() == []
+ok("J1 the example project's 5 bots listed in order; nothing written by opening", [sev("bots[%d].name" % i) for i in range(5)] == ["App UI", "API Engineer", "Auth & Mail", "Product Lead", "Spec QA"] and writes() == []
    and len(xs()) == 5 and "not a label here" not in texts() and "not a column here" not in texts())
 if len(pngs) > 1: h.grab_card(pngs[1])
 h.click(bpill("todo")[0]); h.click(bpill("todo")[0])
-ok("J2 a busy column on and off: byte-stable", saved() == P41, saved())
+ok("J2 a busy column on and off: byte-stable", saved() == EX, saved())
 h.click(sev("addLink")); sev("nameField.text = 'Decider'"); h.spin(30)
 opts = sev("options.map(function(l){ return l.name })")
 h.click(chip("needs-decision")[0]); h.spin(30)
 ok("J3 the picker: only labels no bot has", opts == ["needs-decision"], opts)
 if len(pngs) > 2: h.grab_card(pngs[2])
 h.click(sev("addButton"))
-ok("J4 add: only the new bot appended", saved() == P41.replace('{"name":"Spec QA","list":"review"}]', '{"name":"Spec QA","list":"review"},{"name":"Decider","label":"needs-decision"}]'))
+ok("J4 add: only the new bot appended", saved() == EX.replace('{"name":"Spec QA","list":"review"}]', '{"name":"Spec QA","list":"review"},{"name":"Decider","label":"needs-decision"}]'))
 h.click(xs()[5])
-ok("J5 remove it again: byte-stable, other projects and keys untouched", saved() == P41, saved())
+ok("J5 remove it again: byte-stable, other projects and keys untouched", saved() == EX, saved())
 finish()
 
 # --- unknown labels and columns, malformed bots -----------------------------------
@@ -137,7 +137,7 @@ ok("U4 x removes it; the rest (and the Doing busy list from another board) stay"
 finish()
 
 # --- an invalid setting ----------------------------------------------------------
-start(P41)  # bar set without --json: the JSON text as a string
+start(EX)  # bar set without --json: the JSON text as a string
 ok("I1 a string setting: said in red, the invite offered, nothing written", "The bots setting isn't a JSON object (set without --json?). Adding a bot here replaces it." in texts()
    and sev("invite.visible") and writes() == [] and botsRow() == [])
 if len(pngs) > 3: h.grab_card(pngs[3])
@@ -150,12 +150,12 @@ ok("I3 a malformed entry for this project: said in red", "The bots entry for " +
 finish()
 
 # --- a project switch ------------------------------------------------------------
-start(json.loads(P41))
+start(json.loads(EX))
 h.click(sev("addLink")); sev("nameField.text = 'Half done'"); h.spin(30)
 h.ev("root.project = 'other/proj'"); h.spin(80)
 ok("P1 switching project closes the form; the section shows the new project's bots", not sev("adding") and sev("bots.length") == 1 and sev("bots[0].name") == "X" and sev("listTitle.visible") and sev("listTitle.text") == "On other/proj")
 h.ev("root.project = 'new/proj'"); h.spin(80)
-ok("P2 a project without bots: the invite, phrase41 untouched", sev("invite.visible") and writes() == [])
+ok("P2 a project without bots: the invite, the example project untouched", sev("invite.visible") and writes() == [])
 finish()
 print("passed", sum(1 for _, c in ALL if c), "failed", sum(1 for _, c in ALL if not c))
 sys.exit(0 if all(c for _, c in ALL) else 1)

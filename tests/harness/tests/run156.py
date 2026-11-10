@@ -8,7 +8,7 @@
 import sys, os, time; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from lib import *
 src = sys.argv[1]; out = sys.argv[2] if len(sys.argv) > 2 else None
-P = "firelink21/phrase41"
+P = "my-group/my-project"
 def iss(iid, labels): return {"iid": iid, "title": "Issue %d" % iid, "labels": labels, "url": "https://gitlab.com/%s/-/issues/%d" % (P, iid), "createdAt": "2026-10-31T09:00:00Z", "notes": 0, "assignees": []}
 def col_(n, i, k): return {"name": n, "kind": "label", "listId": i, "color": "#5b9bd5", "issues": [iss(100 * i + j, [n]) for j in range(k)]}
 def board(extra=()):
