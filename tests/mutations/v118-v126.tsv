@@ -67,7 +67,7 @@ projects-one-page	board-fetch	    for page in 1 2 3 4 5; do	    for page in 1; d
 projects-unbounded	board-fetch	    for page in 1 2 3 4 5; do	    for page in 1 2 3 4 5 6 7; do	sh	run.sh
 projects-dupes	board-fetch	if any(.[]; .id == $p.id) then . else	if false then . else	sh	run.sh
 workflow-drift	board-fetch	def workflow: ["review", "in progress", "approved", "todo", "research"];	def workflow: ["review", "in progress", "approved", "todo"];	sh	run.sh
-nested-links	logic/markdown.js	links.push("<a href=\"" + url + "\">" + (t || url) + "</a>"); return "\x02" + (links.length - 1) + "\x02" })	return "<a href=\"" + url + "\">" + (t || url) + "</a>" })	node	logic.test.js
+nested-links	logic/markdown.js	links.push(hrefTag(url, t || url)); return "\x02" + (links.length - 1) + "\x02" })	return hrefTag(url, t || url) })	node	logic.test.js
 markers-kept	logic/markdown.js	  text = String(text).replace(/[\x01\x02]/g, "")	  text = String(text)	node	logic.test.js
 qa-js-first-line	logic/markdown.js	return /(^|	return /(^	node	logic.test.js
 movenote-generic	logic/markdown.js	  if (from.kind === "label" && to.kind === "open") return "This removes its status label on GitLab."		node	logic.test.js
