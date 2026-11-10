@@ -2,9 +2,10 @@
 
 > The [GitHub repository](https://github.com/odevvy/gitlabby) is a read-only mirror. Please open issues and merge requests on [GitLab](https://gitlab.com/firelink21/gitlabby). GitHub pull requests are not accepted.
 
-A bar icon (plugin id `odevvy.gitlabby`) that opens a GitLab issue board in a popup: the board's lists as
-columns in their label colors, issue details with comments and labels, and
-drag-to-move.
+A bar icon (plugin id `odevvy.gitlabby`) that opens your GitLab work in a
+popup. You get the project's boards as columns in their label colors, issue
+details with comments and labels, drag-to-move and bulk actions, merge
+requests waiting on you, your to-dos, and desktop alerts.
 
 ## Install
 
@@ -658,7 +659,7 @@ when Settings opens links in an app window.
 | `Enter` / `Space` | Open the issue |
 | `o` | Open in browser |
 | `y` | Copy the link · or right-click |
-| `Shift+H` / `L` | Move left / right · asks first |
+| `Shift+H` / `L` | Move left / right · asks first if in confirmMoves |
 | `v` | Pick for bulk · or Ctrl+click |
 | `b` | Show or hide the bots |
 | `r` | Refresh |
@@ -787,11 +788,14 @@ Settings live on the widget's entry in `~/.config/omarchy/shell.json`:
 | `refreshIntervalSec` | Refresh interval in seconds |
 | `botsHidden` | `true`: the bots row under the header is hidden (header bots button or `b`). Default `false` |
 | `iconUnlit` | `true`: no dot on the bar icon after an alert (Settings > Keep the bar icon unlit). Default `false` |
+| `showAvatars` | `false` hides avatar pictures and shows initials only (Settings > Show avatars). Default `true` |
 | `openLinks` | Where links open: `browser` (the default; a tab, `omarchy-launch-browser`) or `app` (its own window, `omarchy-launch-webapp`; needs a Chromium-based browser). Anything else is `browser` |
 | `defaultCollapsed` | Columns that start collapsed on a board you have not changed yet. Default `["closed","research","open"]`; matched case-insensitively |
 | `boardStates` | Collapsed and hidden columns for each project and board, keyed `project#boardId`. Saved when the popup closes, or 2 s after the last fold |
 | `confirmMoves` | Projects whose card moves ask first (see [Ask before moving](#ask-before-moving)). Default `[]` |
 | `bots` | Busy markers per project (see [Who's busy](#whos-busy)). Default `{}`: no row |
+| `alerts` | Per-project desktop alert switches (see [Alerts](#alerts)). Default `{}` |
+| `accessHintDismissed` | Projects whose view-only hint was hidden with Not now. Default `[]` |
 | `serverDefaults` | The default board on each other server: `{ "host": { "project", "id", "name" } }`. gitlab.com's stays in `defaultProject`, `defaultBoardId` and `defaultBoardName` |
 | `settingsRevision` | Set to `2` by v0.1.3 after its one-time update |
 
@@ -1016,8 +1020,8 @@ The QML views have offscreen tests too: `tests/harness/` loads a copy of
 the plugin with stand-ins for Quickshell and Omarchy's `qs.Commons`/`qs.Ui`
 (`tests/harness/stubs`; set `OGB_SCALE=1.5` for 1.5x) into PySide6,
 answers its board-fetch calls with fixtures, and checks what is on screen.
-`tests/mutations/` lists deliberate bugs in eight files (one per line: name,
-file, from, to, sh|qml|node, test). The test column names what must fail:
+`tests/mutations/` lists deliberate bugs (one per line: name, file, from, to,
+sh or qml or node, test). The test column names what must fail:
 `run.sh`, `logic.test.js` or a view test such as `harness/tests/run144.py`.
 They need a Python with
 PySide6, kept out of the system Python:
@@ -1084,4 +1088,11 @@ omarchy-restart-shell
 omarchy plugin remove odevvy.gitlabby
 ```
 
-Moves and comments already made stay on GitLab.
+Moves and comments already made stay on GitLab. Removing the plugin does not
+edit `~/.config/omarchy/shell.json` or delete `~/.cache/odevvy.gitlabby`.
+Remove those by hand if you want them gone. Signing out already deletes that
+server's saved board cache.
+
+## License
+
+GitLabby is MIT licensed. See [LICENSE](LICENSE).
