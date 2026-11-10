@@ -11,8 +11,8 @@ import lib
 from lib import *
 from PySide6.QtGui import QKeyEvent
 src = sys.argv[1]; out = sys.argv[2] if len(sys.argv) > 2 else None
-P = "firelink21/phrase41"
-exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "run134.py")).read().split("ALL = []")[0].split("P = \"firelink21/phrase41\"")[1])
+P = "my-group/my-project"
+exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "run134.py")).read().split("ALL = []")[0].split("P = \"my-group/my-project\"")[1])
 ALL = []
 def ok(n, c, e=""): ALL.append(bool(c)); h.ok(n, c, e)
 def shot(name):
@@ -75,7 +75,7 @@ ok("Z phase 1: no QML warnings", not h.warnings, h.warnings[:3])
 R1 = h.results  # one total at the end (mutate.sh reads the first "passed" line)
 
 # --- another start: the setting is read back; another project; 403; read token ---
-start({"accessHintDismissed": ["FireLink21/Phrase41"]})
+start({"accessHintDismissed": ["My-Group/My-Project"]})
 h.answer("access", ACC(10)); h.spin(80)
 ok("D1 dismissed (any case): no hint after a restart; still view-only", not hint_vis() and not h.ev("root.writable"))
 h.ev("root.switchTo('group/app', '7', 'Dev')"); h.spin(60)
