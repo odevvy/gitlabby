@@ -30,22 +30,28 @@ function linkUrl(link, issueUrl) {
 // GitLab Markdown to the HTML subset Text.RichText draws, so headings,
 // spacing, bullets and code can be styled (Text.MarkdownText can't be).
 // All text is escaped first: raw HTML in the issue shows as text, and images
-// become links, so nothing is loaded from the network.
+// become links only when the destination is a URL a click would open
+// (linkUrl: https, or a GitLab-relative path on the issue's host). Other
+// schemes stay as the visible text, with no href.
 // A longer line stays plain text: the passes below can take time quadratic in
 // a line's length, and they run on the shell's UI thread.
 // Code spans and Markdown links are set aside as \x01n\x01 / \x02n\x02 while
 // the other passes run (a URL inside link text is not linked again), then put
 // back. Those two characters are dropped from the text first.
 var lineLimit = 2000
-function inline(text) {
+function inline(text, issueUrl) {
   var spans = [], links = []
   text = String(text).replace(/[\x01\x02]/g, "")
   if (text.length > lineLimit) return escaped(text)
+  function hrefTag(url, label) {
+    var href = linkUrl(url, issueUrl)
+    return href ? "<a href=\"" + href + "\">" + label + "</a>" : label
+  }
   return escaped(text)
     .replace(/`([^`]+)`/g, function(m, c) { spans.push(c); return "\x01" + (spans.length - 1) + "\x01" })
     .replace(/!?\[([^\][]*)\]\(([^)\s"]+)(?:[\s"][^)]*)?\)/g, function(m, t, url) {
-      links.push("<a href=\"" + url + "\">" + (t || url) + "</a>"); return "\x02" + (links.length - 1) + "\x02" })
-    .replace(/(^|[\s(])(https?:\/\/[^\s()"<]+)/g, "$1<a href=\"$2\">$2</a>")
+      links.push(hrefTag(url, t || url)); return "\x02" + (links.length - 1) + "\x02" })
+    .replace(/(^|[\s(])(https?:\/\/[^\s()"<]+)/g, function(m, pre, url) { return pre + hrefTag(url, url) })
     .replace(/\*\*(.+?)\*\*|__(.+?)__/g, "<b>$1$2</b>")
     .replace(/(^|\W)([*_])(\S(?:.*?\S)?)\2(?=\W|$)/g, "$1<i>$3</i>")
     .replace(/~~(.+?)~~/g, "<s>$1</s>")
@@ -72,10 +78,10 @@ function clipped(md) {
   return text.slice(0, cut > 0 ? cut : descriptionLimit)
 }
 // advance(text): its width in px in the description font; space(px): Style.space.
-function markdown(md, advance, space) {
+function markdown(md, advance, space, issueUrl) {
   var out = [], block = [], open = "<p>", rows = [], code = null
   function flush() {
-    if (block.length) out.push(open + block.map(inline).join("<br>") + "</p>")
+    if (block.length) out.push(open + block.map(function(line) { return inline(line, issueUrl) }).join("<br>") + "</p>")
     if (rows.length) out.push("<table border='1' cellspacing='0' cellpadding='" + space(3) + "'>" + rows.join("") + "</table>")
     block = []; rows = []; open = "<p>"
   }
@@ -85,7 +91,7 @@ function markdown(md, advance, space) {
       if (/^\s*(```|~~~)/.test(line)) { out.push("<pre>" + code.join("\n") + "</pre>"); code = null }
       else code.push(escaped(line))
     } else if (/^\s*(```|~~~)/.test(line)) { flush(); code = [] }
-    else if ((m = /^(#{1,6})\s+(.*?)[\s#]*$/.exec(line))) { flush(); out.push("<p class='h" + Math.min(m[1].length, 3) + "'>" + inline(m[2]) + "</p>") }
+    else if ((m = /^(#{1,6})\s+(.*?)[\s#]*$/.exec(line))) { flush(); out.push("<p class='h" + Math.min(m[1].length, 3) + "'>" + inline(m[2], issueUrl) + "</p>") }
     else if (/^\s*([-*_])(\s*\1){2,}\s*$/.test(line)) { flush(); out.push("<hr>") }
     else if ((m = /^(\s*)([-*+]|\d+[.)])\s+(\[[ xX]\]\s+)?(.*)$/.exec(line))) {
       // Hanging indent: wrapped lines line up with the text, not the bullet.
@@ -98,7 +104,7 @@ function markdown(md, advance, space) {
       if (block.length) flush()
       if (!/^[\s|:-]+$/.test(m[1])) {
         var tag = rows.length ? "td" : "th"
-        rows.push("<tr>" + m[1].split("|").map(function(c) { return "<" + tag + ">" + inline(c.trim()) + "</" + tag + ">" }).join("") + "</tr>")
+        rows.push("<tr>" + m[1].split("|").map(function(c) { return "<" + tag + ">" + inline(c.trim(), issueUrl) + "</" + tag + ">" }).join("") + "</tr>")
       }
     } else if ((m = /^\s*>\s?(.*)$/.exec(line))) {
       if (open.indexOf("quote") === -1) { flush(); open = "<p class='quote' style='margin-left: " + space(10) + "px'>" }
