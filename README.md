@@ -7,6 +7,8 @@ popup. You get the project's boards as columns in their label colors, issue
 details with comments and labels, drag-to-move and bulk actions, merge
 requests waiting on you, your to-dos, and desktop alerts.
 
+![GitLabby board popup](assets/screenshot-board.png)
+
 ## Install
 
 ```bash
