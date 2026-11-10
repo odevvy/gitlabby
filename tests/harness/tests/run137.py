@@ -11,8 +11,8 @@ import lib
 from lib import *
 from PySide6.QtGui import QImage
 src = sys.argv[1]; out = sys.argv[2] if len(sys.argv) > 2 else None
-P = "firelink21/phrase41"
-exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "run134.py")).read().split("ALL = []")[0].split("P = \"firelink21/phrase41\"")[1])
+P = "my-group/my-project"
+exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "run134.py")).read().split("ALL = []")[0].split("P = \"my-group/my-project\"")[1])
 ALL = []
 def ok(n, c, e=""): ALL.append(bool(c)); h.ok(n, c, e)
 h = Harness(src, {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": ["open", "research", "Closed"]})
@@ -25,7 +25,7 @@ def mr(iid, title, project, branch, status, author, reviewers, pipeline=None, dr
             "pipeline": pipeline, "reviewers": reviewers}
 import datetime
 def ago_(minutes): return (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=minutes)).strftime("%Y-%m-%dT%H:%M:%SZ")
-PIPE = lambda s: {"status": s, "url": "https://gitlab.com/firelink21/phrase41/-/pipelines/1"}
+PIPE = lambda s: {"status": s, "url": "https://gitlab.com/my-group/my-project/-/pipelines/1"}
 ANS = {"state": "ready", "message": "", "scope": "all", "updatedAt": "2026-10-30T20:52:00Z",
   "review": [mr(88, "Book motion: one open/close curve for every view <b>", P, "app-ui/book-motion", "ci_still_running", "App UI", [who("o_devvy", "odevvy", "review_started"), who("api", "API", "approved")], PIPE("running"), ago=ago_(12)),
              mr(86, "API: paginate story notes", P, "api/notes-pages", "requested_changes", "API", [who("o_devvy", "odevvy", "requested_changes")], PIPE("passed"), ago=ago_(130))],

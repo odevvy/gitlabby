@@ -10,8 +10,8 @@ os.environ["OGB_SCALE"] = "1.5"
 import lib
 from lib import *
 src = sys.argv[1]; out = sys.argv[2] if len(sys.argv) > 2 else None
-P = "firelink21/phrase41"
-exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "run134.py")).read().split("ALL = []")[0].split("P = \"firelink21/phrase41\"")[1])
+P = "my-group/my-project"
+exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "run134.py")).read().split("ALL = []")[0].split("P = \"my-group/my-project\"")[1])
 ALL = []
 def ok(n, c, e=""): ALL.append(bool(c)); h.ok(n, c, e)
 h = Harness(src, {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": P, "defaultCollapsed": ["open", "research", "Closed"], "bots": FOUR})
@@ -43,9 +43,9 @@ ok("A6 off again: nothing watched", h.ev("root.feed.watchedKeys") == [] and two(
 h.stop_all()
 # --- notification mock renders ------------------------------------------------------
 NL = os.path.join(os.environ.get("OMARCHY_PATH", os.path.expanduser("~/.local/share/omarchy")), "shell/plugins/notifications/NotificationLogic.js")
-CASES = [("notification-review", "#42 is in review", "#42 Login form shows the wrong error &lt;401&gt; · firelink21/phrase41"),
-         ("notification-batch", "3 cards entered review", "#42 Login form shows the wrong…, #43 Rate limit the mail…, #47 Settings page +0 more · firelink21/phrase41".replace(" +0 more", "")),
-         ("notification-idle", "Stopped working: API Engineer", "On firelink21/phrase41: API Engineer is waiting in review")]
+CASES = [("notification-review", "#42 is in review", "#42 Login form shows the wrong error &lt;401&gt; · my-group/my-project"),
+         ("notification-batch", "3 cards entered review", "#42 Login form shows the wrong…, #43 Rate limit the mail…, #47 Settings page +0 more · my-group/my-project".replace(" +0 more", "")),
+         ("notification-idle", "Stopped working: API Engineer", "On my-group/my-project: API Engineer is waiting in review")]
 for name, head, body in CASES:
     styled = json.loads(subprocess.run(["node", "-e", "console.log(JSON.stringify(require(%s).styledBody(%s, 'GitLabby', '')))" % (json.dumps(NL), json.dumps(body))], capture_output=True, text=True).stdout)
     qml = """import QtQuick
