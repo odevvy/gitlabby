@@ -75,7 +75,7 @@ var keyGroups = [
     ["Enter / Space", "Open the issue"],
     ["o", "Open in browser"],
     ["y", "Copy the link · or right-click"],
-    ["Shift+H / L", "Move left / right · asks first"],
+    ["Shift+H / L", "Move left / right · asks first when the project is in confirmMoves"],
     ["v", "Pick for bulk · or Ctrl+click"],
     ["b", "Show or hide the bots"],
     ["r", "Refresh"]] },
