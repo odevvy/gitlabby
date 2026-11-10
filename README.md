@@ -259,7 +259,7 @@ Other labels are never touched.
 
 **Moves can set off automations.** Bots, webhooks, CI rules or triage
 policies that watch labels or state react as they would to a change on the
-website. On phrase41, moving an issue into approved or review wakes the bots.
+website. On my-group/my-project, moving an issue into approved or review wakes the bots.
 
 ### Ask before moving
 
@@ -271,7 +271,7 @@ The card stays where it is until you confirm, and the board doesn't refresh
 under the question.
 
 ```bash
-omarchy bar set odevvy.gitlabby confirmMoves '["firelink21/phrase41"]' --json
+omarchy bar set odevvy.gitlabby confirmMoves '["my-group/my-project"]' --json
 ```
 
 The value is the whole list (project paths, any case); `'[]'` turns it off.
@@ -412,7 +412,7 @@ reviewer takes everything in review:
 
 ```json
 "bots": {
-  "firelink21/phrase41": {
+  "my-group/my-project": {
     "busyLists": ["approved", "in progress", "review"],
     "bots": [
       { "name": "App UI", "label": "app-ui" },
@@ -453,7 +453,7 @@ terminal (this replaces the whole `bots` value, so include every project you
 use it for):
 
 ```bash
-omarchy bar set odevvy.gitlabby bots '{"firelink21/phrase41":{"busyLists":["approved","in progress","review"],"bots":[{"name":"App UI","label":"app-ui"},{"name":"API Engineer","label":"api"},{"name":"Auth & Mail","label":"auth-mail"},{"name":"Product Lead","label":""},{"name":"Spec QA","list":"review"}]}}' --json
+omarchy bar set odevvy.gitlabby bots '{"my-group/my-project":{"busyLists":["approved","in progress","review"],"bots":[{"name":"App UI","label":"app-ui"},{"name":"API Engineer","label":"api"},{"name":"Auth & Mail","label":"auth-mail"},{"name":"Product Lead","label":""},{"name":"Spec QA","list":"review"}]}}' --json
 ```
 
 Remove it with `omarchy bar set odevvy.gitlabby bots '{}' --json`.
