@@ -127,6 +127,21 @@ test("links: https as is, GitLab-relative on the issue's host, nothing else", ()
 
 const md = (text) => L.markdown(text, (t) => t.length * 7, (px) => px)
 
+test("markdown: only https hrefs are emitted; unsafe destinations stay plain text", () => {
+  assert.equal(L.inline("[click me](javascript:evil)"), "click me")
+  assert.ok(!L.inline("[click me](javascript:evil)").includes("href="))
+  assert.equal(L.inline("![](file:///etc/passwd)"), "file:///etc/passwd")
+  assert.equal(L.inline("[note](data:text/html,hi)"), "note")
+  assert.ok(!L.inline("[note](data:text/html,hi)").includes("href="))
+  const http = L.inline("see http://example.com/x")
+  assert.ok(!http.includes("href="), http)
+  assert.ok(http.includes("http://example.com/x"), http)
+  assert.equal(L.inline("[ok](https://gitlab.com/g/p/-/issues/2)"), '<a href="https://gitlab.com/g/p/-/issues/2">ok</a>')
+  const issueUrl = "https://gitlab.com/group/app/-/issues/5"
+  assert.equal(L.inline("[six](/group/app/-/issues/6)", issueUrl), '<a href="https://gitlab.com/group/app/-/issues/6">six</a>')
+  assert.equal(L.inline("[six](/group/app/-/issues/6)"), "six")
+})
+
 test("markdown: raw HTML is text, images are links, hrefs can't break out", () => {
   const x = md("<script>alert(1)</script> <img src=https://evil.example/x.png> ![pic](https://evil.example/p.png)")
   assert.ok(!x.includes("<script") && !x.includes("<img") && x.includes("&lt;img"))
