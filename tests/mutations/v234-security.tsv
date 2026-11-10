@@ -1,0 +1,4 @@
+md-raw-href	logic/markdown.js	var href = linkUrl(url, issueUrl)	var href = url	node	logic.test.js
+md-always-link	logic/markdown.js	return href ? "<a href=\"" + href + "\">" + label + "</a>" : label	return "<a href=\"" + (href || url) + "\">" + label + "</a>"	node	logic.test.js
+md-http-autolink	logic/markdown.js	function(m, pre, url) { return pre + hrefTag(url, url) }	"$1<a href=\"$2\">$2</a>"	node	logic.test.js
+md-no-issue-url	IssueView.qml	, view.issue.url) : ""	) : ""	qml	harness/tests/run234.py
