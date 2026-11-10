@@ -4,13 +4,13 @@ import sys, os; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspa
 from lib import *
 from PySide6.QtGui import QColor
 pngs = sys.argv[2:5]
-h = Harness(sys.argv[1], {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": "firelink21/phrase41"})
-def iss(iid, title, labels, notes=0): return {"iid": iid, "title": title, "labels": labels, "url": "https://gitlab.com/firelink21/phrase41/-/issues/%d" % iid, "createdAt": "2026-10-29T09:00:00Z", "notes": notes, "assignees": []}
+h = Harness(sys.argv[1], {"id": "odevvy.gitlabby", "settingsRevision": 2, "defaultProject": "my-group/my-project"})
+def iss(iid, title, labels, notes=0): return {"iid": iid, "title": title, "labels": labels, "url": "https://gitlab.com/my-group/my-project/-/issues/%d" % iid, "createdAt": "2026-10-29T09:00:00Z", "notes": notes, "assignees": []}
 C = {"todo": "#64748b", "approved": "#0ea5e9", "in progress": "#f59e0b", "review": "#a855f7"}
 def board(moved=False):
     prog = [iss(114, "WORKFLOW: weekly digest wording", ["in progress"])] + ([] if moved else [iss(112, "Cover picker keyboard focus", ["in progress", "app-ui"], 2)])
     rev = [iss(113, "Stories list: paginate past 50", ["review", "api"], 1)] + ([iss(112, "Cover picker keyboard focus", ["review", "app-ui"], 2)] if moved else [])
-    return {"state": "ready", "project": "firelink21/phrase41", "updatedAt": "2026-10-29T15:20:00Z", "message": "",
+    return {"state": "ready", "project": "my-group/my-project", "updatedAt": "2026-10-29T15:20:00Z", "message": "",
       "labelColors": {**{k: {"color": v, "textColor": "#ffffff"} for k, v in C.items()}, "app-ui": {"color": "#16a34a"}, "api": {"color": "#2563eb"}, "auth-mail": {"color": "#db2777"}},
       "boards": [{"id": 1, "name": "Development"}], "board": {"id": 1, "name": "Development"}, "fallback": False,
       "columns": [{"name": "Open", "kind": "open", "issues": [iss(118, "Ideas: story covers v2", ["app-ui"])]},
@@ -19,7 +19,7 @@ def board(moved=False):
         {"name": "in progress", "kind": "label", "listId": 3, "color": C["in progress"], "issues": prog},
         {"name": "review", "kind": "label", "listId": 4, "color": C["review"], "issues": rev},
         {"name": "Closed", "kind": "closed", "issues": [iss(109, "Cover picker: 5 object covers", ["auth-mail", "in progress"])]}]}
-BOTS = {"firelink21/phrase41": {"busyLists": ["approved", "in progress", "review"], "bots": [
+BOTS = {"my-group/my-project": {"busyLists": ["approved", "in progress", "review"], "bots": [
   {"name": "App UI", "label": "app-ui"}, {"name": "API Engineer", "label": "api"}, {"name": "Auth & Mail", "label": "auth-mail"},
   {"name": "Product Lead", "label": ""}, {"name": "Spec QA", "list": "review"}]}}
 rows = lambda: h.visible(lambda it: it.metaObject().className().startswith("BotsRow"))
@@ -67,14 +67,14 @@ t = texts()
 h.ok("U1 a refresh updates it: #112 in review is Spec QA's alone; App UI now waits on #115: a ring in approved's color", "· #112 review" not in t and "in approved" in t and dot("App UI").property("color").alpha() == 0 and same(pen("App UI"), col(C["approved"])), t)
 h.ok("U2 Spec QA lists both reviews", "· #112" in t)
 one = r[0].height(); grown = h.ev("keyCatcher.implicitHeight")
-wide = json.loads(json.dumps(BOTS)); wide["firelink21/phrase41"]["bots"][3]["name"] = "Product Lead (triage, specs, planning, release notes, and everything else nobody owns yet on this board)"
+wide = json.loads(json.dumps(BOTS)); wide["my-group/my-project"]["bots"][3]["name"] = "Product Lead (triage, specs, planning, release notes, and everything else nobody owns yet on this board)"
 h.ev("root.settings = Object.assign({}, root.settings, { bots: " + json.dumps(wide) + " })"); h.spin(150)
 r = rows()
 h.ok("W1 a longer row wraps to two lines and the popup grows with it, live", r[0].height() > one + 5 and abs(h.ev("keyCatcher.implicitHeight") - grown - (r[0].height() - one)) < 1 and board_top() >= r[0].mapToScene(QPointF(0, r[0].height())).y(), (one, r[0].height()))
 if len(pngs) > 2: h.grab_card(pngs[2])
 h.ev("root.settings = Object.assign({}, root.settings, { bots: {} })"); h.spin(150)
 h.ok("H1 config removed: row gone, height back to before (no stale height)", not rows() and abs(h.ev("keyCatcher.implicitHeight") - h0) < 1 and abs(board_top() - top0) < 1, (h.ev("keyCatcher.implicitHeight"), h0))
-h.ev("root.settings = Object.assign({}, root.settings, { bots: " + json.dumps({"other/project": BOTS["firelink21/phrase41"]}) + " })"); h.spin(100)
+h.ev("root.settings = Object.assign({}, root.settings, { bots: " + json.dumps({"other/project": BOTS["my-group/my-project"]}) + " })"); h.spin(100)
 h.ok("H2 configured for another project only: no row", not rows())
 h.ev("root.settings = Object.assign({}, root.settings, { bots: " + json.dumps(BOTS) + " })"); h.spin(100)
 h.ev("root.showView('settings')"); h.spin(80)
@@ -83,5 +83,5 @@ h.ev("root.back()"); h.spin(80); h.ev("root.boardState = 'loading'"); h.spin(80)
 h.ok("H3b hidden while the board isn't ready, and takes no space", not rows() and abs(h.ev("botsRow.height")) < 0.5 and abs(board_top() - under_header()) < 1)
 h.ev("root.boardState = 'ready'"); h.spin(80)
 h.ev("root.back()"); h.spin(80)
-h.ok("H4 settings keeps the bots entry when the plugin saves", (h.ev("root.persist(); root.settings.bots") or {}).get("firelink21/phrase41") is not None)
+h.ok("H4 settings keeps the bots entry when the plugin saves", (h.ev("root.persist(); root.settings.bots") or {}).get("my-group/my-project") is not None)
 sys.exit(h.finish())
