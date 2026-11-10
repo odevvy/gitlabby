@@ -1,6 +1,6 @@
 # GitLabby for Omarchy
 
-> The [GitHub repository](https://github.com/odevvy/gitlabby) is a read-only mirror. Please open issues and merge requests on [GitLab](https://gitlab.com/firelink21/gitlabby). GitHub pull requests are not accepted.
+> The [GitHub repository](https://github.com/odevvy/gitlabby) is a read-only mirror. Please open issues and merge requests on [GitLab](https://gitlab.com/o_devvy/gitlabby). GitHub pull requests are not accepted.
 
 A bar icon (plugin id `odevvy.gitlabby`) that opens your GitLab work in a
 popup. You get the project's boards as columns in their label colors, issue
@@ -12,9 +12,11 @@ requests waiting on you, your to-dos, and desktop alerts.
 ## Install
 
 ```bash
-omarchy plugin add https://gitlab.com/firelink21/gitlabby.git --enable
+omarchy plugin add https://gitlab.com/o_devvy/gitlabby.git --enable
 # or over SSH:
-omarchy plugin add git@gitlab.com:firelink21/gitlabby.git --enable
+omarchy plugin add git@gitlab.com:o_devvy/gitlabby.git --enable
+# or from the GitHub mirror:
+omarchy plugin add https://github.com/odevvy/gitlabby.git --enable
 # or, from a local checkout:
 omarchy plugin add "$PWD" --enable
 ```
@@ -23,12 +25,12 @@ Needs Omarchy 4.0.6 or later, `jq`, a Nerd Font (Omarchy ships one), and the
 GitLab CLI `glab`.
 
 The repository moved from `firelink21/omarchy-gitlab-board` to
-`firelink21/gitlabby` (v0.1.113); the plugin id stays `odevvy.gitlabby`. An
-existing install keeps working through GitLab's redirect; to point it at the
-new path:
+`firelink21/gitlabby` (v0.1.113), then to `o_devvy/gitlabby` (v0.1.137); the
+plugin id stays `odevvy.gitlabby`. An existing install keeps working through
+GitLab's redirect; to point it at the new path:
 
 ```bash
-git -C ~/.config/omarchy/plugins/odevvy.gitlabby remote set-url origin https://gitlab.com/firelink21/gitlabby.git
+git -C ~/.config/omarchy/plugins/odevvy.gitlabby remote set-url origin https://gitlab.com/o_devvy/gitlabby.git
 omarchy plugin update odevvy.gitlabby
 ```
 
@@ -53,11 +55,11 @@ prompt.
 
 Open an issue on GitLab (not GitHub):
 
-- [Bug](https://gitlab.com/firelink21/gitlabby/-/issues/new?issuable_template=Bug)
-- [Feature](https://gitlab.com/firelink21/gitlabby/-/issues/new?issuable_template=Feature)
-- [Question](https://gitlab.com/firelink21/gitlabby/-/issues/new?issuable_template=Question)
+- [Bug](https://gitlab.com/o_devvy/gitlabby/-/issues/new?issuable_template=Bug)
+- [Feature](https://gitlab.com/o_devvy/gitlabby/-/issues/new?issuable_template=Feature)
+- [Question](https://gitlab.com/o_devvy/gitlabby/-/issues/new?issuable_template=Question)
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). **Never paste a token or password.** The project is private for now, so only members can file issues.
+See [CONTRIBUTING.md](CONTRIBUTING.md). **Never paste a token or password.**
 
 ## Default board and starred boards
 
