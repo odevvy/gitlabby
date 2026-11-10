@@ -479,7 +479,7 @@ Item {
         opacity: visible ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: 150 } }
         textFormat: Text.RichText
-        text: visible ? view.css + Logic.markdown(view.issue.description, function(t) { return metrics.advanceWidth(t) }, function(px) { return Style.space(px) }) : ""
+        text: visible ? view.css + Logic.markdown(view.issue.description, function(t) { return metrics.advanceWidth(t) }, function(px) { return Style.space(px) }, view.issue.url) : ""
         color: view.host.foreground
         linkColor: view.host.accent
         font { family: Style.font.family; pixelSize: Style.font.bodySmall }
