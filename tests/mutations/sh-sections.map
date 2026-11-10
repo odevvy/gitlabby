@@ -111,6 +111,8 @@ host-no-length-cap	M P S
 host-path-allowed	M P S
 host-port-allowed	M P S
 host-post-default	M P S
+ib-bytes-flipped	IB
+ib-no-byte-budget	IB
 issues-unread	CL
 labels-not-filtered	L
 link-any-url	CL
