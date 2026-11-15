@@ -1391,3 +1391,35 @@ test("copyLink uses the same host check as a click", () => {
   assert.equal(L.gitlabUrl("https://gitlab.example/g/p/-/issues/2", "gitlab.example"), "https://gitlab.example/g/p/-/issues/2")
 })
 
+
+test("report issue URL: blank form, or a prefill with only the version and a fixed state", () => {
+  const base = "https://gitlab.com/o_devvy/gitlabby/-/issues/new"
+  assert.equal(L.reportIssueUrl("0.1.138"), base)
+  assert.equal(L.reportIssueUrl("0.1.138", ""), base)
+  assert.equal(L.reportIssueUrl("0.1.138", "no-glab"), base)
+  assert.equal(L.httpsUrl(L.reportIssueUrl("0.1.138")), base)
+  const u = L.reportIssueUrl("0.1.138", "failed")
+  assert.equal(u, base + "?issue[title]=" + encodeURIComponent("GitLabby 0.1.138: Could not reach GitLab")
+    + "&issue[description]=" + encodeURIComponent("Plugin: GitLabby 0.1.138\nState: load failed\n\nWhat happened:\n"))
+  assert.equal(L.httpsUrl(u), u)
+  assert.match(u, /%20/) // spaces in the title and description are encoded
+  assert.ok(!/\s|"|'|<|>/.test(u))
+  const parsed = new URL(u)
+  assert.equal(parsed.origin + parsed.pathname, base)
+  assert.equal(parsed.searchParams.get("issue[title]"), "GitLabby 0.1.138: Could not reach GitLab")
+  assert.equal(parsed.searchParams.get("issue[description]"), "Plugin: GitLabby 0.1.138\nState: load failed\n\nWhat happened:\n")
+})
+
+test("report issue URL: a bad version becomes unknown; nothing else leaks in", () => {
+  const base = "https://gitlab.com/o_devvy/gitlabby/-/issues/new"
+  const leaks = ["git.example.com", "my-group/my-project", "glpat-secret", "/var/cache/boards", "Not signed in to git.example.com"]
+  for (const bad of ["", " ", "../x", "0.1.138;rm", "0.1.138/evil", ...leaks]) {
+    const u = L.reportIssueUrl(bad, "failed")
+    assert.equal(u, L.reportIssueUrl("unknown", "failed"), bad)
+    assert.ok(!leaks.some((s) => u.includes(s)), u + " leaked from " + bad)
+  }
+  assert.equal(L.pluginVersionFromManifest('{"version":"0.1.138"}'), "0.1.138")
+  assert.equal(L.pluginVersionFromManifest('{"version":"0.1.138","id":"odevvy.gitlabby"}'), "0.1.138")
+  for (const raw of ["", "{", "null", "{}", '{"version":"git.example.com"}', '{"version":"g/p"}', '{"version":"glpat-xx"}'])
+    assert.equal(L.pluginVersionFromManifest(raw), "", raw)
+})
