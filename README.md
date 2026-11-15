@@ -59,7 +59,9 @@ Open an issue on GitLab (not GitHub):
 - [Feature](https://gitlab.com/o_devvy/gitlabby/-/issues/new?issuable_template=Feature)
 - [Question](https://gitlab.com/o_devvy/gitlabby/-/issues/new?issuable_template=Question)
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). **Never paste a token or password.**
+From Settings, **Report an issue** opens a blank issue on GitLabby. After a
+load failure, **Report this** does the same, with the plugin version already
+filled in. See [CONTRIBUTING.md](CONTRIBUTING.md). **Never paste a token or password.**
 
 ## Default board and starred boards
 
