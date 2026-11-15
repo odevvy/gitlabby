@@ -529,6 +529,40 @@ Item {
         font.pixelSize: Style.font.bodySmall
         text: Logic.accessLine(view.host.accessEntry)
       }
+      // A new issue on GitLabby itself (o_devvy/gitlabby on gitlab.com), not
+      // the project on the board. Blank form; the user writes it before submitting.
+      BoardText {
+        id: reportIssueLink
+        objectName: "reportIssueLink"
+        text: "Report an issue"
+        color: view.host.accent
+        font.pixelSize: Style.font.bodySmall
+        height: Style.space(32)
+        verticalAlignment: Text.AlignVCenter
+        function kbActivate() { view.host.openReport() }
+        Rectangle {
+          objectName: "reportIssueHover"
+          z: -1
+          anchors.fill: parent
+          anchors.leftMargin: -Style.space(6)
+          anchors.rightMargin: -Style.space(6)
+          radius: Style.space(6)
+          color: reportIssueMouse.containsMouse ? Qt.rgba(view.host.foreground.r, view.host.foreground.g, view.host.foreground.b, 0.06) : "transparent"
+        }
+        MouseArea { id: reportIssueMouse; anchors.fill: parent; anchors.leftMargin: -Style.space(6); anchors.rightMargin: -Style.space(6); hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: reportIssueLink.kbActivate() }
+        FocusRing { host: view.host }
+        Accessible.role: Accessible.Button
+        Accessible.name: "Report an issue"
+        Accessible.onPressAction: reportIssueLink.kbActivate()
+      }
+      BoardText {
+        objectName: "reportIssueNote"
+        width: parent.width
+        wrapMode: Text.Wrap
+        color: view.host.quiet
+        font.pixelSize: Style.font.caption
+        text: "Opens the new-issue form for GitLabby itself, on gitlab.com."
+      }
     }
   }
   // More below: the bottom edge fades (ScrollHint.qml).

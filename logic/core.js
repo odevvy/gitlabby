@@ -84,4 +84,28 @@ function serverKey(host, project) {
   return !host || host === "gitlab.com" ? project : host + ":" + project
 }
 
-if (typeof module !== "undefined") module.exports = { plainJson: plainJson, lowerList: lowerList, has: has, toggled: toggled, countLabel: countLabel, escaped: escaped, plain: plain, copied: copied, age: age, savedNote: savedNote, httpsUrl: httpsUrl, gitlabUrl: gitlabUrl, oneLine: oneLine, thousands: thousands, serverHost: serverHost, serverKey: serverKey, signInCommand: signInCommand }
+
+// The plugin version from manifest.json: a short digit-led string of letters,
+// digits, dots, underscores and dashes, so a hostname or token cannot ride
+// into a report URL.
+function pluginVersionFromManifest(text) {
+  try {
+    var v = String(JSON.parse(String(text || "")).version || "").trim()
+    return /^[0-9][0-9A-Za-z._-]{0,31}$/.test(v) ? v : ""
+  } catch (e) { return "" }
+}
+// A new issue on GitLabby itself, always on gitlab.com. kind "failed" prefills
+// the version and a fixed state label; anything else is a blank form. The
+// values are encoded so httpsUrl will accept the result: never a host, project,
+// path, token or raw error message.
+function reportIssueUrl(version, kind) {
+  var base = "https://gitlab.com/o_devvy/gitlabby/-/issues/new"
+  var ver = pluginVersionFromManifest(JSON.stringify({ version: version }))
+  if (ver === "") ver = "unknown"
+  if (kind !== "failed") return httpsUrl(base)
+  var title = "GitLabby " + ver + ": Could not reach GitLab"
+  var desc = "Plugin: GitLabby " + ver + "\nState: load failed\n\nWhat happened:\n"
+  return httpsUrl(base + "?issue[title]=" + encodeURIComponent(title) + "&issue[description]=" + encodeURIComponent(desc))
+}
+
+if (typeof module !== "undefined") module.exports = { plainJson: plainJson, lowerList: lowerList, has: has, toggled: toggled, countLabel: countLabel, escaped: escaped, plain: plain, copied: copied, age: age, savedNote: savedNote, httpsUrl: httpsUrl, gitlabUrl: gitlabUrl, oneLine: oneLine, thousands: thousands, serverHost: serverHost, serverKey: serverKey, signInCommand: signInCommand, pluginVersionFromManifest: pluginVersionFromManifest, reportIssueUrl: reportIssueUrl }

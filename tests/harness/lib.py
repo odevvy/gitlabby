@@ -2,6 +2,8 @@
 # into an offscreen window. Usage in a test: from lib import *; h = Harness(src)
 import sys, os, json, shutil, tempfile, atexit
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+# The FileView stand-in reads local files through XMLHttpRequest.
+os.environ.setdefault("QML_XHR_ALLOW_FILE_READ", "1")
 from PySide6.QtCore import QUrl, QTimer, QObject, QPoint, QPointF, QRect, Qt, QEvent
 from PySide6.QtGui import QGuiApplication, QFontDatabase, QKeyEvent
 from PySide6.QtQml import QQmlApplicationEngine, QJSValue, QQmlExpression, QQmlEngine

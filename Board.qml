@@ -702,6 +702,26 @@ Panel {
   }
   function openBrowse() { headerMenu = ""; openPicker() }
 
+  // GitLabby's own version, from manifest.json next to this file (same path
+  // helper as board-fetch). Used only in the Report this prefill; a missing
+  // or odd value becomes "unknown". FileView, not XMLHttpRequest: XHR on
+  // file:// is empty or blocked in the shell.
+  property string pluginVersion: ""
+  FileView {
+    id: manifestFile
+    path: decodeURIComponent(Qt.resolvedUrl("manifest.json").toString().replace(/^file:\/\//, ""))
+    blockLoading: true
+    printErrors: false
+    onLoaded: root.pluginVersion = Logic.pluginVersionFromManifest(text())
+  }
+  // A new issue on GitLabby itself: always gitlab.com, always a browser with
+  // an address bar. gitlabUrl would drop the link on a self-hosted server.
+  function openReport(kind) {
+    var link = Logic.httpsUrl(Logic.reportIssueUrl(pluginVersion, kind))
+    if (link === "") return
+    Quickshell.execDetached(["omarchy-launch-browser", link])
+    close()
+  }
   // GitLab navigation stays on the configured host. Explicit Markdown links
   // may leave it, but only in a browser with its address bar, never an app window.
   function openUrl(url, markdown) {
