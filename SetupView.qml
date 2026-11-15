@@ -59,6 +59,33 @@ Item {
         : setupView.step === "error" ? setupView.host.message
         : setupView.step === "pick" ? "Pick a project and board. The first one you open becomes your default." : ""
     }
+    // Only when a board failed to load (mode "failed"), not first-run sign-in,
+    // missing glab, or the project picker. Prefills version and "load failed".
+    BoardText {
+      id: reportThisLink
+      objectName: "reportThisLink"
+      anchors.horizontalCenter: parent.horizontalCenter
+      visible: setupView.mode === "failed"
+      text: "Report this"
+      color: setupView.host.accent
+      height: Style.space(28)
+      verticalAlignment: Text.AlignVCenter
+      function kbActivate() { setupView.host.openReport("failed") }
+      Rectangle {
+        objectName: "reportThisHover"
+        z: -1
+        anchors.fill: parent
+        anchors.leftMargin: -Style.space(8)
+        anchors.rightMargin: -Style.space(8)
+        radius: Style.space(6)
+        color: reportThisMouse.containsMouse ? Qt.rgba(setupView.host.foreground.r, setupView.host.foreground.g, setupView.host.foreground.b, 0.06) : "transparent"
+      }
+      MouseArea { id: reportThisMouse; anchors.fill: parent; anchors.leftMargin: -Style.space(8); anchors.rightMargin: -Style.space(8); hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: reportThisLink.kbActivate() }
+      FocusRing { host: setupView.host }
+      Accessible.role: Accessible.Button
+      Accessible.name: "Report this"
+      Accessible.onPressAction: reportThisLink.kbActivate()
+    }
 
     // The install command (or your server's sign-in command), with Copy.
     Row {
